@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kieran Green — Industrial Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:ital,wght@0,200;0,300;0,400;0,500;1,200;1,300&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root {
+  --ink:     #060707;
+  --s1:      #0b0f0e;
+  --s2:      #111615;
+  --teal:    #40998c;
+  --teal-hi: #5ecfbe;
+  --mist:    #6b8480;
+  --rule:    rgba(255,255,255,0.055);
+  --off:     #edf2f0;
+  --ease:    cubic-bezier(0.16,1,0.3,1);
+}
+
+html{scroll-behavior:auto;}
+body{
+  background:var(--ink);color:var(--off);
+  font-family:'Epilogue',sans-serif;font-weight:300;
+  cursor:none;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+
+/* CURSOR */
+#c{position:fixed;width:10px;height:10px;border-radius:50%;background:var(--teal-hi);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s var(--ease),height .2s var(--ease);}
+#cr{position:fixed;width:44px;height:44px;border:1px solid rgba(94,207,190,0.35);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .5s var(--ease),height .5s var(--ease),border-color .3s;}
+body.on #c{width:6px;height:6px;}
+body.on #cr{width:64px;height:64px;border-color:var(--teal-hi);}
+
+/* GRAIN */
+#g{position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;z-index:9990;opacity:.028;
+background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+animation:gr .45s steps(2) infinite;}
+@keyframes gr{0%,100%{transform:translate(0,0)}20%{transform:translate(-2%,-2%)}50%{transform:translate(2%,1%)}80%{transform:translate(-1%,3%)}}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:28px 48px;
+  transition:background .5s,backdrop-filter .5s;
+}
+nav.past{background:rgba(6,7,7,0.8);backdrop-filter:blur(24px);border-bottom:1px solid var(--rule);}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.12em;color:var(--off);text-decoration:none;cursor:none;opacity:0;animation:fd 1s var(--ease) .1s forwards;}
+.logo span{color:var(--teal-hi);}
+.nav-center{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:40px;opacity:0;animation:fd 1s var(--ease) .2s forwards;}
+.nav-center a{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--mist);text-decoration:none;transition:color .25s;cursor:none;}
+.nav-center a:hover{color:var(--off);}
+.nav-avail{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-hi);opacity:0;animation:fd 1s var(--ease) .3s forwards;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--teal-hi);animation:pulse 2.5s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+
+/* HERO */
+.hero{height:100vh;min-height:680px;display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden;}
+
+.hero-l{
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 48px 80px;background:var(--ink);position:relative;z-index:2;
+}
+.hero-l::before{content:'';position:absolute;left:0;top:15%;bottom:15%;width:2px;background:linear-gradient(to bottom,transparent,var(--teal),transparent);}
+
+.hero-eyebrow{display:flex;align-items:center;gap:12px;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-hi);margin-bottom:24px;opacity:0;animation:fu 1s var(--ease) .35s forwards;}
+.hero-eyebrow i{width:20px;height:1px;background:var(--teal-hi);display:block;}
+
+h1.hero-h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(72px,9vw,128px);
+  line-height:.95;letter-spacing:.03em;
+  opacity:0;animation:fu 1.1s var(--ease) .5s forwards;
+}
+h1.hero-h1 .t{color:var(--teal-hi);}
+h1.hero-h1 .ghost{color:transparent;-webkit-text-stroke:1px rgba(255,255,255,0.18);}
+
+.hero-sub{margin-top:28px;font-size:13px;line-height:1.85;color:var(--mist);max-width:340px;letter-spacing:.02em;opacity:0;animation:fu 1.1s var(--ease) .65s forwards;}
+
+.hero-btns{display:flex;gap:12px;margin-top:44px;opacity:0;animation:fu 1.1s var(--ease) .8s forwards;}
+.btn-fill{font-family:'Epilogue',sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--ink);background:var(--teal-hi);padding:14px 30px;text-decoration:none;cursor:none;transition:background .25s,transform .3s var(--ease);border:1px solid var(--teal-hi);}
+.btn-fill:hover{background:#7edfd2;transform:translateY(-2px);}
+.btn-ghost{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--off);border:1px solid var(--rule);padding:14px 30px;text-decoration:none;cursor:none;transition:border-color .25s,transform .3s var(--ease);}
+.btn-ghost:hover{border-color:rgba(255,255,255,0.22);transform:translateY(-2px);}
+
+/* hero right — featured image */
+.hero-r{position:relative;overflow:hidden;background:var(--s1);}
+.hero-r img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:.65;transition:opacity .6s,transform 1.2s var(--ease);
+}
+.hero-r:hover img{opacity:.8;transform:scale(1.04);}
+.hero-r-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(6,7,7,.92) 0%,rgba(6,7,7,.05) 55%);}
+.hero-big-num{position:absolute;bottom:-24px;right:-8px;font-family:'Bebas Neue',sans-serif;font-size:clamp(180px,22vw,280px);color:transparent;-webkit-text-stroke:1px rgba(94,207,190,0.1);line-height:1;pointer-events:none;user-select:none;opacity:0;animation:fi 1.5s ease .9s forwards;}
+.hero-feat-label{position:absolute;bottom:80px;left:40px;opacity:0;animation:fu 1s var(--ease) 1s forwards;}
+.feat-tag{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--teal-hi);margin-bottom:8px;}
+.feat-name{font-family:'Epilogue',sans-serif;font-size:22px;font-weight:200;letter-spacing:-.01em;color:var(--off);}
+
+.scroll-tick{position:absolute;bottom:80px;right:48px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:3;opacity:0;animation:fi 1s ease 1.2s forwards;}
+.scroll-tick span{writing-mode:vertical-rl;font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--mist);}
+.scroll-tick-line{width:1px;height:52px;background:linear-gradient(to bottom,var(--mist),transparent);animation:sd 2s ease infinite;}
+@keyframes sd{0%,100%{transform:scaleY(1);opacity:.5}50%{transform:scaleY(.55);opacity:1}}
+
+/* TICKER */
+.ticker{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);overflow:hidden;padding:15px 0;background:var(--s1);}
+.t-track{display:flex;width:max-content;animation:tick 26s linear infinite;}
+.t-item{display:flex;align-items:center;gap:24px;padding:0 32px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mist);white-space:nowrap;}
+.t-dot{width:3px;height:3px;border-radius:50%;background:var(--teal);flex-shrink:0;}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* WORK */
+.work{padding:100px 48px 72px;}
+.work-header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom:56px;}
+.work-kicker{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;display:flex;align-items:center;gap:12px;}
+.work-kicker::before{content:'';width:18px;height:1px;background:var(--teal);}
+.work-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,5vw,60px);letter-spacing:.04em;line-height:1;}
+.work-title .t{color:var(--teal-hi);}
+.work-count{font-family:'Bebas Neue',sans-serif;font-size:100px;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,0.07);line-height:1;}
+
+/* PROJECT GRID — 3 real projects */
+.pgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;}
+.pc{position:relative;overflow:hidden;cursor:none;}
+.pc-a{grid-column:span 5;aspect-ratio:3/4;}
+.pc-b{grid-column:span 7;aspect-ratio:16/10;}
+.pc-c{grid-column:span 12;aspect-ratio:21/9;}
+
+.pc img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform 1.2s var(--ease);
+}
+.pc:hover img{transform:scale(1.05);}
+
+.pc-info{
+  position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(6,7,7,.96) 0%,rgba(6,7,7,.2) 55%,transparent 100%);
+  opacity:0;transition:opacity .45s ease;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:28px 30px;
+}
+.pc:hover .pc-info{opacity:1;}
+.pc-idx{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--teal-hi);margin-bottom:6px;transform:translateY(8px);transition:transform .5s var(--ease) .03s;}
+.pc:hover .pc-idx{transform:translateY(0);}
+.pc-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.05em;margin-bottom:8px;transform:translateY(10px);transition:transform .5s var(--ease) .06s;}
+.pc:hover .pc-name{transform:translateY(0);}
+.pc-desc{font-size:12px;line-height:1.65;color:var(--mist);max-width:520px;transform:translateY(10px);transition:transform .5s var(--ease) .09s;margin-bottom:12px;}
+.pc:hover .pc-desc{transform:translateY(0);}
+.pc-chips{display:flex;gap:6px;flex-wrap:wrap;transform:translateY(10px);transition:transform .5s var(--ease) .12s;}
+.pc:hover .pc-chips{transform:translateY(0);}
+.chip{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--mist);border:1px solid rgba(255,255,255,0.1);padding:4px 10px;}
+.pc-arrow{position:absolute;top:22px;right:22px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0;transform:scale(.6) rotate(-30deg);transition:all .4s var(--ease);}
+.pc:hover .pc-arrow{opacity:1;transform:scale(1) rotate(0);}
+
+/* STATEMENT */
+.statement{padding:0 48px;margin:3px 0;background:var(--s2);display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);}
+.stmt-l{padding:80px 60px 80px 0;border-right:1px solid var(--rule);}
+.stmt-r{padding:80px 0 80px 60px;display:flex;flex-direction:column;justify-content:space-between;}
+.stmt-label{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--teal);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.stmt-label::before{content:'';width:16px;height:1px;background:var(--teal);}
+.stmt-quote{font-family:'Bebas Neue',sans-serif;font-size:clamp(38px,4.5vw,56px);letter-spacing:.03em;line-height:1.08;color:var(--off);}
+.stmt-quote .t{color:var(--teal-hi);}
+.stmt-body{font-size:13px;line-height:1.9;color:var(--mist);max-width:420px;}
+.stmt-body + .stmt-body{margin-top:16px;}
+.stmt-body strong{color:var(--off);font-weight:400;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:48px;}
+.s-val{font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:.02em;color:var(--teal-hi);line-height:1;}
+.s-key{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--mist);margin-top:4px;}
+
+/* PROCESS */
+.process{padding:80px 48px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--rule);}
+.proc-item{padding:0 40px 0 0;border-right:1px solid var(--rule);}
+.proc-item:last-child{border-right:none;padding-right:0;padding-left:40px;}
+.proc-item:not(:first-child){padding-left:40px;}
+.proc-num{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--teal-hi);opacity:.35;line-height:1;margin-bottom:16px;}
+.proc-name{font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--off);margin-bottom:10px;}
+.proc-desc{font-size:12px;line-height:1.75;color:var(--mist);}
+
+/* CONTACT */
+.contact{padding:140px 48px;display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden;}
+.contact::before{content:'';position:absolute;top:50%;left:30%;transform:translate(-50%,-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(64,153,140,0.09) 0%,transparent 70%);pointer-events:none;}
+.contact-l{display:flex;flex-direction:column;justify-content:center;gap:24px;padding-right:80px;border-right:1px solid var(--rule);}
+.contact-kicker{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--teal);}
+.contact-h{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,7vw,88px);letter-spacing:.03em;line-height:.95;}
+.contact-h .t{color:var(--teal-hi);}
+.contact-sub{font-size:13px;color:var(--mist);line-height:1.8;max-width:340px;}
+.contact-r{display:flex;flex-direction:column;justify-content:center;padding-left:80px;gap:32px;}
+.contact-email-link{font-family:'Epilogue',sans-serif;font-size:clamp(16px,2vw,22px);font-weight:200;letter-spacing:-.01em;color:var(--off);text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.12);padding-bottom:12px;transition:color .3s,border-color .3s;cursor:none;display:inline-block;}
+.contact-email-link:hover{color:var(--teal-hi);border-color:var(--teal-hi);}
+.contact-socials{display:flex;gap:20px;}
+.soc{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mist);text-decoration:none;cursor:none;transition:color .25s;padding-bottom:2px;border-bottom:1px solid transparent;}
+.soc:hover{color:var(--teal-hi);border-color:var(--teal-hi);}
+
+/* FOOTER */
+footer{padding:24px 48px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
+.f-logo{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.1em;color:var(--mist);}
+.f-logo span{color:var(--teal-hi);}
+.f-copy{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.15);}
+
+/* ANIMATIONS */
+@keyframes fu{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fd{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fi{from{opacity:0;}to{opacity:1;}}
+.rev{opacity:0;transform:translateY(26px);transition:opacity .9s var(--ease),transform .9s var(--ease);}
+.rev.in{opacity:1;transform:translateY(0);}
+.d1{transition-delay:.1s;}.d2{transition-delay:.22s;}.d3{transition-delay:.36s;}.d4{transition-delay:.5s;}
+</style>
+</head>
+<body>
+
+<div id="c"></div>
+<div id="cr"></div>
+<div id="g"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="logo lnk">Kieran <span>Green</span></a>
+  <div class="nav-center">
+    <a href="#work" class="lnk">Work</a>
+    <a href="#about" class="lnk">About</a>
+    <a href="#contact" class="lnk">Contact</a>
+  </div>
+  <div class="nav-avail"><div class="dot"></div>Available for work</div>
+</nav>
+
+<!-- HERO — features the 3D Printed Car as the hero image -->
+<section class="hero">
+  <div class="hero-l">
+    <div class="hero-eyebrow"><i></i>Industrial Designer</div>
+    <h1 class="hero-h1">
+      FORM<br>FINDS<br><span class="t">PURPOSE</span><br><span class="ghost">HERE</span>
+    </h1>
+    <p class="hero-sub">CAD modeling, form development, and product visualization — from first sketch to object you can hold in your hand.</p>
+    <div class="hero-btns">
+      <a href="#work" class="btn-fill lnk">View Projects →</a>
+      <a href="#contact" class="btn-ghost lnk">Let's Talk</a>
+    </div>
+  </div>
+  <div class="hero-r">
+    <img
+      src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2"
+      alt="3D Printed Mini Clubman"
+    >
+    <div class="hero-r-overlay"></div>
+    <div class="hero-big-num">01</div>
+    <div class="hero-feat-label">
+      <div class="feat-tag">Featured Project</div>
+      <div class="feat-name">3D Printed Car — 2025</div>
+    </div>
+  </div>
+  <div class="scroll-tick"><span>Scroll</span><div class="scroll-tick-line"></div></div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="t-track">
+    <div class="t-item"><span class="t-dot"></span>Rhino 3D</div>
+    <div class="t-item"><span class="t-dot"></span>Keyshot</div>
+    <div class="t-item"><span class="t-dot"></span>FDM Prototyping</div>
+    <div class="t-item"><span class="t-dot"></span>Surface Modeling</div>
+    <div class="t-item"><span class="t-dot"></span>Form Development</div>
+    <div class="t-item"><span class="t-dot"></span>Product Visualization</div>
+    <div class="t-item"><span class="t-dot"></span>Premiere Pro</div>
+    <div class="t-item"><span class="t-dot"></span>CAD Modeling</div>
+    <div class="t-item"><span class="t-dot"></span>Rhino 3D</div>
+    <div class="t-item"><span class="t-dot"></span>Keyshot</div>
+    <div class="t-item"><span class="t-dot"></span>FDM Prototyping</div>
+    <div class="t-item"><span class="t-dot"></span>Surface Modeling</div>
+    <div class="t-item"><span class="t-dot"></span>Form Development</div>
+    <div class="t-item"><span class="t-dot"></span>Product Visualization</div>
+    <div class="t-item"><span class="t-dot"></span>Premiere Pro</div>
+    <div class="t-item"><span class="t-dot"></span>CAD Modeling</div>
+  </div>
+</div>
+
+<!-- WORK -->
+<section class="work" id="work">
+  <div class="work-header rev">
+    <div>
+      <p class="work-kicker">Selected Projects</p>
+      <h2 class="work-title">THE <span class="t">WORK</span></h2>
+    </div>
+    <div class="work-count">03</div>
+  </div>
+
+  <div class="pgrid">
+
+    <!-- 3D Printed Car -->
+    <a href="https://kierangreen.myportfolio.com/rhino-skills" target="_blank" class="pc pc-a lnk rev d1" style="text-decoration:none;color:inherit;">
+      <img
+        src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2"
+        alt="3D Printed Car"
+      >
+      <div class="pc-info">
+        <div class="pc-idx">01 — 2025</div>
+        <div class="pc-name">3D Printed Car</div>
+        <div class="pc-desc">Surface modeled my personal Mini Clubman in Rhino 3D, then brought it to life as an FDM print.</div>
+        <div class="pc-chips">
+          <span class="chip">Rhino 3D</span>
+          <span class="chip">FDM Print</span>
+          <span class="chip">Surface Modeling</span>
+        </div>
+      </div>
+      <div class="pc-arrow">↗</div>
+    </a>
+
+    <!-- Sabretta Pen -->
+    <a href="https://kierangreen.myportfolio.com/sabretta-pen" target="_blank" class="pc pc-b lnk rev d2" style="text-decoration:none;color:inherit;">
+      <img
+        src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d3e27f8b-1d6e-4cfd-be03-42d5eeddea84_rwc_0x160x719x957x32.png?h=6462c877d968cef5bdd0216d0ce42b6d"
+        alt="Sabretta Pen"
+      >
+      <div class="pc-info">
+        <div class="pc-idx">02 — 2025</div>
+        <div class="pc-name">Sabretta Pen</div>
+        <div class="pc-desc">What if a ballpoint pen could be sexy? Form inspired by the flowing fenders of 1930s roadsters like the Delahaye 165. Animated in Keyshot, cut in Premiere.</div>
+        <div class="pc-chips">
+          <span class="chip">Rhino 3D</span>
+          <span class="chip">Keyshot</span>
+          <span class="chip">Premiere Pro</span>
+        </div>
+      </div>
+      <div class="pc-arrow">↗</div>
+    </a>
+
+    <!-- Poul Henningsen Lamp -->
+    <a href="https://kierangreen.myportfolio.com/poul-henningsen-lamp" target="_blank" class="pc pc-c lnk rev d3" style="text-decoration:none;color:inherit;">
+      <img
+        src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d674bd55-ac5f-465a-b2de-d8afe9c732a0_rwc_383x242x1005x1339x32.png?h=ff2f4c332ac075fa1aacce5aa24c7e38"
+        alt="Poul Henningsen Lamp"
+        style="object-position:center 30%;"
+      >
+      <div class="pc-info">
+        <div class="pc-idx">03 — 2025</div>
+        <div class="pc-name">Poul Henningsen Lamp</div>
+        <div class="pc-chips">
+          <span class="chip">Rhino 3D</span>
+          <span class="chip">CAD Modeling</span>
+        </div>
+      </div>
+      <div class="pc-arrow">↗</div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ABOUT / STATEMENT -->
+<section class="statement" id="about">
+  <div class="stmt-l rev">
+    <p class="stmt-label">Philosophy</p>
+    <h2 class="stmt-quote">THERE IS NOTHING <span class="t">COOLER</span> THAN HOLDING SOMETHING YOU MADE.</h2>
+  </div>
+  <div class="stmt-r rev d1">
+    <div>
+      <p class="stmt-body">I'm an industrial designer driven by one obsession: the moment an object lands in your hand and just <strong>feels right</strong>. That's not luck — it's geometry, material, and intention working together invisibly.</p>
+      <p class="stmt-body">I work in Rhino 3D and Keyshot, building forms that are as rigorous under the hood as they look on the surface. My Mini Clubman project taught me that a closed mesh matters more than perfect detail — <strong>real objects have constraints.</strong></p>
+      <p class="stmt-body">Currently studying Industrial Design, pushing every project toward something that could actually be made, held, and used.</p>
+    </div>
+    <div class="stats-row">
+      <div><div class="s-val">6+</div><div class="s-key">Projects</div></div>
+      <div><div class="s-val">2025</div><div class="s-key">Current</div></div>
+      <div><div class="s-val">∞</div><div class="s-key">Iterations</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process">
+  <div class="proc-item rev">
+    <div class="proc-num">01</div>
+    <div class="proc-name">Concept</div>
+    <p class="proc-desc">Every project starts with a question. What should this feel like? What already exists, and why does it fall short?</p>
+  </div>
+  <div class="proc-item rev d1">
+    <div class="proc-num">02</div>
+    <div class="proc-name">Form</div>
+    <p class="proc-desc">Sketches, foam, iteration. Finding the silhouette that feels inevitable — inspired by cars, nature, history.</p>
+  </div>
+  <div class="proc-item rev d2">
+    <div class="proc-num">03</div>
+    <div class="proc-name">Model</div>
+    <p class="proc-desc">Rhino 3D for precision surface modeling. Building geometry that's beautiful and manufacturable.</p>
+  </div>
+  <div class="proc-item rev d3">
+    <div class="proc-num">04</div>
+    <div class="proc-name">Realize</div>
+    <p class="proc-desc">Keyshot for cinematic renders and animation. FDM printing to hold it in your hands. Premiere Pro to tell the story.</p>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact" id="contact">
+  <div class="contact-l rev">
+    <p class="contact-kicker">Get in touch</p>
+    <h2 class="contact-h">LET'S<br><span class="t">BUILD</span><br>SOMETHING.</h2>
+    <p class="contact-sub">Open to internships, collaborations, and freelance projects. Always interested in interesting problems.</p>
+  </div>
+  <div class="contact-r rev d1">
+    <div>
+      <p style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--mist);margin-bottom:16px;">Email</p>
+      <a href="https://kierangreen.myportfolio.com/contact" target="_blank" class="contact-email-link lnk">Contact via Portfolio →</a>
+    </div>
+    <div>
+      <p style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--mist);margin-bottom:16px;">Work</p>
+      <div class="contact-socials">
+        <a href="https://kierangreen.myportfolio.com" target="_blank" class="soc lnk">Portfolio</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="f-logo">Kieran <span>Green</span></div>
+  <div class="f-copy">© 2025 — All rights reserved</div>
+</footer>
+
+<script>
+const C=document.getElementById('c'),CR=document.getElementById('cr');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;C.style.left=mx+'px';C.style.top=my+'px';});
+(function L(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;CR.style.left=rx+'px';CR.style.top=ry+'px';requestAnimationFrame(L);})();
+document.querySelectorAll('.lnk,a,button').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('on'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('on'));
+});
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>nav.classList.toggle('past',scrollY>50));
+const io=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{threshold:.1});
+document.querySelectorAll('.rev').forEach(r=>io.observe(r));
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+  e.preventDefault();const t=document.querySelector(a.getAttribute('href'));
+  if(t)t.scrollIntoView({behavior:'smooth'});
+}));
+</script>
+</body>
+</html>
