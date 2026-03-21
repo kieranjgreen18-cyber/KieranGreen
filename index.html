@@ -55,14 +55,14 @@ body.ready{opacity:1;transition:opacity .5s ease;}
   position:fixed;z-index:9999;pointer-events:none;
   width:8px;height:8px;border-radius:50%;
   background:var(--sage);
-  trans:translate(-50%,-50%);
+  transform:translate(-50%,-50%);
   mix-blend-mode:difference;
 }
 #cur-r{
   position:fixed;z-index:9998;pointer-events:none;
   width:42px;height:42px;border-radius:50%;
   border:1px solid rgba(91,160,164,.32);
-  trans:translate(-50%,-50%);
+  transform:translate(-50%,-50%);
 }
 
 /* ─── GRAIN ─── */
@@ -72,7 +72,7 @@ body.ready{opacity:1;transition:opacity .5s ease;}
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation:gr .45s steps(2) infinite;
 }
-@keyframes gr{0%,100%{trans:translate(0,0)}33%{trans:translate(-1%,-2%)}66%{trans:translate(1%,1%)}}
+@keyframes gr{0%,100%{transform:translate(0,0)}33%{transform:translate(-1%,-2%)}66%{transform:translate(1%,1%)}}
 
 /* ─── VEIL wipe ─── */
 #veil{
@@ -177,10 +177,13 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 
 /* ─── HERO ─── */
 .hero{
-  position:relative;height:100svh;min-height:600px;
+  position:relative;
+  height:100svh;min-height:600px;
   overflow:hidden;
-  display:grid;
-  grid-template-rows:1fr;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:0 var(--pad);
 }
 .hero-img{
   position:absolute;inset:0;
@@ -197,32 +200,36 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
     linear-gradient(to bottom, rgba(8,9,9,.5) 0%, transparent 18%);
 }
 
-/* eyebrow — sits below nav, clear of headline */
+/* eyebrow — top of the flex column, clears the nav naturally */
 .hero-eyebrow{
-  position:absolute;
-  top:88px;left:var(--pad);
+  position:relative;
+  z-index:2;
+  padding-top:100px;
   font-family:'Barlow Condensed',sans-serif;
   font-size:10px;font-weight:200;letter-spacing:.32em;text-transform:uppercase;
   color:var(--sage);
   display:flex;align-items:center;gap:14px;
-  z-index:3;
   opacity:0;animation:fd .7s var(--ease) .2s forwards;
+  flex-shrink:0;
 }
 .hero-eyebrow-line{
   width:20px;height:1px;background:var(--sage);flex-shrink:0;
 }
 
-/* headline — bottom anchored, sits tight above the description row */
+/* spacer pushes headline to the bottom */
+.hero-spacer{ flex:1; }
+
+/* headline + description — bottom of the flex column */
 .hero-content{
-  position:absolute;
-  bottom:0;left:0;right:0;
+  position:relative;
   z-index:2;
-  padding:0 var(--pad) 48px;
+  padding-bottom:48px;
+  flex-shrink:0;
 }
 
 .hero-h1{
   font-family:'Barlow Condensed',sans-serif;
-  font-size:clamp(72px,13vw,180px);
+  font-size:clamp(64px,12vw,172px);
   font-weight:100;line-height:.88;letter-spacing:-.02em;text-transform:uppercase;
   overflow:hidden;
   margin-bottom:24px;
@@ -234,7 +241,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   animation:slideUp 1s var(--ease) forwards;
 }
 .hero-h1 em{font-style:italic;color:var(--sage);}
-/* stagger each line — tighter, more decisive */
 .hero-h1 .line:nth-child(1) .word{animation-delay:.28s;}
 .hero-h1 .line:nth-child(2) .word{animation-delay:.38s;}
 .hero-h1 .line:nth-child(3) .word{animation-delay:.48s;}
@@ -636,8 +642,8 @@ footer{
   :root{--pad:22px;}
   .n-links,.n-avail{display:none;}
   .n-ham{display:flex;}
-  .hero-eyebrow{top:80px;}
-  .hero-h1{font-size:clamp(72px,16vw,110px);}
+  .hero-eyebrow{padding-top:80px;}
+  .hero-h1{font-size:clamp(56px,14vw,100px);}
   .hero-bottom{flex-direction:column;align-items:flex-start;gap:20px;}
   .hero-scroll-hint{display:none;}
   .proj{height:80svh;}
@@ -697,6 +703,8 @@ footer{
     <span class="hero-eyebrow-line"></span>
     Industrial Designer — 2025
   </div>
+
+  <div class="hero-spacer"></div>
 
   <div class="hero-content">
     <h1 class="hero-h1" id="hero-h1">
@@ -883,83 +891,77 @@ footer{
 </footer>
 
 <script>
-/* ── CURSOR — single source of truth, no competing CSS classes ── */
+/* ── CURSOR — priority stack, no competing states ── */
 const cur  = document.getElementById('cur');
 const curR = document.getElementById('cur-r');
 let mx = window.innerWidth/2, my = window.innerHeight/2;
 let rx = mx, ry = my;
-
-// cursor state: 'default' | 'link' | 'proj' | 'click'
-let curState = 'default';
 let isDown = false;
+// track which context layers are active
+let inLink = false;
+let inProj = false;
 
 const STATES = {
-  default: { dot: 8,   ring: 42,  ringColor: 'rgba(91,160,164,.32)', ringRadius: '50%' },
-  link:    { dot: 5,   ring: 64,  ringColor: 'rgba(91,160,164,.6)',  ringRadius: '50%' },
-  proj:    { dot: 4,   ring: 110, ringColor: 'rgba(91,160,164,.2)',  ringRadius: '50%' },
-  click:   { dot: 12,  ring: 42,  ringColor: 'rgba(91,160,164,.32)', ringRadius: '50%' },
+  default: { dot: 8,   ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
+  link:    { dot: 5,   ring: 64,  ringColor: 'rgba(91,160,164,.6)'  },
+  proj:    { dot: 4,   ring: 110, ringColor: 'rgba(91,160,164,.2)'  },
+  click:   { dot: 12,  ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
 };
 
-// smooth lerp targets for ring size — avoids snapping
 let ringTarget = 42;
 let ringCurrent = 42;
 
-function applyCursorState(state) {
-  const s = STATES[state];
+function getState() {
+  if (isDown) return 'click';
+  if (inLink) return 'link';
+  if (inProj) return 'proj';
+  return 'default';
+}
+
+function applyCursorState() {
+  const s = STATES[getState()];
   cur.style.width  = s.dot + 'px';
   cur.style.height = s.dot + 'px';
   cur.style.transition = 'width .18s cubic-bezier(0.16,1,0.3,1), height .18s cubic-bezier(0.16,1,0.3,1)';
   ringTarget = s.ring;
   curR.style.borderColor = s.ringColor;
-  // note: ring width/height is lerped in JS — no CSS transition needed on those
 }
 
-function updateState() {
-  if (isDown) { applyCursorState('click'); return; }
-  applyCursorState(curState);
-}
-
-// track position
 document.addEventListener('mousemove', e => {
   mx = e.clientX; my = e.clientY;
   cur.style.left = mx + 'px'; cur.style.top = my + 'px';
 });
 
-// lag ring position + lerp ring size in one loop
 (function loop(){
   rx += (mx - rx) * .1;
   ry += (my - ry) * .1;
   curR.style.left = rx + 'px';
   curR.style.top  = ry + 'px';
-  // lerp ring size for buttery scaling
   ringCurrent += (ringTarget - ringCurrent) * 0.12;
   curR.style.width  = ringCurrent + 'px';
   curR.style.height = ringCurrent + 'px';
   requestAnimationFrame(loop);
 })();
 
-// link hover
+// links / buttons — highest priority
 document.querySelectorAll('a, button, .n-ham').forEach(el => {
-  el.addEventListener('mouseenter', () => { curState = 'link';    updateState(); });
-  el.addEventListener('mouseleave', () => { curState = 'default'; updateState(); });
+  el.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
+  el.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
 });
 
-// project hover (lower priority than link, higher than default)
+// project panels — medium priority
 document.querySelectorAll('.proj').forEach(el => {
-  el.addEventListener('mouseenter', () => { if (curState !== 'link') { curState = 'proj'; updateState(); } });
-  el.addEventListener('mouseleave', () => { if (curState === 'proj') { curState = 'default'; updateState(); } });
+  el.addEventListener('mouseenter', () => { inProj = true;  applyCursorState(); });
+  el.addEventListener('mouseleave', () => { inProj = false; applyCursorState(); });
 });
 
-// click
-document.addEventListener('mousedown', () => { isDown = true;  updateState(); });
-document.addEventListener('mouseup',   () => { isDown = false; updateState(); });
+document.addEventListener('mousedown', () => { isDown = true;  applyCursorState(); });
+document.addEventListener('mouseup',   () => { isDown = false; applyCursorState(); });
 
-// hide when leaving window
 document.addEventListener('mouseleave', () => { cur.style.opacity = '0'; curR.style.opacity = '0'; });
 document.addEventListener('mouseenter', () => { cur.style.opacity = '1'; curR.style.opacity = '1'; });
 
-// init
-applyCursorState('default');
+applyCursorState();
 
 /* ── SMOOTH SCROLL — exponential ease-out, Lenis-style ── */
 const smoother = (() => {
