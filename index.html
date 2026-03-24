@@ -8,19 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100;1,200;1,300&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet">
 <style>
-/* ── FONT FALLBACK — keeps layout stable if Google Fonts is slow/blocked ── */
-@font-face {
-  font-family: 'Barlow Condensed';
-  src: local('Arial Narrow'), local('Impact'), local('sans-serif-condensed');
-  font-weight: 100 400;
-  font-style: normal;
-  size-adjust: 92%;
-  ascent-override: 95%;
-  descent-override: 20%;
-}
-</style>
-
-<style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
 :root{
@@ -44,9 +31,10 @@ body{
   cursor:none;
   overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
   opacity:0;
 }
-body.ready{opacity:1;transition:opacity .5s ease;}
+body.ready{opacity:1;transition:opacity .75s ease;}
 
 /* ─── FOCUS VISIBLE — keyboard nav ─── */
 :focus{outline:none;}
@@ -70,7 +58,8 @@ body.ready{opacity:1;transition:opacity .5s ease;}
   position:fixed;inset:-50%;width:200%;height:200%;
   pointer-events:none;z-index:9990;opacity:.026;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation:gr .45s steps(2) infinite;
+  animation:gr .9s steps(2) infinite;
+  contain:strict;
 }
 @keyframes gr{0%,100%{transform:translate(0,0)}33%{transform:translate(-1%,-2%)}66%{transform:translate(1%,1%)}}
 
@@ -402,7 +391,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   opacity:0;
   transition:opacity .45s var(--ease),border-color .25s,background .25s,color .25s;
   cursor:none;
-  will-change:transform;
 }
 .proj:nth-child(odd) .proj-open{right:var(--pad);}
 .proj:nth-child(even) .proj-open{left:var(--pad);}
@@ -987,9 +975,12 @@ const smoother = (() => {
 
   window.addEventListener('wheel', e => {
     e.preventDefault();
+    const delta = e.deltaMode === 1 ? e.deltaY * 32
+                : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+                : e.deltaY;
     target = Math.max(0, Math.min(
       document.body.scrollHeight - window.innerHeight,
-      target + e.deltaY * (e.deltaMode === 1 ? 28 : 1)
+      target + delta
     ));
     if (!ticking) { ticking = true; requestAnimationFrame(tick); }
   }, { passive: false });
@@ -1086,9 +1077,9 @@ smoother.on(y => {
 /* PAGE TRANSITIONS */
 const veil = document.getElementById('veil');
 function navigateTo(href) {
-  veil.style.transition = 'clip-path .55s cubic-bezier(0.77,0,0.18,1)';
+  veil.style.transition = 'clip-path .5s cubic-bezier(0.77,0,0.18,1)';
   veil.style.clipPath = 'inset(0 0% 0 0)';
-  setTimeout(() => { window.location.href = href; }, 570);
+  setTimeout(() => { window.location.href = href; }, 520);
 }
 window.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => document.querySelector('.hero').classList.add('loaded'), 100);
