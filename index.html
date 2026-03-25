@@ -746,11 +746,6 @@ footer{
   <div class="hero-img" id="hero-img"></div>
   <div class="hero-veil"></div>
 
-  <div class="hero-eyebrow">
-    <span class="hero-eyebrow-line"></span>
-    Industrial Designer — 2025
-  </div>
-
   <div class="hero-spacer"></div>
 
   <div class="hero-content">
@@ -1241,39 +1236,6 @@ window.addEventListener('resize', () => {
     }
   }, 150);
 }, { passive: true });
-
-/* ── TEXT SCRAMBLE ── */
-const eyebrow = document.querySelector('.hero-eyebrow');
-const eyebrowFinal = 'Industrial Designer — 2025';
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789—·';
-
-let eyebrowTextNode = null;
-eyebrow.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) eyebrowTextNode = n; });
-if (!eyebrowTextNode) {
-  eyebrowTextNode = document.createTextNode(' ' + eyebrowFinal);
-  eyebrow.appendChild(eyebrowTextNode);
-} else {
-  eyebrowTextNode.textContent = ' ' + eyebrowFinal;
-}
-
-function scramble(textNode, final, delay) {
-  setTimeout(() => {
-    let iteration = 0;
-    const interval = setInterval(() => {
-      textNode.textContent = ' ' + final.split('').map((char, i) => {
-        if (i < iteration) return char;
-        if (char === ' ') return ' ';
-        return chars[Math.floor(Math.random() * chars.length)];
-      }).join('');
-      if (iteration >= final.length) {
-        clearInterval(interval);
-        textNode.textContent = ' ' + final;
-      }
-      iteration += 0.6;
-    }, 28);
-  }, delay);
-}
-scramble(eyebrowTextNode, eyebrowFinal, 400);
 
 /* ── ABOUT: pop-word reveal ── */
 const aboutSection = document.querySelector('.about');
