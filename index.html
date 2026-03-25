@@ -215,7 +215,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .hero-img{
   position:absolute;inset:0;
-  background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png');
+  background-color:#1a1410;
   background-size:cover;background-position:center 20%;
   transform:scale(1.07);transition:transform 9s ease;
   will-change:transform;
@@ -635,6 +635,14 @@ footer{
 [data-theme="light"] nav{
   background:linear-gradient(to bottom, rgba(237,238,237,.72) 0%, transparent 100%);
 }
+@media(max-width:768px){
+  [data-theme="light"] nav{
+    background:linear-gradient(to bottom, rgba(237,238,237,.95) 0%, rgba(237,238,237,.75) 60%, transparent 100%);
+  }
+  [data-theme="light"] nav.scrolled{
+    background:rgba(237,238,237,.95);
+  }
+}
 [data-theme="light"] nav.scrolled{
   background:rgba(237,238,237,.9);
 }
@@ -667,6 +675,13 @@ footer{
 
 @media(max-width:768px){
   :root{--pad:var(--s3);}
+  nav{
+    background:linear-gradient(to bottom, rgba(8,9,9,.92) 0%, rgba(8,9,9,.70) 60%, transparent 100%);
+    padding-bottom:var(--s3);
+  }
+  nav.scrolled{
+    background:rgba(8,9,9,.92);
+  }
   .n-links,.n-avail{display:none;}
   .n-ham{display:flex;}
   .hero-eyebrow{padding-top:var(--s8);}
@@ -722,7 +737,7 @@ footer{
   </div>
   <div class="n-right">
     <div class="n-avail"><div class="n-avail-dot"></div>Available</div>
-    <button class="n-theme" id="theme-btn" aria-label="Toggle theme"><span aria-hidden="true">☀</span></button>
+    <button class="n-theme" id="theme-btn" aria-label="Toggle theme"><svg id="theme-icon" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
     <button class="n-ham" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer"><span></span><span></span><span></span></button>
   </div>
 </nav>
@@ -923,6 +938,21 @@ footer{
 </footer>
 
 <script>
+/* ── HERO IMAGE LOADER ── */
+(function() {
+  const HERO_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png';
+  const heroEl = document.getElementById('hero-img');
+  if (!heroEl) return;
+  const img = new Image();
+  img.onload = function() {
+    heroEl.style.backgroundImage = "url('" + HERO_URL + "')";
+  };
+  img.onerror = function() {
+    /* image failed — hero-img stays with the fallback background-color */
+  };
+  img.src = HERO_URL;
+})();
+
 /* ── CURSOR ── */
 const cur  = document.getElementById('cur');
 const curR = document.getElementById('cur-r');
@@ -1152,12 +1182,15 @@ document.addEventListener('click', e => {
 });
 
 /* ── THEME ── */
+const SVG_SUN  = '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+const SVG_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 let theme = 'dark';
 function setTheme(t) {
   theme = t;
   document.documentElement.setAttribute('data-theme', t);
   const btn = document.getElementById('theme-btn');
-  btn.querySelector('span').textContent = t === 'dark' ? '☀' : '☽';
+  const icon = btn.querySelector('svg');
+  if (icon) icon.innerHTML = t === 'dark' ? SVG_SUN : SVG_MOON;
   btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
   try { localStorage.setItem('theme', t); } catch(e) {}
 }
