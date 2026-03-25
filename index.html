@@ -8,16 +8,16 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Kieran Green — Industrial Designer">
 <meta property="og:description" content="CAD modeling, form development, and product visualization — from first sketch to something you can hold.">
-<meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
+<meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
 <meta property="og:url" content="https://kieranjgreen18-cyber.github.io/KieranGreen/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Kieran Green — Industrial Designer">
 <meta name="twitter:description" content="CAD modeling, form development, and product visualization — from first sketch to something you can hold.">
-<meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
+<meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
+<link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet"></noscript>
 <style>
@@ -920,6 +920,7 @@ footer{
       <div class="c-field">
         <p class="c-field-label">Elsewhere</p>
         <div class="c-row">
+          <a href="https://kierangreen.myportfolio.com" target="_blank" class="c-soc">Portfolio</a>
           <a href="protected.html" class="c-soc">Protected Work</a>
         </div>
       </div>
@@ -939,7 +940,7 @@ footer{
 <script>
 /* ── HERO IMAGE LOADER ── */
 (function() {
-  const HERO_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png';
+  const HERO_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png';
   const heroEl = document.getElementById('hero-img');
   if (!heroEl) return;
   const img = new Image();
@@ -1125,9 +1126,12 @@ function updateIndicator(y) {
 }
 
 smoother.on(y => {
-  if (y === lastY) return;
-  if (heroImg && y < window.innerHeight)
-    heroImg.style.transform = `scale(1.05) translateY(${y * .22}px)`;
+  if (heroImg) {
+    if (y <= window.innerHeight)
+      heroImg.style.transform = `scale(1.05) translateY(${y * .22}px)`;
+    else if (lastY <= window.innerHeight)
+      heroImg.style.transform = '';
+  }
   navEl.classList.toggle('scrolled', y > 60);
   track.style.animationDirection = y > lastY ? 'normal' : 'reverse';
   lastY = y;
