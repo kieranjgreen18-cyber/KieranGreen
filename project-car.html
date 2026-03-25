@@ -1,309 +1,596 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3D Printed Car — Kieran Green</title>
+<meta name="description" content="Surface modeling a Mini Clubman in Rhino 3D and 3D printing it in FDM plastic. A study in constraints, closed surfaces, and the satisfaction of holding something you made.">
+<meta property="og:title" content="3D Printed Car — Kieran Green">
+<meta property="og:description" content="Surface modeling a Mini Clubman in Rhino 3D, then printing it in FDM plastic.">
+<meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100;0,200;0,300;0,400;0,500;1,200;1,300&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet"></noscript>
 <style>
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-:root {
-  --ink:#080909;--surface:#0d1312;--teal:#3d9185;--hi:#52c4b4;
-  --mist:#6d8884;--warm:#b2c8c5;--off:#ecf0ef;--rule:rgba(255,255,255,0.06);
-  --sp-1:8px;--sp-2:16px;--sp-3:24px;--sp-4:32px;
-  --sp-5:48px;--sp-6:64px;--sp-7:96px;--sp-8:128px;
-  --pad:52px;--font:'Jost',sans-serif;
-  --ease:cubic-bezier(0.16,1,0.3,1);
-}
-[data-theme="light"]{--ink:#f4f6f5;--surface:#e8edec;--mist:#7a9490;--warm:#4a6460;--off:#141a19;--rule:rgba(0,0,0,0.07);}
-html{scroll-behavior:auto;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
-/* Page starts invisible — JS reveals after load to prevent flash */
+.n-logo,.n-avail,
+.proj-eyebrow,.proj-hero-title,
+.meta-label,.meta-val,
+.copy-section-label,
+.proj-nav-dir,.proj-nav-name,.proj-nav-hint,
+.proj-nav-home-label,
+.chip,
+.f-logo,.f-copy{
+  font-family:'Barlow Condensed',sans-serif;
+}
+
+:root{
+  --sage:   #5ba0a4;
+  --stone:  #96a8aa;
+  --off:    #edeeed;
+  --ink:    #080909;
+  --ink2:   #0f1010;
+  --rule:   rgba(255,255,255,0.055);
+  --ease:   cubic-bezier(0.16,1,0.3,1);
+  --snap:   cubic-bezier(0.77,0,0.18,1);
+  --s1:  8px;
+  --s2:  16px;
+  --s3:  24px;
+  --s4:  32px;
+  --s5:  40px;
+  --s6:  48px;
+  --s7:  64px;
+  --s8:  80px;
+  --s9:  96px;
+  --s10: 120px;
+  --pad: var(--s6);
+  --t-micro:   10px;
+  --t-label:   12px;
+  --t-body:    17px;
+  --t-sub:     15px;
+  --t-title:   clamp(52px,7vw,96px);
+  --t-display: clamp(64px,10vw,140px);
+  --ls-tight: .02em;
+  --ls-mid:   .20em;
+  --ls-wide:  .32em;
+  --lh-display: .90;
+  --lh-text:    1.65;
+  --lh-body:    1.85;
+}
+
+html{scroll-behavior:auto;overflow-x:hidden;}
 body{
-  background:var(--ink);color:var(--off);font-family:var(--font);font-weight:300;
-  cursor:none;overflow-x:hidden;-webkit-font-smoothing:antialiased;
-  transition:background .5s,color .5s;
+  background:var(--ink);
+  color:var(--off);
+  font-family:'Barlow',sans-serif;
+  font-weight:300;
+  cursor:none;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
   opacity:0;
 }
-body.ready{ opacity:1; transition:opacity .45s ease, background .5s, color .5s; }
+body.ready{opacity:1;transition:opacity .65s ease;}
 
-#cur{position:fixed;width:8px;height:8px;border-radius:50%;background:var(--hi);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s var(--ease),height .2s var(--ease);}
-#cur-r{position:fixed;width:36px;height:36px;border:1px solid rgba(82,196,180,.3);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .5s var(--ease),height .5s var(--ease),border-color .3s;}
+:focus{outline:none;}
+:focus-visible{outline:2px solid var(--sage);outline-offset:3px;}
+
+/* ── CURSOR ── */
+#cur{
+  position:fixed;z-index:9999;pointer-events:none;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--sage);
+  transform:translate(-50%,-50%);
+  mix-blend-mode:difference;
+  transition:width .18s var(--ease),height .18s var(--ease);
+}
+#cur-r{
+  position:fixed;z-index:9998;pointer-events:none;
+  width:42px;height:42px;border-radius:50%;
+  border:1px solid rgba(91,160,164,.32);
+  transform:translate(-50%,-50%);
+  transition:width .5s var(--ease),height .5s var(--ease),border-color .3s;
+}
 body.hl #cur{width:5px;height:5px;}
-body.hl #cur-r{width:54px;height:54px;border-color:rgba(82,196,180,.6);}
-#grain{position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;z-index:9990;opacity:.025;
-background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-animation:grain .5s steps(2) infinite;}
-@keyframes grain{0%,100%{transform:translate(0,0)}33%{transform:translate(-1%,-2%)}66%{transform:translate(1%,1%)}}
+body.hl #cur-r{width:64px;height:64px;border-color:rgba(91,160,164,.6);}
 
-/* PAGE WIPE */
-#veil{position:fixed;inset:0;z-index:10000;background:var(--hi);clip-path:inset(0 0% 0 0);transition:clip-path .55s var(--ease);pointer-events:all;}
-#veil.exit{clip-path:inset(0 0 0 100%);pointer-events:none;}
+/* ── GRAIN ── */
+#grain{
+  position:fixed;inset:-50%;width:200%;height:200%;
+  pointer-events:none;z-index:9990;opacity:.026;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:gr .9s steps(2) infinite;
+  contain:strict;
+}
+@keyframes gr{0%,100%{transform:translate(0,0)}33%{transform:translate(-1%,-2%)}66%{transform:translate(1%,1%)}}
 
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:28px var(--pad);transition:background .5s,backdrop-filter .5s;}
-nav::before{content:'';position:absolute;inset:0;bottom:-40px;background:linear-gradient(to bottom,rgba(4,5,5,.92) 0%,rgba(4,5,5,.5) 55%,transparent 100%);pointer-events:none;z-index:-1;transition:opacity .4s;}
-nav.scrolled::before{opacity:0;}
-nav.scrolled{background:rgba(8,9,9,.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--rule);}
-[data-theme="light"] nav.scrolled{background:rgba(244,246,245,.92);}
-.nav-logo{font-size:12px;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:var(--off);text-decoration:none;cursor:none;}
-.nav-logo span{color:var(--hi);font-weight:200;}
+/* ── VEIL ── */
+#veil{
+  position:fixed;inset:0;z-index:10000;
+  background:var(--sage);
+  clip-path:inset(0 0% 0 0);
+  pointer-events:all;
+}
+#veil.gone{
+  clip-path:inset(0 100% 0 0);
+  pointer-events:none;
+  transition:clip-path .75s var(--snap);
+}
 
-/* Back button — prominent, always visible */
-.nav-back{
-  display:flex;align-items:center;gap:10px;
-  font-size:10px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;
+/* ── PROGRESS BAR ── */
+#prog{
+  position:fixed;top:0;left:0;height:2px;
+  background:var(--sage);z-index:9997;width:0%;
+  pointer-events:none;
+  box-shadow:0 0 8px rgba(91,160,164,.6);
+  transition:width .06s linear;
+}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:var(--s3) var(--pad);
+  transition:padding .4s var(--ease),background .45s,backdrop-filter .45s,border-color .45s;
+  background:linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
+}
+nav.scrolled{
+  padding:var(--s2) var(--pad);
+  background:rgba(8,9,9,.88);
+  backdrop-filter:blur(28px) saturate(1.5);
+  border-bottom:1px solid var(--rule);
+}
+.n-logo{
+  font-size:var(--t-label);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
   color:var(--off);text-decoration:none;cursor:none;
-  border:1px solid rgba(255,255,255,.15);
-  padding:9px 18px;
-  transition:color .25s,border-color .25s,background .25s;
+  transition:color .25s;
 }
-.nav-back:hover{color:var(--hi);border-color:var(--hi);}
-.nav-back::before{content:'←';font-size:14px;line-height:1;}
+.n-logo:hover{color:var(--sage);}
+.n-logo em{font-style:normal;color:var(--sage);}
 
-.nav-right{display:flex;align-items:center;gap:16px;}
-.theme-toggle{width:36px;height:20px;border-radius:10px;background:var(--rule);border:1px solid rgba(82,196,180,.2);cursor:none;position:relative;transition:background .4s;flex-shrink:0;}
-.theme-toggle::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--hi);transition:transform .4s var(--ease);}
-[data-theme="light"] .theme-toggle::after{transform:translateX(16px);}
+.nav-right{display:flex;align-items:center;gap:var(--s2);}
 
-/* HERO */
-.proj-hero{height:72vh;min-height:500px;position:relative;overflow:hidden;}
-.proj-hero img{width:100%;height:100%;object-fit:cover;opacity:.6;transform:scale(1.04);transition:transform 5s ease;}
-.proj-hero.loaded img{transform:scale(1);}
-.proj-hero-veil{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(4,5,5,.75) 0%,rgba(8,9,9,.05) 38%,rgba(8,9,9,.96) 100%);}
-.proj-hero-content{position:absolute;bottom:var(--sp-7);left:var(--pad);right:var(--pad);}
-.proj-index{font-size:10px;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--teal);margin-bottom:var(--sp-2);display:flex;align-items:center;gap:12px;}
-.proj-index::before{content:'';width:14px;height:1px;background:var(--teal);}
-.proj-title{font-size:clamp(44px,6vw,84px);font-weight:200;letter-spacing:-.03em;line-height:1.0;margin-bottom:var(--sp-3);}
-.proj-chips{display:flex;gap:6px;flex-wrap:wrap;}
-.chip{font-size:9px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);border:1px solid rgba(255,255,255,.12);padding:5px 11px;}
+/* Back button — styled as a bordered label, matching index vocabulary */
+.nav-back{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-mid);text-transform:uppercase;
+  color:var(--stone);text-decoration:none;cursor:none;
+  border:1px solid var(--rule);
+  padding:var(--s1) var(--s2);
+  display:flex;align-items:center;gap:var(--s1);
+  transition:color .25s,border-color .25s;
+}
+.nav-back:hover{color:var(--sage);border-color:rgba(91,160,164,.4);}
+.nav-back::before{content:'←';font-size:12px;}
 
-/* BODY LAYOUT */
-.proj-body{display:grid;grid-template-columns:1fr 2.5fr;gap:var(--sp-8);padding:var(--sp-8) var(--pad);border-bottom:1px solid var(--rule);}
+.n-theme{
+  width:var(--s4);height:var(--s4);border-radius:50%;
+  border:1px solid var(--rule);background:none;
+  color:var(--stone);cursor:none;
+  display:flex;align-items:center;justify-content:center;font-size:var(--t-label);
+  transition:border-color .25s,color .25s;
+}
+.n-theme:hover{border-color:var(--sage);color:var(--sage);}
 
-/* META COLUMN */
-.proj-meta{display:flex;flex-direction:column;gap:var(--sp-5);}
+/* ── HERO ── */
+.proj-hero{
+  position:relative;
+  height:88vh;min-height:560px;
+  overflow:hidden;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 var(--pad) var(--s9);
+}
+.proj-hero-img{
+  position:absolute;inset:0;
+  background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png');
+  background-size:cover;background-position:center 30%;
+  transform:scale(1.06);transition:transform 8s ease;
+  will-change:transform;
+}
+.proj-hero.loaded .proj-hero-img{transform:scale(1);}
+.proj-hero-veil{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(to top, rgba(8,9,9,.97) 0%, rgba(8,9,9,.55) 30%, rgba(8,9,9,.1) 60%, transparent 100%),
+    linear-gradient(to bottom, rgba(8,9,9,.55) 0%, transparent 20%);
+}
+.proj-hero-content{
+  position:relative;z-index:2;
+}
+.proj-eyebrow{
+  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
+  color:var(--sage);margin-bottom:var(--s3);
+  display:flex;align-items:center;gap:var(--s2);
+  opacity:0;animation:fd .7s var(--ease) .15s forwards;
+}
+.proj-eyebrow::before{content:'';width:var(--s2);height:1px;background:var(--sage);}
+.proj-hero-title{
+  font-size:var(--t-display);
+  font-weight:100;letter-spacing:var(--ls-tight);line-height:var(--lh-display);
+  text-transform:uppercase;
+  margin-bottom:var(--s4);
+  opacity:0;animation:slideUp .9s var(--ease) .25s forwards;
+  overflow:hidden;
+}
+.proj-chips{
+  display:flex;gap:var(--s1);flex-wrap:wrap;
+  opacity:0;animation:fu .7s var(--ease) .55s forwards;
+}
+.chip{
+  font-size:var(--t-micro);font-weight:300;letter-spacing:var(--ls-mid);text-transform:uppercase;
+  color:var(--stone);border:1px solid var(--rule);padding:var(--s1) var(--s2);
+}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fd{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fu{from{opacity:0;transform:translateY(var(--s2))}to{opacity:1;transform:translateY(0)}}
+
+/* ── BODY LAYOUT ── */
+.proj-body{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:var(--s8);
+  padding:var(--s9) var(--pad);
+  border-bottom:1px solid var(--rule);
+  align-items:start;
+}
+
+/* ── META SIDEBAR ── */
+.proj-meta{
+  display:flex;flex-direction:column;gap:var(--s5);
+  position:sticky;top:var(--s9);
+}
 .meta-group{}
-.meta-label{font-size:9px;font-weight:400;letter-spacing:.26em;text-transform:uppercase;color:var(--teal);margin-bottom:var(--sp-2);display:flex;align-items:center;gap:10px;}
-.meta-label::before{content:'';width:12px;height:1px;background:var(--teal);flex-shrink:0;}
-.meta-val{font-size:14px;font-weight:300;color:var(--warm);line-height:1.7;}
-
-/* COPY COLUMN — legible body text */
-.proj-copy{display:flex;flex-direction:column;gap:var(--sp-4);}
-.proj-copy p{font-size:17px;line-height:1.85;color:var(--mist);font-weight:300;letter-spacing:.01em;}
-.proj-copy p strong{color:var(--off);font-weight:400;}
-.proj-copy h3{
-  font-size:10px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--teal);margin-top:var(--sp-3);margin-bottom:calc(-1 * var(--sp-2));
-  display:flex;align-items:center;gap:12px;
+.meta-label{
+  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
+  color:var(--sage);margin-bottom:var(--s1);
+  display:flex;align-items:center;gap:var(--s1);
 }
-.proj-copy h3::before{content:'';width:14px;height:1px;background:var(--teal);}
+.meta-label::before{content:'';width:var(--s2);height:1px;background:var(--sage);flex-shrink:0;}
+.meta-val{
+  font-size:14px;font-weight:300;color:var(--stone);line-height:var(--lh-text);
+  font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em;
+}
 
-/* IMAGE GRID */
-.proj-images{padding:0 var(--pad) var(--sp-8);}
-.img-grid{display:grid;gap:3px;}
-.img-grid.cols-1{grid-template-columns:1fr;}
-.img-grid.cols-2{grid-template-columns:1fr 1fr;}
-.img-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
-.img-grid img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.88);transition:filter .9s ease;}
-.img-grid img:hover{filter:saturate(1.05);}
-.img-tall{aspect-ratio:3/4;}
+/* ── COPY COLUMN ── */
+.proj-copy{
+  display:flex;flex-direction:column;gap:var(--s5);
+}
+.copy-lead{
+  font-size:clamp(20px,2.2vw,26px);
+  font-weight:300;line-height:1.6;
+  color:var(--off);
+  opacity:.88;
+  font-family:'Barlow',sans-serif;
+}
+.proj-copy p{
+  font-size:var(--t-body);line-height:var(--lh-body);color:var(--stone);font-weight:300;
+}
+.proj-copy p strong{color:var(--off);font-weight:400;}
+.copy-section{
+  display:flex;flex-direction:column;gap:var(--s3);
+  padding-top:var(--s4);
+  border-top:1px solid var(--rule);
+}
+.copy-section-label{
+  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
+  color:var(--sage);display:flex;align-items:center;gap:var(--s2);
+}
+.copy-section-label::before{content:'';width:var(--s2);height:1px;background:var(--sage);}
+
+/* ── IMAGE GRID ── */
+.proj-images{
+  padding:0 var(--pad) var(--s9);
+  display:flex;flex-direction:column;gap:3px;
+}
+.img-row{
+  display:grid;gap:3px;
+}
+.img-row.cols-1{grid-template-columns:1fr;}
+.img-row.cols-2{grid-template-columns:1fr 1fr;}
+.img-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.proj-images img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  filter:saturate(.85);transition:filter .9s ease;
+}
+.proj-images img:hover{filter:saturate(1.05);}
 .img-wide{aspect-ratio:16/9;}
+.img-tall{aspect-ratio:3/4;}
 .img-sq{aspect-ratio:1/1;}
+.img-3x2{aspect-ratio:3/2;}
 .img-span2{grid-column:span 2;}
 
-/* PREV / NEXT NAV */
-.proj-nav{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule);}
-.proj-nav-item{
-  padding:var(--sp-6) var(--pad);
-  display:flex;flex-direction:column;gap:var(--sp-2);
-  text-decoration:none;cursor:none;
-  transition:background .3s;
-  position:relative;
-}
-.proj-nav-item:hover{background:var(--surface);}
-.proj-nav-item:first-child{border-right:1px solid var(--rule);}
-.proj-nav-item:last-child{align-items:flex-end;}
-.proj-nav-dir{font-size:9px;font-weight:400;letter-spacing:.26em;text-transform:uppercase;color:var(--teal);}
-.proj-nav-name{font-size:22px;font-weight:200;letter-spacing:-.015em;color:var(--off);}
-.proj-nav-hint{font-size:13px;color:var(--mist);font-weight:300;}
-
-/* also a clear "back to all work" bar above prev/next */
+/* ── PREV / NEXT ── */
 .proj-nav-home{
   display:flex;align-items:center;justify-content:center;
-  padding:var(--sp-4) var(--pad);
+  padding:var(--s4) var(--pad);
   border-top:1px solid var(--rule);
   border-bottom:1px solid var(--rule);
   text-decoration:none;cursor:none;
-  font-size:10px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--mist);
-  gap:10px;
+  gap:var(--s2);
   transition:color .25s,background .25s;
 }
-.proj-nav-home:hover{color:var(--hi);background:var(--surface);}
-.proj-nav-home::before{content:'←';font-size:14px;}
+.proj-nav-home:hover{background:rgba(91,160,164,.04);}
+.proj-nav-home:hover .proj-nav-home-label{color:var(--sage);}
+.proj-nav-home-label{
+  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
+  color:var(--stone);transition:color .25s;
+}
+.proj-nav-home::before{
+  content:'←';font-size:14px;color:var(--stone);
+  transition:color .25s;font-family:'Barlow Condensed',sans-serif;
+}
+.proj-nav-home:hover::before{color:var(--sage);}
 
-/* FOOTER */
-footer{padding:22px var(--pad);border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
-.footer-mark{font-size:11px;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--mist);}
-.footer-mark span{color:var(--hi);font-weight:200;}
-.footer-copy{font-size:9px;font-weight:300;letter-spacing:.18em;text-transform:uppercase;color:rgba(128,180,172,.3);}
+.proj-nav{
+  display:grid;grid-template-columns:1fr 1fr;
+  border-bottom:1px solid var(--rule);
+}
+.proj-nav-item{
+  padding:var(--s6) var(--pad);
+  display:flex;flex-direction:column;gap:var(--s2);
+  text-decoration:none;cursor:none;
+  transition:background .3s;
+}
+.proj-nav-item:hover{background:rgba(91,160,164,.04);}
+.proj-nav-item:first-child{border-right:1px solid var(--rule);}
+.proj-nav-item.right{align-items:flex-end;}
+.proj-nav-dir{
+  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
+  color:var(--sage);
+}
+.proj-nav-name{
+  font-size:clamp(20px,2.5vw,28px);font-weight:100;letter-spacing:var(--ls-tight);
+  color:var(--off);line-height:1.1;
+}
+.proj-nav-hint{
+  font-size:var(--t-sub);color:var(--stone);font-weight:300;font-family:'Barlow',sans-serif;
+}
 
-/* REVEAL */
-.reveal{opacity:0;transform:translateY(20px);transition:opacity .9s var(--ease),transform .9s var(--ease);}
-.reveal.in{opacity:1;transform:translateY(0);}
-.d1{transition-delay:.1s;}.d2{transition-delay:.22s;}.d3{transition-delay:.34s;}
+/* ── FOOTER ── */
+footer{
+  padding:var(--s3) var(--pad);
+  border-top:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--ink2);
+}
+.f-logo{
+  font-size:var(--t-label);font-weight:200;letter-spacing:var(--ls-mid);text-transform:uppercase;
+  color:var(--stone);
+}
+.f-logo em{font-style:normal;color:var(--sage);}
+.f-copy{
+  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-mid);text-transform:uppercase;
+  color:rgba(122,148,150,.35);
+}
 
-@keyframes fade-down{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+/* ── REVEAL ── */
+.rev{opacity:0;transform:translateY(var(--s3));transition:opacity .9s var(--ease),transform .9s var(--ease);}
+.rev.in{opacity:1;transform:translateY(0);}
+.d1{transition-delay:.1s;}.d2{transition-delay:.22s;}.d3{transition-delay:.36s;}
 
-/* MOBILE */
-@media(max-width:768px){
-  :root{--pad:24px;}
-  #cur,#cur-r{display:none;}
+/* ── LIGHT THEME ── */
+[data-theme="light"]{
+  --ink:#edeeed;--ink2:#e4e6e4;--off:#080909;--stone:#4a5c5e;
+  --rule:rgba(8,9,9,.08);
+}
+[data-theme="light"] nav{background:linear-gradient(to bottom,rgba(237,238,237,.72) 0%,transparent 100%);}
+[data-theme="light"] nav.scrolled{background:rgba(237,238,237,.9);}
+[data-theme="light"] .proj-hero-veil{
+  background:linear-gradient(to top,rgba(237,238,237,.98) 0%,rgba(237,238,237,.6) 30%,rgba(237,238,237,.1) 60%,transparent 100%),linear-gradient(to bottom,rgba(237,238,237,.55) 0%,transparent 20%);
+}
+[data-theme="light"] #grain{opacity:.02;}
+
+@media(pointer:coarse){
+  #cur,#cur-r{display:none !important;}
   body{cursor:auto;}
   a,button{cursor:pointer;}
-  .nav-back{padding:7px 14px;}
-  .proj-hero{height:50svh;}
-  .proj-hero-content{bottom:var(--sp-5);}
-  .proj-title{font-size:clamp(34px,8vw,52px);}
-  .proj-body{grid-template-columns:1fr;gap:var(--sp-5);padding:var(--sp-6) var(--pad);}
-  .proj-copy p{font-size:15px;}
-  .proj-meta{flex-direction:row;flex-wrap:wrap;gap:var(--sp-4);}
-  .proj-images{padding:0 var(--pad) var(--sp-6);}
-  .img-grid.cols-2,.img-grid.cols-3{grid-template-columns:1fr;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;}
+  #grain{display:none;}
+  .proj-hero-img{transition:none !important;}
+  .proj-hero-title,.proj-eyebrow,.proj-chips{opacity:1 !important;}
+}
+@media(max-width:768px){
+  :root{--pad:var(--s3);}
+  .proj-hero{height:60svh;min-height:420px;padding-bottom:var(--s6);}
+  .proj-body{grid-template-columns:1fr;gap:var(--s5);padding:var(--s6) var(--pad);}
+  .proj-meta{position:static;flex-direction:row;flex-wrap:wrap;gap:var(--s4);}
+  .proj-images{padding:0 var(--pad) var(--s6);}
+  .img-row.cols-2,.img-row.cols-3{grid-template-columns:1fr;}
   .img-span2{grid-column:span 1;}
   .proj-nav{grid-template-columns:1fr;}
   .proj-nav-item:first-child{border-right:none;border-bottom:1px solid var(--rule);}
-  .proj-nav-item:last-child{align-items:flex-start;}
+  .proj-nav-item.right{align-items:flex-start;}
+  footer{flex-direction:column;gap:var(--s1);text-align:center;}
 }
 </style>
 </head>
 <body>
-
 
 <div id="veil"></div>
 <div id="cur"></div>
 <div id="cur-r"></div>
 <div id="grain"></div>
 
+<nav id="nav">
+  <a href="index.html" class="n-logo">Kieran <em>Green</em></a>
+  <div class="nav-right">
+    <a href="index.html" class="nav-back">All Work</a>
+    <button class="n-theme" id="theme-btn" aria-label="Toggle theme"><span aria-hidden="true">☀</span></button>
+  </div>
+</nav>
+
+<section class="proj-hero" id="proj-hero">
+  <div class="proj-hero-img"></div>
+  <div class="proj-hero-veil"></div>
+  <div class="proj-hero-content">
+    <p class="proj-eyebrow">01 — 2025</p>
+    <h1 class="proj-hero-title">3D Printed<br>Car</h1>
+    <div class="proj-chips">
+      <span class="chip">Rhino 3D</span>
+      <span class="chip">FDM Prototyping</span>
+      <span class="chip">Surface Modeling</span>
+    </div>
+  </div>
+</section>
+
+<div class="proj-body rev">
+  <aside class="proj-meta">
+    <div class="meta-group">
+      <p class="meta-label">Year</p>
+      <p class="meta-val">2025</p>
+    </div>
+    <div class="meta-group">
+      <p class="meta-label">Tools</p>
+      <p class="meta-val">Rhino 3D<br>FDM Printer</p>
+    </div>
+    <div class="meta-group">
+      <p class="meta-label">Type</p>
+      <p class="meta-val">Surface Modeling</p>
+    </div>
+    <div class="meta-group">
+      <p class="meta-label">Output</p>
+      <p class="meta-val">Physical FDM Print</p>
+    </div>
+    <div class="meta-group">
+      <p class="meta-label">Subject</p>
+      <p class="meta-val">Mini Clubman</p>
+    </div>
+  </aside>
+
+  <div class="proj-copy">
+    <p class="copy-lead">I surface modeled my personal vehicle — a Mini Clubman — in Rhino 3D, then 3D printed it in FDM plastic.</p>
+
+    <p>The final print wasn't perfect by any means. But there is nothing cooler than getting to hold something that was the product of your own imagination and many hours of blood, sweat and tears.</p>
+
+    <div class="copy-section">
+      <p class="copy-section-label">The Challenge</p>
+      <p>My biggest challenge was achieving a <strong>closed object</strong> out of my surfaces. To get something printable, I had to sacrifice a few details I'd added — the exhaust pipes and the brake cooling duct behind the rear wheel. Real objects have constraints, and that's exactly where the interesting design problem lives.</p>
+    </div>
+
+    <div class="copy-section">
+      <p class="copy-section-label">Process</p>
+      <p>Making a rough outline of the shape first — this basic structure was achieved by generating a series of curves from two reference lines. Over the course of building this model, most of those surfaces were redone as I discovered easier and better ways to accomplish the surface layouts for the shapes I'd intended.</p>
+      <p>Every iteration was a lesson in how Rhino handles surface continuity. The discipline of working toward a watertight, closed mesh changed how I think about modeling entirely — detail is secondary to structure.</p>
+    </div>
+  </div>
+</div>
+
+<div class="proj-images rev d1">
+  <div class="img-row cols-1">
+    <img class="img-wide" src="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png" alt="Mini Clubman surface model rendered view">
+  </div>
+</div>
+
+<a href="index.html" class="proj-nav-home">
+  <span class="proj-nav-home-label">Back to all work</span>
+</a>
+
+<nav class="proj-nav">
+  <div></div>
+  <a href="project-pen.html" class="proj-nav-item right">
+    <span class="proj-nav-dir">Next →</span>
+    <span class="proj-nav-name">Sabretta Pen</span>
+    <span class="proj-nav-hint">View project</span>
+  </a>
+</nav>
+
+<footer>
+  <div class="f-logo">Kieran <em>Green</em> — Industrial Designer</div>
+  <div class="f-copy">© 2025 — All rights reserved</div>
+</footer>
+
 <script>
-/* Cursor */
-const cur=document.getElementById('cur'),curR=document.getElementById('cur-r');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
-(function loop(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(loop);})();
-document.querySelectorAll('a,button').forEach(el=>{el.addEventListener('mouseenter',()=>document.body.classList.add('hl'));el.addEventListener('mouseleave',()=>document.body.classList.remove('hl'));});
+/* ── CURSOR ── */
+const cur  = document.getElementById('cur');
+const curR = document.getElementById('cur-r');
+let mx = window.innerWidth/2, my = window.innerHeight/2;
+let rx = mx, ry = my;
 
-/* Nav scroll */
-const nav=document.getElementById('nav');
-if(nav) window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>50));
-
-/* Theme */
-const themeBtn=document.getElementById('theme-btn');
-if(themeBtn) themeBtn.onclick=()=>{const t=document.documentElement.getAttribute('data-theme');document.documentElement.setAttribute('data-theme',t==='dark'?'light':'dark');};
-
-/* PAGE TRANSITION
-   - Page loads with veil covering everything (clip-path full)
-   - On DOMContentLoaded: veil sweeps off to the right, body fades in
-   - On link click: veil sweeps in from left, then navigates
-*/
-const veil=document.getElementById('veil');
-
-function navigateTo(href){
-  // sweep veil in
-  veil.style.transition='clip-path .5s var(--ease, cubic-bezier(0.16,1,0.3,1))';
-  veil.style.clipPath='inset(0 0% 0 0)';
-  setTimeout(()=>{ window.location.href=href; },520);
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+});
+if (window.matchMedia('(pointer:fine)').matches) {
+  (function loop(){
+    rx += (mx - rx) * .1; ry += (my - ry) * .1;
+    curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
+    requestAnimationFrame(loop);
+  })();
 }
-
-// On load: sweep veil off and fade body in
-window.addEventListener('DOMContentLoaded',()=>{
-  // small delay so browser has painted
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      document.body.classList.add('ready');
-      veil.style.transition='clip-path .65s cubic-bezier(0.16,1,0.3,1)';
-      veil.style.clipPath='inset(0 100% 0 0)';
-    });
-  });
-  // ken burns on hero
-  const hero=document.querySelector('.proj-hero');
-  if(hero) setTimeout(()=>hero.classList.add('loaded'),100);
+document.querySelectorAll('a,button').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('hl'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('hl'));
 });
 
-// Intercept all internal .html link clicks
-document.addEventListener('click',e=>{
-  const a=e.target.closest('a[href]');
-  if(!a) return;
-  const href=a.getAttribute('href');
-  if(!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto')) return;
+/* ── VEIL / PAGE TRANSITIONS ── */
+const veil = document.getElementById('veil');
+function navigateTo(href) {
+  veil.style.transition = 'clip-path .5s cubic-bezier(0.77,0,0.18,1)';
+  veil.style.clipPath = 'inset(0 0% 0 0)';
+  setTimeout(() => { window.location.href = href; }, 520);
+}
+window.addEventListener('DOMContentLoaded', () => {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.body.classList.add('ready');
+    veil.classList.add('gone');
+  }));
+  setTimeout(() => document.getElementById('proj-hero').classList.add('loaded'), 80);
+});
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href]');
+  if (!a) return;
+  const href = a.getAttribute('href');
+  if (!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto') || href.endsWith('.pdf')) return;
   e.preventDefault();
   navigateTo(href);
 });
 
-/* Scroll reveal */
-const io=new IntersectionObserver(entries=>entries.forEach(e=>{
-  if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}
-}),{threshold:.1});
-document.querySelectorAll('.reveal').forEach(r=>io.observe(r));
+/* ── NAV SCROLL ── */
+const nav = document.getElementById('nav');
+const prog = document.createElement('div');
+prog.id = 'prog';
+prog.style.cssText = 'position:fixed;top:0;left:0;height:2px;background:var(--sage);z-index:9997;width:0%;pointer-events:none;box-shadow:0 0 8px rgba(91,160,164,.6);transition:width .06s linear;';
+document.body.appendChild(prog);
+
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+  const maxScroll = document.body.scrollHeight - window.innerHeight;
+  prog.style.width = (maxScroll > 0 ? window.scrollY / maxScroll * 100 : 0) + '%';
+}, { passive: true });
+
+/* ── HERO PARALLAX ── */
+const heroImg = document.querySelector('.proj-hero-img');
+window.addEventListener('scroll', () => {
+  if (window.scrollY < window.innerHeight && heroImg) {
+    heroImg.style.transform = `scale(1.04) translateY(${window.scrollY * 0.2}px)`;
+  }
+}, { passive: true });
+
+/* ── THEME ── */
+let theme = 'dark';
+function setTheme(t) {
+  theme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('theme-btn');
+  btn.querySelector('span').textContent = t === 'dark' ? '☀' : '☽';
+  try { localStorage.setItem('theme', t); } catch(e) {}
+}
+const saved = (() => { try { return localStorage.getItem('theme'); } catch(e) { return null; } })();
+document.getElementById('theme-btn').onclick = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+setTheme(saved === 'light' ? 'light' : 'dark');
+
+/* ── SCROLL REVEAL ── */
+const io = new IntersectionObserver(entries => entries.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+}), { threshold: .08 });
+document.querySelectorAll('.rev').forEach(r => io.observe(r));
 </script>
-
-
-<nav id="nav">
-  <a href="index.html" class="nav-logo">Kieran <span>Green</span></a>
-  <a href="index.html" class="nav-back">All Work</a>
-  <div class="nav-right">
-    <button class="theme-toggle" id="theme-btn" aria-label="Toggle theme"></button>
-  </div>
-</nav>
-
-<section class="proj-hero">
-  <img src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2" alt="3D Printed Car" style="object-position:center 30%;">
-  <div class="proj-hero-veil"></div>
-  <div class="proj-hero-content">
-    <p class="proj-index">01 — 2025</p>
-    <h1 class="proj-title">3D Printed Car</h1>
-    <div class="proj-chips"><span class="chip">Rhino 3D</span><span class="chip">FDM Prototyping</span><span class="chip">Surface Modeling</span></div>
-  </div>
-</section>
-
-<div class="proj-body reveal">
-  <aside class="proj-meta">
-    <div class="meta-group"><p class="meta-label">Year</p><p class="meta-val">2025</p></div>
-    <div class="meta-group"><p class="meta-label">Tools</p><p class="meta-val">Rhino 3D, FDM Printer</p></div>
-    <div class="meta-group"><p class="meta-label">Type</p><p class="meta-val">Surface Modeling</p></div><div class="meta-group"><p class="meta-label">Output</p><p class="meta-val">Physical FDM Print</p></div>
-  </aside>
-  <div class="proj-copy">
-    
-      <p>I surface modeled my personal vehicle — a Mini Clubman — in Rhino 3D, then 3D printed it in FDM plastic.</p>
-      <p>The final 3D print wasn't perfect by any means, but there is nothing cooler than getting to hold something that was the product of your own imagination and many hours of blood, sweat and tears.</p>
-      <h3>The Challenge</h3>
-      <p>My biggest challenge was achieving a <strong>closed object</strong> out of my surfaces. To get something printable I had to sacrifice a few details — the exhaust pipes and the brake cooling duct behind the rear wheel.</p>
-      <p>Making a rough outline of the shape, this basic structure was achieved by making a bunch of curves from two lines. Over the process of building this model, most of these surfaces were redone as I discovered easier and better ways to accomplish the layouts I had intended.</p>
-    
-  </div>
-</div>
-
-<div class="proj-images reveal d1">
-  <div class="img-grid cols-1"><img class="img-wide" src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2" alt="3D Printed Car"></div>
-</div>
-
-<a href="index.html" class="proj-nav-home">Back to all work</a>
-
-<nav class="proj-nav">
-  <div></div>
-  <a href="project-pen.html" class="proj-nav-item">
-        <span class="proj-nav-dir">Next →</span>
-        <span class="proj-nav-name">Sabretta Pen</span>
-        <span class="proj-nav-hint">View project</span>
-      </a>
-</nav>
-
-<footer>
-  <div class="footer-mark">Kieran <span>Green</span></div>
-  <div class="footer-copy">© 2025 — All rights reserved</div>
-</footer>
-
 </body>
 </html>
