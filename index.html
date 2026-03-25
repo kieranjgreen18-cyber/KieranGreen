@@ -8,23 +8,21 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Kieran Green — Industrial Designer">
 <meta property="og:description" content="CAD modeling, form development, and product visualization — from first sketch to something you can hold.">
-<meta property="og:image" content="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2">
+<meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
 <meta property="og:url" content="https://kieranjgreen18-cyber.github.io/KieranGreen/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Kieran Green — Industrial Designer">
 <meta name="twitter:description" content="CAD modeling, form development, and product visualization — from first sketch to something you can hold.">
-<meta name="twitter:image" content="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2">
+<meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="dns-prefetch" href="https://cdn.myportfolio.com">
-<link rel="preload" as="image" href="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2">
+<link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet"></noscript>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
-/* ── BARLOW CONDENSED utility — applied to every element that uses it ── */
 .n-logo,.n-links a,.n-avail,.n-ham,.nav-drawer a,
 .hero-eyebrow,.hero-h1,.hero-scroll-label,.hero-scroll-hint,
 .ticker .t-item,
@@ -38,55 +36,36 @@
 }
 
 :root{
-  /* ── COLOUR ── */
   --sage:   #5ba0a4;
   --stone:  #96a8aa;
   --off:    #edeeed;
   --ink:    #080909;
   --ink2:   #0f1010;
   --rule:   rgba(255,255,255,0.055);
-
-  /* ── EASING ── */
   --ease:   cubic-bezier(0.16,1,0.3,1);
   --snap:   cubic-bezier(0.77,0,0.18,1);
-
-  /* ── 8-POINT SPACING SCALE ── */
   --s1:  8px;
   --s2:  16px;
   --s3:  24px;
   --s4:  32px;
   --s5:  40px;
-  --s6:  48px;   /* base pad */
+  --s6:  48px;
   --s7:  64px;
   --s8:  80px;
   --s9:  96px;
   --s10: 120px;
   --pad: var(--s6);
-
-  /* ── TYPE RAMP ── */
-  /* micro: labels, tags, legal */
   --t-micro:    10px;
-  /* label: nav links, eyebrows, kickers */
   --t-label:    12px;
-  /* body: prose */
   --t-body:     16px;
-  /* sub: project descriptions, contact sub */
   --t-sub:      15px;
-  /* ui: contact links */
   --t-ui:       clamp(18px,2.2vw,28px);
-  /* heading: about, stats */
   --t-heading:  clamp(36px,5vw,68px);
-  /* title: project titles */
   --t-title:    clamp(44px,6vw,84px);
-  /* display: hero h1 */
   --t-display:  clamp(64px,12vw,172px);
-
-  /* ── LETTER SPACING SCALE ── */
-  --ls-tight:  .02em;   /* display text */
-  --ls-mid:    .20em;   /* UI / nav */
-  --ls-wide:   .32em;   /* eyebrow / kicker / micro labels */
-
-  /* ── LINE HEIGHTS ── */
+  --ls-tight:  .02em;
+  --ls-mid:    .20em;
+  --ls-wide:   .32em;
   --lh-display: .90;
   --lh-text:    1.60;
   --lh-body:    1.85;
@@ -106,7 +85,6 @@ body{
 }
 body.ready{opacity:1;transition:opacity .75s ease;}
 
-/* ─── FOCUS VISIBLE — keyboard nav ─── */
 :focus{outline:none;}
 :focus-visible{outline:2px solid var(--sage);outline-offset:3px;}
 #cur{
@@ -124,7 +102,6 @@ body.ready{opacity:1;transition:opacity .75s ease;}
   transform:translate(-50%,-50%);
 }
 
-/* ─── GRAIN ─── */
 #grain{
   position:fixed;inset:-50%;width:200%;height:200%;
   pointer-events:none;z-index:9990;opacity:.026;
@@ -134,7 +111,6 @@ body.ready{opacity:1;transition:opacity .75s ease;}
 }
 @keyframes gr{0%,100%{transform:translate(0,0)}33%{transform:translate(-1%,-2%)}66%{transform:translate(1%,1%)}}
 
-/* ─── VEIL wipe ─── */
 #veil{
   position:fixed;inset:0;z-index:10000;
   background:var(--sage);
@@ -147,7 +123,6 @@ body.ready{opacity:1;transition:opacity .75s ease;}
   transition:clip-path .75s var(--snap);
 }
 
-/* ─── NAV ─── */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:500;
   display:flex;align-items:center;justify-content:space-between;
@@ -170,7 +145,6 @@ nav.scrolled{
 .n-logo:hover{color:var(--sage);}
 .n-logo em{font-style:normal;color:var(--sage);}
 
-/* magnetic contact link wrapper */
 .c-link-wrap{display:inline-block;will-change:transform;}
 .n-links{
   display:flex;align-items:center;gap:var(--s4);
@@ -230,7 +204,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .nav-drawer a:hover{color:var(--sage);}
 
-/* ─── HERO ─── */
 .hero{
   position:relative;
   height:100svh;min-height:600px;
@@ -242,7 +215,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .hero-img{
   position:absolute;inset:0;
-  background-image:url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2');
+  background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png');
   background-size:cover;background-position:center 20%;
   transform:scale(1.07);transition:transform 9s ease;
   will-change:transform;
@@ -318,7 +291,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 @keyframes sp{0%,100%{opacity:.4;transform:scaleY(1)}50%{opacity:.9;transform:scaleY(.6)}}
 
-/* ─── TICKER ─── */
 .ticker{
   overflow:hidden;padding:var(--s2) 0;
   background:rgba(255,255,255,.04);
@@ -340,7 +312,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .t-dot{width:3px;height:3px;border-radius:50%;background:var(--sage);opacity:.8;flex-shrink:0;}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-/* ─── PROJECTS ─── */
 .projects{display:flex;flex-direction:column;}
 .proj{
   position:relative;
@@ -451,7 +422,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .proj:hover .proj-open{opacity:1;}
 .proj-open:hover{border-color:var(--sage);background:var(--sage);color:var(--ink);}
 
-/* ─── ABOUT ─── */
 .about{
   position:relative;
   overflow:hidden;
@@ -506,7 +476,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .about-body strong{color:var(--off);opacity:.85;font-weight:400;}
 
-/* ── PULL WORDS — strong phrases that pop in ── */
 .about-body .pop-word{
   color:transparent;
   -webkit-text-stroke:1px rgba(91,160,164,.3);
@@ -519,7 +488,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   -webkit-text-stroke:1px transparent;
 }
 
-/* bottom: stats row */
 .about-stats{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -541,7 +509,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   color:var(--stone);margin-top:var(--s1);
 }
 
-/* ─── CONTACT ─── */
 .contact{
   position:relative;overflow:hidden;
   min-height:80svh;display:flex;align-items:center;
@@ -549,7 +516,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .contact-img{
   position:absolute;right:0;top:0;bottom:0;width:45%;
-  background-image:url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d3e27f8b-1d6e-4cfd-be03-42d5eeddea84_rwc_0x160x719x957x32.png?h=6462c877d968cef5bdd0216d0ce42b6d');
+  background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/sabrettahero.png');
   background-size:cover;background-position:center;
   opacity:.28;
   mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.8) 40%);
@@ -590,7 +557,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
   color:var(--sage);opacity:.6;
 }
-/* all contact links share the same treatment */
 .c-link, .c-soc, .c-dl{
   font-size:var(--t-ui);font-weight:100;
   letter-spacing:var(--ls-tight);text-transform:uppercase;
@@ -614,7 +580,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .c-row{display:flex;gap:var(--s4);flex-wrap:wrap;align-items:center;}
 
-/* ─── FOOTER ─── */
 footer{
   padding:var(--s3) var(--pad);
   border-top:1px solid var(--rule);
@@ -631,12 +596,10 @@ footer{
   color:rgba(122,148,150,.35);
 }
 
-/* ─── REVEAL ─── */
 .rev{opacity:0;transform:translateY(var(--s3));transition:opacity .9s var(--ease),transform .9s var(--ease);}
 .rev.in{opacity:1;transform:translateY(0);}
 .d1{transition-delay:.1s;}.d2{transition-delay:.22s;}.d3{transition-delay:.36s;}
 
-/* ─── SCROLL PROGRESS BAR ─── */
 #prog{
   position:fixed;top:0;left:0;height:2px;
   background:var(--sage);z-index:9997;width:0%;
@@ -645,7 +608,6 @@ footer{
   transition:width .06s linear;
 }
 
-/* ─── SECTION INDICATOR ─── */
 #section-indicator{
   position:fixed;right:var(--s6);top:50%;transform:translateY(-50%);
   z-index:600;writing-mode:vertical-rl;
@@ -654,6 +616,7 @@ footer{
   pointer-events:none;
   transition:opacity .4s;
   opacity:0;
+  font-family:'Barlow Condensed',sans-serif;
 }
 #section-indicator.visible{opacity:1;}
 
@@ -665,7 +628,6 @@ footer{
 @keyframes fu{from{opacity:0;transform:translateY(var(--s2))}to{opacity:1;transform:translateY(0)}}
 @keyframes fd{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 
-/* ─── LIGHT THEME ─── */
 [data-theme="light"]{
   --ink:#edeeed;--ink2:#e4e6e4;--off:#080909;--stone:#4a5c5e;
   --rule:rgba(8,9,9,.08);
@@ -687,14 +649,12 @@ footer{
 [data-theme="light"] .ticker::after{background:linear-gradient(to left,var(--ink),transparent);}
 [data-theme="light"] #grain{opacity:.02;}
 
-/* ─── TOUCH DEVICES — hide custom cursor ─── */
 @media(pointer:coarse){
   #cur,#cur-r{display:none !important;}
   body{cursor:auto;}
   a,button,.n-ham{cursor:pointer;}
 }
 
-/* ─── REDUCED MOTION — respect OS setting ─── */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
   #grain{display:none;}
@@ -705,7 +665,6 @@ footer{
   .hero-bottom{opacity:1 !important;}
 }
 
-/* ─── MOBILE ─── */
 @media(max-width:768px){
   :root{--pad:var(--s3);}
   .n-links,.n-avail{display:none;}
@@ -822,7 +781,7 @@ footer{
 <section class="projects" id="work">
 
   <a href="project-car.html" class="proj" aria-label="View project: 3D Printed Car" style="background:#0a0806;">
-    <div class="proj-img" data-bg="url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2')" style="background-image:url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2');background-position:center 25%;"></div>
+    <div class="proj-img" style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png');background-position:center 30%;"></div>
     <div class="proj-veil"></div>
     <div class="proj-line"></div>
     <div class="proj-ghost">01</div>
@@ -840,7 +799,7 @@ footer{
   </a>
 
   <a href="project-pen.html" class="proj" aria-label="View project: Sabretta Pen" style="background:#08090a;">
-    <div class="proj-img" data-bg="url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d3e27f8b-1d6e-4cfd-be03-42d5eeddea84_rwc_0x160x719x957x32.png?h=6462c877d968cef5bdd0216d0ce42b6d')" data-bg-pos="center 40%"></div>
+    <div class="proj-img" data-bg="url('https://kieranjgreen18-cyber.github.io/KieranGreen/sabrettahero.png')" data-bg-pos="center 40%"></div>
     <div class="proj-veil"></div>
     <div class="proj-line"></div>
     <div class="proj-ghost">02</div>
@@ -858,14 +817,14 @@ footer{
   </a>
 
   <a href="project-lamp.html" class="proj" aria-label="View project: Poul Henningsen Lamp" style="background:#080a09;">
-    <div class="proj-img" data-bg="url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d674bd55-ac5f-465a-b2de-d8afe9c732a0_rwc_383x242x1005x1339x32.png?h=ff2f4c332ac075fa1aacce5aa24c7e38')" data-bg-pos="center 20%"></div>
+    <div class="proj-img" data-bg="url('https://kieranjgreen18-cyber.github.io/KieranGreen/lamphero.png')" data-bg-pos="center 20%"></div>
     <div class="proj-veil"></div>
     <div class="proj-line"></div>
     <div class="proj-ghost">03</div>
     <div class="proj-text rev">
       <div class="proj-num">03 — 2025</div>
-      <div class="proj-title">Cardboard Lamp</div>
-      <p class="proj-desc">Studying how Henningsen engineered light diffusion through geometry alone.</p>
+      <div class="proj-title">Poul Henningsen Lamp</div>
+      <p class="proj-desc">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
       <div class="proj-tags">
         <span class="proj-tag">Rhino 3D</span>
         <span class="proj-tag">CAD Modeling</span>
@@ -875,7 +834,7 @@ footer{
   </a>
 
   <a href="project-rhino-intro.html" class="proj" aria-label="View project: Intro to Rhino" style="background:#080909;">
-    <div class="proj-img" data-bg="url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/98346ae5-aebc-480c-b455-5d2efac07723_rwc_670x0x1621x2160x32.jpg?h=7223f3111ec13ec4f15018133d0594f9')" data-bg-pos="center"></div>
+    <div class="proj-img" data-bg="url('https://kieranjgreen18-cyber.github.io/KieranGreen/drillhero.jpg')" data-bg-pos="center"></div>
     <div class="proj-veil"></div>
     <div class="proj-line"></div>
     <div class="proj-ghost">04</div>
@@ -964,13 +923,12 @@ footer{
 </footer>
 
 <script>
-/* ── CURSOR — priority stack, no competing states ── */
+/* ── CURSOR ── */
 const cur  = document.getElementById('cur');
 const curR = document.getElementById('cur-r');
 let mx = window.innerWidth/2, my = window.innerHeight/2;
 let rx = mx, ry = my;
 let isDown = false;
-// track which context layers are active
 let inLink = false;
 let inProj = false;
 
@@ -1004,13 +962,11 @@ document.addEventListener('mousemove', e => {
   cur.style.left = mx + 'px'; cur.style.top = my + 'px';
 });
 
-// Don't run cursor RAF at all on touch devices
 if (window.matchMedia('(pointer:fine)').matches) {
   (function loop(){
     const rxNew = rx + (mx - rx) * .1;
     const ryNew = ry + (my - ry) * .1;
     const ringNew = ringCurrent + (ringTarget - ringCurrent) * 0.12;
-    // Only write to DOM if values have meaningfully changed
     if (Math.abs(rxNew - rx) > 0.02 || Math.abs(ryNew - ry) > 0.02 || Math.abs(ringNew - ringCurrent) > 0.05) {
       rx = rxNew; ry = ryNew;
       curR.style.left = rx + 'px';
@@ -1023,13 +979,11 @@ if (window.matchMedia('(pointer:fine)').matches) {
   })();
 }
 
-// links / buttons — highest priority
 document.querySelectorAll('a, button, .n-ham').forEach(el => {
   el.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
   el.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
 });
 
-// project panels — medium priority
 document.querySelectorAll('.proj').forEach(el => {
   el.addEventListener('mouseenter', () => { inProj = true;  applyCursorState(); });
   el.addEventListener('mouseleave', () => { inProj = false; applyCursorState(); });
@@ -1037,13 +991,11 @@ document.querySelectorAll('.proj').forEach(el => {
 
 document.addEventListener('mousedown', () => { isDown = true;  applyCursorState(); });
 document.addEventListener('mouseup',   () => { isDown = false; applyCursorState(); });
-
 document.addEventListener('mouseleave', () => { cur.style.opacity = '0'; curR.style.opacity = '0'; });
 document.addEventListener('mouseenter', () => { cur.style.opacity = '1'; curR.style.opacity = '1'; });
-
 applyCursorState();
 
-/* ── SMOOTH SCROLL — exponential ease-out, Lenis-style ── */
+/* ── SMOOTH SCROLL ── */
 const smoother = (() => {
   let current = window.scrollY;
   let target  = window.scrollY;
@@ -1084,14 +1036,14 @@ const smoother = (() => {
   return {
     on: fn => listeners.push(fn),
     scrollTo: el => {
-      current = window.scrollY; // sync before animating
+      current = window.scrollY;
       target = Math.round(el.getBoundingClientRect().top + window.scrollY);
       if (!ticking) { ticking = true; requestAnimationFrame(tick); }
     }
   };
 })();
 
-/* SCROLL EFFECTS — compose parallax + tilt */
+/* ── SCROLL EFFECTS ── */
 const heroImg   = document.getElementById('hero-img');
 const navEl     = document.getElementById('nav');
 const projPairs = [...document.querySelectorAll('.proj')].map(p => ({ el:p, img:p.querySelector('.proj-img') }));
@@ -1102,7 +1054,6 @@ const prog = document.createElement('div');
 prog.id = 'prog';
 document.body.appendChild(prog);
 
-/* ── SECTION INDICATOR — right edge, shows current section name ── */
 const sections = [
   { el: document.querySelector('.hero'),    label: 'Intro' },
   { el: document.querySelectorAll('.proj')[0], label: 'Mini Clubman' },
@@ -1119,7 +1070,6 @@ document.body.appendChild(sectionIndicator);
 setTimeout(() => sectionIndicator.classList.add('visible'), 1500);
 
 let currentSectionLabel = '';
-// Cache offsets once; refresh on resize
 let sectionOffsets = [];
 function buildSectionOffsets() {
   sectionOffsets = sections.map(s => ({
@@ -1146,8 +1096,7 @@ function updateIndicator(y) {
 }
 
 smoother.on(y => {
-  if (y === lastY) return; // idle — nothing to update
-
+  if (y === lastY) return;
   if (heroImg && y < window.innerHeight)
     heroImg.style.transform = `scale(1.05) translateY(${y * .22}px)`;
   navEl.classList.toggle('scrolled', y > 60);
@@ -1156,7 +1105,6 @@ smoother.on(y => {
   const maxScroll = document.body.scrollHeight - window.innerHeight;
   prog.style.width = (maxScroll > 0 ? y / maxScroll * 100 : 0) + '%';
 
-  // compose parallax + tilt
   projPairs.forEach(({ el, img }) => {
     const r = el.getBoundingClientRect();
     if (r.bottom < 0 || r.top > window.innerHeight) return;
@@ -1168,7 +1116,7 @@ smoother.on(y => {
   updateIndicator(y);
 });
 
-/* PAGE TRANSITIONS + ANCHOR SCROLL — single merged click handler */
+/* ── PAGE TRANSITIONS ── */
 const veil = document.getElementById('veil');
 function navigateTo(href) {
   veil.style.transition = 'clip-path .5s cubic-bezier(0.77,0,0.18,1)';
@@ -1192,20 +1140,18 @@ document.addEventListener('click', e => {
   if (!a) return;
   const href = a.getAttribute('href');
   if (!href) return;
-  // anchor scroll
   if (href.startsWith('#')) {
     e.preventDefault();
     const t = document.querySelector(href);
     if (t) smoother.scrollTo(t);
     return;
   }
-  // page transition — skip external, mailto, pdf
   if (href.startsWith('http') || href.startsWith('mailto') || href.endsWith('.pdf')) return;
   e.preventDefault();
   navigateTo(href);
 });
 
-/* THEME — persists across page navigations */
+/* ── THEME ── */
 let theme = 'dark';
 function setTheme(t) {
   theme = t;
@@ -1215,12 +1161,11 @@ function setTheme(t) {
   btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
   try { localStorage.setItem('theme', t); } catch(e) {}
 }
-// Restore saved preference, fall back to dark
 const savedTheme = (() => { try { return localStorage.getItem('theme'); } catch(e) { return null; } })();
 document.getElementById('theme-btn').onclick = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 setTheme(savedTheme === 'light' ? 'light' : 'dark');
 
-/* HAMBURGER */
+/* ── HAMBURGER ── */
 const hamburger = document.getElementById('hamburger');
 const navDrawer = document.getElementById('nav-drawer');
 hamburger.addEventListener('click', () => {
@@ -1240,20 +1185,19 @@ hamburger.addEventListener('click', () => {
     if (t) setTimeout(() => smoother.scrollTo(t), 320);
   });
 });
-/* ── UNIFIED DEBOUNCED RESIZE HANDLER ── */
+
+/* ── RESIZE ── */
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     buildSectionOffsets();
-    // invalidate all cached rects
     cachedContactRect = null;
     document.querySelectorAll('.proj').forEach(proj => {
       proj._projRect = null;
       const btn = proj.querySelector('.proj-open');
       if (btn) btn._btnRect = null;
     });
-    // close mobile menu if resized to desktop
     if (window.innerWidth > 768) {
       document.body.classList.remove('menu-open');
       hamburger.setAttribute('aria-expanded', 'false');
@@ -1263,12 +1207,11 @@ window.addEventListener('resize', () => {
   }, 150);
 }, { passive: true });
 
-/* ── TEXT SCRAMBLE on hero eyebrow ── */
+/* ── TEXT SCRAMBLE ── */
 const eyebrow = document.querySelector('.hero-eyebrow');
 const eyebrowFinal = 'Industrial Designer — 2025';
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789—·';
 
-// Get or create the text node (always the last child, after the line span)
 let eyebrowTextNode = null;
 eyebrow.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) eyebrowTextNode = n; });
 if (!eyebrowTextNode) {
@@ -1297,12 +1240,11 @@ function scramble(textNode, final, delay) {
 }
 scramble(eyebrowTextNode, eyebrowFinal, 400);
 
-/* ── ABOUT: pop-word reveal on scroll ── */
+/* ── ABOUT: pop-word reveal ── */
 const aboutSection = document.querySelector('.about');
 const popWords = document.querySelectorAll('.pop-word');
 const popObs = new IntersectionObserver(entries => {
   if (!entries[0].isIntersecting) return;
-  // stagger each pop-word
   popWords.forEach((w, i) => {
     setTimeout(() => w.classList.add('popped'), 300 + i * 220);
   });
@@ -1310,7 +1252,7 @@ const popObs = new IntersectionObserver(entries => {
 }, { threshold: 0.3 });
 if (aboutSection) popObs.observe(aboutSection);
 
-/* ── ABOUT: count-up on stats ── */
+/* ── ABOUT: count-up stats ── */
 const statEls = document.querySelectorAll('.stat-n');
 const statConfigs = [
   { target: 6,    start: 0,    suffix: '+' },
@@ -1337,7 +1279,7 @@ const statsObs = new IntersectionObserver(entries => {
 }, { threshold: 0.3 });
 if (aboutSection) statsObs.observe(aboutSection);
 
-/* ── LAZY-LOAD project images (projects 2–4 only; hero is preloaded) ── */
+/* ── LAZY-LOAD project images ── */
 const lazyImgObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
@@ -1349,12 +1291,11 @@ const lazyImgObs = new IntersectionObserver(entries => {
     lazyImgObs.unobserve(img);
   });
 }, { rootMargin: '400px' });
-document.querySelectorAll('.proj-img[data-bg]').forEach((img, i) => {
-  // first project is already loaded (same as preloaded hero CDN image); skip lazy for it
-  if (i > 0) lazyImgObs.observe(img);
+document.querySelectorAll('.proj-img[data-bg]').forEach(img => {
+  lazyImgObs.observe(img);
 });
 
-/* ── CHAR-BY-CHAR reveal — one shared observer for all project titles ── */
+/* ── CHAR-BY-CHAR title reveal ── */
 const titleObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
@@ -1378,12 +1319,13 @@ document.querySelectorAll('.proj-title').forEach(title => {
   });
   titleObs.observe(proj);
 });
+
 const io = new IntersectionObserver(entries => entries.forEach(e => {
   if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
 }), { threshold: .06 });
 document.querySelectorAll('.rev').forEach(r => io.observe(r));
 
-/* MAGNETIC OPEN BUTTONS */
+/* ── MAGNETIC OPEN BUTTONS ── */
 document.querySelectorAll('.proj-open').forEach(btn => {
   const parent = btn.closest('.proj');
   parent.addEventListener('mouseenter', () => { btn._btnRect = btn.getBoundingClientRect(); });
@@ -1396,15 +1338,13 @@ document.querySelectorAll('.proj-open').forEach(btn => {
   parent.addEventListener('mouseleave', () => { btn.style.transform = ''; });
 });
 
-/* ── NAV LOGO SCRAMBLE on hover ── */
+/* ── NAV LOGO SCRAMBLE ── */
 const logo = document.querySelector('.n-logo');
-const logoFinal = 'Kieran Green';
 const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
 let logoScrambling = false;
 
-// Build logo from two stable spans so innerHTML rewrites don't nuke listeners
-const logoText1 = document.createElement('span'); // "Kieran "
-const logoText2 = document.createElement('em');   // "Green" — styled by .n-logo em
+const logoText1 = document.createElement('span');
+const logoText2 = document.createElement('em');
 logoText1.textContent = 'Kieran ';
 logoText2.textContent = 'Green';
 logo.innerHTML = '';
@@ -1462,6 +1402,8 @@ if (contactWrap) {
     contactWrap.style.transition = 'transform .5s var(--ease)';
   });
 }
+
+/* ── TILT STATE ── */
 const tiltState = new Map();
 document.querySelectorAll('.proj').forEach(proj => {
   const img = proj.querySelector('.proj-img');
