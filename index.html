@@ -95,7 +95,6 @@ body.ready{opacity:1;transition:opacity .75s ease;}
   width:8px;height:8px;border-radius:50%;
   background:var(--sage);
   transform:translate(-50%,-50%);
-  mix-blend-mode:difference;
   transition:width .18s cubic-bezier(0.16,1,0.3,1), height .18s cubic-bezier(0.16,1,0.3,1);
 }
 #cur-r{
@@ -130,13 +129,12 @@ nav{
   position:fixed;top:0;left:0;right:0;z-index:500;
   display:flex;align-items:center;justify-content:space-between;
   padding:var(--s3) var(--pad);
-  transition:padding .4s var(--ease),background .45s,backdrop-filter .45s,border-color .45s;
+  transition:padding .4s var(--ease),background .45s,border-color .45s;
   background:linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
 }
 nav.scrolled{
   padding:var(--s2) var(--pad);
-  background:rgba(8,9,9,.88);
-  backdrop-filter:blur(28px) saturate(1.5);
+  background:rgba(8,9,9,.94);
   border-bottom:1px solid var(--rule);
 }
 .n-logo{
@@ -148,7 +146,7 @@ nav.scrolled{
 .n-logo:hover{color:var(--sage);}
 .n-logo em{font-style:normal;color:var(--sage);}
 
-.c-link-wrap{display:inline-block;will-change:transform;}
+.c-link-wrap{display:inline-block;}
 .n-links{
   display:flex;align-items:center;gap:var(--s4);
   opacity:0;animation:fd .6s var(--ease) .12s forwards;
@@ -177,10 +175,9 @@ nav.scrolled{
 }
 .n-avail-dot{
   width:5px;height:5px;border-radius:50%;background:var(--sage);
-  box-shadow:0 0 8px rgba(91,160,164,.8);
   animation:pulse 2.5s ease infinite;
 }
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px rgba(91,160,164,.8)}50%{opacity:.35;box-shadow:0 0 0 rgba(91,160,164,0)}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.28;}}
 .n-theme{
   width:var(--s4);height:var(--s4);border-radius:50%;
   border:1px solid var(--rule);background:none;
@@ -325,11 +322,11 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .proj-img{
   position:absolute;inset:0;background-size:cover;background-position:center;
   transform:scale(1.06);
-  filter:saturate(.7) brightness(.55);
-  transition:transform 1.1s var(--ease),filter 1.1s ease;
+  opacity:.72;
+  transition:transform 1.1s var(--ease),opacity 1.1s ease;
   will-change:transform;
 }
-.proj:hover .proj-img{transform:scale(1.01);filter:saturate(.92) brightness(.7);}
+.proj:hover .proj-img{transform:scale(1.01);opacity:.92;}
 .proj:nth-child(odd) .proj-veil{
   position:absolute;inset:0;
   background:linear-gradient(to right,rgba(8,9,9,.95) 0%,rgba(8,9,9,.6) 42%,transparent 72%);
@@ -352,7 +349,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:absolute;top:50%;transform:translateY(-50%);
   width:44%;z-index:2;
   transition:transform .7s var(--ease);
-  will-change:transform;
 }
 .proj:nth-child(odd) .proj-text{left:var(--pad);}
 .proj:nth-child(even) .proj-text{right:var(--pad);text-align:right;}
@@ -528,10 +524,9 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:absolute;right:0;top:0;bottom:0;width:45%;
   background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/sabrettahero.png');
   background-size:cover;background-position:center;
-  opacity:.28;
+  opacity:.22;
   mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.8) 40%);
   -webkit-mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.8) 40%);
-  filter:saturate(.5);
 }
 .contact-wm{
   position:absolute;right:-4vw;bottom:-6vh;
@@ -654,7 +649,7 @@ footer{
   }
 }
 [data-theme="light"] nav.scrolled{
-  background:rgba(237,238,237,.9);
+  background:rgba(237,238,237,.97);
 }
 [data-theme="light"] .hero-veil{
   background:linear-gradient(to top,rgba(237,238,237,1) 0%,rgba(237,238,237,.68) 28%,rgba(237,238,237,.08) 62%,transparent 100%),linear-gradient(to bottom,rgba(237,238,237,.5) 0%,transparent 20%);
@@ -690,7 +685,7 @@ footer{
     padding-bottom:var(--s3);
   }
   nav.scrolled{
-    background:rgba(8,9,9,.92);
+    background:rgba(8,9,9,.96);
   }
   .n-links,.n-avail{display:none;}
   .n-ham{display:flex;}
@@ -1092,16 +1087,17 @@ const smoother = (() => {
 
   function tick() {
     const diff = target - current;
-    if (Math.abs(diff) < 0.08) {
+    if (Math.abs(diff) < 0.5) {
       current = target;
       snapTarget = null; // snap fully settled — release
       ticking = false;
+      window.scrollTo(0, current);
       listeners.forEach(fn => fn(current));
       return;
     }
     const e = (snapTarget !== null) ? snapEase : ease;
     current += diff * e;
-    window.scrollTo(0, current);
+    window.scrollTo(0, Math.round(current));
     listeners.forEach(fn => fn(current));
     requestAnimationFrame(tick);
   }
@@ -1222,12 +1218,16 @@ function updateIndicator(y) {
   }
 }
 
+let lastHeroTransform = '';
 smoother.on(y => {
   if (heroImg) {
-    if (y <= window.innerHeight)
-      heroImg.style.transform = `scale(1.05) translateY(${y * .22}px)`;
-    else if (lastY <= window.innerHeight)
+    if (y <= window.innerHeight) {
+      const ht = `scale(1.05) translateY(${Math.round(y * .22)}px)`;
+      if (ht !== lastHeroTransform) { heroImg.style.transform = ht; lastHeroTransform = ht; }
+    } else if (lastY <= window.innerHeight) {
       heroImg.style.transform = '';
+      lastHeroTransform = '';
+    }
   }
   navEl.classList.toggle('scrolled', y > 60);
   track.style.animationDirection = y > lastY ? 'normal' : 'reverse';
