@@ -1126,8 +1126,19 @@ const smoother = (() => {
     }, { passive: false });
   }
 
+  // Sync state for non-wheel scrolling (keyboard, scrollbar, programmatic).
+  // Guard with a distance check so Firefox's scroll events fired by our own
+  // window.scrollTo() calls don't reset the lerp mid-flight.
+  let lastScrollToY = 0;
+  const _origScrollTo = window.scrollTo.bind(window);
+  window.scrollTo = (x, y) => { lastScrollToY = typeof y === 'number' ? y : x?.top ?? 0; _origScrollTo(x, y); };
   window.addEventListener('scroll', () => {
-    if (!ticking) current = target = window.scrollY;
+    if (ticking) return; // JS lerp is running — ignore, we own the scroll position
+    const sy = window.scrollY;
+    if (Math.abs(sy - lastScrollToY) > 2) {
+      // Position moved by something other than our scrollTo — re-sync
+      current = target = sy;
+    }
   }, { passive: true });
 
   // On touch, wait for momentum to decay before evaluating snap position
