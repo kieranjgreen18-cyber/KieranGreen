@@ -912,16 +912,15 @@ footer{
     <p class="contact-sub">Open to internships, collaborations, and freelance projects. Always drawn to interesting problems.</p>
     <div class="contact-fields">
       <div class="c-field">
-        <p class="c-field-label">Email</p>
-        <div class="c-link-wrap" id="contact-link-wrap">
-          <a href="https://kierangreen.myportfolio.com/contact" target="_blank" class="c-link">Get in touch →</a>
+        <p class="c-field-label">Contact</p>
+        <div class="c-row">
+          <a href="https://kierangreen.myportfolio.com/contact" target="_blank" class="c-soc">Email →</a>
+          <a href="https://www.linkedin.com/in/kieran-green" target="_blank" rel="noopener" class="c-soc">LinkedIn →</a>
         </div>
       </div>
       <div class="c-field">
-        <p class="c-field-label">Elsewhere</p>
-        <div class="c-row">
-          <a href="protected.html" class="c-soc">Protected Work</a>
-        </div>
+        <p class="c-field-label">Work</p>
+        <a href="protected.html" class="c-soc">Protected Work →</a>
       </div>
       <div class="c-field">
         <p class="c-field-label">Resume</p>
@@ -1360,18 +1359,7 @@ const io = new IntersectionObserver(entries => entries.forEach(e => {
 }), { threshold: .06 });
 document.querySelectorAll('.rev').forEach(r => io.observe(r));
 
-/* ── MAGNETIC OPEN BUTTONS ── */
-document.querySelectorAll('.proj-open').forEach(btn => {
-  const parent = btn.closest('.proj');
-  parent.addEventListener('mouseenter', () => { btn._btnRect = btn.getBoundingClientRect(); });
-  parent.addEventListener('mousemove', e => {
-    if (!btn._btnRect) btn._btnRect = btn.getBoundingClientRect();
-    const dx = (e.clientX - (btn._btnRect.left + btn._btnRect.width/2))  * .28;
-    const dy = (e.clientY - (btn._btnRect.top  + btn._btnRect.height/2)) * .28;
-    btn.style.transform = `translate(${dx}px,${dy}px)`;
-  });
-  parent.addEventListener('mouseleave', () => { btn.style.transform = ''; });
-});
+
 
 /* ── NAV LOGO SCRAMBLE ── */
 const logo = document.querySelector('.n-logo');
@@ -1409,34 +1397,7 @@ logo.addEventListener('mouseenter', () => {
   }, 30);
 });
 
-/* ── MAGNETIC CONTACT LINK ── */
-const contactWrap = document.getElementById('contact-link-wrap');
-let cachedContactRect = null;
-if (contactWrap) {
-  const contactSection = document.querySelector('.contact');
-  window.addEventListener('scroll', () => { cachedContactRect = null; }, { passive: true });
-  contactSection.addEventListener('mousemove', e => {
-    if (!cachedContactRect) cachedContactRect = contactWrap.getBoundingClientRect();
-    const r = cachedContactRect;
-    const cx = r.left + r.width  / 2;
-    const cy = r.top  + r.height / 2;
-    const dx = (e.clientX - cx);
-    const dy = (e.clientY - cy);
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    const maxDist = 220;
-    if (dist < maxDist) {
-      const pull = (1 - dist / maxDist) * 0.35;
-      contactWrap.style.transform = `translate(${dx * pull}px, ${dy * pull}px)`;
-    } else {
-      contactWrap.style.transform = '';
-    }
-    contactWrap.style.transition = dist < maxDist ? 'transform .2s var(--ease)' : 'transform .5s var(--ease)';
-  });
-  contactSection.addEventListener('mouseleave', () => {
-    contactWrap.style.transform = '';
-    contactWrap.style.transition = 'transform .5s var(--ease)';
-  });
-}
+
 
 /* ── TILT STATE ── */
 const tiltState = new Map();
