@@ -1031,79 +1031,85 @@ const smoother = (() => {
   let current  = window.scrollY;
   let target   = window.scrollY;
   let ticking  = false;
-  let lastTime = null;
+  let prevTime = 0;
   const listeners = [];
 
-  // Exponential decay smoothing — frame-rate independent so it feels identical
-  // at 60 Hz, 120 Hz, and 144 Hz. Tune with a half-life in milliseconds:
-  // lower = snappier, higher = more fluid.
-  //   ~60ms  → crisp, responsive
-  //   ~80ms  → current sweet spot (butter)
-  //   ~110ms → dreamy, slow
-  const HALF_LIFE      = 70;   // ← tune scroll feel here (ms)
-  const SNAP_HALF_LIFE = 80;   // ← tune snap pull feel here (ms)
+  // Exponential decay smoothing — frame-rate independent (60/120/144 Hz identical feel).
+  // Half-life in ms: lower = snappier, higher = more fluid.
+  const HALF_LIFE      = 75;   // ← base scroll feel
+  const SNAP_HALF_LIFE = 60;   // ← snappier once committed to a card
+
+  // ── Firefox pixel-delta normalization ──────────────────────────────────────
+  // Firefox reports raw CSS-pixel deltaY values that are ~3–4× larger than
+  // Chrome/Safari on the same physical wheel movement, making it scroll too fast.
+  // We detect Firefox via the user agent and apply a scale-down factor.
+  const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+  const FF_SCALE  = 0.35; // reduces Firefox wheel speed to match Chrome feel
 
   // Magnetic snap
   let snapPoints = [];
   let snapTimer  = null;
   let snapTarget = null;   // non-null while a snap is committed
-  const SNAP_PULL  = 0.18; // must be within 18% vh of a card top to be eligible
-  const SNAP_DELAY = 180;  // ms of wheel stillness before committing
+  const SNAP_PULL  = 0.20; // within 20% vh of a snap point to be eligible
+  const SNAP_DELAY = 200;  // ms of wheel stillness before committing
 
   function buildSnapPoints() {
-    snapPoints = [...document.querySelectorAll('.proj, .about, .contact')];
+    // Cache absolute offsets so getSnapTop() is just an array lookup during snap
+    snapPoints = [...document.querySelectorAll('.proj, .about, .contact')].map(el => ({
+      el,
+      top: Math.round(el.getBoundingClientRect().top + window.scrollY),
+    }));
   }
 
-  function getSnapTop(el) {
-    return Math.round(el.getBoundingClientRect().top + window.scrollY);
+  // Refresh a single entry's cached offset (used after resize)
+  function refreshSnapTop(entry) {
+    entry.top = Math.round(entry.el.getBoundingClientRect().top + window.scrollY);
   }
 
-  // Find a snap candidate for scroll position `pos` moving in `dir` (+1 down, -1 up).
-  // Only considers cards in the direction of travel so we never grab a card we've passed.
+  // Find the best snap candidate for scroll position `pos` travelling in `dir`.
   function findSnap(pos, dir) {
     const vh = window.innerHeight;
     let best = null, bestDist = Infinity;
-    for (const el of snapPoints) {
-      const top = getSnapTop(el);
-      const dist = top - pos;
-      // card must be in travel direction (or right at pos) and within the pull zone
-      if (dir >= 0 && dist < -vh * 0.05) continue; // scrolling down: skip cards well above
-      if (dir <= 0 && dist >  vh * 0.05) continue; // scrolling up:   skip cards well below
+    for (const entry of snapPoints) {
+      refreshSnapTop(entry); // always use a live measurement at decision time
+      const dist    = entry.top - pos;
       const absDist = Math.abs(dist);
+      // Only consider snap points in the direction of travel (with a small tolerance)
+      if (dir >= 0 && dist < -vh * 0.04) continue;
+      if (dir <= 0 && dist >  vh * 0.04) continue;
       if (absDist < vh * SNAP_PULL && absDist < bestDist) {
-        bestDist = absDist; best = el;
+        bestDist = absDist; best = entry;
       }
     }
-    return best;
+    return best ? best.top : null;
   }
 
   function scheduleSnap(dir) {
     clearTimeout(snapTimer);
     snapTimer = setTimeout(() => {
-      const snap = findSnap(target, dir);
-      if (!snap) return;
-      const snapTop = getSnapTop(snap);
-      if (snapTop === Math.round(target)) return; // already there
+      const snapTop = findSnap(target, dir);
+      if (snapTop === null) return;
+      if (Math.abs(snapTop - target) < 2) return; // already there
       snapTarget = snapTop;
-      target = snapTop;
-      if (!ticking) { ticking = true; lastTime = null; requestAnimationFrame(tick); }
+      target     = snapTop;
+      if (!ticking) { ticking = true; prevTime = 0; requestAnimationFrame(tick); }
     }, SNAP_DELAY);
   }
 
   function tick(now) {
-    if (lastTime === null) lastTime = now;
-    const dt   = Math.min(now - lastTime, 64); // cap at ~2 frames so big pauses don't lurch
-    lastTime   = now;
+    // prevTime === 0 on first frame — use a conservative 16ms seed to avoid a lurch
+    const dt     = prevTime === 0 ? 16 : Math.min(now - prevTime, 64);
+    prevTime     = now;
 
-    const hl   = snapTarget !== null ? SNAP_HALF_LIFE : HALF_LIFE;
-    const factor = 1 - Math.pow(0.5, dt / hl); // frame-rate independent decay
+    const hl     = snapTarget !== null ? SNAP_HALF_LIFE : HALF_LIFE;
+    const factor = 1 - Math.pow(0.5, dt / hl); // frame-rate-independent
 
     const diff = target - current;
-    if (Math.abs(diff) < 0.5) {
-      current  = target;
-      lastTime = null;
+    if (Math.abs(diff) < 0.4) {
+      current    = target;
+      prevTime   = 0;
       snapTarget = null;
-      ticking  = false;
+      ticking    = false;
       window.scrollTo(0, current);
       listeners.forEach(fn => fn(current));
       return;
@@ -1115,15 +1121,18 @@ const smoother = (() => {
   }
 
   let lastWheelDir = 1;
-  // Only intercept wheel on pointer:fine devices (mouse/trackpad).
-  // Touch devices use native scroll — we only add the snap on touchend.
+  // Only intercept wheel on pointer:fine (mouse/trackpad); touch uses native scroll.
   if (!window.matchMedia('(pointer:coarse)').matches) {
     window.addEventListener('wheel', e => {
       e.preventDefault();
-      const delta = e.deltaMode === 1 ? e.deltaY * 32
-                  : e.deltaMode === 2 ? e.deltaY * window.innerHeight
-                  : e.deltaY;
-      // Any new wheel input cancels an in-progress snap so the user stays in control
+      let delta = e.deltaMode === 1 ? e.deltaY * 32          // line mode
+                : e.deltaMode === 2 ? e.deltaY * window.innerHeight // page mode
+                : e.deltaY;                                   // pixel mode
+
+      // Scale down Firefox's outsized pixel deltas
+      if (isFirefox && e.deltaMode === 0) delta *= FF_SCALE;
+
+      // New wheel input cancels any in-progress snap — user stays in control
       if (snapTarget !== null) {
         snapTarget = null;
         clearTimeout(snapTimer);
@@ -1133,39 +1142,39 @@ const smoother = (() => {
         document.body.scrollHeight - window.innerHeight,
         target + delta
       ));
-      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+      if (!ticking) { ticking = true; prevTime = 0; requestAnimationFrame(tick); }
       scheduleSnap(lastWheelDir);
     }, { passive: false });
   }
 
-  // Sync for keyboard/scrollbar navigation.
-  // Only update when the lerp isn't running and the position shifted externally.
+  // Sync for keyboard / scrollbar navigation (external scroll source).
   let ownScroll = false;
   const _nativeScrollTo = window.scrollTo.bind(window);
-  window.scrollTo = (x, y) => { ownScroll = true; _nativeScrollTo(x, y); requestAnimationFrame(() => { ownScroll = false; }); };
+  window.scrollTo = (x, y) => {
+    ownScroll = true;
+    _nativeScrollTo(x, y);
+    requestAnimationFrame(() => { ownScroll = false; });
+  };
   window.addEventListener('scroll', () => {
     if (ticking || ownScroll) return;
     current = target = window.scrollY;
   }, { passive: true });
 
-  // On touch, wait for momentum to decay before evaluating snap position
+  // Touch: wait for momentum to decay then evaluate snap
   let touchDir = 1;
   let touchStartScrollY = 0;
   window.addEventListener('touchstart', () => {
     touchStartScrollY = window.scrollY;
   }, { passive: true });
   window.addEventListener('touchend', () => {
-    // Determine direction from scroll delta at finger-lift
     const delta = window.scrollY - touchStartScrollY;
     touchDir = delta >= 0 ? 1 : -1;
-    // Wait for momentum scroll to mostly settle before snapping
     setTimeout(() => {
       target = current = window.scrollY;
       scheduleSnap(touchDir);
     }, 320);
   }, { passive: true });
 
-  // DOMContentLoaded has already fired by the time inline scripts run at end of body
   buildSnapPoints();
   window.addEventListener('resize', () => {
     clearTimeout(snapTimer);
@@ -1178,8 +1187,8 @@ const smoother = (() => {
       clearTimeout(snapTimer);
       snapTarget = null;
       current = window.scrollY;
-      target = Math.round(el.getBoundingClientRect().top + window.scrollY);
-      if (!ticking) { ticking = true; lastTime = null; requestAnimationFrame(tick); }
+      target  = Math.round(el.getBoundingClientRect().top + window.scrollY);
+      if (!ticking) { ticking = true; prevTime = 0; requestAnimationFrame(tick); }
     },
     rebuild: buildSnapPoints
   };
@@ -1221,6 +1230,18 @@ function buildSectionOffsets() {
 }
 buildSectionOffsets();
 
+// Pre-compute stable absolute offsets for parallax — only invalidated on resize.
+// Using absolute offsets (not live getBoundingClientRect during scroll) avoids
+// forced reflows which are the root cause of the lag spikes.
+function buildProjOffsets() {
+  projPairs.forEach(({ el }) => {
+    const r = el.getBoundingClientRect();
+    el._absTop    = r.top + window.scrollY;
+    el._absHeight = r.height;
+  });
+}
+buildProjOffsets();
+
 function updateIndicator(y) {
   let active = sectionOffsets[0].label;
   const mid = y + window.innerHeight * 0.5;
@@ -1257,16 +1278,17 @@ smoother.on(y => {
   if (pct !== prog._lastPct) { prog.style.width = pct + '%'; prog._lastPct = pct; }
 
   projPairs.forEach(({ el, img }) => {
-    if (!el._rect) el._rect = el.getBoundingClientRect();
-    if (el._rectTop === undefined) el._rectTop = el._rect.top + y;
-    const liveTop    = el._rectTop - y;
-    const liveBottom = liveTop + el._rect.height;
+    // Use stable pre-computed absolute offsets — no getBoundingClientRect() during scroll
+    const absTop    = el._absTop;
+    const absHeight = el._absHeight;
+    if (absTop === undefined) return; // not yet computed
+    const liveTop    = absTop - y;
+    const liveBottom = liveTop + absHeight;
     if (liveBottom < 0 || liveTop > window.innerHeight) return;
-    const pct      = (liveTop + el._rect.height / 2 - window.innerHeight / 2) / window.innerHeight;
-    const maxShift = el._rect.height * 0.03;
+    const pct      = (liveTop + absHeight / 2 - window.innerHeight / 2) / window.innerHeight;
+    const maxShift = absHeight * 0.03;
     const shift    = Math.max(-maxShift, Math.min(maxShift, pct * 52));
     const tilt     = tiltState.get(img) || { rx: 0, ry: 0 };
-    // Only write style if value has meaningfully changed — avoids redundant compositor notifications
     const next = `scale(1.06) translateY(${Math.round(shift * 10) / 10}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
     if (next !== img._lastTransform) { img.style.transform = next; img._lastTransform = next; }
   });
@@ -1361,7 +1383,7 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     buildSectionOffsets();
-    projPairs.forEach(({el}) => { el._rect = null; el._rectTop = undefined; });
+    buildProjOffsets(); // rebuild absolute parallax offsets
     document.querySelectorAll('.proj').forEach(proj => {
       proj._projRect = null;
       const btn = proj.querySelector('.proj-open');
