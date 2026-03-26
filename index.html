@@ -1030,13 +1030,20 @@ applyCursorState();
 
 /* ── SMOOTH SCROLL ── */
 const smoother = (() => {
-  let current = window.scrollY;
-  let target  = window.scrollY;
-  let ticking = false;
+  let current  = window.scrollY;
+  let target   = window.scrollY;
+  let ticking  = false;
+  let lastTime = null;
   const listeners = [];
 
-  const ease     = 0.072;  // normal scroll feel
-  const snapEase = 0.062;  // ← snap pull speed (tweak me: 0.04 dreamy → 0.10 crisp)
+  // Exponential decay smoothing — frame-rate independent so it feels identical
+  // at 60 Hz, 120 Hz, and 144 Hz. Tune with a half-life in milliseconds:
+  // lower = snappier, higher = more fluid.
+  //   ~60ms  → crisp, responsive
+  //   ~80ms  → current sweet spot (butter)
+  //   ~110ms → dreamy, slow
+  const HALF_LIFE      = 80;   // ← tune scroll feel here (ms)
+  const SNAP_HALF_LIFE = 95;   // ← tune snap pull feel here (ms)
 
   // Magnetic snap
   let snapPoints = [];
@@ -1081,22 +1088,29 @@ const smoother = (() => {
       if (snapTop === Math.round(target)) return; // already there
       snapTarget = snapTop;
       target = snapTop;
-      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+      if (!ticking) { ticking = true; lastTime = null; requestAnimationFrame(tick); }
     }, SNAP_DELAY);
   }
 
-  function tick() {
+  function tick(now) {
+    if (lastTime === null) lastTime = now;
+    const dt   = Math.min(now - lastTime, 64); // cap at ~2 frames so big pauses don't lurch
+    lastTime   = now;
+
+    const hl   = snapTarget !== null ? SNAP_HALF_LIFE : HALF_LIFE;
+    const factor = 1 - Math.pow(0.5, dt / hl); // frame-rate independent decay
+
     const diff = target - current;
     if (Math.abs(diff) < 0.5) {
-      current = target;
-      snapTarget = null; // snap fully settled — release
-      ticking = false;
+      current  = target;
+      lastTime = null;
+      snapTarget = null;
+      ticking  = false;
       window.scrollTo(0, current);
       listeners.forEach(fn => fn(current));
       return;
     }
-    const e = (snapTarget !== null) ? snapEase : ease;
-    current += diff * e;
+    current += diff * factor;
     window.scrollTo(0, Math.round(current));
     listeners.forEach(fn => fn(current));
     requestAnimationFrame(tick);
@@ -1171,7 +1185,7 @@ const smoother = (() => {
       snapTarget = null;
       current = window.scrollY;
       target = Math.round(el.getBoundingClientRect().top + window.scrollY);
-      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+      if (!ticking) { ticking = true; lastTime = null; requestAnimationFrame(tick); }
     },
     rebuild: buildSnapPoints
   };
