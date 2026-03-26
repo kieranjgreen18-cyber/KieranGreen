@@ -109,7 +109,7 @@ body.ready{opacity:1;transition:opacity .75s ease;}
   pointer-events:none;z-index:9990;opacity:.026;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation:gr .9s steps(2) infinite;
-  contain:strict;
+  contain:style layout;
 }
 @keyframes gr{0%,100%{transform:translate(0,0)}33%{transform:translate(-1%,-2%)}66%{transform:translate(1%,1%)}}
 
@@ -218,7 +218,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   background-color:#1a1410;
   background-size:cover;background-position:center 20%;
   transform:scale(1.07);transition:transform 9s ease;
-  will-change:transform;
+  /* will-change applied and removed via JS around the zoom transition */
 }
 .hero.loaded .hero-img{transform:scale(1);}
 .hero-veil{
@@ -317,6 +317,8 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   height:100svh;min-height:580px;
   overflow:hidden;cursor:none;
   display:block;text-decoration:none;
+  perspective:1200px;
+  transform-style:preserve-3d;
 }
 .proj-img{
   position:absolute;inset:0;background-size:cover;background-position:center;
@@ -324,6 +326,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   opacity:.72;
   transition:opacity .8s ease;
   will-change:transform;
+  transform-style:preserve-3d;
 }
 .proj:hover .proj-img{opacity:.9;}
 .proj:nth-child(odd) .proj-veil{
@@ -343,15 +346,18 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .proj:nth-child(odd) .proj-line{left:0;}
 .proj:nth-child(even) .proj-line{right:0;}
-.proj:hover .proj-line{opacity:1;transform:scaleY(1);}
+.proj:hover .proj-line,
+.proj:focus-within .proj-line{opacity:1;transform:scaleY(1);}
 .proj-text{
   position:absolute;top:50%;transform:translateY(-50%);
   width:44%;z-index:2;
   transition:transform .7s var(--ease);
+  will-change:transform;
 }
 .proj:nth-child(odd) .proj-text{left:var(--pad);}
 .proj:nth-child(even) .proj-text{right:var(--pad);text-align:right;}
-.proj:hover .proj-text{transform:translateY(calc(-50% - 10px));}
+.proj:hover .proj-text,
+.proj:focus-within .proj-text{transform:translateY(calc(-50% - 10px));}
 .proj-num{
   font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
   color:var(--sage);margin-bottom:var(--s2);
@@ -374,14 +380,16 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   max-width:340px;margin-bottom:var(--s4);
 }
 .proj:nth-child(even) .proj-desc{margin-left:auto;}
-.proj:hover .proj-desc{opacity:.75;transform:translateY(0);}
+.proj:hover .proj-desc,
+.proj:focus-within .proj-desc{opacity:.75;transform:translateY(0);}
 .proj-tags{
   display:flex;flex-wrap:wrap;gap:var(--s1);
   opacity:0;transform:translateY(var(--s1));
   transition:opacity .5s var(--ease) .12s,transform .5s var(--ease) .12s;
 }
 .proj:nth-child(even) .proj-tags{justify-content:flex-end;}
-.proj:hover .proj-tags{opacity:1;transform:translateY(0);}
+.proj:hover .proj-tags,
+.proj:focus-within .proj-tags{opacity:1;transform:translateY(0);}
 .proj-tag{
   font-size:var(--t-micro);font-weight:300;letter-spacing:var(--ls-mid);text-transform:uppercase;
   color:var(--off);
@@ -390,7 +398,8 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   background:rgba(255,255,255,.06);
   transition:border-color .25s,color .25s,background .25s;
 }
-.proj:hover .proj-tag{border-color:rgba(91,160,164,.5);color:var(--sage);background:rgba(91,160,164,.08);}
+.proj:hover .proj-tag,
+.proj:focus-within .proj-tag{border-color:rgba(91,160,164,.5);color:var(--sage);background:rgba(91,160,164,.08);}
 .proj-ghost{
   position:absolute;
   font-size:clamp(200px,30vw,400px);
@@ -403,7 +412,8 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .proj:nth-child(odd) .proj-ghost{right:-20px;}
 .proj:nth-child(even) .proj-ghost{left:-20px;}
-.proj:hover .proj-ghost{-webkit-text-stroke:1px rgba(91,160,164,.09);}
+.proj:hover .proj-ghost,
+.proj:focus-within .proj-ghost{-webkit-text-stroke:1px rgba(91,160,164,.09);}
 .proj-open{
   position:absolute;bottom:var(--pad);
   width:var(--s7);height:var(--s7);
@@ -417,7 +427,8 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 .proj:nth-child(odd) .proj-open{right:var(--pad);}
 .proj:nth-child(even) .proj-open{left:var(--pad);}
-.proj:hover .proj-open{opacity:1;}
+.proj:hover .proj-open,
+.proj:focus-within .proj-open{opacity:1;}
 .proj-open:hover{border-color:var(--sage);background:var(--sage);color:var(--ink);}
 
 .about{
@@ -613,7 +624,7 @@ footer{
 
 #section-indicator{
   position:fixed;right:var(--s6);top:50%;transform:translateY(-50%);
-  z-index:600;writing-mode:vertical-rl;
+  z-index:450;writing-mode:vertical-rl; /* below nav(500) and drawer(490) */
   font-size:8px;font-weight:200;letter-spacing:var(--ls-mid);text-transform:uppercase;
   color:rgba(91,160,164,.35);
   pointer-events:none;
@@ -654,6 +665,9 @@ footer{
 }
 [data-theme="light"] .proj:nth-child(odd) .proj-veil{background:linear-gradient(to right,rgba(237,238,237,.96) 0%,rgba(237,238,237,.6) 42%,transparent 72%);}
 [data-theme="light"] .proj:nth-child(even) .proj-veil{background:linear-gradient(to left,rgba(237,238,237,.96) 0%,rgba(237,238,237,.6) 42%,transparent 72%);}
+@media(max-width:768px){
+  [data-theme="light"] .proj:nth-child(even) .proj-veil{background:linear-gradient(to right,rgba(237,238,237,.96) 0%,rgba(237,238,237,.6) 42%,transparent 72%);}
+}
 [data-theme="light"] .about-bg{background:var(--ink);}
 [data-theme="light"] .ticker{background:rgba(0,0,0,.04);}
 [data-theme="light"] .ticker::before{background:linear-gradient(to right,var(--ink),transparent);}
@@ -664,6 +678,11 @@ footer{
   #cur,#cur-r{display:none !important;}
   body{cursor:auto;}
   a,button,.n-ham{cursor:pointer;}
+  /* On touch devices :hover never sticks, so project descriptions and tags
+     would be permanently hidden. Show them statically instead. */
+  .proj-desc{opacity:.65 !important;transform:none !important;}
+  .proj-tags{opacity:1 !important;transform:none !important;}
+  .proj-open{opacity:1 !important;}
 }
 
 @media(prefers-reduced-motion:reduce){
@@ -674,6 +693,12 @@ footer{
   .hero-h1 .word{opacity:1 !important;transform:none !important;}
   .hero-eyebrow,.n-logo,.n-links,.n-right{opacity:1 !important;}
   .hero-bottom{opacity:1 !important;}
+  /* Reveal hover-only content that would otherwise stay permanently hidden */
+  .proj-desc{opacity:.65 !important;transform:none !important;}
+  .proj-tags{opacity:1 !important;transform:none !important;}
+  .proj-open{opacity:1 !important;}
+  /* Signal to JS that parallax and smooth scroll should be disabled */
+  :root{ --reduce-motion: 1; }
 }
 
 @media(max-width:768px){
@@ -697,7 +722,8 @@ footer{
     width:85%;top:auto;transform:none;bottom:100px;
     left:var(--pad);right:auto;text-align:left;
   }
-  .proj:hover .proj-text{transform:none;}
+  .proj:hover .proj-text,
+  .proj:focus-within .proj-text{transform:none;}
   .proj:nth-child(odd) .proj-num,
   .proj:nth-child(even) .proj-num{justify-content:flex-start;}
   .proj:nth-child(even) .proj-num::after{display:none;}
@@ -980,34 +1006,60 @@ function getState() {
   return 'default';
 }
 
+// Shared wake handle — assigned inside pointer:fine block, no-op on touch devices
+let wakeCursor = () => {};
+
 function applyCursorState() {
   const s = STATES[getState()];
   cur.style.width  = s.dot + 'px';
   cur.style.height = s.dot + 'px';
   ringTarget = s.ring;
   curR.style.borderColor = s.ringColor;
+  // Ring size/color changed — re-wake loop so the resize animates fully
+  wakeCursor();
 }
 
 document.addEventListener('mousemove', e => {
   mx = e.clientX; my = e.clientY;
   cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  wakeCursor();
 });
 
 if (window.matchMedia('(pointer:fine)').matches) {
-  (function loop(){
-    const rxNew = rx + (mx - rx) * .1;
-    const ryNew = ry + (my - ry) * .1;
+  let cursorSettled = false;
+  function loop() {
+    if (document.hidden) { cursorSettled = true; return; }
+    const rxNew   = rx + (mx - rx) * .1;
+    const ryNew   = ry + (my - ry) * .1;
     const ringNew = ringCurrent + (ringTarget - ringCurrent) * 0.12;
-    if (Math.abs(rxNew - rx) > 0.02 || Math.abs(ryNew - ry) > 0.02 || Math.abs(ringNew - ringCurrent) > 0.05) {
+    const moving  = Math.abs(rxNew - rx) > 0.02 || Math.abs(ryNew - ry) > 0.02 || Math.abs(ringNew - ringCurrent) > 0.05;
+    if (moving) {
+      cursorSettled = false;
       rx = rxNew; ry = ryNew;
       curR.style.left = rx + 'px';
       curR.style.top  = ry + 'px';
       ringCurrent = ringNew;
       curR.style.width  = ringCurrent + 'px';
       curR.style.height = ringCurrent + 'px';
+    } else if (!cursorSettled) {
+      cursorSettled = true;
+      rx = mx; ry = my;
+      curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
+      ringCurrent = ringTarget;
+      curR.style.width = ringCurrent + 'px'; curR.style.height = ringCurrent + 'px';
     }
-    requestAnimationFrame(loop);
-  })();
+    if (!cursorSettled) requestAnimationFrame(loop);
+  }
+
+  wakeCursor = () => {
+    if (cursorSettled) { cursorSettled = false; requestAnimationFrame(loop); }
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) wakeCursor();
+  });
+
+  requestAnimationFrame(loop);
 }
 
 document.querySelectorAll('a, button, .n-ham').forEach(el => {
@@ -1028,53 +1080,67 @@ applyCursorState();
 
 /* ── SMOOTH SCROLL ── */
 const smoother = (() => {
-  let current  = window.scrollY;
-  let target   = window.scrollY;
-  let ticking  = false;
-  let prevTime = 0;
+  let position  = window.scrollY; // what's actually rendered
+  let velocity  = 0;              // pixels/ms of current momentum
+  let ticking   = false;
+  let prevTime  = 0;
   const listeners = [];
 
-  // Exponential decay smoothing — frame-rate independent (60/120/144 Hz identical feel).
-  // Half-life in ms: lower = snappier, higher = more fluid.
-  const HALF_LIFE      = 75;   // ← base scroll feel
-  const SNAP_HALF_LIFE = 60;   // ← snappier once committed to a card
+  // ── Tuning ─────────────────────────────────────────────────────────────────
+  // Friction: velocity multiplier per 16ms frame (frame-rate-independent via pow).
+  // 0.88 → coast decays in ~300ms, feels natural for both mouse and trackpad.
+  const FRICTION        = 0.88;
+  // Hard cap so rapid spinning can't send the page flying.
+  // At WHEEL_FACTOR below, 3 stacked clicks ≈ 3.4 px/ms — cap gives headroom.
+  const MAX_VEL         = 12;   // px/ms
+  // Impulse per pixel of wheel delta.
+  // Mouse delivers ~100px/click; 0.011 → ~150px travel per click (feels like
+  // one natural "step"). Trackpad sends many small deltas that stack smoothly.
+  const WHEEL_FACTOR    = 0.011;
 
-  // ── Firefox pixel-delta normalization ──────────────────────────────────────
-  // Firefox reports raw CSS-pixel deltaY values that are ~3–4× larger than
-  // Chrome/Safari on the same physical wheel movement, making it scroll too fast.
-  // We detect Firefox via the user agent and apply a scale-down factor.
+  // Firefox pixel-delta normalization — FF reports ~3–4× larger raw values.
   const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-  const FF_SCALE  = 0.35; // reduces Firefox wheel speed to match Chrome feel
+  const FF_SCALE  = 0.38;
 
-  // Magnetic snap
-  let snapPoints = [];
-  let snapTimer  = null;
-  let snapTarget = null;   // non-null while a snap is committed
-  const SNAP_PULL  = 0.20; // within 20% vh of a snap point to be eligible
-  const SNAP_DELAY = 200;  // ms of wheel stillness before committing
+  // ── Snap ───────────────────────────────────────────────────────────────────
+  let snapPoints   = [];
+  let snapTimer    = null;
+  // When committed, interpolate position → snapTo over SNAP_DURATION ms
+  // using a cubic ease-in-out. This is the "mechanical dial" feel:
+  //   slow deliberate start → authoritative pull through the middle → dead stop.
+  // No spring wobble, no residual velocity, arrives exactly on target.
+  let snapFrom     = null;
+  let snapTo       = null;
+  let snapStart    = null; // rAF timestamp when animation began
+
+  const SNAP_DURATION = 540; // ms — unhurried but decisive
+  const SNAP_PULL     = 0.42; // within 42% vh of a snap point to be eligible
+  const SNAP_DELAY    = 350;  // ms of wheel stillness before committing
+
+  // Quintic ease-in-out: flatter start than cubic — feels like deliberate
+  // resistance before the detent clicks, then a crisp decisive pull-in.
+  function easeInOut(t) {
+    return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+  }
 
   function buildSnapPoints() {
-    // Cache absolute offsets so getSnapTop() is just an array lookup during snap
     snapPoints = [...document.querySelectorAll('.proj, .about, .contact')].map(el => ({
       el,
       top: Math.round(el.getBoundingClientRect().top + window.scrollY),
     }));
   }
 
-  // Refresh a single entry's cached offset (used after resize)
   function refreshSnapTop(entry) {
     entry.top = Math.round(entry.el.getBoundingClientRect().top + window.scrollY);
   }
 
-  // Find the best snap candidate for scroll position `pos` travelling in `dir`.
   function findSnap(pos, dir) {
     const vh = window.innerHeight;
     let best = null, bestDist = Infinity;
     for (const entry of snapPoints) {
-      refreshSnapTop(entry); // always use a live measurement at decision time
+      refreshSnapTop(entry);
       const dist    = entry.top - pos;
       const absDist = Math.abs(dist);
-      // Only consider snap points in the direction of travel (with a small tolerance)
       if (dir >= 0 && dist < -vh * 0.04) continue;
       if (dir <= 0 && dist >  vh * 0.04) continue;
       if (absDist < vh * SNAP_PULL && absDist < bestDist) {
@@ -1084,70 +1150,124 @@ const smoother = (() => {
     return best ? best.top : null;
   }
 
+  let snapDuration = SNAP_DURATION; // actual duration for this snap, set on commit
+
+  function commitSnap(snapTop) {
+    // snapFrom and snapStart are captured on the first tick so position has
+    // fully settled before we begin interpolating — eliminates the grab jerk.
+    snapFrom     = null;
+    snapTo       = snapTop;
+    snapStart    = null;
+    velocity     = 0;
+    // Scale duration by distance so short snaps don't feel sluggish and
+    // long snaps don't feel rushed. Clamp to [300ms, 640ms].
+    const dist   = Math.abs(snapTop - position);
+    snapDuration = Math.max(300, Math.min(640, dist * 1.1));
+    prevTime = 0;
+    if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+  }
+
   function scheduleSnap(dir) {
     clearTimeout(snapTimer);
     snapTimer = setTimeout(() => {
-      const snapTop = findSnap(target, dir);
+      if (Math.abs(velocity) > 2.5) return; // don't fight mid-scroll
+      const snapTop = findSnap(position, dir);
       if (snapTop === null) return;
-      if (Math.abs(snapTop - target) < 2) return; // already there
-      snapTarget = snapTop;
-      target     = snapTop;
-      if (!ticking) { ticking = true; prevTime = 0; requestAnimationFrame(tick); }
+      if (Math.abs(snapTop - position) < 2) return;
+      // Zero velocity so the momentum path exits cleanly on the next tick
+      // before the snap path takes over — prevents one frame of overlap.
+      velocity = 0;
+      commitSnap(snapTop);
     }, SNAP_DELAY);
   }
 
+  const maxScroll = () => document.body.scrollHeight - window.innerHeight;
+
   function tick(now) {
-    // prevTime === 0 on first frame — use a conservative 16ms seed to avoid a lurch
-    const dt     = prevTime === 0 ? 16 : Math.min(now - prevTime, 64);
-    prevTime     = now;
+    const dt = prevTime === 0 ? 16 : Math.min(now - prevTime, 64);
+    prevTime = now;
 
-    const hl     = snapTarget !== null ? SNAP_HALF_LIFE : HALF_LIFE;
-    const factor = 1 - Math.pow(0.5, dt / hl); // frame-rate-independent
+    if (snapTo !== null) {
+      // Capture both snapFrom and snapStart on the very first tick so position
+      // has fully settled from any residual momentum before we begin interpolating.
+      if (snapStart === null) { snapStart = now; snapFrom = position; }
+      const t      = Math.min((now - snapStart) / snapDuration, 1);
+      position     = snapFrom + (snapTo - snapFrom) * easeInOut(t);
 
-    const diff = target - current;
-    if (Math.abs(diff) < 0.4) {
-      current    = target;
-      prevTime   = 0;
-      snapTarget = null;
-      ticking    = false;
-      window.scrollTo(0, current);
-      listeners.forEach(fn => fn(current));
+      window.scrollTo(0, Math.round(position));
+      listeners.forEach(fn => fn(position));
+
+      if (t >= 1) {
+        position  = snapTo;
+        snapFrom  = snapTo = snapStart = null;
+        velocity  = 0;
+        ticking   = false;
+        prevTime  = 0;
+        window.scrollTo(0, position);
+        listeners.forEach(fn => fn(position));
+      } else {
+        requestAnimationFrame(tick);
+      }
       return;
+    } else {
+      // Momentum-based free scroll: apply friction each frame.
+      // This makes rapid wheel input feel like it has weight — it coasts
+      // naturally and stops, rather than slowly crawling to a fixed target.
+      const friction = Math.pow(FRICTION, dt / 16); // frame-rate-independent
+      velocity *= friction;
+      position += velocity * dt;
+
+      // Clamp to page bounds
+      const max = maxScroll();
+      if (position <= 0)   { position = 0;   velocity = 0; }
+      if (position >= max) { position = max;  velocity = 0; }
+
+      if (Math.abs(velocity) < 0.02) {
+        velocity = 0;
+        ticking  = false;
+        prevTime = 0;
+        window.scrollTo(0, Math.round(position));
+        listeners.forEach(fn => fn(position));
+        return;
+      }
     }
-    current += diff * factor;
-    window.scrollTo(0, Math.round(current));
-    listeners.forEach(fn => fn(current));
+
+    window.scrollTo(0, Math.round(position));
+    listeners.forEach(fn => fn(position));
     requestAnimationFrame(tick);
   }
 
   let lastWheelDir = 1;
-  // Only intercept wheel on pointer:fine (mouse/trackpad); touch uses native scroll.
-  if (!window.matchMedia('(pointer:coarse)').matches) {
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (!window.matchMedia('(pointer:coarse)').matches && !prefersReducedMotion) {
     window.addEventListener('wheel', e => {
       e.preventDefault();
-      let delta = e.deltaMode === 1 ? e.deltaY * 32          // line mode
-                : e.deltaMode === 2 ? e.deltaY * window.innerHeight // page mode
-                : e.deltaY;                                   // pixel mode
 
-      // Scale down Firefox's outsized pixel deltas
+      let delta = e.deltaMode === 1 ? e.deltaY * 32
+                : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+                : e.deltaY;
       if (isFirefox && e.deltaMode === 0) delta *= FF_SCALE;
 
-      // New wheel input cancels any in-progress snap — user stays in control
-      if (snapTarget !== null) {
-        snapTarget = null;
+      // Cancel any in-progress snap — user is back in control
+      if (snapTo !== null) {
+        snapFrom = snapTo = snapStart = null;
+        snapDuration = SNAP_DURATION;
         clearTimeout(snapTimer);
       }
+
+      // Convert delta to a velocity impulse (not a position jump).
+      // This is what makes the scroll feel weighted: each wheel click adds
+      // momentum rather than teleporting the target position.
+      const impulse = delta * WHEEL_FACTOR;
+      velocity = Math.max(-MAX_VEL, Math.min(MAX_VEL, velocity + impulse));
+
       lastWheelDir = delta >= 0 ? 1 : -1;
-      target = Math.max(0, Math.min(
-        document.body.scrollHeight - window.innerHeight,
-        target + delta
-      ));
       if (!ticking) { ticking = true; prevTime = 0; requestAnimationFrame(tick); }
       scheduleSnap(lastWheelDir);
     }, { passive: false });
   }
 
-  // Sync for keyboard / scrollbar navigation (external scroll source).
+  // Sync for keyboard / scrollbar / programmatic navigation.
   let ownScroll = false;
   const _nativeScrollTo = window.scrollTo.bind(window);
   window.scrollTo = (x, y) => {
@@ -1157,20 +1277,24 @@ const smoother = (() => {
   };
   window.addEventListener('scroll', () => {
     if (ticking || ownScroll) return;
-    current = target = window.scrollY;
+    position = window.scrollY;
+    velocity = 0;
   }, { passive: true });
 
-  // Touch: wait for momentum to decay then evaluate snap
+  // Touch: native momentum, snap on lift
   let touchDir = 1;
   let touchStartScrollY = 0;
   window.addEventListener('touchstart', () => {
     touchStartScrollY = window.scrollY;
+    velocity = 0;
+    snapTo = snapFrom = snapStart = null;
   }, { passive: true });
   window.addEventListener('touchend', () => {
     const delta = window.scrollY - touchStartScrollY;
     touchDir = delta >= 0 ? 1 : -1;
     setTimeout(() => {
-      target = current = window.scrollY;
+      position = window.scrollY;
+      velocity = 0;
       scheduleSnap(touchDir);
     }, 320);
   }, { passive: true });
@@ -1184,12 +1308,11 @@ const smoother = (() => {
   return {
     on: fn => listeners.push(fn),
     scrollTo: el => {
+      // Nav link click: use same ease-in-out snap for a deliberate glide
       clearTimeout(snapTimer);
-      snapTarget = null;
-      current = window.scrollY;
-      target  = Math.round(el.getBoundingClientRect().top + window.scrollY);
-      if (!ticking) { ticking = true; prevTime = 0; requestAnimationFrame(tick); }
+      commitSnap(Math.round(el.getBoundingClientRect().top + window.scrollY));
     },
+    syncPosition: () => { clearTimeout(snapTimer); position = window.scrollY; velocity = 0; snapTo = snapFrom = snapStart = null; },
     rebuild: buildSnapPoints
   };
 })();
@@ -1199,7 +1322,7 @@ const heroImg   = document.getElementById('hero-img');
 const navEl     = document.getElementById('nav');
 const projPairs = [...document.querySelectorAll('.proj')].map(p => ({ el:p, img:p.querySelector('.proj-img') }));
 const track     = document.getElementById('t-track');
-let lastY = 0;
+let lastY = window.scrollY; // init to actual position, not 0, to avoid false direction on bfcache restore
 
 const prog = document.createElement('div');
 prog.id = 'prog';
@@ -1242,6 +1365,7 @@ function buildProjOffsets() {
 }
 buildProjOffsets();
 
+let indicatorTimer = null;
 function updateIndicator(y) {
   let active = sectionOffsets[0].label;
   const mid = y + window.innerHeight * 0.5;
@@ -1251,7 +1375,10 @@ function updateIndicator(y) {
   if (active !== currentSectionLabel) {
     currentSectionLabel = active;
     sectionIndicator.classList.remove('visible');
-    setTimeout(() => {
+    // Clear any pending re-show from a previous boundary crossing so rapid
+    // section skips don't queue up stale label flashes
+    clearTimeout(indicatorTimer);
+    indicatorTimer = setTimeout(() => {
       sectionIndicator.textContent = active;
       sectionIndicator.classList.add('visible');
     }, 200);
@@ -1273,8 +1400,8 @@ smoother.on(y => {
   const dir = y > lastY ? 'normal' : 'reverse';
   if (dir !== track._lastDir) { track.style.animationDirection = dir; track._lastDir = dir; }
   lastY = y;
-  const maxScroll = document.body.scrollHeight - window.innerHeight;
-  const pct = Math.round(maxScroll > 0 ? y / maxScroll * 1000 : 0) / 10;
+  const pageMax = document.body.scrollHeight - window.innerHeight;
+  const pct = Math.round(pageMax > 0 ? y / pageMax * 1000 : 0) / 10;
   if (pct !== prog._lastPct) { prog.style.width = pct + '%'; prog._lastPct = pct; }
 
   projPairs.forEach(({ el, img }) => {
@@ -1298,28 +1425,53 @@ smoother.on(y => {
 
 /* ── PAGE TRANSITIONS ── */
 const veil = document.getElementById('veil');
+let navigating = false;
 function navigateTo(href) {
+  if (navigating) return; // guard against double-click firing twice
+  navigating = true;
   veil.style.transition = 'clip-path .5s cubic-bezier(0.77,0,0.18,1)';
   veil.style.clipPath = 'inset(0 0% 0 0)';
+  // Reset after 2s — if the page load fails or is cancelled the flag
+  // would otherwise stay true and block all subsequent link clicks.
   setTimeout(() => { window.location.href = href; }, 520);
+  setTimeout(() => { navigating = false; }, 2000);
 }
 
 function onReady(fn) {
   if (document.readyState !== 'loading') { fn(); } else { window.addEventListener('DOMContentLoaded', fn, { once: true }); }
 }
 onReady(() => {
-  setTimeout(() => document.querySelector('.hero').classList.add('loaded'), 100);
+  const heroSection = document.querySelector('.hero');
+  const heroImgEl   = document.getElementById('hero-img');
+  // Apply will-change before the zoom transition starts, remove it after
+  // so we don't hold an unnecessary compositor layer for the rest of the session
+  if (heroImgEl) {
+    heroImgEl.style.willChange = 'transform';
+    heroImgEl.addEventListener('transitionend', () => {
+      heroImgEl.style.willChange = 'auto';
+    }, { once: true });
+  }
+  setTimeout(() => heroSection.classList.add('loaded'), 100);
   requestAnimationFrame(() => requestAnimationFrame(() => {
     document.body.classList.add('ready');
     veil.classList.add('gone');
   }));
 });
+// Rebuild proj offsets after all images have loaded — lazy-loaded images can shift
+// card positions after the initial buildProjOffsets() call at script parse time.
+window.addEventListener('load', () => {
+  buildProjOffsets();
+  buildSectionOffsets();
+}, { once: true });
 /* bfcache restore — re-reveal page when navigating back */
 window.addEventListener('pageshow', e => {
   if (e.persisted) {
     document.body.classList.add('ready');
     veil.style.transition = 'none';
     veil.classList.add('gone');
+    // Re-sync smoother's internal position to wherever the browser restored scroll to,
+    // otherwise the first wheel event after back-navigation causes a jump.
+    smoother.syncPosition();
   }
 });
 
@@ -1367,7 +1519,10 @@ hamburger.addEventListener('click', () => {
 });
 ['dw-work','dw-about','dw-contact'].forEach(id => {
   const el = document.getElementById(id);
-  if (el) el.addEventListener('click', () => {
+  if (el) el.addEventListener('click', e => {
+    // Stop propagation so the global document click handler doesn't also
+    // intercept this anchor's href="#..." and call smoother.scrollTo() a second time
+    e.stopPropagation();
     document.body.classList.remove('menu-open');
     hamburger.setAttribute('aria-expanded', 'false');
     hamburger.setAttribute('aria-label', 'Open menu');
@@ -1384,11 +1539,6 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => {
     buildSectionOffsets();
     buildProjOffsets(); // rebuild absolute parallax offsets
-    document.querySelectorAll('.proj').forEach(proj => {
-      proj._projRect = null;
-      const btn = proj.querySelector('.proj-open');
-      if (btn) btn._btnRect = null;
-    });
     if (window.innerWidth > 768) {
       document.body.classList.remove('menu-open');
       hamburger.setAttribute('aria-expanded', 'false');
@@ -1454,6 +1604,9 @@ document.querySelectorAll('.proj-img[data-bg]').forEach(img => {
 });
 
 /* ── CHAR-BY-CHAR title reveal ── */
+// threshold:0 + rootMargin fires when the top edge of a card enters the viewport
+// rather than waiting for 30% of a full-vh card — fixes the last card never animating
+// when it can't scroll far enough to reach 30% intersection.
 const titleObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
@@ -1463,7 +1616,7 @@ const titleObs = new IntersectionObserver(entries => {
     });
     titleObs.unobserve(e.target);
   });
-}, { threshold: 0.3 });
+}, { threshold: 0, rootMargin: '-10% 0px -10% 0px' });
 document.querySelectorAll('.proj-title').forEach(title => {
   const proj = title.closest('.proj');
   if (!proj) return;
@@ -1498,13 +1651,22 @@ logo.innerHTML = '';
 logo.appendChild(logoText1);
 logo.appendChild(logoText2);
 
+let scrambleAborted = false;
 logo.addEventListener('mouseenter', () => {
   if (logoScrambling) return;
   logoScrambling = true;
+  scrambleAborted = false;
   let iteration = 0;
   const full = 'Kieran Green';
   let lastScrambleTime = 0;
   function scrambleFrame(now) {
+    // Mouse left before animation finished — restore immediately and unlock
+    if (scrambleAborted) {
+      logoText1.textContent = 'Kieran ';
+      logoText2.textContent = 'Green';
+      logoScrambling = false;
+      return;
+    }
     if (now - lastScrambleTime < 30) { requestAnimationFrame(scrambleFrame); return; }
     lastScrambleTime = now;
     const scrambled = full.split('').map((char, i) => {
@@ -1524,6 +1686,9 @@ logo.addEventListener('mouseenter', () => {
     requestAnimationFrame(scrambleFrame);
   }
   requestAnimationFrame(scrambleFrame);
+});
+logo.addEventListener('mouseleave', () => {
+  if (logoScrambling) scrambleAborted = true;
 });
 
 
@@ -1546,23 +1711,42 @@ const tiltState = new Map();
 document.querySelectorAll('.proj').forEach(proj => {
   const img = proj.querySelector('.proj-img');
   tiltState.set(img, { rx: 0, ry: 0 });
-  proj.addEventListener('mouseenter', () => { proj._projRect = proj.getBoundingClientRect(); });
+
+  // Capture both the rect AND the scroll position at mouseenter.
+  // During smooth scroll the card's viewport position shifts, so we
+  // compensate with (window.scrollY - scrollAtEnter) on every mousemove.
+  let rectAtEnter = null;
+  let scrollAtEnter = 0;
+
+  proj.addEventListener('mouseenter', () => {
+    rectAtEnter   = proj.getBoundingClientRect();
+    scrollAtEnter = window.scrollY;
+  });
+
   let tiltPending = false;
   proj.addEventListener('mousemove', e => {
     if (tiltPending) return;
     tiltPending = true;
     requestAnimationFrame(() => {
       tiltPending = false;
-      if (!proj._projRect) proj._projRect = proj.getBoundingClientRect();
-      const nx = (e.clientX - proj._projRect.left) / proj._projRect.width  - .5;
-      const ny = (e.clientY - proj._projRect.top)  / proj._projRect.height - .5;
+      if (!rectAtEnter) {
+        rectAtEnter   = proj.getBoundingClientRect();
+        scrollAtEnter = window.scrollY;
+      }
+      // Adjust for any scroll that happened since mouseenter
+      const scrollDelta = window.scrollY - scrollAtEnter;
+      const top  = rectAtEnter.top  - scrollDelta;
+      const nx = (e.clientX - rectAtEnter.left) / rectAtEnter.width  - .5;
+      const ny = (e.clientY - top)               / rectAtEnter.height - .5;
       tiltState.get(img).rx = nx * 4;
       tiltState.get(img).ry = -ny * 2;
     });
   });
+
   proj.addEventListener('mouseleave', () => {
     tiltState.get(img).rx = 0;
     tiltState.get(img).ry = 0;
+    rectAtEnter   = null;
   });
 });
 </script>
