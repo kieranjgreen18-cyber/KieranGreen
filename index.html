@@ -412,7 +412,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   border:1px solid rgba(255,255,255,.15);
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:var(--s3);color:var(--off);
+  font-size:20px;color:var(--off);
   opacity:0;
   transition:opacity .45s var(--ease),border-color .25s,background .25s,color .25s;
   cursor:none;
@@ -426,6 +426,9 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:relative;
   overflow:hidden;
   background:var(--ink);
+  min-height:100svh;
+  display:flex;
+  align-items:center;
 }
 .about-bg{
   position:absolute;inset:0;
@@ -443,6 +446,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:relative;z-index:2;
   padding:var(--s10) var(--pad);
   width:100%;
+  align-self:center;
 }
 
 .about-top{
@@ -491,14 +495,13 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .about-stats{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  border-top:1px solid var(--rule);
 }
 .about-stat{
-  padding:var(--s5) var(--pad) var(--s5) 0;
+  padding:var(--s5) var(--pad) var(--s5) var(--pad);
   border-right:1px solid var(--rule);
 }
-.about-stat:last-child{border-right:none;padding-left:var(--pad);padding-right:0;}
-.about-stat:nth-child(2){padding-left:var(--pad);}
+.about-stat:first-child{padding-left:0;}
+.about-stat:last-child{border-right:none;padding-right:0;}
 
 .stat-n{
   font-size:clamp(52px,7vw,88px);font-weight:100;
@@ -511,7 +514,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 
 .contact{
   position:relative;overflow:hidden;
-  min-height:80svh;display:flex;align-items:center;
+  min-height:100svh;display:flex;align-items:center;
   border-top:1px solid var(--rule);
 }
 .contact-img{
@@ -550,7 +553,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .contact-fields{display:flex;flex-direction:column;gap:0;}
 .c-field{
   padding:var(--s3) 0;border-bottom:1px solid var(--rule);
-  display:grid;grid-template-columns:100px 1fr;gap:var(--s3);align-items:center;
+  display:grid;grid-template-columns:clamp(80px,10vw,120px) 1fr;gap:var(--s3);align-items:center;
 }
 .c-field:first-child{border-top:1px solid var(--rule);}
 .c-field-label{
@@ -705,7 +708,7 @@ footer{
   .proj:nth-child(even) .proj-open{bottom:var(--pad);right:var(--pad);left:auto;}
   .proj-ghost{display:none;}
   .about-top{grid-template-columns:1fr;gap:var(--s5);padding-bottom:var(--s6);}
-  .about-stats{grid-template-columns:1fr;border-top:none;}
+  .about-stats{grid-template-columns:1fr;}
   .about-stat{padding:var(--s3) 0;border-right:none;border-top:1px solid var(--rule);padding-left:0;padding-right:0;}
   .contact-inner{width:100%;padding:var(--s8) var(--pad);}
   .contact-img,.contact-wm{display:none;}
@@ -748,7 +751,7 @@ footer{
 
   <div class="hero-eyebrow">
     <span class="hero-eyebrow-line"></span>
-    <br>
+    Industrial Designer
   </div>
 
   <div class="hero-spacer"></div>
@@ -931,7 +934,7 @@ footer{
 </section>
 
 <footer>
-  <div class="f-logo">Vibe coded lovingly by Kieran Green </div>
+  <div class="f-logo">Kieran <em>Green</em> — Industrial Designer</div>
   <div class="f-copy">© 2026 — All rights reserved</div>
 </footer>
 
@@ -1029,73 +1032,91 @@ const smoother = (() => {
   let target  = window.scrollY;
   let ticking = false;
   const listeners = [];
-  const ease = 0.072;
 
-  // Magnetic snap state
-  let snapPoints  = [];
-  let snapTimer   = null;
-  let isSnapping  = false;
-  const SNAP_PULL  = 0.40;   // pull only within 20% of vh from a card top
-  const SNAP_DELAY = 150;    // ms of stillness before pulling (patient = premium)
+  const ease     = 0.072;  // normal scroll feel
+  const snapEase = 0.062;  // ← snap pull speed (tweak me: 0.04 dreamy → 0.10 crisp)
+
+  // Magnetic snap
+  let snapPoints = [];
+  let snapTimer  = null;
+  let snapTarget = null;   // non-null while a snap is committed
+  const SNAP_PULL  = 0.18; // must be within 18% vh of a card top to be eligible
+  const SNAP_DELAY = 180;  // ms of wheel stillness before committing
 
   function buildSnapPoints() {
-    snapPoints = [...document.querySelectorAll('.proj')].map(el => el);
+    snapPoints = [...document.querySelectorAll('.proj, .about, .contact')];
   }
 
   function getSnapTop(el) {
     return Math.round(el.getBoundingClientRect().top + window.scrollY);
   }
 
-  function nearestSnap(pos) {
+  // Find a snap candidate for scroll position `pos` moving in `dir` (+1 down, -1 up).
+  // Only considers cards in the direction of travel so we never grab a card we've passed.
+  function findSnap(pos, dir) {
     const vh = window.innerHeight;
-    // Only snap to a card whose top is close to target in the direction of travel.
-    // Using signed distance kills half-stops: a card far ahead won't grab you early.
+    let best = null, bestDist = Infinity;
     for (const el of snapPoints) {
       const top = getSnapTop(el);
       const dist = top - pos;
-      if (Math.abs(dist) < vh * SNAP_PULL) return el;
+      // card must be in travel direction (or right at pos) and within the pull zone
+      if (dir >= 0 && dist < -vh * 0.05) continue; // scrolling down: skip cards well above
+      if (dir <= 0 && dist >  vh * 0.05) continue; // scrolling up:   skip cards well below
+      const absDist = Math.abs(dist);
+      if (absDist < vh * SNAP_PULL && absDist < bestDist) {
+        bestDist = absDist; best = el;
+      }
     }
-    return null;
+    return best;
   }
 
-  function scheduleSnap() {
+  function scheduleSnap(dir) {
     clearTimeout(snapTimer);
     snapTimer = setTimeout(() => {
-      if (isSnapping) return;
-      const snap = nearestSnap(target);
+      const snap = findSnap(target, dir);
       if (!snap) return;
-      isSnapping = true;
-      target = getSnapTop(snap);
+      const snapTop = getSnapTop(snap);
+      if (snapTop === Math.round(target)) return; // already there
+      snapTarget = snapTop;
+      target = snapTop;
       if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-      setTimeout(() => { isSnapping = false; }, 700);
     }, SNAP_DELAY);
   }
 
   function tick() {
     const diff = target - current;
-    if (Math.abs(diff) < 0.05) {
+    if (Math.abs(diff) < 0.08) {
       current = target;
+      snapTarget = null; // snap fully settled — release
       ticking = false;
       listeners.forEach(fn => fn(current));
       return;
     }
-    current += diff * ease;
+    const e = (snapTarget !== null) ? snapEase : ease;
+    current += diff * e;
     window.scrollTo(0, current);
     listeners.forEach(fn => fn(current));
     requestAnimationFrame(tick);
   }
 
+  let lastWheelDir = 1;
   window.addEventListener('wheel', e => {
     e.preventDefault();
     const delta = e.deltaMode === 1 ? e.deltaY * 32
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
+    // Any new wheel input cancels an in-progress snap so the user stays in control
+    if (snapTarget !== null) {
+      snapTarget = null;
+      clearTimeout(snapTimer);
+    }
+    lastWheelDir = delta >= 0 ? 1 : -1;
     target = Math.max(0, Math.min(
       document.body.scrollHeight - window.innerHeight,
       target + delta
     ));
     if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-    if (!isSnapping) scheduleSnap();
+    scheduleSnap(lastWheelDir);
   }, { passive: false });
 
   window.addEventListener('scroll', () => {
@@ -1103,7 +1124,7 @@ const smoother = (() => {
   }, { passive: true });
 
   window.addEventListener('touchend', () => {
-    if (!isSnapping) scheduleSnap();
+    scheduleSnap(lastWheelDir);
   }, { passive: true });
 
   window.addEventListener('DOMContentLoaded', buildSnapPoints);
@@ -1115,12 +1136,11 @@ const smoother = (() => {
   return {
     on: fn => listeners.push(fn),
     scrollTo: el => {
-      isSnapping = true;
       clearTimeout(snapTimer);
+      snapTarget = null;
       current = window.scrollY;
       target = Math.round(el.getBoundingClientRect().top + window.scrollY);
       if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-      setTimeout(() => { isSnapping = false; }, 700);
     },
     rebuild: buildSnapPoints
   };
