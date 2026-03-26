@@ -15,6 +15,9 @@
 <meta name="twitter:description" content="CAD modeling, form development, and product visualization — from first sketch to something you can hold.">
 <meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
+<script>
+(function(){var t=null;try{t=localStorage.getItem('theme');}catch(e){}document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
@@ -429,6 +432,8 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   min-height:100svh;
   display:flex;
   align-items:center;
+  content-visibility:auto;
+  contain-intrinsic-size:0 100svh;
 }
 .about-bg{
   position:absolute;inset:0;
@@ -516,6 +521,8 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:relative;overflow:hidden;
   min-height:100svh;display:flex;align-items:center;
   border-top:1px solid var(--rule);
+  content-visibility:auto;
+  contain-intrinsic-size:0 100svh;
 }
 .contact-img{
   position:absolute;right:0;top:0;bottom:0;width:45%;
@@ -1100,31 +1107,48 @@ const smoother = (() => {
   }
 
   let lastWheelDir = 1;
-  window.addEventListener('wheel', e => {
-    e.preventDefault();
-    const delta = e.deltaMode === 1 ? e.deltaY * 32
-                : e.deltaMode === 2 ? e.deltaY * window.innerHeight
-                : e.deltaY;
-    // Any new wheel input cancels an in-progress snap so the user stays in control
-    if (snapTarget !== null) {
-      snapTarget = null;
-      clearTimeout(snapTimer);
-    }
-    lastWheelDir = delta >= 0 ? 1 : -1;
-    target = Math.max(0, Math.min(
-      document.body.scrollHeight - window.innerHeight,
-      target + delta
-    ));
-    if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-    scheduleSnap(lastWheelDir);
-  }, { passive: false });
+  // Only intercept wheel on pointer:fine devices (mouse/trackpad).
+  // Touch devices use native scroll — we only add the snap on touchend.
+  if (!window.matchMedia('(pointer:coarse)').matches) {
+    window.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaMode === 1 ? e.deltaY * 32
+                  : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+                  : e.deltaY;
+      // Any new wheel input cancels an in-progress snap so the user stays in control
+      if (snapTarget !== null) {
+        snapTarget = null;
+        clearTimeout(snapTimer);
+      }
+      lastWheelDir = delta >= 0 ? 1 : -1;
+      target = Math.max(0, Math.min(
+        document.body.scrollHeight - window.innerHeight,
+        target + delta
+      ));
+      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+      scheduleSnap(lastWheelDir);
+    }, { passive: false });
+  }
 
   window.addEventListener('scroll', () => {
     if (!ticking) current = target = window.scrollY;
   }, { passive: true });
 
+  // On touch, wait for momentum to decay before evaluating snap position
+  let touchDir = 1;
+  let touchStartScrollY = 0;
+  window.addEventListener('touchstart', () => {
+    touchStartScrollY = window.scrollY;
+  }, { passive: true });
   window.addEventListener('touchend', () => {
-    scheduleSnap(lastWheelDir);
+    // Determine direction from scroll delta at finger-lift
+    const delta = window.scrollY - touchStartScrollY;
+    touchDir = delta >= 0 ? 1 : -1;
+    // Wait for momentum scroll to mostly settle before snapping
+    setTimeout(() => {
+      target = current = window.scrollY;
+      scheduleSnap(touchDir);
+    }, 320);
   }, { passive: true });
 
   window.addEventListener('DOMContentLoaded', buildSnapPoints);
@@ -1212,10 +1236,15 @@ smoother.on(y => {
   prog.style.width = (maxScroll > 0 ? y / maxScroll * 100 : 0) + '%';
 
   projPairs.forEach(({ el, img }) => {
-    const r = el.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > window.innerHeight) return;
-    const pct = (r.top + r.height/2 - window.innerHeight/2) / window.innerHeight;
-    // scale(1.06) gives ~3% overflow on each side; cap translate so image never bleeds out
+    // Use cached rect — only call getBCR when cache is cold (invalidated on resize)
+    if (!el._rect) el._rect = el.getBoundingClientRect();
+    const r = el._rect;
+    // Seed the absolute top once; derive live position from scroll offset each frame
+    if (el._rectTop === undefined) el._rectTop = el._rect.top + y;
+    const liveTop = el._rectTop - y;
+    const liveBottom = liveTop + r.height;
+    if (liveBottom < 0 || liveTop > window.innerHeight) return;
+    const pct = (liveTop + r.height/2 - window.innerHeight/2) / window.innerHeight;
     const maxShift = r.height * 0.03;
     const shift = Math.max(-maxShift, Math.min(maxShift, pct * 52));
     const tilt = tiltState.get(img) || { rx: 0, ry: 0 };
@@ -1312,7 +1341,7 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     buildSectionOffsets();
-    cachedContactRect = null;
+    projPairs.forEach(({el}) => { el._rect = null; el._rectTop = undefined; });
     document.querySelectorAll('.proj').forEach(proj => {
       proj._projRect = null;
       const btn = proj.querySelector('.proj-open');
@@ -1377,7 +1406,7 @@ const lazyImgObs = new IntersectionObserver(entries => {
     if (pos) img.style.backgroundPosition = pos;
     lazyImgObs.unobserve(img);
   });
-}, { rootMargin: '400px' });
+}, { rootMargin: '600px' });
 document.querySelectorAll('.proj-img[data-bg]').forEach(img => {
   lazyImgObs.observe(img);
 });
@@ -1452,18 +1481,37 @@ logo.addEventListener('mouseenter', () => {
 
 
 
+/* ── VISIBILITY: pause expensive animations when tab hidden ── */
+document.addEventListener('visibilitychange', () => {
+  const grain = document.getElementById('grain');
+  const ticker = document.getElementById('t-track');
+  if (document.hidden) {
+    if (grain)  grain.style.animationPlayState  = 'paused';
+    if (ticker) ticker.style.animationPlayState = 'paused';
+  } else {
+    if (grain)  grain.style.animationPlayState  = 'running';
+    if (ticker) ticker.style.animationPlayState = 'running';
+  }
+});
+
 /* ── TILT STATE ── */
 const tiltState = new Map();
 document.querySelectorAll('.proj').forEach(proj => {
   const img = proj.querySelector('.proj-img');
   tiltState.set(img, { rx: 0, ry: 0 });
   proj.addEventListener('mouseenter', () => { proj._projRect = proj.getBoundingClientRect(); });
+  let tiltPending = false;
   proj.addEventListener('mousemove', e => {
-    if (!proj._projRect) proj._projRect = proj.getBoundingClientRect();
-    const nx = (e.clientX - proj._projRect.left) / proj._projRect.width  - .5;
-    const ny = (e.clientY - proj._projRect.top)  / proj._projRect.height - .5;
-    tiltState.get(img).rx = nx * 4;
-    tiltState.get(img).ry = -ny * 2;
+    if (tiltPending) return;
+    tiltPending = true;
+    requestAnimationFrame(() => {
+      tiltPending = false;
+      if (!proj._projRect) proj._projRect = proj.getBoundingClientRect();
+      const nx = (e.clientX - proj._projRect.left) / proj._projRect.width  - .5;
+      const ny = (e.clientY - proj._projRect.top)  / proj._projRect.height - .5;
+      tiltState.get(img).rx = nx * 4;
+      tiltState.get(img).ry = -ny * 2;
+    });
   });
   proj.addEventListener('mouseleave', () => {
     tiltState.get(img).rx = 0;
