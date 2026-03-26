@@ -303,12 +303,11 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .ticker::before{left:0;background:linear-gradient(to right,var(--ink),transparent);}
 .ticker::after{right:0;background:linear-gradient(to left,var(--ink),transparent);}
 .t-track{display:flex;width:max-content;animation:tick 44s linear infinite;}
-.ticker:hover .t-track{animation-play-state:paused;}
+
 .t-item{
   display:flex;align-items:center;gap:var(--s3);padding:0 var(--s4);font-size:var(--t-micro);font-weight:300;letter-spacing:var(--ls-mid);text-transform:uppercase;
-  color:var(--off);opacity:.55;white-space:nowrap;transition:opacity .25s;
+  color:var(--off);opacity:.55;white-space:nowrap;pointer-events:none;
 }
-.t-item:hover{opacity:1;color:var(--sage);}
 .t-dot{width:3px;height:3px;border-radius:50%;background:var(--sage);opacity:.8;flex-shrink:0;}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
@@ -323,10 +322,10 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:absolute;inset:0;background-size:cover;background-position:center;
   transform:scale(1.06);
   opacity:.72;
-  transition:transform 1.1s var(--ease),opacity 1.1s ease;
+  transition:opacity .8s ease;
   will-change:transform;
 }
-.proj:hover .proj-img{transform:scale(1.01);opacity:.92;}
+.proj:hover .proj-img{opacity:.9;}
 .proj:nth-child(odd) .proj-veil{
   position:absolute;inset:0;
   background:linear-gradient(to right,rgba(8,9,9,.95) 0%,rgba(8,9,9,.6) 42%,transparent 72%);
@@ -429,7 +428,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   display:flex;
   align-items:center;
   content-visibility:auto;
-  contain-intrinsic-size:0 100svh;
+  contain-intrinsic-block-size:100svh;
 }
 .about-bg{
   position:absolute;inset:0;
@@ -518,7 +517,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   min-height:100svh;display:flex;align-items:center;
   border-top:1px solid var(--rule);
   content-visibility:auto;
-  contain-intrinsic-size:0 100svh;
+  contain-intrinsic-block-size:100svh;
 }
 .contact-img{
   position:absolute;right:0;top:0;bottom:0;width:45%;
@@ -567,7 +566,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   letter-spacing:var(--ls-tight);text-transform:uppercase;
   color:var(--off);text-decoration:none;cursor:none;
   display:inline-flex;align-items:center;gap:var(--s2);
-  transition:color .25s,gap .3s var(--ease);
+  transition:color .25s;
   background:none;padding:0;border:none;
   position:relative;
 }
@@ -578,7 +577,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   transition:transform .35s var(--ease);
 }
 .c-link:hover, .c-soc:hover, .c-dl:hover{
-  color:var(--sage);gap:var(--s3);
+  color:var(--sage);
 }
 .c-link:hover::after, .c-soc:hover::after, .c-dl:hover::after{
   transform:scaleX(1);
@@ -609,7 +608,6 @@ footer{
   position:fixed;top:0;left:0;height:2px;
   background:var(--sage);z-index:9997;width:0%;
   pointer-events:none;
-  box-shadow:0 0 8px rgba(91,160,164,.6);
   transition:width .06s linear;
 }
 
@@ -1140,19 +1138,14 @@ const smoother = (() => {
     }, { passive: false });
   }
 
-  // Sync state for non-wheel scrolling (keyboard, scrollbar, programmatic).
-  // Guard with a distance check so Firefox's scroll events fired by our own
-  // window.scrollTo() calls don't reset the lerp mid-flight.
-  let lastScrollToY = 0;
-  const _origScrollTo = window.scrollTo.bind(window);
-  window.scrollTo = (x, y) => { lastScrollToY = typeof y === 'number' ? y : x?.top ?? 0; _origScrollTo(x, y); };
+  // Sync for keyboard/scrollbar navigation.
+  // Only update when the lerp isn't running and the position shifted externally.
+  let ownScroll = false;
+  const _nativeScrollTo = window.scrollTo.bind(window);
+  window.scrollTo = (x, y) => { ownScroll = true; _nativeScrollTo(x, y); requestAnimationFrame(() => { ownScroll = false; }); };
   window.addEventListener('scroll', () => {
-    if (ticking) return; // JS lerp is running — ignore, we own the scroll position
-    const sy = window.scrollY;
-    if (Math.abs(sy - lastScrollToY) > 2) {
-      // Position moved by something other than our scrollTo — re-sync
-      current = target = sy;
-    }
+    if (ticking || ownScroll) return;
+    current = target = window.scrollY;
   }, { passive: true });
 
   // On touch, wait for momentum to decay before evaluating snap position
@@ -1172,7 +1165,8 @@ const smoother = (() => {
     }, 320);
   }, { passive: true });
 
-  window.addEventListener('DOMContentLoaded', buildSnapPoints);
+  // DOMContentLoaded has already fired by the time inline scripts run at end of body
+  buildSnapPoints();
   window.addEventListener('resize', () => {
     clearTimeout(snapTimer);
     setTimeout(buildSnapPoints, 200);
@@ -1255,25 +1249,26 @@ smoother.on(y => {
     }
   }
   navEl.classList.toggle('scrolled', y > 60);
-  track.style.animationDirection = y > lastY ? 'normal' : 'reverse';
+  const dir = y > lastY ? 'normal' : 'reverse';
+  if (dir !== track._lastDir) { track.style.animationDirection = dir; track._lastDir = dir; }
   lastY = y;
   const maxScroll = document.body.scrollHeight - window.innerHeight;
-  prog.style.width = (maxScroll > 0 ? y / maxScroll * 100 : 0) + '%';
+  const pct = Math.round(maxScroll > 0 ? y / maxScroll * 1000 : 0) / 10;
+  if (pct !== prog._lastPct) { prog.style.width = pct + '%'; prog._lastPct = pct; }
 
   projPairs.forEach(({ el, img }) => {
-    // Use cached rect — only call getBCR when cache is cold (invalidated on resize)
     if (!el._rect) el._rect = el.getBoundingClientRect();
-    const r = el._rect;
-    // Seed the absolute top once; derive live position from scroll offset each frame
     if (el._rectTop === undefined) el._rectTop = el._rect.top + y;
-    const liveTop = el._rectTop - y;
-    const liveBottom = liveTop + r.height;
+    const liveTop    = el._rectTop - y;
+    const liveBottom = liveTop + el._rect.height;
     if (liveBottom < 0 || liveTop > window.innerHeight) return;
-    const pct = (liveTop + r.height/2 - window.innerHeight/2) / window.innerHeight;
-    const maxShift = r.height * 0.03;
-    const shift = Math.max(-maxShift, Math.min(maxShift, pct * 52));
-    const tilt = tiltState.get(img) || { rx: 0, ry: 0 };
-    img.style.transform = `scale(1.06) translateY(${shift}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
+    const pct      = (liveTop + el._rect.height / 2 - window.innerHeight / 2) / window.innerHeight;
+    const maxShift = el._rect.height * 0.03;
+    const shift    = Math.max(-maxShift, Math.min(maxShift, pct * 52));
+    const tilt     = tiltState.get(img) || { rx: 0, ry: 0 };
+    // Only write style if value has meaningfully changed — avoids redundant compositor notifications
+    const next = `scale(1.06) translateY(${Math.round(shift * 10) / 10}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
+    if (next !== img._lastTransform) { img.style.transform = next; img._lastTransform = next; }
   });
 
   updateIndicator(y);
@@ -1486,7 +1481,10 @@ logo.addEventListener('mouseenter', () => {
   logoScrambling = true;
   let iteration = 0;
   const full = 'Kieran Green';
-  const interval = setInterval(() => {
+  let lastScrambleTime = 0;
+  function scrambleFrame(now) {
+    if (now - lastScrambleTime < 30) { requestAnimationFrame(scrambleFrame); return; }
+    lastScrambleTime = now;
     const scrambled = full.split('').map((char, i) => {
       if (char === ' ') return ' ';
       if (i < iteration) return char;
@@ -1495,13 +1493,15 @@ logo.addEventListener('mouseenter', () => {
     logoText1.textContent = scrambled.slice(0, 7);
     logoText2.textContent = scrambled.slice(7);
     if (iteration >= full.length) {
-      clearInterval(interval);
       logoText1.textContent = 'Kieran ';
       logoText2.textContent = 'Green';
       logoScrambling = false;
+      return;
     }
     iteration += 0.5;
-  }, 30);
+    requestAnimationFrame(scrambleFrame);
+  }
+  requestAnimationFrame(scrambleFrame);
 });
 
 
