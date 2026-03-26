@@ -1035,8 +1035,8 @@ const smoother = (() => {
   let snapPoints  = [];
   let snapTimer   = null;
   let isSnapping  = false;
-  const SNAP_PULL  = 0.20;   // pull only within 20% of vh from a card top
-  const SNAP_DELAY = 200;    // ms of stillness before pulling (patient = premium)
+  const SNAP_PULL  = 0.40;   // pull only within 20% of vh from a card top
+  const SNAP_DELAY = 150;    // ms of stillness before pulling (patient = premium)
 
   function buildSnapPoints() {
     snapPoints = [...document.querySelectorAll('.proj')].map(el => el);
