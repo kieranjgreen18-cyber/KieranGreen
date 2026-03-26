@@ -15,9 +15,6 @@
 <meta name="twitter:description" content="CAD modeling, form development, and product visualization — from first sketch to something you can hold.">
 <meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
-<script>
-(function(){var t=null;try{t=localStorage.getItem('theme');}catch(e){}document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');})();
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
@@ -95,6 +92,7 @@ body.ready{opacity:1;transition:opacity .75s ease;}
   width:8px;height:8px;border-radius:50%;
   background:var(--sage);
   transform:translate(-50%,-50%);
+  mix-blend-mode:difference;
   transition:width .18s cubic-bezier(0.16,1,0.3,1), height .18s cubic-bezier(0.16,1,0.3,1);
 }
 #cur-r{
@@ -129,12 +127,13 @@ nav{
   position:fixed;top:0;left:0;right:0;z-index:500;
   display:flex;align-items:center;justify-content:space-between;
   padding:var(--s3) var(--pad);
-  transition:padding .4s var(--ease),background .45s,border-color .45s;
+  transition:padding .4s var(--ease),background .45s,backdrop-filter .45s,border-color .45s;
   background:linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
 }
 nav.scrolled{
   padding:var(--s2) var(--pad);
-  background:rgba(8,9,9,.94);
+  background:rgba(8,9,9,.88);
+  backdrop-filter:blur(28px) saturate(1.5);
   border-bottom:1px solid var(--rule);
 }
 .n-logo{
@@ -146,7 +145,7 @@ nav.scrolled{
 .n-logo:hover{color:var(--sage);}
 .n-logo em{font-style:normal;color:var(--sage);}
 
-.c-link-wrap{display:inline-block;}
+.c-link-wrap{display:inline-block;will-change:transform;}
 .n-links{
   display:flex;align-items:center;gap:var(--s4);
   opacity:0;animation:fd .6s var(--ease) .12s forwards;
@@ -175,9 +174,10 @@ nav.scrolled{
 }
 .n-avail-dot{
   width:5px;height:5px;border-radius:50%;background:var(--sage);
+  box-shadow:0 0 8px rgba(91,160,164,.8);
   animation:pulse 2.5s ease infinite;
 }
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.28;}}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px rgba(91,160,164,.8)}50%{opacity:.35;box-shadow:0 0 0 rgba(91,160,164,0)}}
 .n-theme{
   width:var(--s4);height:var(--s4);border-radius:50%;
   border:1px solid var(--rule);background:none;
@@ -303,11 +303,12 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .ticker::before{left:0;background:linear-gradient(to right,var(--ink),transparent);}
 .ticker::after{right:0;background:linear-gradient(to left,var(--ink),transparent);}
 .t-track{display:flex;width:max-content;animation:tick 44s linear infinite;}
-
+.ticker:hover .t-track{animation-play-state:paused;}
 .t-item{
   display:flex;align-items:center;gap:var(--s3);padding:0 var(--s4);font-size:var(--t-micro);font-weight:300;letter-spacing:var(--ls-mid);text-transform:uppercase;
-  color:var(--off);opacity:.55;white-space:nowrap;pointer-events:none;
+  color:var(--off);opacity:.55;white-space:nowrap;transition:opacity .25s;
 }
+.t-item:hover{opacity:1;color:var(--sage);}
 .t-dot{width:3px;height:3px;border-radius:50%;background:var(--sage);opacity:.8;flex-shrink:0;}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
@@ -321,11 +322,11 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .proj-img{
   position:absolute;inset:0;background-size:cover;background-position:center;
   transform:scale(1.06);
-  opacity:.72;
-  transition:opacity .8s ease;
+  filter:saturate(.7) brightness(.55);
+  transition:transform 1.1s var(--ease),filter 1.1s ease;
   will-change:transform;
 }
-.proj:hover .proj-img{opacity:.9;}
+.proj:hover .proj-img{transform:scale(1.01);filter:saturate(.92) brightness(.7);}
 .proj:nth-child(odd) .proj-veil{
   position:absolute;inset:0;
   background:linear-gradient(to right,rgba(8,9,9,.95) 0%,rgba(8,9,9,.6) 42%,transparent 72%);
@@ -348,6 +349,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:absolute;top:50%;transform:translateY(-50%);
   width:44%;z-index:2;
   transition:transform .7s var(--ease);
+  will-change:transform;
 }
 .proj:nth-child(odd) .proj-text{left:var(--pad);}
 .proj:nth-child(even) .proj-text{right:var(--pad);text-align:right;}
@@ -427,8 +429,6 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   min-height:100svh;
   display:flex;
   align-items:center;
-  content-visibility:auto;
-  contain-intrinsic-block-size:100svh;
 }
 .about-bg{
   position:absolute;inset:0;
@@ -516,16 +516,15 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:relative;overflow:hidden;
   min-height:100svh;display:flex;align-items:center;
   border-top:1px solid var(--rule);
-  content-visibility:auto;
-  contain-intrinsic-block-size:100svh;
 }
 .contact-img{
   position:absolute;right:0;top:0;bottom:0;width:45%;
   background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/sabrettahero.png');
   background-size:cover;background-position:center;
-  opacity:.22;
+  opacity:.28;
   mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.8) 40%);
   -webkit-mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.8) 40%);
+  filter:saturate(.5);
 }
 .contact-wm{
   position:absolute;right:-4vw;bottom:-6vh;
@@ -566,7 +565,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   letter-spacing:var(--ls-tight);text-transform:uppercase;
   color:var(--off);text-decoration:none;cursor:none;
   display:inline-flex;align-items:center;gap:var(--s2);
-  transition:color .25s;
+  transition:color .25s,gap .3s var(--ease);
   background:none;padding:0;border:none;
   position:relative;
 }
@@ -577,7 +576,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   transition:transform .35s var(--ease);
 }
 .c-link:hover, .c-soc:hover, .c-dl:hover{
-  color:var(--sage);
+  color:var(--sage);gap:var(--s3);
 }
 .c-link:hover::after, .c-soc:hover::after, .c-dl:hover::after{
   transform:scaleX(1);
@@ -608,6 +607,7 @@ footer{
   position:fixed;top:0;left:0;height:2px;
   background:var(--sage);z-index:9997;width:0%;
   pointer-events:none;
+  box-shadow:0 0 8px rgba(91,160,164,.6);
   transition:width .06s linear;
 }
 
@@ -647,7 +647,7 @@ footer{
   }
 }
 [data-theme="light"] nav.scrolled{
-  background:rgba(237,238,237,.97);
+  background:rgba(237,238,237,.9);
 }
 [data-theme="light"] .hero-veil{
   background:linear-gradient(to top,rgba(237,238,237,1) 0%,rgba(237,238,237,.68) 28%,rgba(237,238,237,.08) 62%,transparent 100%),linear-gradient(to bottom,rgba(237,238,237,.5) 0%,transparent 20%);
@@ -683,7 +683,7 @@ footer{
     padding-bottom:var(--s3);
   }
   nav.scrolled{
-    background:rgba(8,9,9,.96);
+    background:rgba(8,9,9,.92);
   }
   .n-links,.n-avail{display:none;}
   .n-ham{display:flex;}
@@ -1028,20 +1028,13 @@ applyCursorState();
 
 /* ── SMOOTH SCROLL ── */
 const smoother = (() => {
-  let current  = window.scrollY;
-  let target   = window.scrollY;
-  let ticking  = false;
-  let lastTime = null;
+  let current = window.scrollY;
+  let target  = window.scrollY;
+  let ticking = false;
   const listeners = [];
 
-  // Exponential decay smoothing — frame-rate independent so it feels identical
-  // at 60 Hz, 120 Hz, and 144 Hz. Tune with a half-life in milliseconds:
-  // lower = snappier, higher = more fluid.
-  //   ~60ms  → crisp, responsive
-  //   ~80ms  → current sweet spot (butter)
-  //   ~110ms → dreamy, slow
-  const HALF_LIFE      = 80;   // ← tune scroll feel here (ms)
-  const SNAP_HALF_LIFE = 95;   // ← tune snap pull feel here (ms)
+  const ease     = 0.072;  // normal scroll feel
+  const snapEase = 0.062;  // ← snap pull speed (tweak me: 0.04 dreamy → 0.10 crisp)
 
   // Magnetic snap
   let snapPoints = [];
@@ -1086,87 +1079,55 @@ const smoother = (() => {
       if (snapTop === Math.round(target)) return; // already there
       snapTarget = snapTop;
       target = snapTop;
-      if (!ticking) { ticking = true; lastTime = null; requestAnimationFrame(tick); }
+      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
     }, SNAP_DELAY);
   }
 
-  function tick(now) {
-    if (lastTime === null) lastTime = now;
-    const dt   = Math.min(now - lastTime, 64); // cap at ~2 frames so big pauses don't lurch
-    lastTime   = now;
-
-    const hl   = snapTarget !== null ? SNAP_HALF_LIFE : HALF_LIFE;
-    const factor = 1 - Math.pow(0.5, dt / hl); // frame-rate independent decay
-
+  function tick() {
     const diff = target - current;
-    if (Math.abs(diff) < 0.5) {
-      current  = target;
-      lastTime = null;
-      snapTarget = null;
-      ticking  = false;
-      window.scrollTo(0, current);
+    if (Math.abs(diff) < 0.08) {
+      current = target;
+      snapTarget = null; // snap fully settled — release
+      ticking = false;
       listeners.forEach(fn => fn(current));
       return;
     }
-    current += diff * factor;
-    window.scrollTo(0, Math.round(current));
+    const e = (snapTarget !== null) ? snapEase : ease;
+    current += diff * e;
+    window.scrollTo(0, current);
     listeners.forEach(fn => fn(current));
     requestAnimationFrame(tick);
   }
 
   let lastWheelDir = 1;
-  // Only intercept wheel on pointer:fine devices (mouse/trackpad).
-  // Touch devices use native scroll — we only add the snap on touchend.
-  if (!window.matchMedia('(pointer:coarse)').matches) {
-    window.addEventListener('wheel', e => {
-      e.preventDefault();
-      const delta = e.deltaMode === 1 ? e.deltaY * 32
-                  : e.deltaMode === 2 ? e.deltaY * window.innerHeight
-                  : e.deltaY;
-      // Any new wheel input cancels an in-progress snap so the user stays in control
-      if (snapTarget !== null) {
-        snapTarget = null;
-        clearTimeout(snapTimer);
-      }
-      lastWheelDir = delta >= 0 ? 1 : -1;
-      target = Math.max(0, Math.min(
-        document.body.scrollHeight - window.innerHeight,
-        target + delta
-      ));
-      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-      scheduleSnap(lastWheelDir);
-    }, { passive: false });
-  }
+  window.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaMode === 1 ? e.deltaY * 32
+                : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+                : e.deltaY;
+    // Any new wheel input cancels an in-progress snap so the user stays in control
+    if (snapTarget !== null) {
+      snapTarget = null;
+      clearTimeout(snapTimer);
+    }
+    lastWheelDir = delta >= 0 ? 1 : -1;
+    target = Math.max(0, Math.min(
+      document.body.scrollHeight - window.innerHeight,
+      target + delta
+    ));
+    if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+    scheduleSnap(lastWheelDir);
+  }, { passive: false });
 
-  // Sync for keyboard/scrollbar navigation.
-  // Only update when the lerp isn't running and the position shifted externally.
-  let ownScroll = false;
-  const _nativeScrollTo = window.scrollTo.bind(window);
-  window.scrollTo = (x, y) => { ownScroll = true; _nativeScrollTo(x, y); requestAnimationFrame(() => { ownScroll = false; }); };
   window.addEventListener('scroll', () => {
-    if (ticking || ownScroll) return;
-    current = target = window.scrollY;
+    if (!ticking) current = target = window.scrollY;
   }, { passive: true });
 
-  // On touch, wait for momentum to decay before evaluating snap position
-  let touchDir = 1;
-  let touchStartScrollY = 0;
-  window.addEventListener('touchstart', () => {
-    touchStartScrollY = window.scrollY;
-  }, { passive: true });
   window.addEventListener('touchend', () => {
-    // Determine direction from scroll delta at finger-lift
-    const delta = window.scrollY - touchStartScrollY;
-    touchDir = delta >= 0 ? 1 : -1;
-    // Wait for momentum scroll to mostly settle before snapping
-    setTimeout(() => {
-      target = current = window.scrollY;
-      scheduleSnap(touchDir);
-    }, 320);
+    scheduleSnap(lastWheelDir);
   }, { passive: true });
 
-  // DOMContentLoaded has already fired by the time inline scripts run at end of body
-  buildSnapPoints();
+  window.addEventListener('DOMContentLoaded', buildSnapPoints);
   window.addEventListener('resize', () => {
     clearTimeout(snapTimer);
     setTimeout(buildSnapPoints, 200);
@@ -1179,7 +1140,7 @@ const smoother = (() => {
       snapTarget = null;
       current = window.scrollY;
       target = Math.round(el.getBoundingClientRect().top + window.scrollY);
-      if (!ticking) { ticking = true; lastTime = null; requestAnimationFrame(tick); }
+      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
     },
     rebuild: buildSnapPoints
   };
@@ -1237,38 +1198,28 @@ function updateIndicator(y) {
   }
 }
 
-let lastHeroTransform = '';
 smoother.on(y => {
   if (heroImg) {
-    if (y <= window.innerHeight) {
-      const ht = `scale(1.05) translateY(${Math.round(y * .22)}px)`;
-      if (ht !== lastHeroTransform) { heroImg.style.transform = ht; lastHeroTransform = ht; }
-    } else if (lastY <= window.innerHeight) {
+    if (y <= window.innerHeight)
+      heroImg.style.transform = `scale(1.05) translateY(${y * .22}px)`;
+    else if (lastY <= window.innerHeight)
       heroImg.style.transform = '';
-      lastHeroTransform = '';
-    }
   }
   navEl.classList.toggle('scrolled', y > 60);
-  const dir = y > lastY ? 'normal' : 'reverse';
-  if (dir !== track._lastDir) { track.style.animationDirection = dir; track._lastDir = dir; }
+  track.style.animationDirection = y > lastY ? 'normal' : 'reverse';
   lastY = y;
   const maxScroll = document.body.scrollHeight - window.innerHeight;
-  const pct = Math.round(maxScroll > 0 ? y / maxScroll * 1000 : 0) / 10;
-  if (pct !== prog._lastPct) { prog.style.width = pct + '%'; prog._lastPct = pct; }
+  prog.style.width = (maxScroll > 0 ? y / maxScroll * 100 : 0) + '%';
 
   projPairs.forEach(({ el, img }) => {
-    if (!el._rect) el._rect = el.getBoundingClientRect();
-    if (el._rectTop === undefined) el._rectTop = el._rect.top + y;
-    const liveTop    = el._rectTop - y;
-    const liveBottom = liveTop + el._rect.height;
-    if (liveBottom < 0 || liveTop > window.innerHeight) return;
-    const pct      = (liveTop + el._rect.height / 2 - window.innerHeight / 2) / window.innerHeight;
-    const maxShift = el._rect.height * 0.03;
-    const shift    = Math.max(-maxShift, Math.min(maxShift, pct * 52));
-    const tilt     = tiltState.get(img) || { rx: 0, ry: 0 };
-    // Only write style if value has meaningfully changed — avoids redundant compositor notifications
-    const next = `scale(1.06) translateY(${Math.round(shift * 10) / 10}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
-    if (next !== img._lastTransform) { img.style.transform = next; img._lastTransform = next; }
+    const r = el.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight) return;
+    const pct = (r.top + r.height/2 - window.innerHeight/2) / window.innerHeight;
+    // scale(1.06) gives ~3% overflow on each side; cap translate so image never bleeds out
+    const maxShift = r.height * 0.03;
+    const shift = Math.max(-maxShift, Math.min(maxShift, pct * 52));
+    const tilt = tiltState.get(img) || { rx: 0, ry: 0 };
+    img.style.transform = `scale(1.06) translateY(${shift}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
   });
 
   updateIndicator(y);
@@ -1361,7 +1312,7 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     buildSectionOffsets();
-    projPairs.forEach(({el}) => { el._rect = null; el._rectTop = undefined; });
+    cachedContactRect = null;
     document.querySelectorAll('.proj').forEach(proj => {
       proj._projRect = null;
       const btn = proj.querySelector('.proj-open');
@@ -1426,7 +1377,7 @@ const lazyImgObs = new IntersectionObserver(entries => {
     if (pos) img.style.backgroundPosition = pos;
     lazyImgObs.unobserve(img);
   });
-}, { rootMargin: '600px' });
+}, { rootMargin: '400px' });
 document.querySelectorAll('.proj-img[data-bg]').forEach(img => {
   lazyImgObs.observe(img);
 });
@@ -1481,10 +1432,7 @@ logo.addEventListener('mouseenter', () => {
   logoScrambling = true;
   let iteration = 0;
   const full = 'Kieran Green';
-  let lastScrambleTime = 0;
-  function scrambleFrame(now) {
-    if (now - lastScrambleTime < 30) { requestAnimationFrame(scrambleFrame); return; }
-    lastScrambleTime = now;
+  const interval = setInterval(() => {
     const scrambled = full.split('').map((char, i) => {
       if (char === ' ') return ' ';
       if (i < iteration) return char;
@@ -1493,31 +1441,16 @@ logo.addEventListener('mouseenter', () => {
     logoText1.textContent = scrambled.slice(0, 7);
     logoText2.textContent = scrambled.slice(7);
     if (iteration >= full.length) {
+      clearInterval(interval);
       logoText1.textContent = 'Kieran ';
       logoText2.textContent = 'Green';
       logoScrambling = false;
-      return;
     }
     iteration += 0.5;
-    requestAnimationFrame(scrambleFrame);
-  }
-  requestAnimationFrame(scrambleFrame);
+  }, 30);
 });
 
 
-
-/* ── VISIBILITY: pause expensive animations when tab hidden ── */
-document.addEventListener('visibilitychange', () => {
-  const grain = document.getElementById('grain');
-  const ticker = document.getElementById('t-track');
-  if (document.hidden) {
-    if (grain)  grain.style.animationPlayState  = 'paused';
-    if (ticker) ticker.style.animationPlayState = 'paused';
-  } else {
-    if (grain)  grain.style.animationPlayState  = 'running';
-    if (ticker) ticker.style.animationPlayState = 'running';
-  }
-});
 
 /* ── TILT STATE ── */
 const tiltState = new Map();
@@ -1525,18 +1458,12 @@ document.querySelectorAll('.proj').forEach(proj => {
   const img = proj.querySelector('.proj-img');
   tiltState.set(img, { rx: 0, ry: 0 });
   proj.addEventListener('mouseenter', () => { proj._projRect = proj.getBoundingClientRect(); });
-  let tiltPending = false;
   proj.addEventListener('mousemove', e => {
-    if (tiltPending) return;
-    tiltPending = true;
-    requestAnimationFrame(() => {
-      tiltPending = false;
-      if (!proj._projRect) proj._projRect = proj.getBoundingClientRect();
-      const nx = (e.clientX - proj._projRect.left) / proj._projRect.width  - .5;
-      const ny = (e.clientY - proj._projRect.top)  / proj._projRect.height - .5;
-      tiltState.get(img).rx = nx * 4;
-      tiltState.get(img).ry = -ny * 2;
-    });
+    if (!proj._projRect) proj._projRect = proj.getBoundingClientRect();
+    const nx = (e.clientX - proj._projRect.left) / proj._projRect.width  - .5;
+    const ny = (e.clientY - proj._projRect.top)  / proj._projRect.height - .5;
+    tiltState.get(img).rx = nx * 4;
+    tiltState.get(img).ry = -ny * 2;
   });
   proj.addEventListener('mouseleave', () => {
     tiltState.get(img).rx = 0;
