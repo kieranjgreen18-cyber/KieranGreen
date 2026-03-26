@@ -460,6 +460,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   }));
   setTimeout(()=>document.getElementById('hero').classList.add('loaded'),80);
 });
+/* bfcache restore — re-reveal page when navigating back */
+window.addEventListener('pageshow',e=>{
+  if(e.persisted){
+    document.body.classList.add('ready');
+    veil.style.transition='none';
+    veil.classList.add('gone');
+  }
+});
 document.addEventListener('click',e=>{
   const a=e.target.closest('a[href]');if(!a)return;
   const href=a.getAttribute('href');
@@ -478,8 +486,12 @@ window.addEventListener('scroll',()=>{
 /* HERO PARALLAX */
 const heroBg=document.querySelector('.hero-bg');
 window.addEventListener('scroll',()=>{
-  if(window.scrollY<window.innerHeight)
-    heroBg.style.transform=`scale(1.04) translateY(${window.scrollY*.2}px)`;
+  if(window.scrollY<window.innerHeight){
+    const heroH=document.querySelector('.hero').offsetHeight;
+    const maxShift=heroH*0.04;
+    const shift=Math.min(maxShift,window.scrollY*.2);
+    heroBg.style.transform=`scale(1.04) translateY(${shift}px)`;
+  }
 },{passive:true});
 
 /* THEME */

@@ -1031,6 +1031,46 @@ const smoother = (() => {
   const listeners = [];
   const ease = 0.072;
 
+  // Magnetic snap state
+  let snapPoints  = [];
+  let snapTimer   = null;
+  let isSnapping  = false;
+  const SNAP_PULL  = 0.20;   // pull only within 20% of vh from a card top
+  const SNAP_DELAY = 200;    // ms of stillness before pulling (patient = premium)
+
+  function buildSnapPoints() {
+    snapPoints = [...document.querySelectorAll('.proj')].map(el => el);
+  }
+
+  function getSnapTop(el) {
+    return Math.round(el.getBoundingClientRect().top + window.scrollY);
+  }
+
+  function nearestSnap(pos) {
+    const vh = window.innerHeight;
+    // Only snap to a card whose top is close to target in the direction of travel.
+    // Using signed distance kills half-stops: a card far ahead won't grab you early.
+    for (const el of snapPoints) {
+      const top = getSnapTop(el);
+      const dist = top - pos;
+      if (Math.abs(dist) < vh * SNAP_PULL) return el;
+    }
+    return null;
+  }
+
+  function scheduleSnap() {
+    clearTimeout(snapTimer);
+    snapTimer = setTimeout(() => {
+      if (isSnapping) return;
+      const snap = nearestSnap(target);
+      if (!snap) return;
+      isSnapping = true;
+      target = getSnapTop(snap);
+      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+      setTimeout(() => { isSnapping = false; }, 700);
+    }, SNAP_DELAY);
+  }
+
   function tick() {
     const diff = target - current;
     if (Math.abs(diff) < 0.05) {
@@ -1055,19 +1095,34 @@ const smoother = (() => {
       target + delta
     ));
     if (!ticking) { ticking = true; requestAnimationFrame(tick); }
+    if (!isSnapping) scheduleSnap();
   }, { passive: false });
 
   window.addEventListener('scroll', () => {
     if (!ticking) current = target = window.scrollY;
   }, { passive: true });
 
+  window.addEventListener('touchend', () => {
+    if (!isSnapping) scheduleSnap();
+  }, { passive: true });
+
+  window.addEventListener('DOMContentLoaded', buildSnapPoints);
+  window.addEventListener('resize', () => {
+    clearTimeout(snapTimer);
+    setTimeout(buildSnapPoints, 200);
+  });
+
   return {
     on: fn => listeners.push(fn),
     scrollTo: el => {
+      isSnapping = true;
+      clearTimeout(snapTimer);
       current = window.scrollY;
       target = Math.round(el.getBoundingClientRect().top + window.scrollY);
       if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-    }
+      setTimeout(() => { isSnapping = false; }, 700);
+    },
+    rebuild: buildSnapPoints
   };
 })();
 
@@ -1140,8 +1195,11 @@ smoother.on(y => {
     const r = el.getBoundingClientRect();
     if (r.bottom < 0 || r.top > window.innerHeight) return;
     const pct = (r.top + r.height/2 - window.innerHeight/2) / window.innerHeight;
+    // scale(1.06) gives ~3% overflow on each side; cap translate so image never bleeds out
+    const maxShift = r.height * 0.03;
+    const shift = Math.max(-maxShift, Math.min(maxShift, pct * 52));
     const tilt = tiltState.get(img) || { rx: 0, ry: 0 };
-    img.style.transform = `scale(1.06) translateY(${pct * 52}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
+    img.style.transform = `scale(1.06) translateY(${shift}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
   });
 
   updateIndicator(y);
@@ -1164,6 +1222,14 @@ onReady(() => {
     document.body.classList.add('ready');
     veil.classList.add('gone');
   }));
+});
+/* bfcache restore — re-reveal page when navigating back */
+window.addEventListener('pageshow', e => {
+  if (e.persisted) {
+    document.body.classList.add('ready');
+    veil.style.transition = 'none';
+    veil.classList.add('gone');
+  }
 });
 
 document.addEventListener('click', e => {
