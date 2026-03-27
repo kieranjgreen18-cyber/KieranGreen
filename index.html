@@ -1031,118 +1031,60 @@ const smoother = (() => {
   let current = window.scrollY;
   let target  = window.scrollY;
   let ticking = false;
+  let programmatic = false; // true while scrollTo() is driving — blocks scroll sync
   const listeners = [];
 
-  const ease     = 0.072;  // normal scroll feel
-  const snapEase = 0.062;  // ← snap pull speed (tweak me: 0.04 dreamy → 0.10 crisp)
-
-  // Magnetic snap
-  let snapPoints = [];
-  let snapTimer  = null;
-  let snapTarget = null;   // non-null while a snap is committed
-  const SNAP_PULL  = 0.18; // must be within 18% vh of a card top to be eligible
-  const SNAP_DELAY = 180;  // ms of wheel stillness before committing
-
-  function buildSnapPoints() {
-    snapPoints = [...document.querySelectorAll('.proj, .about, .contact')];
-  }
-
-  function getSnapTop(el) {
-    return Math.round(el.getBoundingClientRect().top + window.scrollY);
-  }
-
-  // Find a snap candidate for scroll position `pos` moving in `dir` (+1 down, -1 up).
-  // Only considers cards in the direction of travel so we never grab a card we've passed.
-  function findSnap(pos, dir) {
-    const vh = window.innerHeight;
-    let best = null, bestDist = Infinity;
-    for (const el of snapPoints) {
-      const top = getSnapTop(el);
-      const dist = top - pos;
-      // card must be in travel direction (or right at pos) and within the pull zone
-      if (dir >= 0 && dist < -vh * 0.05) continue; // scrolling down: skip cards well above
-      if (dir <= 0 && dist >  vh * 0.05) continue; // scrolling up:   skip cards well below
-      const absDist = Math.abs(dist);
-      if (absDist < vh * SNAP_PULL && absDist < bestDist) {
-        bestDist = absDist; best = el;
-      }
-    }
-    return best;
-  }
-
-  function scheduleSnap(dir) {
-    clearTimeout(snapTimer);
-    snapTimer = setTimeout(() => {
-      const snap = findSnap(target, dir);
-      if (!snap) return;
-      const snapTop = getSnapTop(snap);
-      if (snapTop === Math.round(target)) return; // already there
-      snapTarget = snapTop;
-      target = snapTop;
-      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-    }, SNAP_DELAY);
-  }
+  const ease = 0.085; // responsive yet silky; raise toward 0.12 for crisper, lower toward 0.06 for dreamier
 
   function tick() {
     const diff = target - current;
-    if (Math.abs(diff) < 0.08) {
+    if (Math.abs(diff) < 0.1) {
       current = target;
-      snapTarget = null; // snap fully settled — release
-      ticking = false;
+      window.scrollTo(0, current);
       listeners.forEach(fn => fn(current));
+      ticking = false;
+      programmatic = false;
       return;
     }
-    const e = (snapTarget !== null) ? snapEase : ease;
-    current += diff * e;
+    current += diff * ease;
     window.scrollTo(0, current);
     listeners.forEach(fn => fn(current));
     requestAnimationFrame(tick);
   }
 
-  let lastWheelDir = 1;
+  function startTick() {
+    if (ticking) return; // already running — just updating target is enough
+    ticking = true;
+    requestAnimationFrame(tick);
+  }
+
   window.addEventListener('wheel', e => {
     e.preventDefault();
     const delta = e.deltaMode === 1 ? e.deltaY * 32
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
-    // Any new wheel input cancels an in-progress snap so the user stays in control
-    if (snapTarget !== null) {
-      snapTarget = null;
-      clearTimeout(snapTimer);
-    }
-    lastWheelDir = delta >= 0 ? 1 : -1;
     target = Math.max(0, Math.min(
       document.body.scrollHeight - window.innerHeight,
       target + delta
     ));
-    if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-    scheduleSnap(lastWheelDir);
+    startTick();
   }, { passive: false });
 
+  // Sync native scroll position (touch, keyboard, anchor clicks not intercepted)
+  // but never while our own loop is running — that would reset current mid-animation.
   window.addEventListener('scroll', () => {
-    if (!ticking) current = target = window.scrollY;
+    if (!ticking) { current = target = window.scrollY; }
   }, { passive: true });
-
-  window.addEventListener('touchend', () => {
-    scheduleSnap(lastWheelDir);
-  }, { passive: true });
-
-  window.addEventListener('DOMContentLoaded', buildSnapPoints);
-  window.addEventListener('resize', () => {
-    clearTimeout(snapTimer);
-    setTimeout(buildSnapPoints, 200);
-  });
 
   return {
     on: fn => listeners.push(fn),
     scrollTo: el => {
-      clearTimeout(snapTimer);
-      snapTarget = null;
-      current = window.scrollY;
+      programmatic = true;
+      current = window.scrollY; // snap current to reality before animating
       target = Math.round(el.getBoundingClientRect().top + window.scrollY);
-      if (!ticking) { ticking = true; requestAnimationFrame(tick); }
-    },
-    rebuild: buildSnapPoints
+      target = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, target));
+      startTick();
+    }
   };
 })();
 
@@ -1183,6 +1125,7 @@ function buildSectionOffsets() {
 buildSectionOffsets();
 
 function updateIndicator(y) {
+  if (!sectionOffsets.length) return;
   let active = sectionOffsets[0].label;
   const mid = y + window.innerHeight * 0.5;
   for (const s of sectionOffsets) {
@@ -1307,6 +1250,7 @@ hamburger.addEventListener('click', () => {
 });
 
 /* ── RESIZE ── */
+let cachedContactRect = null;
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
