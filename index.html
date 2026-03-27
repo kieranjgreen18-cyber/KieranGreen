@@ -139,11 +139,16 @@
 }
 </script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;1,100&family=Barlow:wght@200;300;400&display=swap" rel="stylesheet"></noscript>
+<!-- Only the weights actually used: Barlow Condensed 100+200 (display/UI), Barlow 300 (body) -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;1,100&family=Barlow:wght@300&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;1,100&family=Barlow:wght@300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;1,100&family=Barlow:wght@300&display=swap" rel="stylesheet"></noscript>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
@@ -352,6 +357,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .hero-img{
   position:absolute;inset:0;
   background-color:#1a1410;
+  background-image:linear-gradient(135deg,#1a1410 0%,#0d1214 50%,#0a1010 100%);
   background-size:cover;background-position:center 20%;
   transform:scale(1.07);transition:transform 9s ease;
   will-change:transform;
@@ -1105,7 +1111,7 @@ footer{
 
 <footer role="contentinfo">
   <div class="f-logo">Kieran <em>Green</em> — Industrial Designer</div>
-  <div class="f-copy">© 2026 — All rights reserved</div>
+  <div class="f-copy">© <span id="copy-year"></span> — All rights reserved</div>
 </footer>
 
 <script>
@@ -1600,6 +1606,7 @@ document.querySelectorAll('.proj').forEach(proj => {
     tiltState.get(img).ry = 0;
   });
 });
+/* ── COPYRIGHT YEAR ── */
+document.getElementById('copy-year').textContent = new Date().getFullYear();
 </script>
-</body>
 </html>
