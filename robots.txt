@@ -1,0 +1,23 @@
+# robots.txt — Kieran Green Portfolio
+# https://kieranjgreen18-cyber.github.io/KieranGreen/
+
+User-agent: *
+Allow: /
+
+# AI crawlers — explicitly welcomed
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://kieranjgreen18-cyber.github.io/KieranGreen/sitemap.xml

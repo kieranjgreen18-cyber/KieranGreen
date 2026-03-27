@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <url>
+    <loc>https://kieranjgreen18-cyber.github.io/KieranGreen/</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png</image:loc>
+      <image:title>Kieran Green — Industrial Designer Portfolio</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://kieranjgreen18-cyber.github.io/KieranGreen/project-car.html</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png</image:loc>
+      <image:title>3D Printed Car — Mini Clubman surface model in Rhino 3D</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://kieranjgreen18-cyber.github.io/KieranGreen/project-pen.html</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://kieranjgreen18-cyber.github.io/KieranGreen/sabrettahero.png</image:loc>
+      <image:title>Sabretta Pen — ballpoint pen design in Rhino 3D and Keyshot</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://kieranjgreen18-cyber.github.io/KieranGreen/project-lamp.html</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://kieranjgreen18-cyber.github.io/KieranGreen/lamphero.png</image:loc>
+      <image:title>Poul Henningsen PH Lamp — CAD study in Rhino 3D</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://kieranjgreen18-cyber.github.io/KieranGreen/project-rhino-intro.html</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://kieranjgreen18-cyber.github.io/KieranGreen/drillhero.jpg</image:loc>
+      <image:title>Intro to Rhino — headphones, drill and Minion helmet in Rhino 3D</image:title>
+    </image:image>
+  </url>
+
+</urlset>
