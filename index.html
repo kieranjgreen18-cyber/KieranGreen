@@ -564,94 +564,233 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .proj:hover .proj-open{opacity:1;}
 .proj-open:hover{border-color:var(--sage);background:var(--sage);color:var(--ink);}
 
+/* ═══════════════════════════════════════
+   ABOUT — CINEMATIC
+═══════════════════════════════════════ */
 .about{
   position:relative;
-  overflow:hidden;
   background:var(--ink);
-  min-height:100svh;
-  display:flex;
-  align-items:center;
+  overflow:hidden;
 }
-.about-bg{
-  position:absolute;inset:0;
-  background:radial-gradient(ellipse 70% 80% at 80% 50%,rgba(91,160,164,.06) 0%,transparent 65%),var(--ink);
+
+/* ── FULL-BLEED VIDEO ── */
+.about-film{
+  position:relative;
+  width:100%;
+  background:#000;
+  overflow:hidden;
+}
+.about-film-inner{
+  position:relative;
+  width:100%;
+  padding-top:56.25%;
+}
+.about-film-inner iframe{
+  position:absolute;inset:0;width:100%;height:100%;
+  border:none;display:block;
+}
+/* Cinematic bars */
+.about-film-bar-top,
+.about-film-bar-bot{
+  position:absolute;left:0;right:0;z-index:4;
+  background:var(--ink);
+  height:clamp(28px,4.2vw,64px);
   pointer-events:none;
 }
-.about-grid{
-  position:absolute;inset:0;pointer-events:none;
-  background-image:linear-gradient(rgba(91,160,164,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(91,160,164,.022) 1px,transparent 1px);
-  background-size:var(--s9) var(--s9);
-  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 80% 50%,black,transparent);
-  mask-image:radial-gradient(ellipse 80% 80% at 80% 50%,black,transparent);
+.about-film-bar-top{top:0;}
+.about-film-bar-bot{bottom:0;}
+/* metadata burned into the bottom bar */
+.about-film-meta{
+  position:absolute;bottom:0;left:0;right:0;
+  height:clamp(28px,4.2vw,64px);
+  z-index:5;pointer-events:none;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pad);
 }
-.about-inner{
-  position:relative;z-index:2;
-  padding:var(--s10) var(--pad);
-  width:100%;
-  align-self:center;
-}
-
-.about-top{
-  display:grid;
-  grid-template-columns:1fr 1.6fr;
-  gap:var(--s8);
-  align-items:start;
-  padding-bottom:var(--s8);
-  border-bottom:1px solid var(--rule);
+.about-film-meta span{
+  font-size:9px;font-weight:200;letter-spacing:.28em;text-transform:uppercase;
+  color:rgba(91,160,164,.4);
+  font-family:'Barlow Condensed',sans-serif;
 }
 
-.about-label{
-  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-wide);text-transform:uppercase;
-  color:var(--sage);margin-bottom:var(--s4);
+/* ── STATEMENT — huge single-screen moment ── */
+.about-statement-wrap{
+  min-height:100svh;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:0 var(--pad) var(--s8);
+  position:relative;
+  border-top:1px solid var(--rule);
+}
+.about-statement-label{
+  position:absolute;
+  top:var(--s8);left:var(--pad);
+  font-size:9px;font-weight:200;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--sage);opacity:.7;
+  font-family:'Barlow Condensed',sans-serif;
   display:flex;align-items:center;gap:var(--s2);
 }
-.about-label::before{content:'';width:var(--s2);height:1px;background:var(--sage);}
+.about-statement-label::before{content:'';width:var(--s2);height:1px;background:var(--sage);}
 
-.about-h{
-  font-size:var(--t-heading);
-  font-weight:100;letter-spacing:var(--ls-tight);line-height:1.05;text-transform:uppercase;
+.about-statement-year{
+  position:absolute;
+  top:var(--s8);right:var(--pad);
+  font-size:9px;font-weight:200;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(150,168,170,.25);
+  font-family:'Barlow Condensed',sans-serif;
 }
-.about-h em{font-style:italic;color:var(--sage);}
 
-.about-body{
-  display:flex;flex-direction:column;gap:var(--s2);
-  padding-top:var(--s1);
-}
-.about-body p{
-  font-size:var(--t-body);line-height:var(--lh-body);color:var(--stone);
-}
-.about-body strong{color:var(--off);opacity:.85;font-weight:400;}
-
-.about-body .pop-word{
-  color:transparent;
-  -webkit-text-stroke:1px rgba(91,160,164,.3);
-  display:inline;
-  transition:color .5s var(--ease),-webkit-text-stroke .5s var(--ease);
-}
-.about-body .pop-word.popped{
+.about-hl{
+  font-size:clamp(52px, 9.5vw, 148px);
+  font-weight:100;
+  letter-spacing:-.01em;
+  line-height:.95;
+  text-transform:uppercase;
   color:var(--off);
-  opacity:.85;
-  -webkit-text-stroke:1px transparent;
+  font-family:'Barlow Condensed',sans-serif;
+  overflow:hidden;
+}
+.about-hl em{font-style:italic;color:var(--sage);}
+.about-hl .hl-line{
+  display:block;
+  overflow:hidden;
+}
+.about-hl .hl-line span{
+  display:block;
+  transform:translateY(110%);
+  transition:transform 1.1s var(--ease);
+}
+.about-hl.in .hl-line span{transform:translateY(0);}
+.about-hl .hl-line:nth-child(2) span{transition-delay:.08s;}
+.about-hl .hl-line:nth-child(3) span{transition-delay:.16s;}
+.about-hl .hl-line:nth-child(4) span{transition-delay:.24s;}
+
+.about-sub-row{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  margin-top:var(--s6);
+  gap:var(--s5);
+}
+.about-sub-text{
+  font-size:var(--t-body);
+  line-height:var(--lh-body);
+  color:var(--stone);
+  max-width:420px;
+}
+.about-sub-text strong{color:var(--off);font-weight:300;}
+.about-sub-count{
+  font-size:clamp(80px,12vw,180px);
+  font-weight:100;
+  font-style:italic;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(91,160,164,.08);
+  line-height:1;
+  font-family:'Barlow Condensed',sans-serif;
+  user-select:none;
+  flex-shrink:0;
 }
 
-.about-stats{
+/* ── CHAPTERS — each 100vh with text planted cinematically ── */
+.about-chapters{
+  border-top:1px solid var(--rule);
+}
+.about-chapter{
+  min-height:100svh;
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:1fr auto 1fr;
+  padding:0 var(--pad);
+  border-bottom:1px solid var(--rule);
+  position:relative;
+  overflow:hidden;
 }
-.about-stat{
-  padding:var(--s5) var(--pad) var(--s5) var(--pad);
-  border-right:1px solid var(--rule);
+/* alternating text alignment */
+.about-chapter:nth-child(even){
+  text-align:right;
 }
-.about-stat:first-child{padding-left:0;}
-.about-stat:last-child{border-right:none;padding-right:0;}
+.about-chapter:nth-child(even) .ch-text{
+  margin-left:auto;
+}
+.about-chapter:nth-child(even) .ch-label::before{display:none;}
+.about-chapter:nth-child(even) .ch-label::after{
+  content:'';width:var(--s2);height:1px;background:var(--sage);
+  display:inline-block;margin-left:var(--s2);vertical-align:middle;
+}
 
-.stat-n{
-  font-size:clamp(52px,7vw,88px);font-weight:100;
-  color:var(--sage);line-height:1;letter-spacing:var(--ls-tight);
+/* giant background numeral */
+.ch-bg-num{
+  position:absolute;
+  font-size:clamp(260px,40vw,600px);
+  font-weight:100;
+  font-style:italic;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(91,160,164,.04);
+  line-height:1;
+  pointer-events:none;user-select:none;
+  bottom:-0.1em;
+  right:-0.05em;
+  font-family:'Barlow Condensed',sans-serif;
+  transition:-webkit-text-stroke .6s;
+  letter-spacing:-.04em;
 }
-.stat-k{
-  font-size:var(--t-micro);font-weight:200;letter-spacing:var(--ls-mid);text-transform:uppercase;
-  color:var(--stone);margin-top:var(--s1);
+.about-chapter:nth-child(even) .ch-bg-num{
+  right:auto;left:-0.05em;
+}
+.about-chapter:hover .ch-bg-num{
+  -webkit-text-stroke:1px rgba(91,160,164,.09);
+}
+
+.ch-top{display:flex;align-items:flex-end;padding-bottom:var(--s4);}
+.ch-bottom{display:flex;align-items:flex-start;padding-top:var(--s4);}
+
+.ch-text{
+  max-width:660px;
+  padding:var(--s6) 0;
+  display:flex;flex-direction:column;gap:var(--s4);
+}
+.ch-label{
+  font-size:9px;font-weight:200;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--sage);opacity:.7;
+  font-family:'Barlow Condensed',sans-serif;
+  display:flex;align-items:center;gap:var(--s2);
+}
+.ch-label::before{content:'';width:var(--s2);height:1px;background:var(--sage);}
+
+.ch-title{
+  font-size:clamp(36px,5vw,72px);
+  font-weight:100;
+  letter-spacing:-.01em;
+  line-height:1.02;
+  text-transform:uppercase;
+  color:var(--off);
+  font-family:'Barlow Condensed',sans-serif;
+}
+.ch-title em{font-style:italic;color:var(--sage);}
+
+.ch-body{
+  font-size:var(--t-body);
+  line-height:var(--lh-body);
+  color:var(--stone);
+  max-width:480px;
+}
+.ch-body strong{color:var(--off);font-weight:300;}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .about-statement-wrap{min-height:auto;padding:var(--s9) var(--pad) var(--s7);}
+  .about-hl{font-size:clamp(48px,13vw,80px);}
+  .about-sub-row{flex-direction:column;gap:var(--s4);}
+  .about-sub-count{display:none;}
+  .about-chapter{min-height:auto;padding:var(--s8) var(--pad);}
+  .about-chapter:nth-child(even){text-align:left;}
+  .about-chapter:nth-child(even) .ch-text{margin-left:0;}
+  .about-chapter:nth-child(even) .ch-label::after{display:none;}
+  .about-chapter:nth-child(even) .ch-label::before{display:inline-block;}
+  .ch-bg-num{display:none;}
+  .ch-top,.ch-bottom{display:none;}
+  .about-chapter{display:block;}
+  .ch-text{padding:var(--s5) 0;}
 }
 
 .contact{
@@ -857,8 +996,9 @@ footer{
   .proj:nth-child(even) .proj-open{bottom:var(--pad);right:var(--pad);left:auto;}
   .proj-ghost{display:none;}
   .about-top{grid-template-columns:1fr;gap:var(--s5);padding-bottom:var(--s6);}
-  .about-stats{grid-template-columns:1fr;}
-  .about-stat{padding:var(--s3) 0;border-right:none;border-top:1px solid var(--rule);padding-left:0;padding-right:0;}
+  .about-opening{padding:var(--s9) var(--pad);}
+  .about-statement{font-size:clamp(32px,8vw,54px);}
+  .about-pull{align-self:flex-start;margin-top:var(--s6);}
   .contact-inner{width:100%;padding:var(--s8) var(--pad);}
   .contact-img,.contact-wm{display:none;}
   .contact-h{font-size:clamp(56px,13vw,80px);}
@@ -1021,38 +1161,82 @@ footer{
 </section>
 
 <section class="about" id="about" aria-labelledby="about-heading">
-  <div class="about-bg"></div>
-  <div class="about-grid"></div>
-  <div class="about-inner">
 
-    <div class="about-top rev">
-      <div class="about-left">
-        <p class="about-label">About</p>
-        <h2 class="about-h" id="about-heading">Obsessed<br>with the<br><em>feel</em> of<br>things.</h2>
+  <!-- VIDEO: full bleed, cinematic bars -->
+  <div class="about-film">
+    <div class="about-film-bar-top" aria-hidden="true"></div>
+    <div class="about-film-inner">
+      <iframe
+        src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1&color=white"
+        title="Kieran Green — Industrial Design Personal Statement"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+    <div class="about-film-bar-bot" aria-hidden="true"></div>
+    <div class="about-film-meta" aria-hidden="true">
+      <span>Personal Statement — 2025</span>
+      <span>Kieran Green</span>
+      <span>Why I design</span>
+    </div>
+  </div>
+
+  <!-- STATEMENT: full viewport, text planted at bottom-left -->
+  <div class="about-statement-wrap">
+    <p class="about-statement-label" aria-hidden="true">About</p>
+    <span class="about-statement-year" aria-hidden="true">B.Sc Industrial Design</span>
+
+    <h2 class="about-hl rev" id="about-heading">
+      <span class="hl-line"><span>Not just</span></span>
+      <span class="hl-line"><span>beautiful.</span></span>
+      <span class="hl-line"><span><em>Better.</em></span></span>
+    </h2>
+
+    <div class="about-sub-row">
+      <p class="about-sub-text">I'm an industrial design student who came to this field through living it. The tools that rebuilt a car engine. The bike components I put in strangers' hands at Mike's Bikes. The guitar that taught me what <strong>rightness feels like before it sounds like anything.</strong> I'm studying to turn that into a skill I can give to other people.</p>
+      <span class="about-sub-count" aria-hidden="true">KG</span>
+    </div>
+  </div>
+
+  <!-- CHAPTERS: three full-height moments -->
+  <div class="about-chapters">
+
+    <div class="about-chapter rev">
+      <div class="ch-bg-num" aria-hidden="true">01</div>
+      <div class="ch-top"></div>
+      <div class="ch-text">
+        <p class="ch-label">The Engine Bay</p>
+        <h3 class="ch-title">Rebuilt a car.<br><em>Learned what</em><br>constraints feel like.</h3>
+        <p class="ch-body">Hands deep in an engine block, nothing is arbitrary. Every surface finish, every tolerance, every fastener is a decision with a consequence you can feel. Good design is engineering made <strong>honest and inevitable.</strong></p>
       </div>
-      <div class="about-body">
-        <p>I'm an industrial designer driven by one obsession: the moment an object lands in your hand and just <strong class="pop-word">feels right.</strong> That's not accident — it's geometry, material, and weight working together invisibly.</p>
-        <p>My Mini Clubman project taught me that a closed mesh matters more than perfect detail. <strong class="pop-word">Real objects have constraints,</strong> and working within them is where the interesting design happens.</p>
-        <p>Currently studying Industrial Design — pushing every project toward something that could actually be made, <strong class="pop-word">held, and used.</strong></p>
-      </div>
+      <div class="ch-bottom"></div>
     </div>
 
-    <div class="about-stats rev d1">
-      <div class="about-stat">
-        <div class="stat-n">6+</div>
-        <div class="stat-k">Projects completed</div>
+    <div class="about-chapter rev d1">
+      <div class="ch-bg-num" aria-hidden="true">02</div>
+      <div class="ch-top"></div>
+      <div class="ch-text">
+        <p class="ch-label">The Shop Floor</p>
+        <h3 class="ch-title">Sold bikes.<br><em>Learned what</em><br>users actually need.</h3>
+        <p class="ch-body">At Mike's Bikes I watched real people touch real components and make real decisions. A spec sheet means nothing at that moment. The gap between what a designer intends and what a user experiences — <strong>that's where I want to work.</strong></p>
       </div>
-      <div class="about-stat">
-        <div class="stat-n">2025</div>
-        <div class="stat-k">Currently active</div>
+      <div class="ch-bottom"></div>
+    </div>
+
+    <div class="about-chapter rev d2">
+      <div class="ch-bg-num" aria-hidden="true">03</div>
+      <div class="ch-top"></div>
+      <div class="ch-text">
+        <p class="ch-label">The Practice Room</p>
+        <h3 class="ch-title">Play guitar.<br><em>Chase that</em><br>intangible rightness.</h3>
+        <p class="ch-body">A great guitar has a quality you feel before you hear it — weight, balance, resonance in the body. That thing that can't be specced but is instantly felt. <strong>That's what I'm designing toward.</strong></p>
       </div>
-      <div class="about-stat">
-        <div class="stat-n">∞</div>
-        <div class="stat-k">Iterations per form</div>
-      </div>
+      <div class="ch-bottom"></div>
     </div>
 
   </div>
+
 </section>
 
 <section class="contact" id="contact" aria-labelledby="contact-heading">
@@ -1465,6 +1649,17 @@ window.addEventListener('resize', () => {
   }, 150);
 }, { passive: true });
 
+/* ── ABOUT: headline line reveal ── */
+const aboutHl = document.querySelector('.about-hl');
+if (aboutHl) {
+  const hlObs = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    aboutHl.classList.add('in');
+    hlObs.disconnect();
+  }, { threshold: 0.3 });
+  hlObs.observe(aboutHl);
+}
+
 /* ── ABOUT: pop-word reveal ── */
 const aboutSection = document.querySelector('.about');
 const popWords = document.querySelectorAll('.pop-word');
@@ -1476,33 +1671,6 @@ const popObs = new IntersectionObserver(entries => {
   popObs.disconnect();
 }, { threshold: 0.3 });
 if (aboutSection) popObs.observe(aboutSection);
-
-/* ── ABOUT: count-up stats ── */
-const statEls = document.querySelectorAll('.stat-n');
-const statConfigs = [
-  { target: 6,    start: 0,    suffix: '+' },
-  { target: 2025, start: 2018, suffix: ''  },
-  { target: null, start: null, suffix: ''  },
-];
-let statsDone = false;
-const statsObs = new IntersectionObserver(entries => {
-  if (!entries[0].isIntersecting || statsDone) return;
-  statsDone = true;
-  statEls.forEach((el, i) => {
-    const cfg = statConfigs[i];
-    if (!cfg || cfg.target === null) return;
-    const duration = 1200;
-    const startTime = performance.now();
-    function countUp(now) {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      el.textContent = Math.round(cfg.start + (cfg.target - cfg.start) * eased) + cfg.suffix;
-      if (progress < 1) requestAnimationFrame(countUp);
-    }
-    requestAnimationFrame(countUp);
-  });
-}, { threshold: 0.3 });
-if (aboutSection) statsObs.observe(aboutSection);
 
 /* ── LAZY-LOAD project images ── */
 const lazyImgObs = new IntersectionObserver(entries => {
