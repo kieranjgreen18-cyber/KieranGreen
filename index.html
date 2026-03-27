@@ -103,24 +103,31 @@ body.ready{opacity:1;transition:opacity .75s ease;}
 }
 
 #grain{
-  position:fixed;inset:-50%;width:200%;height:200%;
+  position:fixed;inset:-25%;width:150%;height:150%;
   pointer-events:none;z-index:9990;opacity:.026;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation:gr .9s steps(2) infinite;
   contain:strict;
+  will-change:transform;
 }
-@keyframes gr{0%,100%{transform:translate(0,0)}33%{transform:translate(-1%,-2%)}66%{transform:translate(1%,1%)}}
+@keyframes gr{0%,100%{transform:translate3d(0,0,0)}33%{transform:translate3d(-1%,-2%,0)}66%{transform:translate3d(1%,1%,0)}}
 
 #veil{
   position:fixed;inset:0;z-index:10000;
   background:var(--sage);
   clip-path:inset(0 0% 0 0);
   pointer-events:all;
+  will-change:clip-path;
 }
 #veil.gone{
   clip-path:inset(0 100% 0 0);
   pointer-events:none;
   transition:clip-path .75s var(--snap);
+}
+#veil.instant{
+  transition:none !important;
+  clip-path:inset(0 100% 0 0) !important;
+  pointer-events:none;
 }
 
 nav{
@@ -603,12 +610,19 @@ footer{
 .rev.in{opacity:1;transform:translateY(0);}
 .d1{transition-delay:.1s;}.d2{transition-delay:.22s;}.d3{transition-delay:.36s;}
 
+.proj-title .ch{
+  display:inline-block;opacity:0;transform:translateY(8px);
+  transition:opacity .4s ease,transform .4s ease;
+}
+.proj-title .ch.show{opacity:1;transform:translateY(0);}
+
 #prog{
   position:fixed;top:0;left:0;height:2px;
-  background:var(--sage);z-index:9997;width:0%;
+  background:var(--sage);z-index:9997;
+  width:100%;transform:scaleX(0);transform-origin:left;
   pointer-events:none;
   box-shadow:0 0 8px rgba(91,160,164,.6);
-  transition:width .06s linear;
+  will-change:transform;
 }
 
 #section-indicator{
@@ -1091,13 +1105,21 @@ const smoother = (() => {
 /* ── SCROLL EFFECTS ── */
 const heroImg   = document.getElementById('hero-img');
 const navEl     = document.getElementById('nav');
-const projPairs = [...document.querySelectorAll('.proj')].map(p => ({ el:p, img:p.querySelector('.proj-img') }));
-const track     = document.getElementById('t-track');
+const projPairs = [...document.querySelectorAll('.proj')].map(p => ({
+  el: p, img: p.querySelector('.proj-img'), cachedRect: null
+}));
+const track = document.getElementById('t-track');
 let lastY = 0;
 
 const prog = document.createElement('div');
 prog.id = 'prog';
 document.body.appendChild(prog);
+
+// Invalidate proj rect cache on resize (already done in resize handler for _projRect; mirror here)
+function invalidateProjRects() {
+  projPairs.forEach(pp => { pp.cachedRect = null; });
+}
+window.addEventListener('resize', invalidateProjRects, { passive: true });
 
 const sections = [
   { el: document.querySelector('.hero'),    label: 'Intro' },
@@ -1152,17 +1174,22 @@ smoother.on(y => {
   track.style.animationDirection = y > lastY ? 'normal' : 'reverse';
   lastY = y;
   const maxScroll = document.body.scrollHeight - window.innerHeight;
-  prog.style.width = (maxScroll > 0 ? y / maxScroll * 100 : 0) + '%';
+  prog.style.transform = `scaleX(${maxScroll > 0 ? y / maxScroll : 0})`;
 
-  projPairs.forEach(({ el, img }) => {
-    const r = el.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > window.innerHeight) return;
-    const pct = (r.top + r.height/2 - window.innerHeight/2) / window.innerHeight;
-    // scale(1.06) gives ~3% overflow on each side; cap translate so image never bleeds out
-    const maxShift = r.height * 0.03;
+  projPairs.forEach(pp => {
+    // Use cached absolute rect; recompute only when null (first call or after resize)
+    if (!pp.cachedRect) {
+      const r = pp.el.getBoundingClientRect();
+      pp.cachedRect = { top: r.top + y, height: r.height };
+    }
+    const top    = pp.cachedRect.top - y;
+    const bottom = top + pp.cachedRect.height;
+    if (bottom < 0 || top > window.innerHeight) return;
+    const pct = (top + pp.cachedRect.height / 2 - window.innerHeight / 2) / window.innerHeight;
+    const maxShift = pp.cachedRect.height * 0.03;
     const shift = Math.max(-maxShift, Math.min(maxShift, pct * 52));
-    const tilt = tiltState.get(img) || { rx: 0, ry: 0 };
-    img.style.transform = `scale(1.06) translateY(${shift}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
+    const tilt = tiltState.get(pp.img) || { rx: 0, ry: 0 };
+    pp.img.style.transform = `scale(1.06) translateY(${shift}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
   });
 
   updateIndicator(y);
@@ -1181,17 +1208,22 @@ function onReady(fn) {
 }
 onReady(() => {
   setTimeout(() => document.querySelector('.hero').classList.add('loaded'), 100);
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // Both body reveal and veil dismiss in the same rAF — no frame of teal visible
+  requestAnimationFrame(() => {
     document.body.classList.add('ready');
     veil.classList.add('gone');
-  }));
+  });
 });
 /* bfcache restore — re-reveal page when navigating back */
 window.addEventListener('pageshow', e => {
   if (e.persisted) {
+    // Kill any in-progress veil transition and snap to hidden instantly
+    veil.classList.remove('gone');
+    veil.classList.add('instant');
     document.body.classList.add('ready');
-    veil.style.transition = 'none';
-    veil.classList.add('gone');
+    // Force a reflow so 'instant' takes hold, then clean up
+    void veil.offsetWidth;
+    veil.classList.remove('instant');
   }
 });
 
@@ -1330,10 +1362,7 @@ document.querySelectorAll('.proj-img[data-bg]').forEach(img => {
 const titleObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
-    e.target.querySelector('.proj-title').querySelectorAll('span').forEach(s => {
-      s.style.opacity = '1';
-      s.style.transform = 'translateY(0)';
-    });
+    e.target.querySelector('.proj-title').querySelectorAll('.ch').forEach(s => s.classList.add('show'));
     titleObs.unobserve(e.target);
   });
 }, { threshold: 0.3 });
@@ -1344,7 +1373,8 @@ document.querySelectorAll('.proj-title').forEach(title => {
   title.innerHTML = '';
   text.split('').forEach((char, i) => {
     const span = document.createElement('span');
-    span.style.cssText = `display:inline-block;opacity:0;transform:translateY(8px);transition:opacity .4s ease ${i*18}ms,transform .4s ease ${i*18}ms;`;
+    span.className = 'ch';
+    span.style.transitionDelay = (i * 18) + 'ms';
     span.textContent = char === ' ' ? '\u00a0' : char;
     title.appendChild(span);
   });
