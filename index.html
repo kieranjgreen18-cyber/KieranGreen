@@ -314,7 +314,7 @@ nav.scrolled{
   border-bottom:1px solid var(--rule);
 }
 .n-logo{
-  font-size:var(--t-label);font-weight:700;letter-spacing:var(--ls-stencil);text-transform:uppercase;
+  font-size:clamp(16px,1.6vw,22px);font-weight:700;letter-spacing:.18em;text-transform:uppercase;
   color:var(--off);text-decoration:none;cursor:none;
   opacity:0;animation:fd .6s var(--ease) .05s forwards;
   transition:color .25s;
@@ -435,7 +435,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 
 .hero-h1{
   font-size:clamp(80px,15vw,220px);
-  font-weight:100;line-height:.85;letter-spacing:var(--ls-zero);text-transform:uppercase;
+  font-weight:100;line-height:.88;letter-spacing:-.03em;text-transform:uppercase;
   overflow:hidden;
   margin-bottom:var(--s4);
   font-family:'D-DIN Condensed',sans-serif;
@@ -446,28 +446,14 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   opacity:0;transform:translateY(108%);
   animation:slideUp 1s var(--ease) forwards;
 }
-/* Primary: full condensed mass */
-.hero-h1 .w-primary{
-  font-family:'D-DIN Condensed',sans-serif;
-  font-weight:100;
-  letter-spacing:-.04em;
-}
-/* Secondary: regular D-DIN — dramatically wider, creates rhythmic breath */
-.hero-h1 .w-secondary{
-  font-family:'D-DIN',sans-serif;
-  font-weight:100;
-  font-size:.58em;
-  letter-spacing:.08em;
-  opacity:0;transform:translateY(108%);
-}
-/* Tertiary: condensed bold — weight as texture at the close */
+.hero-h1 .w-primary,
+.hero-h1 .w-secondary,
 .hero-h1 .w-tertiary{
   font-family:'D-DIN Condensed',sans-serif;
-  font-weight:700;
-  font-size:.78em;
-  letter-spacing:.12em;
-  color:var(--stone);
-  opacity:0;transform:translateY(108%);
+  font-weight:100;
+  font-size:1em;
+  letter-spacing:-.03em;
+  color:var(--off);
 }
 .hero-h1 em{font-style:italic;color:var(--sage);}
 .hero-h1 .line:nth-child(1) .word{animation-delay:.28s;}
@@ -509,13 +495,12 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .ticker::before{left:0;background:linear-gradient(to right,var(--ink),transparent);}
 .ticker::after{right:0;background:linear-gradient(to left,var(--ink),transparent);}
 .t-track{display:flex;width:max-content;animation:tick 44s linear infinite;}
-.ticker:hover .t-track{animation-play-state:paused;}
+.ticker:hover .t-track{animation-play-state:running;}
 .t-item{
   display:flex;align-items:center;gap:var(--s3);padding:0 var(--s4);font-size:var(--t-micro);font-weight:700;letter-spacing:var(--ls-stencil);text-transform:uppercase;
   color:var(--off);opacity:.4;white-space:nowrap;transition:opacity .25s;
   font-family:'D-DIN Condensed',sans-serif;
 }
-.t-item:hover{opacity:1;color:var(--sage);}
 .t-dot{width:3px;height:3px;border-radius:50%;background:var(--sage);opacity:.8;flex-shrink:0;}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
@@ -1053,26 +1038,6 @@ footer{
   .hero-bottom{opacity:1 !important;}
 }
 
-/* ── HERO SPEC RULE — engineering document register ── */
-.hero-spec-rule{
-  display:flex;align-items:center;gap:var(--s3);
-  margin-bottom:var(--s4);
-  opacity:0;animation:fu .8s var(--ease) .6s forwards;
-}
-.hero-spec-line{
-  flex:1;height:1px;
-  background:linear-gradient(to right, transparent, rgba(91,160,164,.25), transparent);
-}
-.hero-spec-meta{
-  font-family:'D-DIN Condensed',sans-serif;
-  font-size:8px;font-weight:700;
-  letter-spacing:var(--ls-stencil);
-  text-transform:uppercase;
-  color:rgba(91,160,164,.4);
-  white-space:nowrap;
-  flex-shrink:0;
-}
-
 /* ── HERO CORNER COORDINATES ── */
 .hero-coords{
   position:absolute;
@@ -1157,17 +1122,6 @@ footer{
 /* ── ABOUT CHAPTER hover: bg-num brightens as contrast counterpoint ── */
 .about-chapter:hover .ch-bg-num{
   -webkit-text-stroke:1px rgba(91,160,164,.11);
-}
-
-/* ── HERO LINE HEIGHT REFINEMENT for massive type ── */
-.hero-h1 .line{
-  display:block;
-  overflow:hidden;
-  /* Optical tightening between condensed and regular-width lines */
-}
-.hero-h1 .line:nth-child(2){
-  margin-top:-.04em;
-  margin-bottom:-.04em;
 }
 
 /* ── PROJ LINE: make it a DIN-style register mark, not just a gradient ── */
@@ -1350,12 +1304,6 @@ footer{
       <span class="line"><span class="word w-primary"><em>future,</em></span></span>
       <span class="line"><span class="word w-tertiary">today.</span></span>
     </h1>
-    <!-- Spec rule: DIN as engineering document language -->
-    <div class="hero-spec-rule" aria-hidden="true">
-      <span class="hero-spec-line"></span>
-      <span class="hero-spec-meta">KG·IDes·2025·001</span>
-      <span class="hero-spec-line"></span>
-    </div>
     <div class="hero-bottom">
       <p class="hero-sub">CAD modeling, form development, and product visualization — from first sketch to something you can hold.</p>
       <div class="hero-scroll-hint">
