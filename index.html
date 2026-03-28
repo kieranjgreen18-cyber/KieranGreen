@@ -142,13 +142,46 @@
 <link rel="manifest" href="site.webmanifest">
 <meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
-<!-- Only the weights actually used: Barlow Condensed 100+200 (display/UI), Barlow 300 (body) -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;1,100&family=Barlow:wght@300&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;1,100&family=Barlow:wght@300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;1,100&family=Barlow:wght@300&display=swap" rel="stylesheet"></noscript>
+<link rel="preload" as="font" type="font/woff2" href="AnyConv.com__D-DINCondensed.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="AnyConv.com__D-DIN.woff2" crossorigin>
+<style>
+@font-face {
+  font-family: 'D-DIN';
+  src: url('AnyConv.com__D-DIN.woff2') format('woff2');
+  font-weight: 100 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('AnyConv.com__D-DIN-Italic.woff2') format('woff2');
+  font-weight: 100 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('AnyConv.com__D-DIN-Bold.woff2') format('woff2');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('AnyConv.com__D-DINCondensed.woff2') format('woff2');
+  font-weight: 100 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('AnyConv.com__D-DINCondensed-Bold.woff2') format('woff2');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+</style>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
@@ -161,7 +194,7 @@
 .contact-kicker,.contact-h,.contact-wm,
 .c-link,.c-soc,.c-dl,
 .f-logo,.f-copy{
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
 }
 
 :root{
@@ -209,7 +242,7 @@ html{scroll-behavior:auto;overflow-x:hidden;}
 body{
   background:var(--ink);
   color:var(--off);
-  font-family:'Barlow',sans-serif;
+  font-family:'D-DIN',sans-serif;
   font-weight:300;
   cursor:none;
   overflow-x:hidden;
@@ -610,7 +643,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .about-film-meta span{
   font-size:9px;font-weight:200;letter-spacing:.28em;text-transform:uppercase;
   color:rgba(91,160,164,.4);
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
 }
 
 /* ── STATEMENT — huge single-screen moment ── */
@@ -628,7 +661,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   top:var(--s8);left:var(--pad);
   font-size:9px;font-weight:200;letter-spacing:.28em;text-transform:uppercase;
   color:var(--sage);opacity:.7;
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
   display:flex;align-items:center;gap:var(--s2);
 }
 .about-statement-label::before{content:'';width:var(--s2);height:1px;background:var(--sage);}
@@ -638,7 +671,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   top:var(--s8);right:var(--pad);
   font-size:9px;font-weight:200;letter-spacing:.22em;text-transform:uppercase;
   color:rgba(150,168,170,.25);
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
 }
 
 .about-hl{
@@ -648,7 +681,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   line-height:.95;
   text-transform:uppercase;
   color:var(--off);
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
   overflow:hidden;
 }
 .about-hl em{font-style:italic;color:var(--sage);}
@@ -687,7 +720,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   color:transparent;
   -webkit-text-stroke:1px rgba(91,160,164,.08);
   line-height:1;
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
   user-select:none;
   flex-shrink:0;
 }
@@ -730,7 +763,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   pointer-events:none;user-select:none;
   bottom:-0.1em;
   right:-0.05em;
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
   transition:-webkit-text-stroke .6s;
   letter-spacing:-.04em;
 }
@@ -752,7 +785,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .ch-label{
   font-size:9px;font-weight:200;letter-spacing:.28em;text-transform:uppercase;
   color:var(--sage);opacity:.7;
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
   display:flex;align-items:center;gap:var(--s2);
 }
 .ch-label::before{content:'';width:var(--s2);height:1px;background:var(--sage);}
@@ -764,7 +797,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   line-height:1.02;
   text-transform:uppercase;
   color:var(--off);
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
 }
 .ch-title em{font-style:italic;color:var(--sage);}
 
@@ -907,7 +940,7 @@ footer{
   pointer-events:none;
   transition:opacity .4s;
   opacity:0;
-  font-family:'Barlow Condensed',sans-serif;
+  font-family:'D-DIN Condensed',sans-serif;
 }
 #section-indicator.visible{opacity:1;}
 
