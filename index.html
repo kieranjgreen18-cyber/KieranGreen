@@ -314,14 +314,37 @@ nav.scrolled{
   border-bottom:1px solid var(--rule);
 }
 .n-logo{
-  font-size:clamp(16px,1.6vw,22px);font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  font-size:clamp(13px,1.3vw,17px);font-weight:700;letter-spacing:.28em;text-transform:uppercase;
   color:var(--off);text-decoration:none;cursor:none;
   opacity:0;animation:fd .6s var(--ease) .05s forwards;
   transition:color .25s;
   font-family:'D-DIN Condensed',sans-serif;
+  display:flex;align-items:center;gap:.5em;
 }
-.n-logo:hover{color:var(--sage);}
-.n-logo em{font-style:normal;color:var(--sage);}
+.n-logo:hover{color:var(--off);}
+/* First name: upright, stone-colored — recedes slightly */
+.n-logo .logo-first{
+  color:var(--stone);
+  font-weight:700;
+  letter-spacing:.28em;
+}
+/* Separator: a single sage tick mark */
+.n-logo .logo-sep{
+  color:var(--sage);
+  font-style:normal;
+  font-weight:700;
+  letter-spacing:0;
+  opacity:.7;
+}
+/* Last name: italic, full white — pops forward */
+.n-logo .logo-last{
+  font-style:italic;
+  color:var(--off);
+  font-weight:700;
+  letter-spacing:.18em;
+  transition:color .25s;
+}
+.n-logo:hover .logo-last{color:var(--sage);}
 
 .c-link-wrap{display:inline-block;will-change:transform;}
 .n-links{
@@ -434,17 +457,19 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 
 .hero-h1{
-  font-size:clamp(80px,15vw,220px);
-  font-weight:100;line-height:.88;letter-spacing:-.03em;text-transform:uppercase;
+  font-size:clamp(88px,17.5vw,260px);
+  font-weight:100;line-height:.86;letter-spacing:-.04em;text-transform:uppercase;
   overflow:hidden;
-  margin-bottom:var(--s4);
+  margin-bottom:var(--s5);
   font-family:'D-DIN Condensed',sans-serif;
+  /* Pull left to optically align stroke with page edge */
+  margin-left:-.02em;
 }
 .hero-h1 .line{display:block;overflow:hidden;}
 .hero-h1 .word{
   display:inline-block;
   opacity:0;transform:translateY(108%);
-  animation:slideUp 1s var(--ease) forwards;
+  animation:slideUp 1.1s var(--ease) forwards;
 }
 .hero-h1 .w-primary,
 .hero-h1 .w-secondary,
@@ -452,10 +477,16 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   font-family:'D-DIN Condensed',sans-serif;
   font-weight:100;
   font-size:1em;
-  letter-spacing:-.03em;
+  letter-spacing:-.04em;
   color:var(--off);
 }
-.hero-h1 em{font-style:italic;color:var(--sage);}
+/* The italic is the entire event — nothing else competes */
+.hero-h1 em{
+  font-style:italic;
+  color:var(--sage);
+  /* Italic DIN naturally leans right — let it */
+  letter-spacing:-.03em;
+}
 .hero-h1 .line:nth-child(1) .word{animation-delay:.28s;}
 .hero-h1 .line:nth-child(2) .word{animation-delay:.40s;}
 .hero-h1 .line:nth-child(3) .word{animation-delay:.52s;}
@@ -1221,7 +1252,7 @@ footer{
   .n-links,.n-avail{display:none;}
   .n-ham{display:flex;}
   .hero-eyebrow{padding-top:var(--s8);}
-  .hero-h1{font-size:clamp(64px,16vw,110px);}
+  .hero-h1{font-size:clamp(72px,18vw,120px);}
   .hero-bottom{flex-direction:column;align-items:flex-start;gap:var(--s3);}
   .hero-scroll-hint{display:none;}
   .proj{height:80svh;}
@@ -1266,7 +1297,7 @@ footer{
 </div>
 
 <nav id="nav" aria-label="Main navigation">
-  <a href="#top" class="n-logo">Kieran <em>Green</em></a>
+  <a href="#top" class="n-logo"><span class="logo-first">Kieran</span><span class="logo-sep">/</span><span class="logo-last">Green</span></a>
   <div class="n-links">
     <a href="#work">Work</a>
     <a href="#about">About</a>
@@ -1976,35 +2007,28 @@ const logo = document.querySelector('.n-logo');
 const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
 let logoScrambling = false;
 
-const logoText1 = document.createElement('span');
-const logoText2 = document.createElement('em');
-logoText1.textContent = 'Kieran ';
-logoText2.textContent = 'Green';
-logo.innerHTML = '';
-logo.appendChild(logoText1);
-logo.appendChild(logoText2);
+// Grab the existing spans from HTML — don't rebuild the DOM
+const logoFirst = logo.querySelector('.logo-first');
+const logoLast  = logo.querySelector('.logo-last');
 
 logo.addEventListener('mouseenter', () => {
   if (logoScrambling) return;
   logoScrambling = true;
   let iteration = 0;
-  const full = 'Kieran Green';
+  const target = 'GREEN';
   const interval = setInterval(() => {
-    const scrambled = full.split('').map((char, i) => {
-      if (char === ' ') return ' ';
+    const scrambled = target.split('').map((char, i) => {
       if (i < iteration) return char;
       return scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
     }).join('');
-    logoText1.textContent = scrambled.slice(0, 7);
-    logoText2.textContent = scrambled.slice(7);
-    if (iteration >= full.length) {
+    logoLast.textContent = scrambled;
+    if (iteration >= target.length) {
       clearInterval(interval);
-      logoText1.textContent = 'Kieran ';
-      logoText2.textContent = 'Green';
+      logoLast.textContent = 'Green';
       logoScrambling = false;
     }
-    iteration += 0.5;
-  }, 30);
+    iteration += 0.4;
+  }, 28);
 });
 
 
