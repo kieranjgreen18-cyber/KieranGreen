@@ -225,10 +225,10 @@
   --s9:  96px;
   --s10: 120px;
   --pad: var(--s6);
-  --t-micro:    11px;
-  --t-label:    13px;
-  --t-body:     15px;
-  --t-sub:      14px;
+  --t-micro:    13px;
+  --t-label:    15px;
+  --t-body:     17px;
+  --t-sub:      16px;
   --t-ui:       clamp(18px,2.2vw,28px);
   --t-heading:  clamp(36px,5vw,68px);
   --t-title:    clamp(52px,7.5vw,108px);
@@ -329,21 +329,22 @@ nav.scrolled{
   font-family:'D-DIN Condensed',sans-serif;
   display:inline-flex;align-items:baseline;gap:.35em;
 }
-.n-logo:hover .logo-last{color:var(--off);}
 .n-logo .logo-first{
   font-style:normal;font-weight:700;letter-spacing:.22em;color:var(--stone);
   transition:color .25s;
 }
 .n-logo .logo-sep{
   font-style:normal;font-weight:700;letter-spacing:0;
-  color:rgba(91,160,164,.45);
-  margin:0 -.1em;
+  color:rgba(91,160,164,.4);
+  margin:0 -.15em;
 }
 .n-logo .logo-last{
-  font-style:italic;font-weight:700;letter-spacing:.18em;
+  font-style:italic;font-weight:700;letter-spacing:.22em;
   color:var(--sage);
   transition:color .25s;
 }
+.n-logo:hover .logo-first{color:var(--off);}
+.n-logo:hover .logo-last{color:var(--off);}
 
 .c-link-wrap{display:inline-block;will-change:transform;}
 .n-links{
@@ -351,7 +352,7 @@ nav.scrolled{
   opacity:0;animation:fd .6s var(--ease) .12s forwards;
 }
 .n-links a{
-  font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  font-size:14px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
   color:var(--stone);text-decoration:none;cursor:none;
   transition:color .25s;
   position:relative;overflow:hidden;
@@ -608,7 +609,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .proj:nth-child(even) .proj-tags{justify-content:flex-end;}
 .proj:hover .proj-tags{opacity:1;transform:translateY(0);}
 .proj-tag{
-  font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
   color:var(--off);
   border:1px solid rgba(255,255,255,.18);
   padding:6px 12px 5px;
@@ -1130,7 +1131,7 @@ footer{
 
 /* ── ABOUT SUB TEXT ── */
 .about-sub-text{
-  font-size:14px;
+  font-size:16px;
   line-height:1.8;
   color:var(--stone);
   max-width:400px;
@@ -1140,7 +1141,7 @@ footer{
 .hero-sub{
   font-family:'D-DIN',sans-serif;
   font-weight:300;
-  font-size:13px;
+  font-size:15px;
   letter-spacing:.04em;
   line-height:1.75;
   text-transform:uppercase;
@@ -1218,7 +1219,7 @@ footer{
 <div id="grain"></div>
 
 <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
-  <a href="#work" id="dw-work">Work</a>
+  <a href="#work" id="dw-work">Projects</a>
   <a href="#about" id="dw-about">About</a>
   <a href="#contact" id="dw-contact">Contact</a>
 </div>
@@ -1226,7 +1227,7 @@ footer{
 <nav id="nav" aria-label="Main navigation">
   <a href="#top" class="n-logo"><span class="logo-first">Kieran</span><span class="logo-sep">/</span><span class="logo-last">Green</span></a>
   <div class="n-links">
-    <a href="#work">Work</a>
+    <a href="#work">Projects</a>
     <a href="#about">About</a>
     <a href="#contact">Contact</a>
   </div>
@@ -1466,7 +1467,7 @@ footer{
         </div>
       </div>
       <div class="c-field">
-        <p class="c-field-label">Work</p>
+        <p class="c-field-label">Projects</p>
         <a href="protected.html" class="c-soc">Protected Work →</a>
       </div>
       <div class="c-field">
