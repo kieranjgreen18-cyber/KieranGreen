@@ -225,8 +225,8 @@
   --s9:  96px;
   --s10: 120px;
   --pad: var(--s6);
-  --t-micro:    9px;
-  --t-label:    11px;
+  --t-micro:    11px;
+  --t-label:    13px;
   --t-body:     15px;
   --t-sub:      14px;
   --t-ui:       clamp(18px,2.2vw,28px);
@@ -234,11 +234,11 @@
   --t-title:    clamp(52px,7.5vw,108px);
   --t-display:  clamp(72px,13vw,192px);
   /* DIN-specific spacing */
-  --ls-zero:   -.04em;
-  --ls-tight:  .01em;
-  --ls-stencil:.38em;
-  --ls-mid:    .22em;
-  --ls-wide:   .38em;
+  --ls-zero:    -.04em;
+  --ls-tight:   .01em;
+  --ls-stencil: .22em;
+  --ls-mid:     .16em;
+  --ls-wide:    .28em;
   --lh-display: .87;
   --lh-text:    1.60;
   --lh-body:    1.85;
@@ -322,17 +322,28 @@ nav.scrolled{
   border-bottom:1px solid var(--rule);
 }
 .n-logo{
-  font-size:clamp(13px,1.3vw,17px);font-weight:700;letter-spacing:.28em;text-transform:uppercase;
+  font-size:clamp(13px,1.3vw,17px);font-weight:700;letter-spacing:.22em;text-transform:uppercase;
   color:var(--stone);text-decoration:none;cursor:none;
   opacity:0;animation:fd .6s var(--ease) .05s forwards;
   transition:color .25s;
   font-family:'D-DIN Condensed',sans-serif;
+  display:inline-flex;align-items:baseline;gap:.35em;
 }
-.n-logo:hover{color:var(--off);}
-.n-logo .logo-first,.n-logo .logo-sep,.n-logo .logo-last{
-  font-style:normal;font-weight:700;letter-spacing:.28em;color:inherit;
+.n-logo:hover .logo-last{color:var(--off);}
+.n-logo .logo-first{
+  font-style:normal;font-weight:700;letter-spacing:.22em;color:var(--stone);
+  transition:color .25s;
 }
-.n-logo .logo-sep{display:none;}
+.n-logo .logo-sep{
+  font-style:normal;font-weight:700;letter-spacing:0;
+  color:rgba(91,160,164,.45);
+  margin:0 -.1em;
+}
+.n-logo .logo-last{
+  font-style:italic;font-weight:700;letter-spacing:.18em;
+  color:var(--sage);
+  transition:color .25s;
+}
 
 .c-link-wrap{display:inline-block;will-change:transform;}
 .n-links{
@@ -340,7 +351,7 @@ nav.scrolled{
   opacity:0;animation:fd .6s var(--ease) .12s forwards;
 }
 .n-links a{
-  font-size:var(--t-micro);font-weight:700;letter-spacing:var(--ls-stencil);text-transform:uppercase;
+  font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
   color:var(--stone);text-decoration:none;cursor:none;
   transition:color .25s;
   position:relative;overflow:hidden;
@@ -546,7 +557,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   background:linear-gradient(to left,rgba(8,9,9,.95) 0%,rgba(8,9,9,.6) 42%,transparent 72%);
 }
 .proj-line{
-  position:absolute;top:0;bottom:0;width:2px;
+  position:absolute;top:0;bottom:0;width:1px;
   background:linear-gradient(to bottom,transparent,var(--sage),transparent);
   opacity:0;
   transition:opacity .5s var(--ease),transform .6s var(--ease);
@@ -597,10 +608,10 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .proj:nth-child(even) .proj-tags{justify-content:flex-end;}
 .proj:hover .proj-tags{opacity:1;transform:translateY(0);}
 .proj-tag{
-  font-size:var(--t-micro);font-weight:700;letter-spacing:var(--ls-stencil);text-transform:uppercase;
+  font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
   color:var(--off);
   border:1px solid rgba(255,255,255,.18);
-  padding:5px var(--s2) 4px;
+  padding:6px 12px 5px;
   background:rgba(255,255,255,.04);
   transition:border-color .25s,color .25s,background .25s;
   font-family:'D-DIN Condensed',sans-serif;
@@ -624,9 +635,11 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   position:absolute;bottom:var(--pad);
   width:var(--s7);height:var(--s7);
   border:1px solid rgba(255,255,255,.15);
-  border-radius:50%;
+  border-radius:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:20px;color:var(--off);
+  font-size:18px;color:var(--off);
+  font-family:'D-DIN Condensed',sans-serif;
+  font-weight:700;
   opacity:0;
   transition:opacity .45s var(--ease),border-color .25s,background .25s,color .25s;
   cursor:none;
@@ -756,7 +769,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   color:var(--stone);
   max-width:420px;
 }
-.about-sub-text strong{color:var(--off);font-weight:300;}
+.about-sub-text strong{color:var(--off);font-weight:400;}
 .about-sub-count{
   font-size:clamp(100px,15vw,220px);
   font-weight:700;
@@ -858,7 +871,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   color:var(--stone);
   max-width:480px;
 }
-.ch-body strong{color:var(--off);font-weight:300;}
+.ch-body strong{color:var(--off);font-weight:400;}
 
 /* ── MOBILE ── */
 @media(max-width:768px){
@@ -964,7 +977,7 @@ footer{
   color:var(--stone);
   font-family:'D-DIN Condensed',sans-serif;
 }
-.f-logo em{font-style:normal;color:var(--sage);}
+.f-logo em{font-style:italic;color:var(--sage);}
 .f-copy{
   font-size:var(--t-micro);font-weight:700;letter-spacing:var(--ls-stencil);text-transform:uppercase;
   color:rgba(122,148,150,.35);
@@ -1097,89 +1110,33 @@ footer{
   font-family:'D-DIN',sans-serif;
 }
 
-/* ── PROJ OPEN: square, not circle — Bauhaus language ── */
-.proj:nth-child(odd) .proj-open{right:var(--pad);}
-.proj:nth-child(even) .proj-open{left:var(--pad);}
-.proj:hover .proj-open{opacity:1;}
-.proj-open:hover{border-color:var(--sage);background:var(--sage);color:var(--ink);}
-
-/* ── TICKER: add left-aligned spec prefix ── */
-.ticker-prefix{
-  font-family:'D-DIN Condensed',sans-serif;
-  font-size:8px;font-weight:700;
-  letter-spacing:var(--ls-stencil);
-  color:rgba(91,160,164,.5);
-  text-transform:uppercase;
-  padding:0 var(--s3) 0 var(--s6);
-  white-space:nowrap;
-  flex-shrink:0;
-}
-
-/* ── CONTACT: em tag gets italic + more weight-shift ── */
-.contact-h em{
-  font-style:italic;
-  color:var(--sage);
-  font-weight:100;
-  letter-spacing:.01em;
-}
-
-/* ── NAV DRAWER A — override the earlier rule properly ── */
+/* ── NAV DRAWER — bold condensed, expands on hover ── */
 .nav-drawer a{
   font-size:clamp(52px,11vw,96px);font-weight:700;
   color:var(--off);text-decoration:none;cursor:pointer;
-  transition:color .2s, letter-spacing .35s var(--ease);
+  transition:color .2s,letter-spacing .35s var(--ease);
   letter-spacing:-.05em;
   font-family:'D-DIN Condensed',sans-serif;
   text-transform:uppercase;
 }
-.nav-drawer a:hover{
-  color:var(--sage);
-  letter-spacing:-.02em;
-}
+.nav-drawer a:hover{color:var(--sage);letter-spacing:-.02em;}
 
-/* ── ABOUT CHAPTER hover: bg-num brightens as contrast counterpoint ── */
-.about-chapter:hover .ch-bg-num{
-  -webkit-text-stroke:1px rgba(91,160,164,.11);
-}
-
-/* ── PROJ LINE: make it a DIN-style register mark, not just a gradient ── */
-.proj-line{
-  position:absolute;top:0;bottom:0;width:1px;
-  background:var(--sage);
-  opacity:0;
-  transition:opacity .5s var(--ease),transform .6s var(--ease);
-  transform:scaleY(0);transform-origin:top;
-}
-
-/* ── ABOUT SUB TEXT: tighten up the body register ── */
-.about-sub-text{
-  font-size:14px;
-  line-height:1.8;
-  color:var(--stone);
-  max-width:400px;
-  font-variant-numeric:tabular-nums;
-}
-
-/* Reduce ticker speed slightly — more deliberate, less frenetic */
-.t-track{display:flex;width:max-content;animation:tick 60s linear infinite;}
-
-/* Body copy in regular D-DIN — reads as a different register vs condensed */
+/* ── BODY COPY — regular D-DIN for contrast against condensed display ── */
 .proj-desc, .ch-body, .about-sub-text, .contact-sub{
   font-family:'D-DIN',sans-serif;
   font-weight:300;
   letter-spacing:.01em;
 }
 
-/* Nav drawer: massive condensed bold — totally occupies the screen */
-.nav-drawer a{
-  font-size:clamp(52px,11vw,96px);font-weight:700;
-  color:var(--off);text-decoration:none;cursor:pointer;
-  transition:color .2s;letter-spacing:-.04em;
-  font-family:'D-DIN Condensed',sans-serif;
-  text-transform:uppercase;
+/* ── ABOUT SUB TEXT ── */
+.about-sub-text{
+  font-size:14px;
+  line-height:1.8;
+  color:var(--stone);
+  max-width:400px;
 }
 
-/* Hero sub: body-register, clearly D-DIN regular width contrast */
+/* ── HERO SUB ── */
 .hero-sub{
   font-family:'D-DIN',sans-serif;
   font-weight:300;
@@ -1192,45 +1149,29 @@ footer{
   max-width:360px;
 }
 
-/* Proj open arrow button — bold stencil */
-.proj-open{
-  position:absolute;bottom:var(--pad);
-  width:var(--s7);height:var(--s7);
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;color:var(--off);
-  font-family:'D-DIN Condensed',sans-serif;
-  font-weight:700;
-  opacity:0;
-  transition:opacity .45s var(--ease),border-color .25s,background .25s,color .25s;
-  cursor:none;
-  letter-spacing:0;
-}
+/* ── CONTACT EM ── */
+.contact-h em{font-style:italic;color:var(--sage);font-weight:100;}
 
-/* Square the tag corners — more Bauhaus/industrial */
-.proj-tag{ border-radius:0; }
+/* ── ABOUT CHAPTER even label alignment ── */
+.about-chapter:nth-child(even) .ch-label{justify-content:flex-end;}
 
-/* Progress bar — thinner, more precision-instrument feel */
-#prog{
-  position:fixed;top:0;left:0;height:1px;
-  background:var(--sage);z-index:9997;
-  width:100%;transform:scaleX(0);transform-origin:left;
-  pointer-events:none;
-  box-shadow:0 0 6px rgba(91,160,164,.5);
-  will-change:transform;
-}
-
-/* Hero scroll hint — cleaner, no gap, pure line+text */
+/* ── HERO SCROLL HINT ── */
 .hero-scroll-hint{
-  font-size:8px;font-weight:700;letter-spacing:var(--ls-stencil);text-transform:uppercase;
+  font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
   color:var(--stone);display:flex;flex-direction:column;align-items:center;gap:6px;
   font-family:'D-DIN Condensed',sans-serif;
 }
 
-/* About chapter even alignment fix for bold stencil labels */
-.about-chapter:nth-child(even) .ch-label{
-  justify-content:flex-end;
+/* ── TICKER SPEED ── */
+.t-track{display:flex;width:max-content;animation:tick 60s linear infinite;}
+
+/* ── PROGRESS BAR ── */
+#prog{
+  position:fixed;top:0;left:0;height:1px;
+  background:var(--sage);z-index:9997;
+  width:100%;transform:scaleX(0);transform-origin:left;
+  pointer-events:none;box-shadow:0 0 6px rgba(91,160,164,.5);
+  will-change:transform;
 }
 
 @media(max-width:768px){
@@ -1283,7 +1224,7 @@ footer{
 </div>
 
 <nav id="nav" aria-label="Main navigation">
-  <a href="#top" class="n-logo"><span class="logo-first">Kieran </span><span class="logo-last">Green</span></a>
+  <a href="#top" class="n-logo"><span class="logo-first">Kieran</span><span class="logo-sep">/</span><span class="logo-last">Green</span></a>
   <div class="n-links">
     <a href="#work">Work</a>
     <a href="#about">About</a>
