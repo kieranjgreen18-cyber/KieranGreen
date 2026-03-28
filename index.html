@@ -323,36 +323,16 @@ nav.scrolled{
 }
 .n-logo{
   font-size:clamp(13px,1.3vw,17px);font-weight:700;letter-spacing:.28em;text-transform:uppercase;
-  color:var(--off);text-decoration:none;cursor:none;
+  color:var(--stone);text-decoration:none;cursor:none;
   opacity:0;animation:fd .6s var(--ease) .05s forwards;
   transition:color .25s;
   font-family:'D-DIN Condensed',sans-serif;
-  display:flex;align-items:center;gap:.5em;
 }
 .n-logo:hover{color:var(--off);}
-/* First name: upright, stone-colored — recedes slightly */
-.n-logo .logo-first{
-  color:var(--stone);
-  font-weight:700;
-  letter-spacing:.28em;
+.n-logo .logo-first,.n-logo .logo-sep,.n-logo .logo-last{
+  font-style:normal;font-weight:700;letter-spacing:.28em;color:inherit;
 }
-/* Separator: a single sage tick mark */
-.n-logo .logo-sep{
-  color:var(--sage);
-  font-style:normal;
-  font-weight:700;
-  letter-spacing:0;
-  opacity:.7;
-}
-/* Last name: italic, full white — pops forward */
-.n-logo .logo-last{
-  font-style:italic;
-  color:var(--off);
-  font-weight:700;
-  letter-spacing:.18em;
-  transition:color .25s;
-}
-.n-logo:hover .logo-last{color:var(--sage);}
+.n-logo .logo-sep{display:none;}
 
 .c-link-wrap{display:inline-block;will-change:transform;}
 .n-links{
@@ -465,7 +445,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 }
 
 .hero-h1{
-  font-size:clamp(72px,14vw,210px);
+  font-size:clamp(64px,12vw,185px);
   font-weight:100;line-height:.88;letter-spacing:-.04em;text-transform:uppercase;
   overflow:hidden;
   margin-bottom:var(--s5);
@@ -1303,7 +1283,7 @@ footer{
 </div>
 
 <nav id="nav" aria-label="Main navigation">
-  <a href="#top" class="n-logo"><span class="logo-first">Kieran</span><span class="logo-sep">/</span><span class="logo-last">Green</span></a>
+  <a href="#top" class="n-logo"><span class="logo-first">Kieran </span><span class="logo-last">Green</span></a>
   <div class="n-links">
     <a href="#work">Work</a>
     <a href="#about">About</a>
