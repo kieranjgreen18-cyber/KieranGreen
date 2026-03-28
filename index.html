@@ -446,19 +446,34 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   opacity:0;transform:translateY(108%);
   animation:slideUp 1s var(--ease) forwards;
 }
-.hero-h1 em{font-style:italic;color:var(--sage);}
-/* Switch to regular DIN (wider) for select words — creates rhythm contrast */
-.hero-h1 .line:nth-child(2) .word,
-.hero-h1 .line:nth-child(4) .word{
+/* Primary: full condensed mass */
+.hero-h1 .w-primary{
+  font-family:'D-DIN Condensed',sans-serif;
+  font-weight:100;
+  letter-spacing:-.04em;
+}
+/* Secondary: regular D-DIN — dramatically wider, creates rhythmic breath */
+.hero-h1 .w-secondary{
   font-family:'D-DIN',sans-serif;
-  font-size:.72em;
-  letter-spacing:-.02em;
+  font-weight:100;
+  font-size:.58em;
+  letter-spacing:.08em;
   opacity:0;transform:translateY(108%);
 }
+/* Tertiary: condensed bold — weight as texture at the close */
+.hero-h1 .w-tertiary{
+  font-family:'D-DIN Condensed',sans-serif;
+  font-weight:700;
+  font-size:.78em;
+  letter-spacing:.12em;
+  color:var(--stone);
+  opacity:0;transform:translateY(108%);
+}
+.hero-h1 em{font-style:italic;color:var(--sage);}
 .hero-h1 .line:nth-child(1) .word{animation-delay:.28s;}
-.hero-h1 .line:nth-child(2) .word{animation-delay:.38s;}
-.hero-h1 .line:nth-child(3) .word{animation-delay:.48s;}
-.hero-h1 .line:nth-child(4) .word{animation-delay:.58s;}
+.hero-h1 .line:nth-child(2) .word{animation-delay:.40s;}
+.hero-h1 .line:nth-child(3) .word{animation-delay:.52s;}
+.hero-h1 .line:nth-child(4) .word{animation-delay:.64s;}
 @keyframes slideUp{to{opacity:1;transform:translateY(0)}}
 
 .hero-bottom{
@@ -705,7 +720,12 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   font-family:'D-DIN Condensed',sans-serif;
   overflow:hidden;
 }
-.about-hl em{font-style:italic;color:var(--sage);}
+.about-hl em{
+  font-style:italic;
+  color:var(--sage);
+  font-weight:100;
+  letter-spacing:.01em;
+}
 .about-hl .hl-line{
   display:block;
   overflow:hidden;
@@ -821,7 +841,13 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   color:var(--off);
   font-family:'D-DIN Condensed',sans-serif;
 }
-.ch-title em{font-style:italic;color:var(--sage);}
+.ch-title em{
+  font-style:italic;
+  color:var(--sage);
+  font-weight:100;
+  letter-spacing:.01em;
+  display:inline-block;
+}
 
 .ch-body{
   font-size:var(--t-body);
@@ -1027,9 +1053,143 @@ footer{
   .hero-bottom{opacity:1 !important;}
 }
 
-/* ═══════════════════════════════════════
-   DIN POWER MOVES — exploit the full typeface system
-═══════════════════════════════════════ */
+/* ── HERO SPEC RULE — engineering document register ── */
+.hero-spec-rule{
+  display:flex;align-items:center;gap:var(--s3);
+  margin-bottom:var(--s4);
+  opacity:0;animation:fu .8s var(--ease) .6s forwards;
+}
+.hero-spec-line{
+  flex:1;height:1px;
+  background:linear-gradient(to right, transparent, rgba(91,160,164,.25), transparent);
+}
+.hero-spec-meta{
+  font-family:'D-DIN Condensed',sans-serif;
+  font-size:8px;font-weight:700;
+  letter-spacing:var(--ls-stencil);
+  text-transform:uppercase;
+  color:rgba(91,160,164,.4);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+/* ── HERO CORNER COORDINATES ── */
+.hero-coords{
+  position:absolute;
+  top:var(--s9);right:var(--pad);
+  z-index:2;
+  display:flex;flex-direction:column;gap:4px;
+  opacity:0;animation:fd .6s var(--ease) .35s forwards;
+}
+.hero-coord-item{
+  font-family:'D-DIN Condensed',sans-serif;
+  font-size:8px;font-weight:700;
+  letter-spacing:var(--ls-stencil);
+  text-transform:uppercase;
+  color:rgba(91,160,164,.28);
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:768px){
+  .hero-coords{display:none;}
+  .hero-spec-rule{display:none;}
+}
+
+/* ── ABOUT CHAPTER: italic em as deliberate caesura ── */
+.ch-title br + em,
+.ch-title em{
+  display:inline-block;
+  padding-left:.02em;
+}
+
+/* ── ABOUT: body text strong — bolder in DIN Regular ── */
+.ch-body strong{
+  color:var(--off);
+  font-weight:700;
+  font-family:'D-DIN',sans-serif;
+}
+.about-sub-text strong{
+  color:var(--off);
+  font-weight:700;
+  font-family:'D-DIN',sans-serif;
+}
+
+/* ── PROJ OPEN: square, not circle — Bauhaus language ── */
+.proj:nth-child(odd) .proj-open{right:var(--pad);}
+.proj:nth-child(even) .proj-open{left:var(--pad);}
+.proj:hover .proj-open{opacity:1;}
+.proj-open:hover{border-color:var(--sage);background:var(--sage);color:var(--ink);}
+
+/* ── TICKER: add left-aligned spec prefix ── */
+.ticker-prefix{
+  font-family:'D-DIN Condensed',sans-serif;
+  font-size:8px;font-weight:700;
+  letter-spacing:var(--ls-stencil);
+  color:rgba(91,160,164,.5);
+  text-transform:uppercase;
+  padding:0 var(--s3) 0 var(--s6);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+/* ── CONTACT: em tag gets italic + more weight-shift ── */
+.contact-h em{
+  font-style:italic;
+  color:var(--sage);
+  font-weight:100;
+  letter-spacing:.01em;
+}
+
+/* ── NAV DRAWER A — override the earlier rule properly ── */
+.nav-drawer a{
+  font-size:clamp(52px,11vw,96px);font-weight:700;
+  color:var(--off);text-decoration:none;cursor:pointer;
+  transition:color .2s, letter-spacing .35s var(--ease);
+  letter-spacing:-.05em;
+  font-family:'D-DIN Condensed',sans-serif;
+  text-transform:uppercase;
+}
+.nav-drawer a:hover{
+  color:var(--sage);
+  letter-spacing:-.02em;
+}
+
+/* ── ABOUT CHAPTER hover: bg-num brightens as contrast counterpoint ── */
+.about-chapter:hover .ch-bg-num{
+  -webkit-text-stroke:1px rgba(91,160,164,.11);
+}
+
+/* ── HERO LINE HEIGHT REFINEMENT for massive type ── */
+.hero-h1 .line{
+  display:block;
+  overflow:hidden;
+  /* Optical tightening between condensed and regular-width lines */
+}
+.hero-h1 .line:nth-child(2){
+  margin-top:-.04em;
+  margin-bottom:-.04em;
+}
+
+/* ── PROJ LINE: make it a DIN-style register mark, not just a gradient ── */
+.proj-line{
+  position:absolute;top:0;bottom:0;width:1px;
+  background:var(--sage);
+  opacity:0;
+  transition:opacity .5s var(--ease),transform .6s var(--ease);
+  transform:scaleY(0);transform-origin:top;
+}
+
+/* ── ABOUT SUB TEXT: tighten up the body register ── */
+.about-sub-text{
+  font-size:14px;
+  line-height:1.8;
+  color:var(--stone);
+  max-width:400px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Reduce ticker speed slightly — more deliberate, less frenetic */
+.t-track{display:flex;width:max-content;animation:tick 60s linear infinite;}
 
 /* Body copy in regular D-DIN — reads as a different register vs condensed */
 .proj-desc, .ch-body, .about-sub-text, .contact-sub{
@@ -1174,15 +1334,28 @@ footer{
     Industrial Designer
   </div>
 
+  <!-- Corner coordinate — technical drawing language -->
+  <div class="hero-coords" aria-hidden="true">
+    <span class="hero-coord-item">X:0000</span>
+    <span class="hero-coord-item">Y:0000</span>
+    <span class="hero-coord-item">Z:0000</span>
+  </div>
+
   <div class="hero-spacer"></div>
 
   <div class="hero-content">
     <h1 class="hero-h1" id="hero-h1">
-      <span class="line"><span class="word">Imagining</span></span>
-      <span class="line"><span class="word">your</span></span>
-      <span class="line"><span class="word"><em>future,</em></span></span>
-      <span class="line"><span class="word">today.</span></span>
+      <span class="line"><span class="word w-primary">Imagining</span></span>
+      <span class="line"><span class="word w-secondary">your</span></span>
+      <span class="line"><span class="word w-primary"><em>future,</em></span></span>
+      <span class="line"><span class="word w-tertiary">today.</span></span>
     </h1>
+    <!-- Spec rule: DIN as engineering document language -->
+    <div class="hero-spec-rule" aria-hidden="true">
+      <span class="hero-spec-line"></span>
+      <span class="hero-spec-meta">KG·IDes·2025·001</span>
+      <span class="hero-spec-line"></span>
+    </div>
     <div class="hero-bottom">
       <p class="hero-sub">CAD modeling, form development, and product visualization — from first sketch to something you can hold.</p>
       <div class="hero-scroll-hint">
@@ -1195,6 +1368,7 @@ footer{
 
 <div class="ticker" aria-hidden="true">
   <div class="t-track" id="t-track">
+    <div class="t-item" style="opacity:.7;color:var(--sage);padding-left:var(--s6)"><span class="t-dot"></span>KG·IDes·2025</div>
     <div class="t-item"><span class="t-dot"></span>Rhino 3D</div>
     <div class="t-item"><span class="t-dot"></span>Keyshot</div>
     <div class="t-item"><span class="t-dot"></span>FDM Prototyping</div>
@@ -1907,5 +2081,41 @@ document.querySelectorAll('.proj').forEach(proj => {
 });
 /* ── COPYRIGHT YEAR ── */
 document.getElementById('copy-year').textContent = new Date().getFullYear();
+
+/* ── HERO COORDS — live scroll readout ── */
+(function(){
+  const coords = document.querySelectorAll('.hero-coord-item');
+  if (!coords.length) return;
+  // Animate on load: random scramble then settle
+  const labels = ['X','Y','Z'];
+  const digits = '0123456789';
+  let done = false;
+  let frame = 0;
+  function scramble() {
+    if (done) return;
+    frame++;
+    coords.forEach((el, i) => {
+      if (frame > 18 + i * 6) {
+        el.textContent = labels[i] + ':' + String(Math.floor(Math.random()*9999)).padStart(4,'0');
+      } else {
+        const r = Array.from({length:4}, () => digits[Math.floor(Math.random()*10)]).join('');
+        el.textContent = labels[i] + ':' + r;
+      }
+    });
+    if (frame < 36) requestAnimationFrame(scramble);
+    else {
+      done = true;
+      coords[0].textContent = 'X:5312';
+      coords[1].textContent = 'Y:2048';
+      coords[2].textContent = 'Z:0000';
+    }
+  }
+  setTimeout(scramble, 600);
+  // Update Z on scroll
+  window.addEventListener('scroll', () => {
+    const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 9999);
+    coords[2].textContent = 'Z:' + String(pct).padStart(4,'0');
+  }, {passive:true});
+})();
 </script>
 </html>
