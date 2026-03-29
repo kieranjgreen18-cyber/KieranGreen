@@ -141,8 +141,9 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 <link rel="manifest" href="site.webmanifest">
 <!-- Three.js + MediaPipe for head-coupled perspective hero -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
 <link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
@@ -2115,26 +2116,43 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
    ──────────────────────────────────────
    Inspired by Johnny Chung Lee / icurtis1/off-axis-sneaker
    Uses MediaPipe FaceLandmarker for real-time head tracking.
-   Falls back to smooth mouse parallax if camera is denied.
+   Mouse parallax only activates after the prompt is dismissed.
+
+   ── TO USE YOUR OWN 3D MODEL ──────────────────────────────────────
+   1. Place your GLB file in the same folder as index.html, e.g. "model.glb"
+   2. Set GLB_MODEL_URL below to its path, e.g. GLB_MODEL_URL = 'model.glb'
+   3. Set GLB_ENABLED = true
+   4. The model loads at z=0 (mid scene), floating between BG and veil.
+      Adjust GLB_SCALE (overall size), GLB_Y (vertical position),
+      and GLB_Z (depth — more negative = further back) to taste.
+   5. Optionally add your Rhino/Keyshot models exported as GLB from
+      Rhino: File → Export Selected → .glb
+      or from Blender/Keyshot with a GLB export plugin.
 ══════════════════════════════════════════════════════════════════ */
 (function() {
 
   /* ── CONFIG ── */
   const HERO_IMAGE_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png';
-  const STRENGTH = { x: 3.2, y: 2.2, z: 1.6 };
-  const SMOOTH   = 0.08;        // EMA factor — lower = smoother/slower
+  const STRENGTH = { x: 3.2, y: 2.2 };
+  const SMOOTH   = 0.075;
+
+  // ── 3D MODEL (optional) ──
+  const GLB_ENABLED   = false;          // ← set true when you have a model
+  const GLB_MODEL_URL = 'model.glb';    // ← path to your .glb file
+  const GLB_SCALE     = 1.0;            // ← overall model size
+  const GLB_Y         = -0.5;           // ← vertical offset (negative = lower)
+  const GLB_Z         = 0.8;            // ← depth position in scene
+
   const LAYERS = [
-    // z-depth, scale, opacity, tint (hex)
-    { z: -4.0, scale: 2.6,  opacity: 0.30, tint: 0x0a1010 },  // far BG
-    { z: -2.2, scale: 2.0,  opacity: 0.55, tint: 0x0d1214 },  // mid
+    { z: -4.0, scale: 2.6,  opacity: 0.30, tint: 0x0a1010 },
+    { z: -2.2, scale: 2.0,  opacity: 0.55, tint: 0x0d1214 },
     { z: -0.6, scale: 1.35, opacity: 1.00, tint: 0xffffff },  // hero photo
-    { z:  1.0, scale: 0.40, opacity: 0.12, tint: 0x5ba0a4 },  // sage overlay
-    { z:  2.4, scale: 0.18, opacity: 0.06, tint: 0x5ba0a4 },  // foreground vignette
+    { z:  1.0, scale: 0.40, opacity: 0.10, tint: 0x5ba0a4 },
   ];
 
   /* ── HEAD POSITION STATE ── */
-  const head = { x: 0, y: 0, z: 0 };   // smoothed
-  const raw  = { x: 0, y: 0, z: 0 };   // raw from face or mouse
+  const head = { x: 0, y: 0 };
+  const raw  = { x: 0, y: 0 };
 
   /* ── DOM REFS ── */
   const promptEl   = document.getElementById('hero-cam-prompt');
@@ -2143,14 +2161,14 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   const denyBtn    = document.getElementById('hcp-deny');
 
   /* ── STATE ── */
-  let useCamera   = false;
+  let useCamera      = false;
+  let mouseFallback  = false;   // only true after prompt is resolved
   let faceLandmarker = null;
   let lastVideoTime  = -1;
   let videoEl        = null;
-  let renderer, scene, camera, layers = [];
-  let animId;
-  let heroVisible = true;
-  let promptDismissed = false;
+  let renderer, scene, threeCamera, layers = [];
+  let glbModel       = null;
+  let heroVisible    = true;
 
   /* ────────────────────────────────
      THREE.JS SCENE SETUP
@@ -2163,29 +2181,38 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
     const W = hero.offsetWidth;
     const H = hero.offsetHeight;
 
-    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setSize(W, H, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.outputEncoding = THREE.sRGBEncoding;
 
     scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-    camera.position.set(0, 0, 5);
+    threeCamera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+    threeCamera.position.set(0, 0, 5);
 
-    /* Load hero texture for main layer; tinted planes for depth layers */
+    // Ambient light for GLB model
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0x5ba0a4, 0.6);
+    dirLight.position.set(2, 3, 4);
+    scene.add(dirLight);
+
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.setCrossOrigin('anonymous');
+    textureLoader.crossOrigin = 'anonymous';
     textureLoader.load(
       HERO_IMAGE_URL,
       (tex) => {
         tex.minFilter = THREE.LinearFilter;
+        tex.encoding = THREE.sRGBEncoding;
         buildLayers(tex);
+        if (GLB_ENABLED) loadGLB();
         renderLoop();
       },
       undefined,
       () => {
-        // Failed to load image — build layers without texture
         buildLayers(null);
+        if (GLB_ENABLED) loadGLB();
         renderLoop();
       }
     );
@@ -2194,31 +2221,22 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   function buildLayers(heroTex) {
     LAYERS.forEach((cfg, i) => {
       const geo = new THREE.PlaneGeometry(
-        camera.aspect * cfg.scale * 5,
+        threeCamera.aspect * cfg.scale * 5,
         cfg.scale * 5
       );
-
       let mat;
       if (i === 2 && heroTex) {
-        // Hero photo layer
         mat = new THREE.MeshBasicMaterial({
-          map: heroTex,
-          transparent: true,
-          opacity: cfg.opacity,
+          map: heroTex, transparent: true, opacity: cfg.opacity,
           depthWrite: false,
-          blending: THREE.NormalBlending,
         });
       } else {
         mat = new THREE.MeshBasicMaterial({
-          color: cfg.tint,
-          transparent: true,
-          opacity: cfg.opacity,
+          color: cfg.tint, transparent: true, opacity: cfg.opacity,
           depthWrite: false,
           blending: i > 2 ? THREE.AdditiveBlending : THREE.NormalBlending,
-          side: THREE.FrontSide,
         });
       }
-
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.z = cfg.z;
       scene.add(mesh);
@@ -2227,105 +2245,166 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   /* ────────────────────────────────
+     GLB MODEL LOADER
+     Requires GLTFLoader — loaded from CDN below if GLB_ENABLED
+  ──────────────────────────────── */
+  function loadGLB() {
+    if (typeof THREE.GLTFLoader === 'undefined') {
+      console.warn('[off-axis] THREE.GLTFLoader not found. Add the CDN script to use GLB models.');
+      return;
+    }
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      GLB_MODEL_URL,
+      (gltf) => {
+        glbModel = gltf.scene;
+
+        // Auto-centre the model
+        const box = new THREE.Box3().setFromObject(glbModel);
+        const centre = new THREE.Vector3();
+        box.getCenter(centre);
+        glbModel.position.sub(centre);
+
+        // Scale to fit a unit box, then apply user scale
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const normScale = (1.8 / maxDim) * GLB_SCALE;
+        glbModel.scale.setScalar(normScale);
+
+        glbModel.position.y += GLB_Y;
+        glbModel.position.z  = GLB_Z;
+
+        // Shift model to the right so it doesn't cover the headline
+        glbModel.position.x = 1.6;
+
+        scene.add(glbModel);
+      },
+      undefined,
+      (err) => console.warn('[off-axis] GLB load failed:', err)
+    );
+  }
+
+  /* ────────────────────────────────
      RENDER LOOP
   ──────────────────────────────── */
   function renderLoop() {
-    animId = requestAnimationFrame(renderLoop);
+    requestAnimationFrame(renderLoop);
     if (!heroVisible) return;
 
-    /* EMA smooth */
-    head.x += (raw.x - head.x) * SMOOTH;
-    head.y += (raw.y - head.y) * SMOOTH;
-    head.z += (raw.z - head.z) * SMOOTH;
+    // EMA smooth — but only move if a source is active
+    if (useCamera || mouseFallback) {
+      head.x += (raw.x - head.x) * SMOOTH;
+      head.y += (raw.y - head.y) * SMOOTH;
+    } else {
+      // Gently return to centre while prompt is showing
+      head.x += (0 - head.x) * 0.04;
+      head.y += (0 - head.y) * 0.04;
+    }
 
-    /* Run face detection if camera active */
+    // Face detection tick
     if (useCamera && videoEl && videoEl.readyState >= 2 && faceLandmarker) {
       const t = performance.now();
       if (videoEl.currentTime !== lastVideoTime) {
         lastVideoTime = videoEl.currentTime;
         try {
           const result = faceLandmarker.detectForVideo(videoEl, t);
-          if (result && result.faceLandmarks && result.faceLandmarks.length > 0) {
+          if (result?.faceLandmarks?.length > 0) {
             extractHeadPos(result.faceLandmarks[0]);
           }
         } catch(e) { /* silent */ }
       }
     }
 
-    /* Move camera off-axis */
-    camera.position.x = -head.x * 0.6;
-    camera.position.y =  head.y * 0.4;
+    // Camera off-axis shift
+    threeCamera.position.x = -head.x * 0.55;
+    threeCamera.position.y =  head.y * 0.38;
 
-    /* Parallax layers — deeper layers move less (divisions of strength) */
-    layers.forEach(({ mesh, cfg }, i) => {
+    // Layer parallax — each layer moves in proportion to its depth index
+    layers.forEach(({ mesh }, i) => {
       const depth = (i + 1) / layers.length;
-      mesh.position.x = head.x * depth * 0.35;
-      mesh.position.y = head.y * depth * 0.25;
+      mesh.position.x = head.x * depth * 0.32;
+      mesh.position.y = head.y * depth * 0.22;
     });
 
-    renderer.render(scene, camera);
+    // GLB model moves slightly more than mid layers for pop-out effect
+    if (glbModel) {
+      glbModel.position.x = 1.6 + head.x * 0.5;
+      glbModel.position.y = GLB_Y + head.y * 0.35;
+      glbModel.rotation.y = -head.x * 0.12;  // subtle facing towards viewer
+    }
+
+    renderer.render(scene, threeCamera);
   }
 
   /* ────────────────────────────────
      FACE LANDMARK → HEAD POSITION
   ──────────────────────────────── */
   function extractHeadPos(landmarks) {
-    // Left eye: 33, Right eye: 263, Nose tip: 1
-    const le = landmarks[33];
-    const re = landmarks[263];
-    const no = landmarks[1];
-    if (!le || !re || !no) return;
+    const le = landmarks[33];   // left eye inner corner
+    const re = landmarks[263];  // right eye inner corner
+    if (!le || !re) return;
 
     const midX = (le.x + re.x) / 2;
     const midY = (le.y + re.y) / 2;
-    const iod  = Math.abs(re.x - le.x); // inter-ocular distance proxy for depth
 
-    // Normalise to [-1,+1] around center; flip axes to match screen
+    // Map from [0,1] video coords to [-1,+1], flip Y (video Y is top-down)
     raw.x =  (midX - 0.5) * 2 * STRENGTH.x;
     raw.y = -(midY - 0.5) * 2 * STRENGTH.y;
-    // Depth: bigger iod = closer
-    const baseIod = 0.18;
-    raw.z = ((iod / baseIod) - 1) * STRENGTH.z;
-    raw.z = Math.max(-1.5, Math.min(1.5, raw.z));
   }
 
   /* ────────────────────────────────
-     MOUSE FALLBACK PARALLAX
+     MOUSE / GYRO FALLBACK
+     Only registered after user clicks "Use Mouse Instead"
+     or after camera/MediaPipe fails.
   ──────────────────────────────── */
   function enableMouseParallax() {
+    if (mouseFallback) return;  // idempotent
+    mouseFallback = true;
     const hero = document.getElementById('top');
     hero.addEventListener('mousemove', e => {
       const r = hero.getBoundingClientRect();
       raw.x =  ((e.clientX - r.left) / r.width  - 0.5) * 2 * STRENGTH.x;
       raw.y = -((e.clientY - r.top)  / r.height - 0.5) * 2 * STRENGTH.y;
     }, { passive: true });
-    hero.addEventListener('mouseleave', () => {
-      raw.x = 0; raw.y = 0;
-    }, { passive: true });
-    // Gyro fallback for mobile
+    hero.addEventListener('mouseleave', () => { raw.x = 0; raw.y = 0; }, { passive: true });
     if (typeof DeviceOrientationEvent !== 'undefined') {
       window.addEventListener('deviceorientation', e => {
-        if (e.gamma == null || e.beta == null) return;
-        raw.x =  (e.gamma / 45) * STRENGTH.x;
-        raw.y = -(e.beta  / 45) * STRENGTH.y;
+        if (e.gamma == null) return;
+        raw.x = (e.gamma / 30) * STRENGTH.x;
+        raw.y = -(Math.max(-20, Math.min(20, e.beta - 15)) / 20) * STRENGTH.y;
       }, { passive: true });
     }
   }
 
   /* ────────────────────────────────
      MEDIAPIPE INIT
+     Polls for globals since the bundle can take a moment after load
   ──────────────────────────────── */
-  async function initMediaPipe() {
-    // The @mediapipe/tasks-vision bundle exposes these as globals
-    const FL  = window.FaceLandmarker;
-    const FSR = window.FilesetResolver;
-    if (!FL || !FSR) throw new Error('MediaPipe globals not found');
+  function waitForMediaPipe(timeout = 8000) {
+    return new Promise((resolve, reject) => {
+      const start = Date.now();
+      function check() {
+        if (window.FaceLandmarker && window.FilesetResolver) {
+          resolve();
+        } else if (Date.now() - start > timeout) {
+          reject(new Error('MediaPipe globals not available after ' + timeout + 'ms'));
+        } else {
+          setTimeout(check, 100);
+        }
+      }
+      check();
+    });
+  }
 
-    const vision = await FSR.createVisionTasks(
+  async function initMediaPipe() {
+    await waitForMediaPipe();
+
+    const vision = await window.FilesetResolver.createVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
     );
 
-    faceLandmarker = await FL.createFromOptions(vision, {
+    faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
         delegate: 'GPU',
@@ -2345,61 +2424,54 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       video: { width: 320, height: 240, facingMode: 'user' },
     });
     videoEl = document.createElement('video');
-    videoEl.srcObject = stream;
-    videoEl.muted     = true;
+    videoEl.srcObject  = stream;
+    videoEl.muted      = true;
     videoEl.playsInline = true;
     await videoEl.play();
     useCamera = true;
-
-    /* Show tracking indicator */
     trackingEl.classList.add('visible');
   }
 
   /* ────────────────────────────────
-     INTERSECTION OBSERVER — pause when hero off screen
+     HERO VISIBILITY — pause render when scrolled away
   ──────────────────────────────── */
   function watchHeroVisibility() {
-    const obs = new IntersectionObserver(entries => {
-      heroVisible = entries[0].isIntersecting;
-    }, { threshold: 0.01 });
+    const obs = new IntersectionObserver(e => { heroVisible = e[0].isIntersecting; }, { threshold: 0.01 });
     const hero = document.getElementById('top');
     if (hero) obs.observe(hero);
   }
 
   /* ────────────────────────────────
-     RESIZE HANDLER
+     RESIZE
   ──────────────────────────────── */
   function onResize() {
     if (!renderer) return;
     const hero = document.getElementById('top');
-    const W = hero.offsetWidth;
-    const H = hero.offsetHeight;
+    const W = hero.offsetWidth, H = hero.offsetHeight;
     renderer.setSize(W, H, false);
-    camera.aspect = W / H;
-    camera.updateProjectionMatrix();
-  }
-
-  /* ────────────────────────────────
-     DISMISS PROMPT
-  ──────────────────────────────── */
-  function hidePrompt() {
-    promptEl.classList.add('hcp-hidden');
-    promptDismissed = true;
+    threeCamera.aspect = W / H;
+    threeCamera.updateProjectionMatrix();
   }
 
   /* ────────────────────────────────
      PERMISSION FLOW
   ──────────────────────────────── */
+  function hidePrompt() {
+    promptEl.classList.add('hcp-hidden');
+  }
+
   async function handleAllow() {
-    hidePrompt();
+    // Disable button immediately to prevent double-click
+    allowBtn.disabled = true;
+    allowBtn.textContent = 'Loading…';
     try {
-      await initMediaPipe();
-      await startCamera();
+      await initMediaPipe();        // ~2–4s first load (downloads .task model)
+      await startCamera();          // triggers browser camera permission dialog
+      hidePrompt();
     } catch(err) {
-      // MediaPipe or camera failed → fall back to mouse
-      useCamera = false;
-      enableMouseParallax();
       console.info('[off-axis] Camera/MediaPipe unavailable, using mouse parallax.', err);
+      hidePrompt();
+      enableMouseParallax();
     }
   }
 
@@ -2409,29 +2481,25 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   /* ────────────────────────────────
-     BOOT — wait for THREE to load
+     BOOT
   ──────────────────────────────── */
   function boot() {
     initThree();
     watchHeroVisibility();
     window.addEventListener('resize', onResize, { passive: true });
 
-    /* Always enable mouse parallax as baseline */
-    enableMouseParallax();
-
-    /* Wire up buttons */
-    if (allowBtn) allowBtn.addEventListener('click', handleAllow);
-    if (denyBtn)  denyBtn.addEventListener('click',  handleDeny);
-
-    /* Also add cursor none to new buttons */
-    [allowBtn, denyBtn].forEach(btn => {
-      if (!btn) return;
-      btn.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
-      btn.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
-    });
+    if (allowBtn) {
+      allowBtn.addEventListener('click', handleAllow);
+      allowBtn.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
+      allowBtn.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
+    }
+    if (denyBtn) {
+      denyBtn.addEventListener('click', handleDeny);
+      denyBtn.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
+      denyBtn.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
+    }
   }
 
-  /* Wait until Three.js and MediaPipe CDN scripts are loaded */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
   } else {
