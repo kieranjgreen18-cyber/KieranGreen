@@ -142,7 +142,7 @@
 <link rel="manifest" href="site.webmanifest">
 <!-- Three.js + MediaPipe for head-coupled perspective hero -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
@@ -438,7 +438,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 
 .hero-eyebrow{
   position:relative;
-  z-index:2;
+  z-index:4;
   padding-top:var(--s9);
   font-size:var(--t-micro);font-weight:700;letter-spacing:var(--ls-stencil);text-transform:uppercase;
   color:var(--sage);
@@ -455,7 +455,7 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 
 .hero-content{
   position:relative;
-  z-index:2;
+  z-index:4;
   padding-bottom:var(--s6);
   flex-shrink:0;
 }
@@ -1078,7 +1078,7 @@ footer{
 .hero-coords{
   position:absolute;
   top:var(--s9);right:var(--pad);
-  z-index:2;
+  z-index:4;
   display:flex;flex-direction:column;gap:4px;
   opacity:0;animation:fd .6s var(--ease) .35s forwards;
 }
@@ -1218,9 +1218,20 @@ footer{
 #hero-3d{
   position:absolute;inset:0;
   width:100%;height:100%;
-  z-index:1; /* above hero-img, below hero-veil */
+  z-index:3; /* above hero-img AND hero-veil so GLB model is visible */
   pointer-events:none;
   display:block;
+}
+
+/* Override hero-veil to only darken the left side (text area),
+   leaving the right side clear for the 3D model */
+.hero-veil{
+  position:absolute;inset:0;z-index:2;
+  background:
+    linear-gradient(to top,  rgba(8,9,9,.98) 0%, rgba(8,9,9,.55) 22%, rgba(8,9,9,.02) 55%, transparent 100%),
+    linear-gradient(to right, rgba(8,9,9,.6) 0%, rgba(8,9,9,.2) 50%, transparent 75%),
+    linear-gradient(to bottom, rgba(8,9,9,.5) 0%, transparent 18%);
+  pointer-events:none;
 }
 
 /* ── CAMERA PERMISSION OVERLAY ── */
@@ -1229,7 +1240,7 @@ footer{
   bottom:var(--s9);
   left:50%;
   transform:translateX(-50%);
-  z-index:10;
+  z-index:12;
   opacity:0;
   animation:fd .7s var(--ease) 1.4s forwards;
   white-space:nowrap;
@@ -1285,7 +1296,7 @@ footer{
   position:absolute;
   top:var(--s9);
   left:var(--pad);
-  z-index:10;
+  z-index:12;
   display:none;
   align-items:center;
   gap:6px;
@@ -2113,176 +2124,142 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
 
 /* ══════════════════════════════════════════════════════════════════
    OFF-AXIS HEAD-COUPLED PERSPECTIVE HERO
-   ──────────────────────────────────────
    Inspired by Johnny Chung Lee / icurtis1/off-axis-sneaker
-   Uses MediaPipe FaceLandmarker for real-time head tracking.
-   Mouse parallax only activates after the prompt is dismissed.
-
-   ── TO USE YOUR OWN 3D MODEL ──────────────────────────────────────
-   1. Place your GLB file in the same folder as index.html, e.g. "model.glb"
-   2. Set GLB_MODEL_URL below to its path, e.g. GLB_MODEL_URL = 'model.glb'
-   3. Set GLB_ENABLED = true
-   4. The model loads at z=0 (mid scene), floating between BG and veil.
-      Adjust GLB_SCALE (overall size), GLB_Y (vertical position),
-      and GLB_Z (depth — more negative = further back) to taste.
-   5. Optionally add your Rhino/Keyshot models exported as GLB from
-      Rhino: File → Export Selected → .glb
-      or from Blender/Keyshot with a GLB export plugin.
+   MediaPipe FaceLandmarker + Three.js GLB model in hero
 ══════════════════════════════════════════════════════════════════ */
 (function() {
 
   /* ── CONFIG ── */
   const HERO_IMAGE_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png';
-  const STRENGTH = { x: 3.2, y: 2.2 };
-  const SMOOTH   = 0.075;
+  const STRENGTH = { x: 2.8, y: 1.8 };
+  const SMOOTH   = 0.07;
 
-  // ── 3D MODEL (optional) ──
-  const GLB_ENABLED   = true;          // ← set true when you have a model
-  const GLB_MODEL_URL = 'minisite.glb';    // ← path to your .glb file
-  const GLB_SCALE     = 1.0;            // ← overall model size
-  const GLB_Y         = -0.5;           // ← vertical offset (negative = lower)
-  const GLB_Z         = 0.8;            // ← depth position in scene
+  const GLB_ENABLED   = true;
+  const GLB_MODEL_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/minisite.glb';
+  const GLB_SCALE     = 1.0;
+  const GLB_X         = 1.8;   // right of centre so headline is clear
+  const GLB_Y         = -0.3;
+  const GLB_Z         = 1.2;
 
-  const LAYERS = [
-    { z: -4.0, scale: 2.6,  opacity: 0.30, tint: 0x0a1010 },
-    { z: -2.2, scale: 2.0,  opacity: 0.55, tint: 0x0d1214 },
-    { z: -0.6, scale: 1.35, opacity: 1.00, tint: 0xffffff },  // hero photo
-    { z:  1.0, scale: 0.40, opacity: 0.10, tint: 0x5ba0a4 },
-  ];
-
-  /* ── HEAD POSITION STATE ── */
+  /* ── STATE ── */
   const head = { x: 0, y: 0 };
   const raw  = { x: 0, y: 0 };
-
-  /* ── DOM REFS ── */
   const promptEl   = document.getElementById('hero-cam-prompt');
   const trackingEl = document.getElementById('hcp-tracking');
   const allowBtn   = document.getElementById('hcp-allow');
   const denyBtn    = document.getElementById('hcp-deny');
 
-  /* ── STATE ── */
   let useCamera      = false;
-  let mouseFallback  = false;   // only true after prompt is resolved
+  let mouseFallback  = false;
   let faceLandmarker = null;
-  let lastVideoTime  = -1;
   let videoEl        = null;
-  let renderer, scene, threeCamera, layers = [];
+  let renderer, scene, threeCamera;
+  let layers         = [];
   let glbModel       = null;
   let heroVisible    = true;
+  let lastDetectTime = 0;
 
   /* ────────────────────────────────
-     THREE.JS SCENE SETUP
+     THREE.JS SCENE
   ──────────────────────────────── */
   function initThree() {
+    if (typeof THREE === 'undefined') { console.error('[off-axis] THREE not loaded'); return; }
     const canvas = document.getElementById('hero-3d');
-    if (!canvas || typeof THREE === 'undefined') return;
+    if (!canvas) return;
 
     const hero = document.getElementById('top');
-    const W = hero.offsetWidth;
-    const H = hero.offsetHeight;
+    const W = hero.offsetWidth, H = hero.offsetHeight;
 
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setSize(W, H, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
 
     scene = new THREE.Scene();
+    threeCamera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
+    threeCamera.position.set(0, 0, 6);
 
-    threeCamera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-    threeCamera.position.set(0, 0, 5);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const key = new THREE.DirectionalLight(0xfff0e0, 1.4);
+    key.position.set(3, 4, 5); scene.add(key);
+    const fill = new THREE.DirectionalLight(0x5ba0a4, 0.5);
+    fill.position.set(-4, 0, 3); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.3);
+    rim.position.set(0, -3, -4); scene.add(rim);
 
-    // Ambient light for GLB model
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0x5ba0a4, 0.6);
-    dirLight.position.set(2, 3, 4);
-    scene.add(dirLight);
+    const loader = new THREE.TextureLoader();
+    loader.crossOrigin = 'anonymous';
+    loader.load(HERO_IMAGE_URL, tex => {
+      tex.minFilter = THREE.LinearFilter;
+      tex.encoding = THREE.sRGBEncoding;
+      buildLayers(tex);
+    }, undefined, () => buildLayers(null));
 
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.crossOrigin = 'anonymous';
-    textureLoader.load(
-      HERO_IMAGE_URL,
-      (tex) => {
-        tex.minFilter = THREE.LinearFilter;
-        tex.encoding = THREE.sRGBEncoding;
-        buildLayers(tex);
-        if (GLB_ENABLED) loadGLB();
-        renderLoop();
-      },
-      undefined,
-      () => {
-        buildLayers(null);
-        if (GLB_ENABLED) loadGLB();
-        renderLoop();
-      }
-    );
+    if (GLB_ENABLED) loadGLB();
+    renderLoop();
   }
 
   function buildLayers(heroTex) {
-    LAYERS.forEach((cfg, i) => {
-      const geo = new THREE.PlaneGeometry(
-        threeCamera.aspect * cfg.scale * 5,
-        cfg.scale * 5
-      );
-      let mat;
-      if (i === 2 && heroTex) {
-        mat = new THREE.MeshBasicMaterial({
-          map: heroTex, transparent: true, opacity: cfg.opacity,
-          depthWrite: false,
-        });
-      } else {
-        mat = new THREE.MeshBasicMaterial({
-          color: cfg.tint, transparent: true, opacity: cfg.opacity,
-          depthWrite: false,
-          blending: i > 2 ? THREE.AdditiveBlending : THREE.NormalBlending,
-        });
-      }
+    [
+      { z: -5,   scale: 3.2, color: 0x090c0c, opacity: 1.0,  tex: null    },
+      { z: -2.5, scale: 2.2, color: 0x0d1214, opacity: 0.7,  tex: null    },
+      { z: -0.8, scale: 1.5, color: 0xffffff, opacity: 0.85, tex: heroTex },
+    ].forEach(d => {
+      const geo = new THREE.PlaneGeometry(threeCamera.aspect * d.scale * 5, d.scale * 5);
+      const mat = new THREE.MeshBasicMaterial({
+        color: d.tex ? 0xffffff : d.color,
+        map: d.tex || null,
+        transparent: true,
+        opacity: d.opacity,
+        depthWrite: false,
+      });
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.z = cfg.z;
+      mesh.position.z = d.z;
       scene.add(mesh);
-      layers.push({ mesh, cfg });
+      layers.push({ mesh, z: d.z });
     });
   }
 
   /* ────────────────────────────────
-     GLB MODEL LOADER
-     Requires GLTFLoader — loaded from CDN below if GLB_ENABLED
+     GLB LOADER
   ──────────────────────────────── */
   function loadGLB() {
-    if (typeof THREE.GLTFLoader === 'undefined') {
-      console.warn('[off-axis] THREE.GLTFLoader not found. Add the CDN script to use GLB models.');
-      return;
-    }
-    const loader = new THREE.GLTFLoader();
-    loader.load(
-      GLB_MODEL_URL,
-      (gltf) => {
-        glbModel = gltf.scene;
+    const LoaderClass = (window.THREE && THREE.GLTFLoader) || window.GLTFLoaderClass;
+    if (!LoaderClass) { console.warn('[off-axis] GLTFLoader not available'); return; }
+    const loader = new LoaderClass();
+    loader.load(GLB_MODEL_URL, gltf => {
+      glbModel = gltf.scene;
 
-        // Auto-centre the model
-        const box = new THREE.Box3().setFromObject(glbModel);
-        const centre = new THREE.Vector3();
-        box.getCenter(centre);
-        glbModel.position.sub(centre);
+      // Centre and normalise
+      const box = new THREE.Box3().setFromObject(glbModel);
+      const centre = new THREE.Vector3();
+      box.getCenter(centre);
+      glbModel.position.sub(centre);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z);
+      glbModel.scale.setScalar((2.2 / maxDim) * GLB_SCALE);
 
-        // Scale to fit a unit box, then apply user scale
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const normScale = (1.8 / maxDim) * GLB_SCALE;
-        glbModel.scale.setScalar(normScale);
+      // Re-centre after scale
+      const box2 = new THREE.Box3().setFromObject(glbModel);
+      const c2 = new THREE.Vector3();
+      box2.getCenter(c2);
+      glbModel.position.sub(c2);
 
-        glbModel.position.y += GLB_Y;
-        glbModel.position.z  = GLB_Z;
+      glbModel.position.set(GLB_X, GLB_Y, GLB_Z);
 
-        // Shift model to the right so it doesn't cover the headline
-        glbModel.position.x = 1.6;
+      glbModel.traverse(child => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(m => { m.envMapIntensity = 1.0; m.needsUpdate = true; });
+        }
+      });
 
-        scene.add(glbModel);
-      },
-      undefined,
-      (err) => console.warn('[off-axis] GLB load failed:', err)
-    );
+      scene.add(glbModel);
+      console.log('[off-axis] GLB loaded OK');
+    }, undefined, err => console.error('[off-axis] GLB error:', err));
   }
 
   /* ────────────────────────────────
@@ -2292,74 +2269,65 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
     requestAnimationFrame(renderLoop);
     if (!heroVisible) return;
 
-    // EMA smooth — but only move if a source is active
     if (useCamera || mouseFallback) {
       head.x += (raw.x - head.x) * SMOOTH;
       head.y += (raw.y - head.y) * SMOOTH;
     } else {
-      // Gently return to centre while prompt is showing
-      head.x += (0 - head.x) * 0.04;
-      head.y += (0 - head.y) * 0.04;
+      head.x *= 0.96; head.y *= 0.96;
     }
 
-    // Face detection tick
+    // Face detection — every frame, time-gated at ~60fps
     if (useCamera && videoEl && videoEl.readyState >= 2 && faceLandmarker) {
-      const t = performance.now();
-      if (videoEl.currentTime !== lastVideoTime) {
-        lastVideoTime = videoEl.currentTime;
+      const now = performance.now();
+      if (now - lastDetectTime > 16) {
+        lastDetectTime = now;
         try {
-          const result = faceLandmarker.detectForVideo(videoEl, t);
-          if (result?.faceLandmarks?.length > 0) {
-            extractHeadPos(result.faceLandmarks[0]);
-          }
-        } catch(e) { /* silent */ }
+          const r = faceLandmarker.detectForVideo(videoEl, now);
+          if (r?.faceLandmarks?.length > 0) extractHeadPos(r.faceLandmarks[0]);
+        } catch(e) {}
       }
     }
 
-    // Camera off-axis shift
-    threeCamera.position.x = -head.x * 0.55;
-    threeCamera.position.y =  head.y * 0.38;
-
-    // Layer parallax — each layer moves in proportion to its depth index
-    layers.forEach(({ mesh }, i) => {
-      const depth = (i + 1) / layers.length;
-      mesh.position.x = head.x * depth * 0.32;
-      mesh.position.y = head.y * depth * 0.22;
+    // Parallax layers
+    layers.forEach(({ mesh, z }) => {
+      const t = (z + 5) / 5; // 0=far, 1=close
+      mesh.position.x = head.x * t * 0.28;
+      mesh.position.y = head.y * t * 0.18;
     });
 
-    // GLB model moves slightly more than mid layers for pop-out effect
+    // GLB — moves most, faces viewer
     if (glbModel) {
-      glbModel.position.x = 1.6 + head.x * 0.5;
-      glbModel.position.y = GLB_Y + head.y * 0.35;
-      glbModel.rotation.y = -head.x * 0.12;  // subtle facing towards viewer
+      glbModel.position.x = GLB_X + head.x * 0.45;
+      glbModel.position.y = GLB_Y + head.y * 0.30;
+      glbModel.rotation.y += (-head.x * 0.18 - glbModel.rotation.y) * 0.08;
+      glbModel.rotation.x += ( head.y * 0.08 - glbModel.rotation.x) * 0.08;
     }
+
+    // Camera off-axis shift
+    threeCamera.position.x += (-head.x * 0.4 - threeCamera.position.x) * 0.12;
+    threeCamera.position.y += ( head.y * 0.25 - threeCamera.position.y) * 0.12;
 
     renderer.render(scene, threeCamera);
   }
 
   /* ────────────────────────────────
-     FACE LANDMARK → HEAD POSITION
+     FACE LANDMARK EXTRACTION
+     Raw webcam coords [0,1]; flip X because webcam is mirrored
   ──────────────────────────────── */
   function extractHeadPos(landmarks) {
-    const le = landmarks[33];   // left eye inner corner
-    const re = landmarks[263];  // right eye inner corner
+    const le = landmarks[33], re = landmarks[263];
     if (!le || !re) return;
-
     const midX = (le.x + re.x) / 2;
     const midY = (le.y + re.y) / 2;
-
-    // Map from [0,1] video coords to [-1,+1], flip Y (video Y is top-down)
-    raw.x =  (midX - 0.5) * 2 * STRENGTH.x;
+    raw.x = -(midX - 0.5) * 2 * STRENGTH.x;  // negate: mirror correction
     raw.y = -(midY - 0.5) * 2 * STRENGTH.y;
   }
 
   /* ────────────────────────────────
-     MOUSE / GYRO FALLBACK
-     Only registered after user clicks "Use Mouse Instead"
-     or after camera/MediaPipe fails.
+     MOUSE FALLBACK
   ──────────────────────────────── */
   function enableMouseParallax() {
-    if (mouseFallback) return;  // idempotent
+    if (mouseFallback) return;
     mouseFallback = true;
     const hero = document.getElementById('top');
     hero.addEventListener('mousemove', e => {
@@ -2372,38 +2340,31 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       window.addEventListener('deviceorientation', e => {
         if (e.gamma == null) return;
         raw.x = (e.gamma / 30) * STRENGTH.x;
-        raw.y = -(Math.max(-20, Math.min(20, e.beta - 15)) / 20) * STRENGTH.y;
+        raw.y = -(Math.max(-20, Math.min(20, (e.beta||0) - 15)) / 20) * STRENGTH.y;
       }, { passive: true });
     }
   }
 
   /* ────────────────────────────────
-     MEDIAPIPE INIT
-     Polls for globals since the bundle can take a moment after load
+     MEDIAPIPE
   ──────────────────────────────── */
-  function waitForMediaPipe(timeout = 8000) {
-    return new Promise((resolve, reject) => {
-      const start = Date.now();
-      function check() {
-        if (window.FaceLandmarker && window.FilesetResolver) {
-          resolve();
-        } else if (Date.now() - start > timeout) {
-          reject(new Error('MediaPipe globals not available after ' + timeout + 'ms'));
-        } else {
-          setTimeout(check, 100);
-        }
-      }
-      check();
+  function waitForMediaPipe(ms) {
+    ms = ms || 10000;
+    return new Promise(function(res, rej) {
+      var t0 = Date.now();
+      (function poll() {
+        if (window.FaceLandmarker && window.FilesetResolver) return res();
+        if (Date.now() - t0 > ms) return rej(new Error('MediaPipe timeout'));
+        setTimeout(poll, 150);
+      })();
     });
   }
 
   async function initMediaPipe() {
     await waitForMediaPipe();
-
     const vision = await window.FilesetResolver.createVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
     );
-
     faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
@@ -2417,17 +2378,44 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   /* ────────────────────────────────
-     HERO VISIBILITY — pause render when scrolled away
+     PERMISSION FLOW
   ──────────────────────────────── */
-  function watchHeroVisibility() {
-    const obs = new IntersectionObserver(e => { heroVisible = e[0].isIntersecting; }, { threshold: 0.01 });
-    const hero = document.getElementById('top');
-    if (hero) obs.observe(hero);
+  function hidePrompt() { promptEl.classList.add('hcp-hidden'); }
+
+  async function handleAllow() {
+    allowBtn.disabled = true;
+    allowBtn.textContent = 'Loading\u2026';
+    // getUserMedia before any await — gesture token expires after async gap
+    const streamPromise = navigator.mediaDevices.getUserMedia({
+      video: { width: 320, height: 240, facingMode: 'user' },
+    });
+    try {
+      const [stream] = await Promise.all([streamPromise, initMediaPipe()]);
+      videoEl = document.createElement('video');
+      videoEl.srcObject = stream;
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      await videoEl.play();
+      useCamera = true;
+      trackingEl.classList.add('visible');
+      hidePrompt();
+    } catch(err) {
+      console.info('[off-axis] Falling back to mouse:', err.message);
+      hidePrompt();
+      enableMouseParallax();
+    }
   }
 
+  function handleDeny() { hidePrompt(); enableMouseParallax(); }
+
   /* ────────────────────────────────
-     RESIZE
+     VISIBILITY + RESIZE + BOOT
   ──────────────────────────────── */
+  function watchVisibility() {
+    new IntersectionObserver(function(e) { heroVisible = e[0].isIntersecting; }, { threshold: 0.01 })
+      .observe(document.getElementById('top'));
+  }
+
   function onResize() {
     if (!renderer) return;
     const hero = document.getElementById('top');
@@ -2437,84 +2425,25 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
     threeCamera.updateProjectionMatrix();
   }
 
-  /* ────────────────────────────────
-     PERMISSION FLOW
-  ──────────────────────────────── */
-  function hidePrompt() {
-    promptEl.classList.add('hcp-hidden');
-  }
-
-  async function handleAllow() {
-    allowBtn.disabled = true;
-    allowBtn.textContent = 'Loading…';
-
-    // getUserMedia MUST be called synchronously within the click handler
-    // (or at most one microtask deep) — browsers revoke the user-gesture
-    // token after any significant async gap, silently blocking the prompt.
-    // We kick it off first, before any awaits, then load MediaPipe in parallel.
-    let streamPromise;
-    try {
-      streamPromise = navigator.mediaDevices.getUserMedia({
-        video: { width: 320, height: 240, facingMode: 'user' },
-      });
-    } catch(e) {
-      hidePrompt();
-      enableMouseParallax();
-      return;
-    }
-
-    try {
-      // Wait for camera permission AND MediaPipe load simultaneously
-      const [stream] = await Promise.all([
-        streamPromise,
-        initMediaPipe(),
-      ]);
-
-      videoEl = document.createElement('video');
-      videoEl.srcObject   = stream;
-      videoEl.muted       = true;
-      videoEl.playsInline = true;
-      await videoEl.play();
-      useCamera = true;
-      trackingEl.classList.add('visible');
-      hidePrompt();
-    } catch(err) {
-      console.info('[off-axis] Camera/MediaPipe unavailable, using mouse parallax.', err);
-      hidePrompt();
-      enableMouseParallax();
-    }
-  }
-
-  function handleDeny() {
-    hidePrompt();
-    enableMouseParallax();
-  }
-
-  /* ────────────────────────────────
-     BOOT
-  ──────────────────────────────── */
   function boot() {
     initThree();
-    watchHeroVisibility();
+    watchVisibility();
     window.addEventListener('resize', onResize, { passive: true });
-
     if (allowBtn) {
       allowBtn.addEventListener('click', handleAllow);
-      allowBtn.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
-      allowBtn.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
+      allowBtn.addEventListener('mouseenter', function() { inLink = true;  applyCursorState(); });
+      allowBtn.addEventListener('mouseleave', function() { inLink = false; applyCursorState(); });
     }
     if (denyBtn) {
       denyBtn.addEventListener('click', handleDeny);
-      denyBtn.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
-      denyBtn.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
+      denyBtn.addEventListener('mouseenter', function() { inLink = true;  applyCursorState(); });
+      denyBtn.addEventListener('mouseleave', function() { inLink = false; applyCursorState(); });
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
+  document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', boot)
+    : boot();
 
 })();
 
