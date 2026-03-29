@@ -2137,8 +2137,8 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   const SMOOTH   = 0.075;
 
   // ── 3D MODEL (optional) ──
-  const GLB_ENABLED   = true;          // ← set true when you have a model
-  const GLB_MODEL_URL = 'minisite.glb';    // ← path to your .glb file
+  const GLB_ENABLED   = false;          // ← set true when you have a model
+  const GLB_MODEL_URL = 'model.glb';    // ← path to your .glb file
   const GLB_SCALE     = 1.0;            // ← overall model size
   const GLB_Y         = -0.5;           // ← vertical offset (negative = lower)
   const GLB_Z         = 0.8;            // ← depth position in scene
@@ -2417,22 +2417,6 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   /* ────────────────────────────────
-     CAMERA STREAM
-  ──────────────────────────────── */
-  async function startCamera() {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 320, height: 240, facingMode: 'user' },
-    });
-    videoEl = document.createElement('video');
-    videoEl.srcObject  = stream;
-    videoEl.muted      = true;
-    videoEl.playsInline = true;
-    await videoEl.play();
-    useCamera = true;
-    trackingEl.classList.add('visible');
-  }
-
-  /* ────────────────────────────────
      HERO VISIBILITY — pause render when scrolled away
   ──────────────────────────────── */
   function watchHeroVisibility() {
@@ -2461,12 +2445,38 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   async function handleAllow() {
-    // Disable button immediately to prevent double-click
     allowBtn.disabled = true;
     allowBtn.textContent = 'Loading…';
+
+    // getUserMedia MUST be called synchronously within the click handler
+    // (or at most one microtask deep) — browsers revoke the user-gesture
+    // token after any significant async gap, silently blocking the prompt.
+    // We kick it off first, before any awaits, then load MediaPipe in parallel.
+    let streamPromise;
     try {
-      await initMediaPipe();        // ~2–4s first load (downloads .task model)
-      await startCamera();          // triggers browser camera permission dialog
+      streamPromise = navigator.mediaDevices.getUserMedia({
+        video: { width: 320, height: 240, facingMode: 'user' },
+      });
+    } catch(e) {
+      hidePrompt();
+      enableMouseParallax();
+      return;
+    }
+
+    try {
+      // Wait for camera permission AND MediaPipe load simultaneously
+      const [stream] = await Promise.all([
+        streamPromise,
+        initMediaPipe(),
+      ]);
+
+      videoEl = document.createElement('video');
+      videoEl.srcObject   = stream;
+      videoEl.muted       = true;
+      videoEl.playsInline = true;
+      await videoEl.play();
+      useCamera = true;
+      trackingEl.classList.add('visible');
       hidePrompt();
     } catch(err) {
       console.info('[off-axis] Camera/MediaPipe unavailable, using mouse parallax.', err);
