@@ -3,49 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hero 3D — Prototype v3</title>
+<title>Kieran Green — Industrial Designer</title>
 
-<!--
-  ISOLATED PROTOTYPE — v3 clean rewrite.
-  Key principle: the studio environment (floor, sky, gradient)
-  lives INSIDE model-viewer as its CSS background property.
-  model-viewer accepts any valid CSS background — including
-  multi-stop gradients — rendered as the WebGL scene background.
-  This means the environment scales perfectly with the canvas
-  at every viewport size. No positioned divs. No magic numbers.
-
-  The only CSS the page needs to do is fade the canvas edges
-  into the site background, using percentages relative to the
-  column — so it's responsive by definition.
--->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 
 <style>
-/* ════════════════════════════════════════
-   TOKENS
-════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+════════════════════════════════════════════════════════════ */
 :root {
-  --c-bg:        #080909;
-  --c-primary:   #edeeed;
-  --c-secondary: #96a8aa;
+  /* Palette */
+  --c-bg:        #07080a;
+  --c-surface:   #0e1012;
+  --c-primary:   #e8eae8;
+  --c-secondary: #7a8e90;
   --c-accent:    #5ba0a4;
+  --c-accent-dim: rgba(91,160,164,0.18);
+
+  /* Typography */
   --f-condensed: 'D-DIN Condensed', sans-serif;
   --f-body:      'D-DIN', sans-serif;
-  --ease:        cubic-bezier(0.16, 1, 0.3, 1);
-  --pad:         clamp(24px, 4vw, 48px);
-  --sp-1: 8px; --sp-2: 16px; --sp-3: 24px; --sp-4: 32px;
-  --sp-5: 40px; --sp-6: 48px; --sp-7: 64px; --sp-8: 80px;
 
-  /*
-    --floor: the studio sweep colour.
-    Used in TWO places that must match:
-      1. model-viewer background gradient (bottom stop)
-      2. .hero-text::after rightward fade (target colour)
-    If they match, there is no seam. Change both together.
-  */
-  --floor: #c8c6c0;
+  /* Spacing scale — 8px base */
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-5: 40px;
+  --sp-6: 48px;
+  --sp-7: 64px;
+  --sp-8: 80px;
+
+  /* Responsive padding */
+  --pad-x: clamp(28px, 4.5vw, 64px);
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast:      0.4s;
+  --dur-med:       0.7s;
+  --dur-slow:      1.1s;
+
+  /* Z-index layers */
+  --z-base:    0;
+  --z-content: 10;
+  --z-overlay: 20;
+  --z-top:     30;
 }
 
+/* ════════════════════════════════════════════════════════════
+   FONTS
+════════════════════════════════════════════════════════════ */
 @font-face {
   font-family: 'D-DIN';
   src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/D-DIN.otf') format('opentype');
@@ -67,303 +75,413 @@
   font-weight: 700 900; font-style: normal; font-display: swap;
 }
 
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+/* ════════════════════════════════════════════════════════════
+   RESET & BASE
+════════════════════════════════════════════════════════════ */
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+}
 
 html, body {
   background: var(--c-bg);
   color: var(--c-primary);
   font-family: var(--f-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
-/* ════════════════════════════════════════
-   HERO GRID
-   Left column: text on dark bg.
-   Right column: model-viewer fills full height.
-   No wrapper div needed for environment — it's in the canvas.
-════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   HERO — OUTER SHELL
+   Grid: left text column | right model column
+════════════════════════════════════════════════════════════ */
 .hero {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 46% 54%;
   min-height: 100svh;
   overflow: hidden;
 }
 
-/* ── TEXT COLUMN ── */
+/* ════════════════════════════════════════════════════════════
+   HERO — TEXT COLUMN
+════════════════════════════════════════════════════════════ */
 .hero-text {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-content);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--sp-4);
-  padding: var(--sp-8) var(--sp-5) var(--sp-8) var(--pad);
+  padding: var(--sp-8) var(--sp-5) var(--sp-8) var(--pad-x);
   background: var(--c-bg);
-  /* Animate in */
+
+  /* Staggered reveal — JS adds .is-revealed */
   opacity: 0;
-  transform: translateY(20px);
-  animation: revealUp 0.9s var(--ease) 0.3s forwards;
+  transform: translateY(24px);
+  transition: opacity var(--dur-slow) var(--ease-out-expo),
+              transform var(--dur-slow) var(--ease-out-expo);
+}
+.hero-text.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /*
-  RIGHT EDGE FADE — the only cross-column trick in the whole layout.
-  The text column fades from its dark bg rightward to --floor.
-  The model-viewer's gradient starts at --floor on the left side of
-  its canvas. They meet at the grid boundary and form one continuous
-  environment — dark left → warm floor → sky → dark top.
-  No magic positions. If the viewport scales, the columns scale,
-  and this gradient scales with them.
+  RIGHT EDGE BLEND
+  Smooth vignette from dark bg → transparent
+  so it blends into the model's left-edge vignette.
+  Using a multi-stop gradient for a smooth S-curve
+  rather than a hard 2-stop transition.
 */
 .hero-text::after {
   content: '';
   position: absolute;
   top: 0; right: 0; bottom: 0;
-  width: 80px;
-  background: linear-gradient(to right, transparent, var(--floor));
+  width: clamp(60px, 8vw, 120px);
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(7,8,10,0.15) 20%,
+    rgba(7,8,10,0.5)  50%,
+    rgba(7,8,10,0.82) 75%,
+    var(--c-bg) 100%
+  );
   pointer-events: none;
+  z-index: 1;
 }
 
-@keyframes revealUp {
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* ── Eyebrow ── */
 .hero-eyebrow {
   font-family: var(--f-condensed);
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.22em; text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
   color: var(--c-accent);
-  display: flex; align-items: center; gap: var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+
+  opacity: 0;
+  transform: translateX(-16px);
+  transition: opacity 0.6s var(--ease-out-expo) 0.15s,
+              transform 0.6s var(--ease-out-expo) 0.15s;
+}
+.hero-text.is-revealed .hero-eyebrow {
+  opacity: 1;
+  transform: translateX(0);
 }
 .hero-eyebrow-line {
-  display: block; width: 32px; height: 1px; background: var(--c-accent);
+  display: block;
+  width: 28px; height: 1px;
+  background: var(--c-accent);
+  transform-origin: left center;
+  transition: width 0.8s var(--ease-out-expo) 0.4s;
 }
 
+/* ── H1 ── */
 .hero-h1 {
   font-family: var(--f-condensed);
-  font-size: clamp(52px, 7.5vw, 120px);
+  font-size: clamp(54px, 7vw, 112px);
   font-weight: 100;
   letter-spacing: -0.04em;
-  line-height: 0.88;
+  line-height: 0.87;
   text-transform: uppercase;
   color: var(--c-primary);
 }
 .hero-h1 em {
   font-style: italic;
   color: var(--c-accent);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
+/* ── Subhead ── */
 .hero-sub {
   font-family: var(--f-body);
-  font-size: 14px; font-weight: 300;
-  letter-spacing: 0.04em; line-height: 1.75;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  line-height: 1.8;
   text-transform: uppercase;
   color: var(--c-primary);
-  opacity: 0.5;
-  max-width: 320px;
+  opacity: 0.45;
+  max-width: 300px;
 }
 
+/* ── Availability indicator ── */
 .hero-avail {
   font-family: var(--f-condensed);
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.22em; text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
   color: var(--c-accent);
-  display: flex; align-items: center; gap: var(--sp-1);
-  margin-top: var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
 }
 .hero-avail-dot {
-  width: 5px; height: 5px; border-radius: 50%;
+  width: 5px; height: 5px;
+  border-radius: 50%;
   background: var(--c-accent);
-  box-shadow: 0 0 8px rgba(91,160,164,.8);
-  animation: pulse 2.5s ease infinite;
+  box-shadow: 0 0 10px rgba(91,160,164,0.9);
+  animation: pulse 2.8s ease infinite;
 }
 @keyframes pulse {
-  0%,100% { opacity:1; box-shadow:0 0 8px rgba(91,160,164,.8); }
-  50%      { opacity:.35; box-shadow:0 0 0 rgba(91,160,164,0); }
+  0%,100% { opacity:1; box-shadow: 0 0 10px rgba(91,160,164,0.9); }
+  50%      { opacity:0.3; box-shadow: 0 0 2px rgba(91,160,164,0.1); }
 }
 
+/* ── Scroll indicator ── */
 .hero-scroll {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: var(--sp-4);
   font-family: var(--f-condensed);
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.18em; text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   color: var(--c-secondary);
-  margin-top: var(--sp-3);
+  opacity: 0.6;
 }
 .hero-scroll-line {
-  width: 1px; height: 48px;
+  width: 1px;
+  height: 44px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
-  animation: scrollPulse 2.2s ease infinite;
+  animation: scrollDrop 2.4s ease infinite;
 }
-@keyframes scrollPulse {
-  0%,100% { opacity:.4; transform:scaleY(1); }
-  50%      { opacity:.9; transform:scaleY(.6); }
+@keyframes scrollDrop {
+  0%,100% { opacity:0.35; transform: scaleY(1) translateY(0); }
+  50%     { opacity:0.85; transform: scaleY(0.55) translateY(-4px); }
 }
 
-/* ── MODEL COLUMN ── */
+/* ════════════════════════════════════════════════════════════
+   HERO — MODEL COLUMN
+════════════════════════════════════════════════════════════ */
 .hero-model-col {
   position: relative;
-  /* Animate in after text */
+  z-index: var(--z-base);
   opacity: 0;
-  animation: revealFade 1.2s var(--ease) 0.5s forwards;
+  transition: opacity 1.4s var(--ease-out-expo) 0.35s;
 }
-@keyframes revealFade { to { opacity: 1; } }
+.hero-model-col.is-revealed {
+  opacity: 1;
+}
 
 /*
-  model-viewer fills the column completely.
+  model-viewer: fills the column.
 
-  BACKGROUND — the full studio environment lives here:
+  ENVIRONMENT STRATEGY:
+  We set environment-image to an outdoor/road HDRI from
+  the Poly Haven CDN (royalty-free, CORS-permissive).
+  The skybox-height attribute raises the environment to
+  create the "parked on asphalt" ground plane feel.
 
-  The gradient runs top→bottom:
-    #0d0f0e  (near-black, matches site bg)   — dark sky at top
-    #232520                                  — dusk transition
-    #6b6860  (dark warm mid)                 — upper floor / shadow zone
-    var(--floor) = #c8c6c0 (warm light gray) — bright studio floor
-    var(--floor)                             — floor continues to bottom
-
-  The horizon between sky and floor sits at roughly the
-  35%–50% zone. This is canvas-relative so it never drifts.
-
-  To adjust the horizon height: slide the middle stops up or down.
-  E.g. if you want a higher floor (more floor visible), move
-  '#6b6860 30%' → '#6b6860 22%' and 'var(--floor) 45%' → '35%'.
-
-  The model's contact shadow (shadow-intensity) projects onto
-  this floor — that's the primary visual anchor, no CSS needed.
+  The gradient background underneath is visible before/
+  while the HDRI loads, and provides the dark sky above.
+  It's also the floor tone the edge vignettes fade to.
 */
 model-viewer {
   display: block;
   width: 100%;
   height: 100%;
+  /* Dark-to-asphalt ramp — visible only if HDRI is loading */
   background: linear-gradient(
     to bottom,
-    #0d0f0e       0%,
-    #1c1e1d      15%,
-    #403d38      35%,
-    var(--floor) 52%,
-    var(--floor) 100%
+    #07080a   0%,
+    #101214  12%,
+    #1e2022  28%,
+    #323530  46%,
+    #434240  58%,
+    #525050  72%,
+    #5e5c59  85%,
+    #686663 100%
   );
   --progress-bar-color: var(--c-accent);
   --progress-bar-height: 1px;
-  --poster-color: #1c1e1d;
+  --poster-color: #101214;
 }
 
 /*
-  TOP + BOTTOM EDGE FADES
-  These overlay the canvas to blend it into the page above and below.
-  Using a ::before on the column keeps the DOM clean.
-  Percentage heights — responsive by definition.
+  CINEMATIC VIGNETTE OVERLAY — all four edges fade to site bg.
+
+  This is the key upgrade: instead of one rightward fade on
+  the text column, we apply a proper four-way vignette
+  directly on the model column using a layered gradient.
+
+  Each gradient handles one edge. The opacity falloffs use
+  a power-of-2 curve (0%, small %, then transparent) to
+  produce a smooth photographic vignette — not a hard edge.
+
+  Left edge: heaviest, since it meets the text column
+  Right edge: medium — blends off-screen
+  Top: moderate — blends into nav/dark sky
+  Bottom: moderate — blends into ticker / next section
 */
 .hero-model-col::before {
   content: '';
-  position: absolute; inset: 0;
-  pointer-events: none; z-index: 2;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-overlay);
   background:
-    /* Top → site bg */
-    linear-gradient(to bottom, var(--c-bg) 0%, rgba(8,9,9,0.55) 7%, transparent 20%),
-    /* Bottom → site bg (ticker transition) */
-    linear-gradient(to top,    var(--c-bg) 0%, rgba(8,9,9,0.4) 4%, transparent 14%),
-    /* Right edge — subtle fade so it doesn't look clipped */
-    linear-gradient(to left,   rgba(8,9,9,0.3) 0%, transparent 12%);
+    /* Left edge — darkest (meets text column) */
+    linear-gradient(
+      to right,
+      var(--c-bg)              0%,
+      rgba(7,8,10,0.88)        4%,
+      rgba(7,8,10,0.55)        9%,
+      rgba(7,8,10,0.22)       16%,
+      transparent             28%
+    ),
+    /* Right edge */
+    linear-gradient(
+      to left,
+      var(--c-bg)              0%,
+      rgba(7,8,10,0.65)        4%,
+      rgba(7,8,10,0.28)        9%,
+      transparent             20%
+    ),
+    /* Top edge */
+    linear-gradient(
+      to bottom,
+      var(--c-bg)              0%,
+      rgba(7,8,10,0.72)        5%,
+      rgba(7,8,10,0.28)       11%,
+      transparent             22%
+    ),
+    /* Bottom edge */
+    linear-gradient(
+      to top,
+      var(--c-bg)              0%,
+      rgba(7,8,10,0.6)         4%,
+      rgba(7,8,10,0.2)         9%,
+      transparent             18%
+    );
 }
 
-/* Overlays: reticle, labels, hint — all above the edge fade */
-.model-reticle {
-  position: absolute; inset: 0;
-  pointer-events: none; z-index: 3;
-}
-.model-reticle::before,
-.model-reticle::after {
+/* ── Corner-crush vignette (extra depth at corners) ── */
+.hero-model-col::after {
   content: '';
   position: absolute;
-  width: 16px; height: 16px;
-  border-color: rgba(91,160,164,.18);
-  border-style: solid;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-overlay);
+  background: radial-gradient(
+    ellipse 90% 85% at 62% 52%,
+    transparent 40%,
+    rgba(7,8,10,0.22) 65%,
+    rgba(7,8,10,0.55) 85%,
+    rgba(7,8,10,0.8)  100%
+  );
 }
-.model-reticle::before { top: 12px; left: 12px; border-width: 1px 0 0 1px; }
-.model-reticle::after  { bottom: 12px; right: 12px; border-width: 0 1px 1px 0; }
 
+/* ── Corner labels ── */
+.model-reticle { position: absolute; inset: 0; z-index: var(--z-top); pointer-events: none; }
 .model-label {
   position: absolute;
   font-family: var(--f-condensed);
-  font-size: 8px; font-weight: 700;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: rgba(91,160,164,.28);
-  pointer-events: none; z-index: 3;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(91,160,164,0.22);
 }
-.model-label-tl { top: 8px;    left: 16px; }
-.model-label-tr { top: 8px;    right: 16px; text-align: right; }
-.model-label-br { bottom: 8px; right: 16px; text-align: right; }
+.model-label-tl { top: 18px;    left: 22px; }
+.model-label-tr { top: 18px;    right: 22px; text-align: right; }
+.model-label-br { bottom: 18px; right: 22px; text-align: right; }
 
+/* ── Drag hint ── */
 .model-hint {
   position: absolute;
-  bottom: 18%; left: 50%; transform: translateX(-50%);
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: var(--f-condensed);
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: rgba(91,160,164,.45);
-  display: flex; align-items: center; gap: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(91,160,164,0.4);
+  display: flex;
+  align-items: center;
+  gap: 7px;
   white-space: nowrap;
-  pointer-events: none; z-index: 3;
-  transition: opacity 0.8s ease;
+  pointer-events: none;
+  z-index: var(--z-top);
+  transition: opacity 1s var(--ease-in-out);
 }
 .model-hint-icon {
   width: 14px; height: 14px;
-  border: 1px solid rgba(91,160,164,.35); border-radius: 50%;
+  border: 1px solid rgba(91,160,164,0.3);
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px;
+  font-size: 10px;
 }
-.model-hint.hidden { opacity: 0; }
+.model-hint.hidden { opacity: 0; pointer-events: none; }
 
+/* ── Error state ── */
 .model-error {
   display: none;
-  position: absolute; inset: 0; z-index: 4;
-  align-items: center; justify-content: center;
-  flex-direction: column; gap: var(--sp-2);
+  position: absolute; inset: 0;
+  z-index: var(--z-top);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--sp-2);
   font-family: var(--f-condensed);
-  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: rgba(91,160,164,.4); text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(91,160,164,0.35);
+  text-align: center;
 }
 .model-error.visible { display: flex; }
 
+/* ── Mobile scroll escape ── */
 .model-scroll-escape {
   display: none;
   position: absolute; bottom: 0; left: 0; right: 0;
-  height: 56px; z-index: 5;
+  height: 56px; z-index: var(--z-top);
 }
 
-/* ════════════════════════════════════════
-   RESPONSIVE
-════════════════════════════════════════ */
-@media (max-width: 900px) {
-  /* Stack: text top, model bottom */
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE — tablet / mobile stack
+════════════════════════════════════════════════════════════ */
+@media (max-width: 860px) {
   .hero {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     min-height: auto;
   }
 
-  /* Remove rightward floor fade — model is below, not right */
   .hero-text {
-    padding: calc(var(--sp-8) + 24px) var(--pad) var(--sp-5);
+    padding: calc(var(--sp-8) + 20px) var(--pad-x) var(--sp-5);
+    justify-content: flex-start;
   }
+  /* No right-edge blend needed when stacked */
   .hero-text::after { display: none; }
 
-  .hero-h1 { font-size: clamp(48px, 13vw, 80px); }
+  .hero-h1 { font-size: clamp(50px, 13vw, 84px); }
   .hero-sub { max-width: 100%; }
   .hero-scroll { display: none; }
 
   .hero-model-col {
-    height: clamp(300px, 60vw, 500px);
+    height: clamp(280px, 58vw, 480px);
   }
 
-  /* On mobile add left + right edge fades */
+  /* On mobile, full 4-edge vignette */
   .hero-model-col::before {
     background:
-      linear-gradient(to bottom, var(--c-bg) 0%, rgba(8,9,9,0.5) 8%, transparent 20%),
-      linear-gradient(to top,    var(--c-bg) 0%, rgba(8,9,9,0.4) 5%, transparent 15%),
-      linear-gradient(to right,  var(--c-bg) 0%, transparent 14%),
-      linear-gradient(to left,   var(--c-bg) 0%, transparent 14%);
+      linear-gradient(to right,  var(--c-bg) 0%, rgba(7,8,10,0.55) 6%, transparent 16%),
+      linear-gradient(to left,   var(--c-bg) 0%, rgba(7,8,10,0.55) 6%, transparent 16%),
+      linear-gradient(to bottom, var(--c-bg) 0%, rgba(7,8,10,0.65) 7%, transparent 20%),
+      linear-gradient(to top,    var(--c-bg) 0%, rgba(7,8,10,0.55) 5%, transparent 14%);
   }
 
   .model-scroll-escape { display: block; }
@@ -371,42 +489,70 @@ model-viewer {
 }
 
 @media (max-width: 480px) {
-  .hero-h1 { font-size: clamp(40px, 12vw, 64px); }
-  .hero-model-col { height: clamp(260px, 65vw, 380px); }
+  .hero-h1 { font-size: clamp(42px, 12vw, 66px); }
+  .hero-model-col { height: clamp(240px, 65vw, 360px); }
 }
 
+/* ── model-viewer progress bar ── */
 model-viewer::part(default-progress-bar) {
   background: var(--c-accent);
   height: 1px;
 }
 
-/* ════════════════════════════════════════
-   DEV STRIP — remove before merge
-════════════════════════════════════════ */
-.proto-info {
-  padding: var(--sp-4) var(--pad);
-  border-top: 1px solid rgba(255,255,255,.05);
-  font-family: var(--f-condensed);
-  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: rgba(150,168,170,.3);
-  display: flex; gap: var(--sp-4); flex-wrap: wrap;
+/* ════════════════════════════════════════════════════════════
+   STAGGER CHILDREN — words in h1 animate individually
+════════════════════════════════════════════════════════════ */
+.hero-h1 .word {
+  display: inline-block;
+  overflow: hidden;
 }
-.proto-info strong { color: rgba(91,160,164,.5); }
+.hero-h1 .word-inner {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(60%) skewY(3deg);
+  transition: opacity 0.75s var(--ease-out-expo),
+              transform 0.75s var(--ease-out-expo);
+}
+.hero-text.is-revealed .hero-h1 .word-inner {
+  opacity: 1;
+  transform: translateY(0) skewY(0deg);
+}
+/* Stagger delays per word */
+.hero-text.is-revealed .hero-h1 .word:nth-child(1) .word-inner { transition-delay: 0.25s; }
+.hero-text.is-revealed .hero-h1 .word:nth-child(2) .word-inner { transition-delay: 0.35s; }
+.hero-text.is-revealed .hero-h1 .word:nth-child(3) .word-inner { transition-delay: 0.45s; }
+.hero-text.is-revealed .hero-h1 .word:nth-child(4) .word-inner { transition-delay: 0.55s; }
+
+.hero-sub,
+.hero-avail,
+.hero-scroll {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.7s var(--ease-out-expo),
+              transform 0.7s var(--ease-out-expo);
+}
+.hero-text.is-revealed .hero-sub   { opacity: 0.45; transform: translateY(0); transition-delay: 0.6s; }
+.hero-text.is-revealed .hero-avail { opacity: 1;    transform: translateY(0); transition-delay: 0.72s; }
+.hero-text.is-revealed .hero-scroll{ opacity: 0.6;  transform: translateY(0); transition-delay: 0.82s; }
 </style>
 </head>
 <body>
 
-<section class="hero" aria-labelledby="hero-h1">
+<section class="hero" aria-labelledby="hero-heading">
 
-  <!-- TEXT COLUMN -->
-  <div class="hero-text">
+  <!-- ── TEXT COLUMN ── -->
+  <div class="hero-text" id="hero-text">
 
     <p class="hero-eyebrow" aria-hidden="true">
       <span class="hero-eyebrow-line"></span>
       Industrial Designer
     </p>
 
-    <h1 class="hero-h1" id="hero-h1">
+    <!--
+      Words are wrapped in .word/.word-inner for the staggered
+      slide-up reveal. JS splits the h1 after DOM ready.
+    -->
+    <h1 class="hero-h1" id="hero-heading">
       Imagining<br>
       your<br>
       <em>future,</em><br>
@@ -430,23 +576,39 @@ model-viewer::part(default-progress-bar) {
 
   </div>
 
-  <!-- MODEL COLUMN -->
-  <div class="hero-model-col">
+  <!-- ── MODEL COLUMN ── -->
+  <div class="hero-model-col" id="hero-model-col">
 
     <!--
-      Background gradient = the studio environment.
-      Adjust the stop positions to raise/lower the horizon:
-        Move '35%' and '52%' stops up = more sky, less floor.
-        Move them down = more floor, less sky.
-      This is the ONLY place to tune the environment. Nothing else drifts.
+      CAMERA SETTINGS — CINEMATIC:
 
-      Camera orbit: "azimuth elevation radius"
-        30deg  = slightly off-centre start angle
-        75deg  = eye level (90deg = perfectly horizontal)
-        105%   = slight pull-back from model
+      field-of-view: 24deg  — telephoto/cinematic lens compression.
+        Real-world equiv ≈ 200–300mm on full-frame.
+        Flattens depth, makes the car look substantial and weighty.
+        Default model-viewer is ~45deg (standard/wide). We're going
+        narrow: 22–26deg is the sweet spot for hero automotive shots.
 
-      Elevation lock 68–85deg = user can only orbit horizontally,
-      never tilts to see roof or undercarriage.
+      camera-orbit: "25deg 78deg 110%"
+        25deg  = subtle 3/4-front angle (classic automotive hero)
+        78deg  = eye level, very slightly above centreline
+        110%   = slight pullback to account for the narrow FOV
+
+      min/max field-of-view: lock user to 20–28deg so they
+        can't accidentally wide-angle the lens and break the look.
+
+      environment-image: Poly Haven "Kloppenheim" outdoor road HDRI.
+        Warm directional sun from driver's side, blue sky fill,
+        asphalt ground plane. Perfect for automotive hero.
+        (Poly Haven assets are CC0 / public domain.)
+
+      skybox-height: 1.5m — positions the horizon at a natural
+        "parked on tarmac" eye level relative to the model.
+
+      exposure: 1.1 — slight +ve to lift the asphalt/body.
+      tone-mapping: "commerce" — rich, saturated, automotive-grade.
+
+      shadow-intensity / shadow-softness: contact shadow anchors
+        the car to the ground plane convincingly.
     -->
     <model-viewer
       id="mini-viewer"
@@ -454,63 +616,120 @@ model-viewer::part(default-progress-bar) {
       alt="Interactive 3D model of Kieran Green's Mini Clubman — drag to rotate"
       camera-controls
       auto-rotate
-      auto-rotate-delay="600"
-      rotation-per-second="9deg"
-      environment-image="neutral"
-      shadow-intensity="1.2"
-      shadow-softness="0.9"
-      exposure="1.0"
-      camera-orbit="30deg 75deg 105%"
-      min-camera-orbit="auto 68deg auto"
-      max-camera-orbit="auto 85deg auto"
-      min-field-of-view="22deg"
-      max-field-of-view="38deg"
+      auto-rotate-delay="800"
+      rotation-per-second="7deg"
+      environment-image="https://cdn.jsdelivr.net/gh/nicktarnold/model-viewer-environments@main/environments/kloppenheim_06_puresky_1k.hdr"
+      skybox-image="https://cdn.jsdelivr.net/gh/nicktarnold/model-viewer-environments@main/environments/kloppenheim_06_puresky_1k.hdr"
+      skybox-height="1.5m"
+      shadow-intensity="1.6"
+      shadow-softness="0.85"
+      exposure="1.1"
+      camera-orbit="25deg 78deg 110%"
+      min-camera-orbit="auto 70deg auto"
+      max-camera-orbit="auto 86deg auto"
+      field-of-view="24deg"
+      min-field-of-view="20deg"
+      max-field-of-view="28deg"
       interaction-prompt="none"
       ar
       ar-modes="webxr scene-viewer quick-look"
       loading="eager"
-      tone-mapping="neutral"
+      tone-mapping="commerce"
     ></model-viewer>
 
+    <!-- Corner metadata labels -->
     <div class="model-reticle" aria-hidden="true">
       <span class="model-label model-label-tl">3D / MINI CLUBMAN</span>
       <span class="model-label model-label-tr">RHINO 3D · FDM</span>
       <span class="model-label model-label-br">DRAG TO ROTATE</span>
     </div>
 
+    <!-- Drag hint -->
     <div class="model-hint" id="model-hint" aria-hidden="true">
       <div class="model-hint-icon">↻</div>
       Drag to rotate
     </div>
 
+    <!-- Mobile scroll passthrough -->
     <div class="model-scroll-escape" id="model-scroll-escape" aria-hidden="true"></div>
 
-    <div class="model-error" id="model-error" aria-hidden="true">
+    <!-- Error state -->
+    <div class="model-error" id="model-error" role="alert">
       <span>Model unavailable</span>
-      <span style="opacity:.5;font-size:9px;">Check GLB path</span>
+      <span style="opacity:.4;font-size:9px;letter-spacing:.18em;">CHECK GLB PATH</span>
     </div>
 
   </div>
 
 </section>
 
-<div class="proto-info">
-  <span><strong>v3</strong> — gradient inside canvas</span>
-  <span><strong>File:</strong> minisite.glb</span>
-  <span><strong>Status:</strong> <span id="status">Loading…</span></span>
-  <span><strong>Remove</strong> this div before merging to index.html</span>
-</div>
-
 <script>
 'use strict';
 
+/* ─── H1 word-wrap for stagger animation ─────────────────── */
+(function splitH1() {
+  const h1 = document.querySelector('.hero-h1');
+  if (!h1) return;
+
+  // Walk text nodes, wrap each "word" (non-space run) in .word > .word-inner
+  // Preserve <br> and <em> structure
+  function wrapTextNode(node) {
+    const frag = document.createDocumentFragment();
+    const parts = node.textContent.split(/(\s+)/);
+    parts.forEach(part => {
+      if (/^\s+$/.test(part)) {
+        frag.appendChild(document.createTextNode(part));
+      } else if (part) {
+        const outer = document.createElement('span');
+        outer.className = 'word';
+        const inner = document.createElement('span');
+        inner.className = 'word-inner';
+        inner.textContent = part;
+        outer.appendChild(inner);
+        frag.appendChild(outer);
+      }
+    });
+    node.parentNode.replaceChild(frag, node);
+  }
+
+  // Collect text nodes that are direct children or inside <em>
+  function processNode(el) {
+    Array.from(el.childNodes).forEach(n => {
+      if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) {
+        wrapTextNode(n);
+      } else if (n.nodeType === Node.ELEMENT_NODE && n.tagName !== 'BR') {
+        processNode(n);
+      }
+    });
+  }
+  processNode(h1);
+})();
+
+/* ─── Reveal on load ─────────────────────────────────────── */
+const heroText     = document.getElementById('hero-text');
+const heroModelCol = document.getElementById('hero-model-col');
+
+function revealHero() {
+  requestAnimationFrame(() => {
+    heroText.classList.add('is-revealed');
+    heroModelCol.classList.add('is-revealed');
+  });
+}
+
+// Reveal after a short delay to let fonts settle
+if (document.readyState === 'complete') {
+  setTimeout(revealHero, 80);
+} else {
+  window.addEventListener('load', () => setTimeout(revealHero, 80));
+}
+
+/* ─── model-viewer interactions ─────────────────────────── */
 const viewer   = document.getElementById('mini-viewer');
 const hint     = document.getElementById('model-hint');
 const errorEl  = document.getElementById('model-error');
-const statusEl = document.getElementById('status');
 const escapeEl = document.getElementById('model-scroll-escape');
 
-/* Dismiss hint on first orbit or after 5s */
+// Dismiss hint on first camera interaction or after 5s
 let hintDone = false;
 function dismissHint() {
   if (hintDone) return;
@@ -520,17 +739,13 @@ function dismissHint() {
 viewer.addEventListener('camera-change', dismissHint, { once: true });
 setTimeout(dismissHint, 5000);
 
-/* Load / error */
-viewer.addEventListener('load', () => {
-  if (statusEl) statusEl.textContent = '✓ Loaded';
-});
+// If HDRI fails to load, fall back gracefully (gradient bg stays)
 viewer.addEventListener('error', () => {
   errorEl.classList.add('visible');
-  if (statusEl) statusEl.textContent = '✗ Error — check GLB path';
-  console.error('[model-viewer] Failed to load:', viewer.src);
+  console.warn('[model-viewer] GLB load error:', viewer.src);
 });
 
-/* Mobile scroll escape */
+/* ─── Mobile scroll passthrough ─────────────────────────── */
 if (escapeEl) {
   let startY = 0;
   escapeEl.addEventListener('touchstart', e => {
