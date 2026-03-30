@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hero 3D — Prototype</title>
+
+<!--
+  ISOLATED PROTOTYPE: Hero section with 3D model viewer.
+  No scroll system, no carousel, no other state.
+  Test this file standalone before merging into index.html.
+
+  DEPENDENCY: model-viewer web component (Google).
+  Handles: touch, rotation, AR, lazy loading, accessibility.
+  Drop-in: one script tag, one custom element.
+  GLB file: minisite.glb served from GitHub Pages root.
+-->
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+<style>
+/* ── Tokens (subset from main site) ── */
+:root {
+  --c-bg:        #080909;
+  --c-primary:   #edeeed;
+  --c-secondary: #96a8aa;
+  --c-accent:    #5ba0a4;
+  --c-rule:      rgba(255,255,255,0.055);
+  --f-condensed: 'D-DIN Condensed', sans-serif;
+  --f-body:      'D-DIN', sans-serif;
+  --ease:        cubic-bezier(0.16, 1, 0.3, 1);
+  --pad:         clamp(24px, 4vw, 48px);
+  --sp-1: 8px; --sp-2: 16px; --sp-3: 24px; --sp-4: 32px;
+  --sp-5: 40px; --sp-6: 48px; --sp-7: 64px; --sp-8: 80px;
+}
+
+@font-face {
+  font-family: 'D-DIN';
+  src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/D-DIN.otf') format('opentype');
+  font-weight: 100 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/D-DIN-Italic.otf') format('opentype');
+  font-weight: 100 600; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/D-DINCondensed.otf') format('opentype');
+  font-weight: 100 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/D-DINCondensed-Bold.otf') format('opentype');
+  font-weight: 700 900; font-style: normal; font-display: swap;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--c-bg);
+  color: var(--c-primary);
+  font-family: var(--f-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ════════════════════════════════════════
+   HERO LAYOUT
+   Two-column grid: text left, model right.
+   On mobile: stacks vertically, model below text.
+════════════════════════════════════════ */
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  align-items: center;
+  padding: var(--sp-8) var(--pad) var(--sp-6);
+  gap: var(--sp-6);
+  overflow: hidden;
+}
+
+/* Ambient bg image — sits behind both columns */
+.hero-bg {
+  position: absolute; inset: 0;
+  background-image: url('https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png');
+  background-size: cover;
+  background-position: center 30%;
+  opacity: 0.06;               /* very subtle — model is the hero now */
+  filter: saturate(0.3);
+  pointer-events: none;
+}
+
+/* Bottom fade so it blends into ticker below */
+.hero-fade {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 30%;
+  background: linear-gradient(to top, var(--c-bg) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ── LEFT: Text column ── */
+.hero-text {
+  position: relative; z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  /* Animate in */
+  opacity: 0;
+  transform: translateY(24px);
+  animation: textReveal 1s var(--ease) 0.3s forwards;
+}
+@keyframes textReveal {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-eyebrow {
+  font-family: var(--f-condensed);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--c-accent);
+  display: flex; align-items: center; gap: var(--sp-2);
+}
+.hero-eyebrow-line {
+  display: block; width: var(--sp-4); height: 1px; background: var(--c-accent);
+}
+
+.hero-h1 {
+  font-family: var(--f-condensed);
+  font-size: clamp(56px, 8vw, 124px);
+  font-weight: 100;
+  letter-spacing: -0.04em;
+  line-height: 0.88;
+  text-transform: uppercase;
+  color: var(--c-primary);
+}
+.hero-h1 em {
+  font-style: italic;
+  color: var(--c-accent);
+  letter-spacing: -0.03em;
+}
+
+.hero-sub {
+  font-family: var(--f-body);
+  font-size: 14px; font-weight: 300;
+  letter-spacing: 0.04em; line-height: 1.75;
+  text-transform: uppercase;
+  color: var(--c-primary); opacity: 0.5;
+  max-width: 340px;
+}
+
+.hero-meta {
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+.hero-avail {
+  font-family: var(--f-condensed);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--c-accent);
+  display: flex; align-items: center; gap: var(--sp-1);
+}
+.hero-avail-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--c-accent);
+  box-shadow: 0 0 8px rgba(91,160,164,.8);
+  animation: pulse 2.5s ease infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; box-shadow:0 0 8px rgba(91,160,164,.8); }
+  50%      { opacity:.35; box-shadow:0 0 0 rgba(91,160,164,0); }
+}
+
+/* Scroll hint line */
+.hero-scroll {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  font-family: var(--f-condensed);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--c-secondary);
+}
+.hero-scroll-line {
+  width: 1px; height: 48px;
+  background: linear-gradient(to bottom, var(--c-secondary), transparent);
+  animation: scrollPulse 2.2s ease infinite;
+}
+@keyframes scrollPulse {
+  0%,100% { opacity:.4; transform: scaleY(1); }
+  50%      { opacity:.9; transform: scaleY(.6); }
+}
+
+/* ── RIGHT: model-viewer column ── */
+.hero-model-col {
+  position: relative; z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Animate in slightly after text */
+  opacity: 0;
+  animation: modelReveal 1.2s var(--ease) 0.55s forwards;
+}
+@keyframes modelReveal {
+  to { opacity: 1; }
+}
+
+/*
+  model-viewer sizing strategy:
+  - Fixed aspect ratio container so it never collapses
+  - Full width of its column, capped height so it fits viewport
+  - touch-action: none on the viewer itself prevents page scroll
+    from being swallowed by the 3D interaction on mobile
+*/
+.model-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  /* Tall enough to feel cinematic, short enough to not overflow */
+  height: clamp(340px, 60vh, 720px);
+}
+
+model-viewer {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+
+  /* Remove model-viewer's default slot UI */
+  --progress-bar-color: var(--c-accent);
+  --progress-bar-height: 1px;
+  --poster-color: transparent;
+
+  /* model-viewer captures pointer events for orbit.
+     On mobile this competes with page scroll.
+     Setting touch-action: none on the element forces
+     model-viewer to handle all touches (correct for orbit),
+     but we add a thin overlay on mobile to give
+     the user a scroll escape zone — see below. */
+}
+
+/* Technical drawing crosshair overlay — pure decoration */
+.model-reticle {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  /* Corner brackets */
+  --br: 16px;
+  --bw: 1px;
+  --bc: rgba(91,160,164,.22);
+}
+.model-reticle::before,
+.model-reticle::after {
+  content: '';
+  position: absolute;
+  width: var(--br); height: var(--br);
+  border-color: var(--bc);
+  border-style: solid;
+}
+.model-reticle::before {
+  top: 0; left: 0;
+  border-width: var(--bw) 0 0 var(--bw);
+}
+.model-reticle::after {
+  bottom: 0; right: 0;
+  border-width: 0 var(--bw) var(--bw) 0;
+}
+
+/* Corner labels — technical drawing language */
+.model-label {
+  position: absolute;
+  font-family: var(--f-condensed);
+  font-size: 8px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(91,160,164,.35);
+  pointer-events: none;
+}
+.model-label-tl { top: 6px; left: 10px; }
+.model-label-tr { top: 6px; right: 10px; text-align: right; }
+.model-label-br { bottom: 6px; right: 10px; text-align: right; }
+
+/* Drag hint — fades out after first interaction */
+.model-hint {
+  position: absolute;
+  bottom: var(--sp-3); left: 50%; transform: translateX(-50%);
+  font-family: var(--f-condensed);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(91,160,164,.45);
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.model-hint-icon {
+  width: 14px; height: 14px;
+  border: 1px solid rgba(91,160,164,.4); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; line-height: 1;
+}
+.model-hint.hidden { opacity: 0; }
+
+/*
+  MOBILE SCROLL ESCAPE:
+  On touch devices, model-viewer grabs all touch events.
+  This thin strip at the bottom of the model column
+  is a touch-through area that lets users scroll past.
+  It's invisible but sits above model-viewer in z-order.
+*/
+.model-scroll-escape {
+  display: none; /* hidden on desktop */
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 48px; z-index: 10;
+  /* No background — invisible */
+}
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    align-items: flex-start;
+    padding-top: calc(var(--sp-8) + 20px);
+    gap: var(--sp-4);
+    min-height: 100svh;
+  }
+
+  .hero-h1 { font-size: clamp(52px, 14vw, 88px); }
+  .hero-sub { max-width: 100%; }
+  .hero-scroll { display: none; } /* hide on mobile — no room */
+
+  .hero-model-col {
+    /* On mobile the model sits below text */
+    justify-content: center;
+  }
+  .model-wrap {
+    width: 100%;
+    max-width: 100%;
+    height: clamp(260px, 52vw, 440px);
+  }
+
+  /* Show scroll escape strip on touch */
+  .model-scroll-escape { display: block; }
+}
+
+@media (max-width: 480px) {
+  .hero { padding: calc(var(--sp-7) + 20px) var(--pad) var(--sp-5); gap: var(--sp-3); }
+  .hero-h1 { font-size: clamp(44px, 13vw, 72px); }
+  .model-wrap { height: clamp(220px, 56vw, 360px); }
+}
+
+/* ── Loading state for model ── */
+model-viewer::part(default-progress-bar) {
+  /* Restyle the built-in progress bar */
+  background: var(--c-accent);
+  height: 1px;
+}
+
+/* Error state */
+.model-error {
+  display: none;
+  position: absolute; inset: 0;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: var(--sp-2);
+  font-family: var(--f-condensed);
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(91,160,164,.4);
+  text-align: center;
+}
+.model-error.visible { display: flex; }
+
+/* ════════════════════════════════════════
+   DEV HELPER: visible at bottom of prototype
+════════════════════════════════════════ */
+.proto-info {
+  padding: var(--sp-4) var(--pad);
+  border-top: 1px solid rgba(255,255,255,.05);
+  font-family: var(--f-condensed);
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(150,168,170,.3);
+  display: flex; gap: var(--sp-4); flex-wrap: wrap;
+}
+.proto-info strong { color: rgba(91,160,164,.5); }
+</style>
+</head>
+<body>
+
+<section class="hero" aria-labelledby="hero-h1">
+
+  <!-- Ambient background — very faint, model is the focus -->
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-fade" aria-hidden="true"></div>
+
+  <!-- ── LEFT: Text ── -->
+  <div class="hero-text">
+
+    <p class="hero-eyebrow" aria-hidden="true">
+      <span class="hero-eyebrow-line"></span>
+      Industrial Designer
+    </p>
+
+    <h1 class="hero-h1" id="hero-h1">
+      <span class="line">Imagining</span>
+      <span class="line">your</span>
+      <span class="line"><em>future,</em></span>
+      <span class="line">today.</span>
+    </h1>
+
+    <p class="hero-sub">
+      CAD modeling, form development, and product visualization —
+      from first sketch to something you can hold.
+    </p>
+
+    <div class="hero-meta">
+      <div class="hero-avail" aria-label="Available for work">
+        <div class="hero-avail-dot" aria-hidden="true"></div>
+        Available
+      </div>
+    </div>
+
+    <div class="hero-scroll" aria-hidden="true">
+      <div class="hero-scroll-line"></div>
+      Scroll
+    </div>
+
+  </div>
+
+  <!-- ── RIGHT: 3D Model ── -->
+  <div class="hero-model-col">
+    <div class="model-wrap">
+
+      <!--
+        model-viewer attributes:
+        - src: path to GLB (relative — same origin as index.html on GitHub Pages)
+        - camera-controls: enables mouse/touch orbit
+        - auto-rotate: slow spin on load, stops when user interacts
+        - auto-rotate-delay: wait 1s before starting spin
+        - rotation-per-second: slow, cinematic speed
+        - environment-image: "neutral" gives clean studio lighting
+        - shadow-intensity: subtle ground shadow
+        - exposure: slightly boosted to match the dark site
+        - camera-orbit: initial camera angle (azimuth, elevation, radius)
+        - min/max-camera-orbit: constrain vertical rotation
+        - interaction-prompt: "none" — we have our own hint
+        - ar: enable AR button on supported mobile devices
+        - loading: "eager" since it's above the fold
+      -->
+      <model-viewer
+        id="mini-viewer"
+        src="https://kieranjgreen18-cyber.github.io/KieranGreen/minisite.glb"
+        alt="3D model of Kieran Green's Mini Clubman — interactive, drag to rotate"
+        camera-controls
+        auto-rotate
+        auto-rotate-delay="800"
+        rotation-per-second="12deg"
+        environment-image="neutral"
+        shadow-intensity="0.6"
+        shadow-softness="1"
+        exposure="0.85"
+        camera-orbit="25deg 80deg 105%"
+        min-camera-orbit="auto 30deg auto"
+        max-camera-orbit="auto 150deg auto"
+        interaction-prompt="none"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        loading="eager"
+        tone-mapping="neutral"
+      ></model-viewer>
+
+      <!-- Technical drawing reticle overlay -->
+      <div class="model-reticle" aria-hidden="true">
+        <span class="model-label model-label-tl">3D / MINI CLUBMAN</span>
+        <span class="model-label model-label-tr">RHINO 3D · FDM</span>
+        <span class="model-label model-label-br">DRAG TO ROTATE</span>
+      </div>
+
+      <!-- Drag hint — JS hides after first interaction -->
+      <div class="model-hint" id="model-hint" aria-hidden="true">
+        <div class="model-hint-icon">↻</div>
+        Drag to rotate
+      </div>
+
+      <!-- Mobile scroll escape strip (invisible, lets touch pass through) -->
+      <div class="model-scroll-escape" id="model-scroll-escape" aria-hidden="true"></div>
+
+      <!-- Error fallback -->
+      <div class="model-error" id="model-error" aria-hidden="true">
+        <span>Model unavailable</span>
+        <span style="opacity:.5;font-size:9px;">Check GLB path</span>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- Dev info strip -->
+<div class="proto-info">
+  <span><strong>File:</strong> minisite.glb</span>
+  <span><strong>Renderer:</strong> model-viewer 3.5.0</span>
+  <span><strong>Status:</strong> <span id="status">Loading…</span></span>
+  <span><strong>Note:</strong> Remove .proto-info before merging to index.html</span>
+</div>
+
+<script>
+'use strict';
+
+const viewer     = document.getElementById('mini-viewer');
+const hint       = document.getElementById('model-hint');
+const errorEl    = document.getElementById('model-error');
+const statusEl   = document.getElementById('status');
+const escapeEl   = document.getElementById('model-scroll-escape');
+
+/* ── Hide drag hint after first interaction ── */
+let hintDismissed = false;
+function dismissHint() {
+  if (hintDismissed) return;
+  hintDismissed = true;
+  hint.classList.add('hidden');
+}
+viewer.addEventListener('camera-change', dismissHint, { once: true });
+// Also dismiss after 5s if no interaction
+setTimeout(dismissHint, 5000);
+
+/* ── Model load / error feedback ── */
+viewer.addEventListener('load', () => {
+  if (statusEl) statusEl.textContent = '✓ Loaded';
+  errorEl.classList.remove('visible');
+});
+viewer.addEventListener('error', () => {
+  errorEl.classList.add('visible');
+  viewer.style.opacity = '0';
+  if (statusEl) statusEl.textContent = '✗ Error — check GLB path';
+  console.error('[model-viewer] Failed to load:', viewer.src);
+});
+
+/*
+  ── Mobile scroll escape ──
+  model-viewer captures all touch events for orbit.
+  The escape strip at the bottom passes touches to the
+  page scroll handler instead, giving users a way to
+  scroll past the model without orbiting it.
+
+  Implementation: listen on the strip, call scrollBy()
+  manually so the page responds to the vertical swipe.
+*/
+if (escapeEl) {
+  let startY = 0;
+  escapeEl.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  escapeEl.addEventListener('touchmove', e => {
+    const dy = startY - e.touches[0].clientY;
+    window.scrollBy({ top: dy * 1.2, behavior: 'auto' });
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+}
+
+/*
+  ── Reduce auto-rotate speed after user interacts ──
+  Feel: slow cinematic spin on load → stops when user grabs it
+  model-viewer handles this automatically via camera-controls.
+  No extra JS needed.
+*/
+</script>
+
+</body>
+</html>
