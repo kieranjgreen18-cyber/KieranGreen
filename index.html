@@ -1607,6 +1607,7 @@ const smoother = (() => {
   const listeners = [];
 
   const ease = 0.085; // responsive yet silky; raise toward 0.12 for crisper, lower toward 0.06 for dreamier
+  const easeSnap = 0.11; // slightly punchier during card-to-card snaps
 
   function tick() {
     const diff = target - current;
@@ -1618,7 +1619,8 @@ const smoother = (() => {
       programmatic = false;
       return;
     }
-    current += diff * ease;
+    const activeEase = snapCooldown ? easeSnap : ease;
+    current += diff * activeEase;
     window.scrollTo(0, current);
     listeners.forEach(fn => fn(current));
     requestAnimationFrame(tick);
@@ -1630,16 +1632,78 @@ const smoother = (() => {
     requestAnimationFrame(tick);
   }
 
+  /* ── COSMOS SNAP: collect all snap targets (hero + each proj + ticker boundary) ── */
+  function buildSnapTargets() {
+    const targets = [];
+    const hero = document.querySelector('.hero');
+    if (hero) targets.push({ el: hero, top: 0 });
+    document.querySelectorAll('.proj').forEach(proj => {
+      targets.push({ el: proj, top: Math.round(proj.getBoundingClientRect().top + window.scrollY) });
+    });
+    return targets;
+  }
+  let snapTargets = buildSnapTargets();
+  window.addEventListener('resize', () => { setTimeout(() => { snapTargets = buildSnapTargets(); }, 200); }, { passive: true });
+
+  /* Throttle: one snap per gesture — ignore rapid follow-on events */
+  let snapCooldown = false;
+  const SNAP_COOLDOWN_MS = 820; // ~duration for the eased scroll to finish
+
+  /* Determine whether scroll position is currently inside the projects zone */
+  function getSnapIndex(y) {
+    // Which snap target's viewport we're closest to
+    let best = 0, bestDist = Infinity;
+    snapTargets.forEach((t, i) => {
+      const dist = Math.abs(t.top - y);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    return best;
+  }
+
+  function isInSnapZone(y) {
+    if (snapTargets.length < 2) return false;
+    const firstProj = snapTargets[1]; // index 0 is hero
+    const lastProj  = snapTargets[snapTargets.length - 1];
+    // Active inside snap zone: from start of first proj to bottom of last proj
+    const zoneStart = firstProj.top - window.innerHeight * 0.3;
+    const zoneEnd   = lastProj.top  + window.innerHeight * 0.85;
+    return y >= zoneStart && y <= zoneEnd;
+  }
+
   window.addEventListener('wheel', e => {
     e.preventDefault();
     const delta = e.deltaMode === 1 ? e.deltaY * 32
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
-    target = Math.max(0, Math.min(
-      document.body.scrollHeight - window.innerHeight,
-      target + delta
-    ));
-    startTick();
+
+    if (isInSnapZone(target) && !snapCooldown) {
+      const dir = delta > 0 ? 1 : -1;
+      const currentIdx = getSnapIndex(target);
+      const nextIdx = Math.max(0, Math.min(snapTargets.length - 1, currentIdx + dir));
+
+      if (nextIdx === currentIdx) {
+        // At boundary — allow natural scroll out of the zone
+        target = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, target + delta));
+        startTick();
+        return;
+      }
+
+      // Snap to the next card
+      target = snapTargets[nextIdx].top;
+      target = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, target));
+      startTick();
+
+      // Cooldown: block further snaps until this one settles
+      snapCooldown = true;
+      setTimeout(() => { snapCooldown = false; }, SNAP_COOLDOWN_MS);
+    } else {
+      // Normal smooth scroll outside snap zone (or during cooldown allow through)
+      target = Math.max(0, Math.min(
+        document.body.scrollHeight - window.innerHeight,
+        target + delta
+      ));
+      startTick();
+    }
   }, { passive: false });
 
   // Sync native scroll position (touch, keyboard, anchor clicks not intercepted)
@@ -1775,13 +1839,22 @@ onReady(() => {
 /* bfcache restore — re-reveal page when navigating back */
 window.addEventListener('pageshow', e => {
   if (e.persisted) {
-    // Kill any in-progress veil transition and snap to hidden instantly
+    // Immediately hide the veil with no transition so no teal flash appears
+    veil.style.transition = 'none';
+    veil.style.clipPath = 'inset(0 100% 0 0)';
+    veil.style.pointerEvents = 'none';
+    // Sync class state without triggering any CSS transitions
     veil.classList.remove('gone');
     veil.classList.add('instant');
     document.body.classList.add('ready');
-    // Force a reflow so 'instant' takes hold, then clean up
+    // Force reflow to commit inline styles, then restore class-driven state
     void veil.offsetWidth;
     veil.classList.remove('instant');
+    // Re-enable CSS transitions after one frame so future navigations animate normally
+    requestAnimationFrame(() => {
+      veil.style.transition = '';
+      veil.style.clipPath = '';
+    });
   }
 });
 
