@@ -290,38 +290,19 @@ model-viewer {
   display: block;
   width: 100%;
   height: 100%;
-  /* Dark-to-asphalt ramp — visible only if HDRI is loading */
-  background: linear-gradient(
-    to bottom,
-    #07080a   0%,
-    #101214  12%,
-    #1e2022  28%,
-    #323530  46%,
-    #434240  58%,
-    #525050  72%,
-    #5e5c59  85%,
-    #686663 100%
-  );
+  /* Transparent — HDRI skybox is the background */
+  background: transparent;
   --progress-bar-color: var(--c-accent);
   --progress-bar-height: 1px;
-  --poster-color: #101214;
+  --poster-color: #07080a;
 }
 
 /*
-  CINEMATIC VIGNETTE OVERLAY — all four edges fade to site bg.
-
-  This is the key upgrade: instead of one rightward fade on
-  the text column, we apply a proper four-way vignette
-  directly on the model column using a layered gradient.
-
-  Each gradient handles one edge. The opacity falloffs use
-  a power-of-2 curve (0%, small %, then transparent) to
-  produce a smooth photographic vignette — not a hard edge.
-
-  Left edge: heaviest, since it meets the text column
-  Right edge: medium — blends off-screen
-  Top: moderate — blends into nav/dark sky
-  Bottom: moderate — blends into ticker / next section
+  LEFT-EDGE VIGNETTE ONLY.
+  The HDRI skybox is now the background — we keep sky/floor/road
+  fully visible. The only fade needed is left→black where the
+  model column meets the dark text column, so there's a seamless
+  transition instead of a hard cut.
 */
 .hero-model-col::before {
   content: '';
@@ -329,43 +310,18 @@ model-viewer {
   inset: 0;
   pointer-events: none;
   z-index: var(--z-overlay);
-  background:
-    /* Left edge — darkest (meets text column) */
-    linear-gradient(
-      to right,
-      var(--c-bg)              0%,
-      rgba(7,8,10,0.88)        4%,
-      rgba(7,8,10,0.55)        9%,
-      rgba(7,8,10,0.22)       16%,
-      transparent             28%
-    ),
-    /* Right edge */
-    linear-gradient(
-      to left,
-      var(--c-bg)              0%,
-      rgba(7,8,10,0.65)        4%,
-      rgba(7,8,10,0.28)        9%,
-      transparent             20%
-    ),
-    /* Top edge */
-    linear-gradient(
-      to bottom,
-      var(--c-bg)              0%,
-      rgba(7,8,10,0.72)        5%,
-      rgba(7,8,10,0.28)       11%,
-      transparent             22%
-    ),
-    /* Bottom edge */
-    linear-gradient(
-      to top,
-      var(--c-bg)              0%,
-      rgba(7,8,10,0.6)         4%,
-      rgba(7,8,10,0.2)         9%,
-      transparent             18%
-    );
+  background: linear-gradient(
+    to right,
+    var(--c-bg)           0%,
+    rgba(7,8,10,0.92)     3%,
+    rgba(7,8,10,0.65)     8%,
+    rgba(7,8,10,0.28)    16%,
+    rgba(7,8,10,0.06)    24%,
+    transparent          34%
+  );
 }
 
-/* ── Corner-crush vignette (extra depth at corners) ── */
+/* ── Subtle corner-crush vignette ── */
 .hero-model-col::after {
   content: '';
   position: absolute;
@@ -373,11 +329,11 @@ model-viewer {
   pointer-events: none;
   z-index: var(--z-overlay);
   background: radial-gradient(
-    ellipse 90% 85% at 62% 52%,
-    transparent 40%,
-    rgba(7,8,10,0.22) 65%,
-    rgba(7,8,10,0.55) 85%,
-    rgba(7,8,10,0.8)  100%
+    ellipse 85% 80% at 65% 52%,
+    transparent 45%,
+    rgba(7,8,10,0.12) 68%,
+    rgba(7,8,10,0.32) 88%,
+    rgba(7,8,10,0.55) 100%
   );
 }
 
@@ -475,13 +431,11 @@ model-viewer {
     height: clamp(280px, 58vw, 480px);
   }
 
-  /* On mobile, full 4-edge vignette */
+  /* On mobile: top + bottom fade only since it stacks vertically */
   .hero-model-col::before {
     background:
-      linear-gradient(to right,  var(--c-bg) 0%, rgba(7,8,10,0.55) 6%, transparent 16%),
-      linear-gradient(to left,   var(--c-bg) 0%, rgba(7,8,10,0.55) 6%, transparent 16%),
-      linear-gradient(to bottom, var(--c-bg) 0%, rgba(7,8,10,0.65) 7%, transparent 20%),
-      linear-gradient(to top,    var(--c-bg) 0%, rgba(7,8,10,0.55) 5%, transparent 14%);
+      linear-gradient(to bottom, var(--c-bg) 0%, rgba(7,8,10,0.5) 7%, transparent 18%),
+      linear-gradient(to top,    var(--c-bg) 0%, rgba(7,8,10,0.4) 5%, transparent 14%);
   }
 
   .model-scroll-escape { display: block; }
@@ -611,10 +565,11 @@ model-viewer::part(default-progress-bar) {
       auto-rotate
       auto-rotate-delay="800"
       rotation-per-second="7deg"
-      environment-image="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr"
-      shadow-intensity="1.6"
-      shadow-softness="0.85"
-      exposure="1.1"
+      skybox-image="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr"
+      skybox-height="1.2m"
+      shadow-intensity="2.0"
+      shadow-softness="0.7"
+      exposure="0.9"
       camera-orbit="25deg 78deg 110%"
       min-camera-orbit="auto 70deg auto"
       max-camera-orbit="auto 86deg auto"
@@ -693,10 +648,78 @@ function dismissHint() {
 viewer.addEventListener('camera-change', dismissHint, { once: true });
 setTimeout(dismissHint, 5000);
 
-// If HDRI fails to load, fall back gracefully (gradient bg stays)
 viewer.addEventListener('error', () => {
   errorEl.classList.add('visible');
   console.warn('[model-viewer] GLB load error:', viewer.src);
+});
+
+/*
+  AUTOMOTIVE PAINT MATERIAL OVERRIDE
+  After the GLB loads, walk every material and upgrade the
+  largest/most prominent ones to a deep british-racing-green
+  metallic clearcoat paint using the model-viewer materials API.
+
+  Strategy:
+  - Any material whose name suggests body panels (or the
+    single largest material if names aren't descriptive) gets
+    the full paint treatment.
+  - Glass materials keep their original settings.
+  - Everything else gets a subtle metallic lift so it reads
+    as a coherent manufactured object.
+
+  PBR values:
+  - baseColorFactor: deep green-black (like Goodwood Green / BRG)
+  - metallicFactor: 0.0 — automotive paint is dielectric, not metallic.
+    Real car paint gets its metallic flake look from roughness + clearcoat,
+    not from metallicFactor.
+  - roughnessFactor: 0.38 — semi-polished clearcoat
+  - KHR_materials_clearcoat extension:
+      clearcoatFactor: 1.0 — full clearcoat layer
+      clearcoatRoughnessFactor: 0.08 — mirror-smooth topcoat
+*/
+viewer.addEventListener('load', async () => {
+  await viewer.updateComplete;
+  const model = viewer.model;
+  if (!model) return;
+
+  const materials = model.materials;
+  if (!materials || materials.length === 0) return;
+
+  // Heuristic: skip anything named "glass", "window", "lens", "tyre", "rubber", "wheel"
+  const skipPattern = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
+  // Body panels: named "body", "paint", "panel", or index 0 if no names match
+  const bodyPattern  = /body|paint|panel|car|exterior|shell|chassis/i;
+
+  let bodyMatFound = false;
+
+  materials.forEach((mat, i) => {
+    const name = mat.name || '';
+    if (skipPattern.test(name)) return;
+
+    const pbr = mat.pbrMetallicRoughness;
+    if (!pbr) return;
+
+    if (bodyPattern.test(name) || (!bodyMatFound && i === 0)) {
+      bodyMatFound = true;
+      // Deep British Racing Green — dark, rich, slightly warm
+      pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
+      pbr.setMetallicFactor(0.0);
+      pbr.setRoughnessFactor(0.36);
+
+      // Clearcoat — requires the extension to be present in the GLB.
+      // If it's not, this is silently a no-op.
+      if (mat.extensions && mat.extensions.KHR_materials_clearcoat) {
+        const cc = mat.extensions.KHR_materials_clearcoat;
+        cc.clearcoatFactor        = 1.0;
+        cc.clearcoatRoughnessFactor = 0.06;
+      }
+    } else {
+      // Secondary surfaces: lift to a neutral dark plastic/metal
+      pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
+      pbr.setMetallicFactor(0.3);
+      pbr.setRoughnessFactor(0.55);
+    }
+  });
 });
 
 /* ─── Mobile scroll passthrough ─────────────────────────── */
