@@ -2,9 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- ── PRIMARY SEO ── -->
@@ -143,20 +140,15 @@
 </script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 <link rel="manifest" href="site.webmanifest">
-<!-- Three.js + MediaPipe for head-coupled perspective hero -->
+<!-- Three.js for head-coupled perspective hero -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous"></script>
-<script>
-/* Hoist MediaPipe globals — the tasks-vision bundle may namespace under mpTasksVision */
-(function(){
-  var t=0,iv=setInterval(function(){
-    var ns=window.mpTasksVision||window;
-    if(!window.FaceLandmarker&&ns.FaceLandmarker)window.FaceLandmarker=ns.FaceLandmarker;
-    if(!window.FilesetResolver&&ns.FilesetResolver)window.FilesetResolver=ns.FilesetResolver;
-    if((window.FaceLandmarker&&window.FilesetResolver)||++t>80)clearInterval(iv);
-  },150);
-})();
+<!-- MediaPipe: load as ES module, expose to window so classic scripts can use it -->
+<script type="module">
+import { FaceLandmarker, FilesetResolver }
+  from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js';
+window._MP = { FaceLandmarker, FilesetResolver };
+window.dispatchEvent(new Event('mediapipe-ready'));
 </script>
 <meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
@@ -2138,59 +2130,54 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
 
 /* ══════════════════════════════════════════════════════════════════
    OFF-AXIS HEAD-COUPLED PERSPECTIVE HERO
-   MediaPipe FaceLandmarker + Three.js GLB model in hero
+   Three.js GLB + MediaPipe FaceLandmarker
 ══════════════════════════════════════════════════════════════════ */
 (function() {
 
   /* ── CONFIG ── */
-  const HERO_IMAGE_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png';
-  const STRENGTH = { x: 2.8, y: 1.8 };
-  const SMOOTH   = 0.07;
-
-  const GLB_ENABLED   = true;
-  const GLB_MODEL_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/minisite.glb';
-  const GLB_SCALE     = 1.0;
-  const GLB_X         = 1.8;
-  const GLB_Y         = -0.3;
-  const GLB_Z         = 1.2;
+  const GLB_URL      = 'https://kieranjgreen18-cyber.github.io/KieranGreen/minisite.glb';
+  const HERO_IMG_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png';
+  const STRENGTH     = { x: 2.8, y: 1.8 };
+  const SMOOTH       = 0.07;
+  const GLB_SCALE    = 1.0;
+  const GLB_X = 1.8, GLB_Y = -0.3, GLB_Z = 1.2;
+  const SPIN_SPEED   = 0.004;
+  const IDLE_MS      = 2500;
 
   /* ── STATE ── */
-  const head = { x: 0, y: 0 };
-  const raw  = { x: 0, y: 0 };
+  const head = { x: 0, y: 0 }, raw = { x: 0, y: 0 };
+  let useCamera = false, mouseFallback = false;
+  let faceLandmarker = null, videoEl = null;
+  let renderer, scene, threeCamera;
+  let layers = [], glbModel = null;
+  let heroVisible = true, lastDetectTime = 0;
+  let autoSpinY = 0, lastInputTime = 0;
+
   const promptEl   = document.getElementById('hero-cam-prompt');
   const trackingEl = document.getElementById('hcp-tracking');
   const allowBtn   = document.getElementById('hcp-allow');
   const denyBtn    = document.getElementById('hcp-deny');
 
-  let useCamera      = false;
-  let mouseFallback  = false;
-  let faceLandmarker = null;
-  let videoEl        = null;
-  let renderer, scene, threeCamera;
-  let layers         = [];
-  let glbModel       = null;
-  let heroVisible    = true;
-  let lastDetectTime = 0;
-  // 360° auto-spin when idle
-  let autoSpinY      = 0;
-  let lastInputTime  = 0;
-  const SPIN_SPEED   = 0.004;
-  const IDLE_MS      = 2500;
+  /* ── TINY STATUS DIV for live debug (remove after confirmed working) ── */
+  const dbg = document.createElement('div');
+  dbg.id = 'hero-dbg';
+  dbg.style.cssText = 'position:fixed;bottom:8px;right:8px;z-index:99999;font:10px/1.4 monospace;color:#5ba0a4;background:rgba(0,0,0,.7);padding:6px 10px;pointer-events:none;max-width:320px;';
+  document.body.appendChild(dbg);
+  function log(msg) { dbg.innerHTML = (dbg.innerHTML + '<br>' + msg).split('<br>').slice(-6).join('<br>'); }
 
   /* ────────────────────────────────
-     THREE.JS SCENE
+     THREE.JS INIT
   ──────────────────────────────── */
   function initThree() {
-    if (typeof THREE === 'undefined') { console.error('[off-axis] THREE not loaded'); return; }
+    if (typeof THREE === 'undefined') { log('ERROR: THREE not loaded'); return; }
     const canvas = document.getElementById('hero-3d');
-    if (!canvas) { console.error('[off-axis] #hero-3d canvas missing'); return; }
-
+    if (!canvas) { log('ERROR: #hero-3d missing'); return; }
     const hero = document.getElementById('top');
     const W = hero.offsetWidth, H = hero.offsetHeight;
 
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setSize(W, H, false);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
@@ -2207,32 +2194,25 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
     const rim = new THREE.DirectionalLight(0xffffff, 0.3);
     rim.position.set(0, -3, -4); scene.add(rim);
 
-    const loader = new THREE.TextureLoader();
-    loader.crossOrigin = 'anonymous';
-    loader.load(HERO_IMAGE_URL, tex => {
+    new THREE.TextureLoader().load(HERO_IMG_URL, tex => {
       tex.minFilter = THREE.LinearFilter;
       tex.encoding = THREE.sRGBEncoding;
       buildLayers(tex);
     }, undefined, () => buildLayers(null));
 
-    if (GLB_ENABLED) loadGLB();
+    loadGLB();
     renderLoop();
+    log('THREE init OK');
   }
 
   function buildLayers(heroTex) {
     [
-      { z: -5,   scale: 3.2, color: 0x090c0c, opacity: 1.0,  tex: null    },
-      { z: -2.5, scale: 2.2, color: 0x0d1214, opacity: 0.7,  tex: null    },
-      { z: -0.8, scale: 1.5, color: 0xffffff, opacity: 0.85, tex: heroTex },
+      { z: -5,   s: 3.2, col: 0x090c0c, op: 1.0,  tex: null    },
+      { z: -2.5, s: 2.2, col: 0x0d1214, op: 0.7,  tex: null    },
+      { z: -0.8, s: 1.5, col: 0xffffff, op: 0.85, tex: heroTex },
     ].forEach(d => {
-      const geo = new THREE.PlaneGeometry(threeCamera.aspect * d.scale * 5, d.scale * 5);
-      const mat = new THREE.MeshBasicMaterial({
-        color: d.tex ? 0xffffff : d.color,
-        map: d.tex || null,
-        transparent: true,
-        opacity: d.opacity,
-        depthWrite: false,
-      });
+      const mat = new THREE.MeshBasicMaterial({ color: d.tex ? 0xffffff : d.col, map: d.tex||null, transparent:true, opacity:d.op, depthWrite:false });
+      const geo = new THREE.PlaneGeometry(threeCamera.aspect * d.s * 5, d.s * 5);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.z = d.z;
       scene.add(mesh);
@@ -2241,91 +2221,59 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   /* ────────────────────────────────
-     PLACE MODEL (shared by GLB + fallback)
+     PLACE MODEL
   ──────────────────────────────── */
   function placeModel(obj) {
     glbModel = obj;
     const box = new THREE.Box3().setFromObject(glbModel);
-    const centre = new THREE.Vector3();
-    box.getCenter(centre);
-    glbModel.position.sub(centre);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    glbModel.scale.setScalar((2.2 / maxDim) * GLB_SCALE);
+    const c = new THREE.Vector3(); box.getCenter(c); glbModel.position.sub(c);
+    const s = new THREE.Vector3(); box.getSize(s);
+    glbModel.scale.setScalar((2.2 / Math.max(s.x, s.y, s.z)) * GLB_SCALE);
     const box2 = new THREE.Box3().setFromObject(glbModel);
-    const c2 = new THREE.Vector3();
-    box2.getCenter(c2);
-    glbModel.position.sub(c2);
+    const c2 = new THREE.Vector3(); box2.getCenter(c2); glbModel.position.sub(c2);
     glbModel.position.set(GLB_X, GLB_Y, GLB_Z);
-    glbModel.traverse(child => {
-      if (child.isMesh && child.material) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m => { m.envMapIntensity = 1.0; m.needsUpdate = true; });
+    glbModel.traverse(ch => {
+      if (ch.isMesh && ch.material) {
+        (Array.isArray(ch.material) ? ch.material : [ch.material])
+          .forEach(m => { m.envMapIntensity = 1.0; m.needsUpdate = true; });
       }
     });
     scene.add(glbModel);
-    console.log('[off-axis] Model placed in scene');
+    log('model placed OK');
   }
 
   /* ────────────────────────────────
      PROCEDURAL CAR FALLBACK
-     Shown when minisite.glb cannot be fetched
   ──────────────────────────────── */
   function buildProceduralCar() {
-    console.log('[off-axis] Building procedural car fallback');
+    log('GLB unavailable — procedural car');
     const g = new THREE.Group();
-    const mB = new THREE.MeshStandardMaterial({ color: 0x1a2020, metalness: 0.65, roughness: 0.3 });
-    const mA = new THREE.MeshStandardMaterial({ color: 0x5ba0a4, metalness: 0.4,  roughness: 0.4 });
-    const mG = new THREE.MeshStandardMaterial({ color: 0x8eccd0, metalness: 0.1,  roughness: 0.05, transparent: true, opacity: 0.5 });
-    const mC = new THREE.MeshStandardMaterial({ color: 0xb0b8b8, metalness: 0.95, roughness: 0.08 });
-    const mT = new THREE.MeshStandardMaterial({ color: 0x111414, roughness: 0.9 });
-    const mW = new THREE.MeshStandardMaterial({ color: 0x2a3535, metalness: 0.7,  roughness: 0.3 });
-    const add = (geo, mat, px, py, pz, rx, ry, rz) => {
-      const m = new THREE.Mesh(geo, mat);
-      if (px!==undefined) m.position.set(px,py,pz);
-      if (rx!==undefined) m.rotation.set(rx,ry,rz);
-      g.add(m); return m;
+    const mB = new THREE.MeshStandardMaterial({ color:0x1a2020, metalness:0.65, roughness:0.3 });
+    const mA = new THREE.MeshStandardMaterial({ color:0x5ba0a4, metalness:0.4,  roughness:0.4 });
+    const mG = new THREE.MeshStandardMaterial({ color:0x8eccd0, metalness:0.1,  roughness:0.05, transparent:true, opacity:0.5 });
+    const mC = new THREE.MeshStandardMaterial({ color:0xb0b8b8, metalness:0.95, roughness:0.08 });
+    const mT = new THREE.MeshStandardMaterial({ color:0x111414, roughness:0.9 });
+    const mW = new THREE.MeshStandardMaterial({ color:0x2a3535, metalness:0.7,  roughness:0.3 });
+    const mk = (geo,mat,px=0,py=0,pz=0,rx=0,ry=0,rz=0) => {
+      const m=new THREE.Mesh(geo,mat); m.position.set(px,py,pz); m.rotation.set(rx,ry,rz); g.add(m);
     };
-    // Body slab
-    add(new THREE.BoxGeometry(2.1, 0.52, 0.90), mB, 0, -0.04, 0);
-    // Cabin
-    add(new THREE.BoxGeometry(1.12, 0.46, 0.84), mB, -0.06, 0.47, 0);
-    // Windscreen
-    add(new THREE.BoxGeometry(0.04, 0.38, 0.76), mG, -0.54, 0.45, 0, 0, 0, -0.37);
-    // Rear screen
-    add(new THREE.BoxGeometry(0.04, 0.38, 0.76), mG,  0.50, 0.45, 0, 0, 0,  0.37);
-    // Side windows
-    [-0.42, 0.42].forEach(z => add(new THREE.BoxGeometry(0.94, 0.30, 0.03), mG, -0.06, 0.47, z));
-    // Bonnet crease
-    add(new THREE.BoxGeometry(0.80, 0.04, 0.05), mA, 0.62, 0.20, 0);
-    // Grille box
-    add(new THREE.BoxGeometry(0.07, 0.30, 0.58), mA, 1.05, -0.03, 0);
-    // Headlights
-    [0.30, -0.30].forEach(z => {
-      const h = add(new THREE.CylinderGeometry(0.085, 0.085, 0.05, 20), mC, 1.06, 0.06, z);
-      h.rotation.z = Math.PI / 2;
-    });
-    // Rear panel
-    add(new THREE.BoxGeometry(0.07, 0.24, 0.58), mC, -1.06, 0.01, 0);
-    // Sills
-    [0.45, -0.45].forEach(z => add(new THREE.BoxGeometry(1.90, 0.10, 0.06), mA, 0, -0.27, z));
-    // Roof rack
-    add(new THREE.BoxGeometry(0.88, 0.028, 0.80), mC, -0.06, 0.71, 0);
-    [0.34, -0.34].forEach(x => add(new THREE.BoxGeometry(0.04, 0.06, 0.80), mC, -0.06+x, 0.69, 0));
-    // Wheels
-    [[0.64,-0.31,0.48],[0.64,-0.31,-0.48],[-0.64,-0.31,0.48],[-0.64,-0.31,-0.48]].forEach(([wx,wy,wz]) => {
-      const tyre = new THREE.Mesh(new THREE.CylinderGeometry(0.225, 0.225, 0.185, 28), mT);
-      tyre.rotation.x = Math.PI/2; tyre.position.set(wx,wy,wz); g.add(tyre);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.195, 14), mW);
-      rim.rotation.x = Math.PI/2; rim.position.set(wx,wy,wz); g.add(rim);
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.21, 10), mC);
-      hub.rotation.x = Math.PI/2; hub.position.set(wx,wy,wz); g.add(hub);
-      for (let i=0;i<5;i++){
-        const sp = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.196, 0.175), mC);
-        sp.rotation.x = Math.PI/2; sp.rotation.z = (i/5)*Math.PI;
-        sp.position.set(wx,wy,wz); g.add(sp);
-      }
+    mk(new THREE.BoxGeometry(2.1,0.52,0.90), mB, 0,-0.04,0);
+    mk(new THREE.BoxGeometry(1.12,0.46,0.84), mB, -0.06,0.47,0);
+    mk(new THREE.BoxGeometry(0.04,0.38,0.76), mG, -0.54,0.45,0, 0,0,-0.37);
+    mk(new THREE.BoxGeometry(0.04,0.38,0.76), mG,  0.50,0.45,0, 0,0, 0.37);
+    [-0.42,0.42].forEach(z=>mk(new THREE.BoxGeometry(0.94,0.30,0.03),mG,-0.06,0.47,z));
+    mk(new THREE.BoxGeometry(0.80,0.04,0.05), mA, 0.62,0.20,0);
+    mk(new THREE.BoxGeometry(0.07,0.30,0.58), mA, 1.05,-0.03,0);
+    [0.30,-0.30].forEach(z=>mk(new THREE.CylinderGeometry(0.085,0.085,0.05,20),mC,1.06,0.06,z,0,0,Math.PI/2));
+    mk(new THREE.BoxGeometry(0.07,0.24,0.58), mC, -1.06,0.01,0);
+    [0.45,-0.45].forEach(z=>mk(new THREE.BoxGeometry(1.90,0.10,0.06),mA,0,-0.27,z));
+    mk(new THREE.BoxGeometry(0.88,0.028,0.80), mC, -0.06,0.71,0);
+    [0.34,-0.34].forEach(x=>mk(new THREE.BoxGeometry(0.04,0.06,0.80),mC,-0.06+x,0.69,0));
+    [[0.64,-0.31,0.48],[0.64,-0.31,-0.48],[-0.64,-0.31,0.48],[-0.64,-0.31,-0.48]].forEach(([wx,wy,wz])=>{
+      mk(new THREE.CylinderGeometry(0.225,0.225,0.185,28),mT,wx,wy,wz,Math.PI/2,0,0);
+      mk(new THREE.CylinderGeometry(0.145,0.145,0.195,14),mW,wx,wy,wz,Math.PI/2,0,0);
+      mk(new THREE.CylinderGeometry(0.042,0.042,0.21,10), mC,wx,wy,wz,Math.PI/2,0,0);
+      for(let i=0;i<5;i++){const sp=new THREE.Mesh(new THREE.BoxGeometry(0.026,0.196,0.175),mC);sp.position.set(wx,wy,wz);sp.rotation.set(Math.PI/2,0,(i/5)*Math.PI);g.add(sp);}
     });
     placeModel(g);
   }
@@ -2334,24 +2282,15 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
      GLB LOADER
   ──────────────────────────────── */
   function loadGLB() {
-    // GLTFLoader attaches to window.GLTFLoader when loaded as a UMD script
-    const Loader = (typeof THREE !== 'undefined' && THREE.GLTFLoader)
-                || window.GLTFLoader;
-    if (!Loader) {
-      console.log('[off-axis] GLTFLoader not found — using procedural car');
-      buildProceduralCar();
-      return;
-    }
-    console.log('[off-axis] Loading GLB:', GLB_MODEL_URL);
+    const Loader = (typeof THREE !== 'undefined' && THREE.GLTFLoader) || window.GLTFLoader;
+    if (!Loader) { log('no GLTFLoader — procedural'); buildProceduralCar(); return; }
+    log('fetching GLB…');
     new Loader().load(
-      GLB_MODEL_URL,
-      gltf => { console.log('[off-axis] GLB loaded'); placeModel(gltf.scene); },
+      GLB_URL,
+      gltf => { log('GLB loaded OK'); placeModel(gltf.scene); },
       undefined,
       err => {
-        const msg = (err instanceof ProgressEvent)
-          ? 'Network/CORS error (ProgressEvent) — is ' + GLB_MODEL_URL + ' publicly accessible?'
-          : String(err);
-        console.error('[off-axis] GLB failed:', msg);
+        log('GLB FAILED: ' + (err instanceof ProgressEvent ? 'network/CORS — check ' + GLB_URL : err));
         buildProceduralCar();
       }
     );
@@ -2375,26 +2314,23 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       head.x *= 0.96; head.y *= 0.96;
     }
 
-    // Face detection — time-gated at ~60 fps
     if (useCamera && videoEl && videoEl.readyState >= 2 && faceLandmarker) {
       const now = performance.now();
       if (now - lastDetectTime > 16) {
         lastDetectTime = now;
         try {
           const r = faceLandmarker.detectForVideo(videoEl, now);
-          if (r?.faceLandmarks?.length > 0) extractHeadPos(r.faceLandmarks[0]);
-        } catch(e) {}
+          if (r.faceLandmarks && r.faceLandmarks.length > 0) extractHead(r.faceLandmarks[0]);
+        } catch(e) { log('detect err: '+e.message); }
       }
     }
 
-    // Parallax layers
     layers.forEach(({ mesh, z }) => {
       const t = (z + 5) / 5;
       mesh.position.x = head.x * t * 0.28;
       mesh.position.y = head.y * t * 0.18;
     });
 
-    // GLB: head-driven OR auto-spin
     if (glbModel) {
       glbModel.position.x = GLB_X + head.x * 0.45;
       glbModel.position.y = GLB_Y + head.y * 0.30;
@@ -2405,9 +2341,8 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       } else {
         glbModel.rotation.y += (-head.x * 0.18 - glbModel.rotation.y) * 0.08;
         glbModel.rotation.x += ( head.y * 0.08 - glbModel.rotation.x) * 0.08;
-        autoSpinY = glbModel.rotation.y; // keep in sync so resume is smooth
+        autoSpinY = glbModel.rotation.y;
       }
-      // Live XYZ readout
       const coords = document.querySelectorAll('.hero-coord-item');
       if (coords.length >= 2) {
         const fmt = v => String(Math.round(Math.abs(v % (Math.PI*2)) * 1000)).padStart(4,'0');
@@ -2416,17 +2351,15 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       }
     }
 
-    // Camera off-axis shift
     threeCamera.position.x += (-head.x * 0.4 - threeCamera.position.x) * 0.12;
     threeCamera.position.y += ( head.y * 0.25 - threeCamera.position.y) * 0.12;
-
     renderer.render(scene, threeCamera);
   }
 
   /* ────────────────────────────────
-     FACE LANDMARK EXTRACTION
+     FACE EXTRACTION
   ──────────────────────────────── */
-  function extractHeadPos(landmarks) {
+  function extractHead(landmarks) {
     const le = landmarks[33], re = landmarks[263];
     if (!le || !re) return;
     raw.x = -((le.x + re.x) / 2 - 0.5) * 2 * STRENGTH.x;
@@ -2440,6 +2373,7 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   function enableMouseParallax() {
     if (mouseFallback) return;
     mouseFallback = true;
+    log('mouse parallax active');
     const hero = document.getElementById('top');
     hero.addEventListener('mousemove', e => {
       const r = hero.getBoundingClientRect();
@@ -2459,30 +2393,27 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   /* ────────────────────────────────
-     MEDIAPIPE
+     MEDIAPIPE — via module script tag
+     The <script type="module"> in <head> imports the bundle and
+     sets window._MP = { FaceLandmarker, FilesetResolver }
+     then fires 'mediapipe-ready'. We wait for that event.
   ──────────────────────────────── */
-  function waitForMediaPipe(ms) {
-    ms = ms || 12000;
-    return new Promise(function(res, rej) {
-      var t0 = Date.now();
-      (function poll() {
-        // Hoist from namespace if needed
-        var ns = window.mpTasksVision || window;
-        if (!window.FaceLandmarker && ns.FaceLandmarker) window.FaceLandmarker = ns.FaceLandmarker;
-        if (!window.FilesetResolver && ns.FilesetResolver) window.FilesetResolver = ns.FilesetResolver;
-        if (window.FaceLandmarker && window.FilesetResolver) return res();
-        if (Date.now() - t0 > ms) return rej(new Error('MediaPipe timeout after ' + ms + 'ms'));
-        setTimeout(poll, 200);
-      })();
+  function waitForMP() {
+    return new Promise((res, rej) => {
+      if (window._MP) return res(window._MP);
+      const tid = setTimeout(() => rej(new Error('MediaPipe module timed out')), 15000);
+      window.addEventListener('mediapipe-ready', () => { clearTimeout(tid); res(window._MP); }, { once: true });
     });
   }
 
   async function initMediaPipe() {
-    await waitForMediaPipe();
-    const vision = await window.FilesetResolver.createVisionTasks(
+    log('waiting for MediaPipe module…');
+    const { FaceLandmarker, FilesetResolver } = await waitForMP();
+    log('MediaPipe module ready — loading model…');
+    const vision = await FilesetResolver.forVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
     );
-    faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
         delegate: 'GPU',
@@ -2492,20 +2423,19 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       outputFaceBlendshapes: false,
       outputFacialTransformationMatrixes: false,
     });
+    log('FaceLandmarker ready');
   }
 
   /* ────────────────────────────────
-     PERMISSION FLOW
+     CAMERA PERMISSION FLOW
   ──────────────────────────────── */
   function hidePrompt() { promptEl.classList.add('hcp-hidden'); }
 
   async function handleAllow() {
     allowBtn.disabled = true;
     allowBtn.textContent = 'Loading\u2026';
-    // getUserMedia BEFORE any await — gesture token expires across async gaps
-    const streamPromise = navigator.mediaDevices.getUserMedia({
-      video: { width: 320, height: 240, facingMode: 'user' },
-    });
+    log('camera requested…');
+    const streamPromise = navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, facingMode: 'user' } });
     try {
       const [stream] = await Promise.all([streamPromise, initMediaPipe()]);
       videoEl = document.createElement('video');
@@ -2516,8 +2446,9 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       useCamera = true;
       trackingEl.classList.add('visible');
       hidePrompt();
+      log('head tracking ACTIVE');
     } catch(err) {
-      console.log('[off-axis] Camera/MediaPipe failed, falling back to mouse:', err.message);
+      log('camera failed: ' + err.message + ' — mouse mode');
       hidePrompt();
       enableMouseParallax();
     }
@@ -2526,10 +2457,10 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   function handleDeny() { hidePrompt(); enableMouseParallax(); }
 
   /* ────────────────────────────────
-     VISIBILITY + RESIZE + BOOT
+     VISIBILITY / RESIZE / BOOT
   ──────────────────────────────── */
   function watchVisibility() {
-    new IntersectionObserver(function(e) { heroVisible = e[0].isIntersecting; }, { threshold: 0.01 })
+    new IntersectionObserver(e => { heroVisible = e[0].isIntersecting; }, { threshold: 0.01 })
       .observe(document.getElementById('top'));
   }
 
@@ -2548,13 +2479,13 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
     window.addEventListener('resize', onResize, { passive: true });
     if (allowBtn) {
       allowBtn.addEventListener('click', handleAllow);
-      allowBtn.addEventListener('mouseenter', function() { inLink = true;  applyCursorState(); });
-      allowBtn.addEventListener('mouseleave', function() { inLink = false; applyCursorState(); });
+      allowBtn.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
+      allowBtn.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
     }
     if (denyBtn) {
       denyBtn.addEventListener('click', handleDeny);
-      denyBtn.addEventListener('mouseenter', function() { inLink = true;  applyCursorState(); });
-      denyBtn.addEventListener('mouseleave', function() { inLink = false; applyCursorState(); });
+      denyBtn.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
+      denyBtn.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
     }
   }
 
