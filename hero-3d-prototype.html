@@ -186,7 +186,7 @@ html, body {
   font-size: clamp(54px, 7vw, 112px);
   font-weight: 100;
   letter-spacing: -0.04em;
-  line-height: 0.87;
+  line-height: 1;
   text-transform: uppercase;
   color: var(--c-primary);
 }
@@ -500,28 +500,25 @@ model-viewer::part(default-progress-bar) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   STAGGER CHILDREN — words in h1 animate individually
+   H1 LINE STAGGER — each .h1-line clips and slides up
 ════════════════════════════════════════════════════════════ */
-.hero-h1 .word {
-  display: inline-block;
+.hero-h1 .h1-line {
+  display: block;
   overflow: hidden;
+  line-height: 0.92;
+  padding-bottom: 0.06em; /* prevent descender clip */
 }
-.hero-h1 .word-inner {
-  display: inline-block;
+.hero-h1 .h1-line-inner {
+  display: block;
   opacity: 0;
-  transform: translateY(60%) skewY(3deg);
+  transform: translateY(70%) skewY(2.5deg);
   transition: opacity 0.75s var(--ease-out-expo),
               transform 0.75s var(--ease-out-expo);
 }
-.hero-text.is-revealed .hero-h1 .word-inner {
-  opacity: 1;
-  transform: translateY(0) skewY(0deg);
-}
-/* Stagger delays per word */
-.hero-text.is-revealed .hero-h1 .word:nth-child(1) .word-inner { transition-delay: 0.25s; }
-.hero-text.is-revealed .hero-h1 .word:nth-child(2) .word-inner { transition-delay: 0.35s; }
-.hero-text.is-revealed .hero-h1 .word:nth-child(3) .word-inner { transition-delay: 0.45s; }
-.hero-text.is-revealed .hero-h1 .word:nth-child(4) .word-inner { transition-delay: 0.55s; }
+.hero-text.is-revealed .hero-h1 .h1-line:nth-child(1) .h1-line-inner { opacity:1; transform:none; transition-delay: 0.22s; }
+.hero-text.is-revealed .hero-h1 .h1-line:nth-child(2) .h1-line-inner { opacity:1; transform:none; transition-delay: 0.33s; }
+.hero-text.is-revealed .hero-h1 .h1-line:nth-child(3) .h1-line-inner { opacity:1; transform:none; transition-delay: 0.44s; }
+.hero-text.is-revealed .hero-h1 .h1-line:nth-child(4) .h1-line-inner { opacity:1; transform:none; transition-delay: 0.55s; }
 
 .hero-sub,
 .hero-avail,
@@ -531,9 +528,9 @@ model-viewer::part(default-progress-bar) {
   transition: opacity 0.7s var(--ease-out-expo),
               transform 0.7s var(--ease-out-expo);
 }
-.hero-text.is-revealed .hero-sub   { opacity: 0.45; transform: translateY(0); transition-delay: 0.6s; }
-.hero-text.is-revealed .hero-avail { opacity: 1;    transform: translateY(0); transition-delay: 0.72s; }
-.hero-text.is-revealed .hero-scroll{ opacity: 0.6;  transform: translateY(0); transition-delay: 0.82s; }
+.hero-text.is-revealed .hero-sub   { opacity: 0.45; transform: translateY(0); transition-delay: 0.64s; }
+.hero-text.is-revealed .hero-avail { opacity: 1;    transform: translateY(0); transition-delay: 0.76s; }
+.hero-text.is-revealed .hero-scroll{ opacity: 0.6;  transform: translateY(0); transition-delay: 0.86s; }
 </style>
 </head>
 <body>
@@ -548,15 +545,11 @@ model-viewer::part(default-progress-bar) {
       Industrial Designer
     </p>
 
-    <!--
-      Words are wrapped in .word/.word-inner for the staggered
-      slide-up reveal. JS splits the h1 after DOM ready.
-    -->
     <h1 class="hero-h1" id="hero-heading">
-      Imagining<br>
-      your<br>
-      <em>future,</em><br>
-      today.
+      <span class="h1-line"><span class="h1-line-inner">Imagining</span></span>
+      <span class="h1-line"><span class="h1-line-inner">your</span></span>
+      <span class="h1-line"><span class="h1-line-inner"><em>future,</em></span></span>
+      <span class="h1-line"><span class="h1-line-inner">today.</span></span>
     </h1>
 
     <p class="hero-sub">
@@ -618,9 +611,7 @@ model-viewer::part(default-progress-bar) {
       auto-rotate
       auto-rotate-delay="800"
       rotation-per-second="7deg"
-      environment-image="https://cdn.jsdelivr.net/gh/nicktarnold/model-viewer-environments@main/environments/kloppenheim_06_puresky_1k.hdr"
-      skybox-image="https://cdn.jsdelivr.net/gh/nicktarnold/model-viewer-environments@main/environments/kloppenheim_06_puresky_1k.hdr"
-      skybox-height="1.5m"
+      environment-image="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr"
       shadow-intensity="1.6"
       shadow-softness="0.85"
       exposure="1.1"
@@ -666,44 +657,7 @@ model-viewer::part(default-progress-bar) {
 <script>
 'use strict';
 
-/* ─── H1 word-wrap for stagger animation ─────────────────── */
-(function splitH1() {
-  const h1 = document.querySelector('.hero-h1');
-  if (!h1) return;
 
-  // Walk text nodes, wrap each "word" (non-space run) in .word > .word-inner
-  // Preserve <br> and <em> structure
-  function wrapTextNode(node) {
-    const frag = document.createDocumentFragment();
-    const parts = node.textContent.split(/(\s+)/);
-    parts.forEach(part => {
-      if (/^\s+$/.test(part)) {
-        frag.appendChild(document.createTextNode(part));
-      } else if (part) {
-        const outer = document.createElement('span');
-        outer.className = 'word';
-        const inner = document.createElement('span');
-        inner.className = 'word-inner';
-        inner.textContent = part;
-        outer.appendChild(inner);
-        frag.appendChild(outer);
-      }
-    });
-    node.parentNode.replaceChild(frag, node);
-  }
-
-  // Collect text nodes that are direct children or inside <em>
-  function processNode(el) {
-    Array.from(el.childNodes).forEach(n => {
-      if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) {
-        wrapTextNode(n);
-      } else if (n.nodeType === Node.ELEMENT_NODE && n.tagName !== 'BR') {
-        processNode(n);
-      }
-    });
-  }
-  processNode(h1);
-})();
 
 /* ─── Reveal on load ─────────────────────────────────────── */
 const heroText     = document.getElementById('hero-text');
