@@ -551,6 +551,12 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
   /* default: hidden below until JS sets data-pos */
   transform:translateY(100%);
 }
+/* data-pos rules — written by carousel JS via setPositions() */
+.proj[data-pos="far-above"] { transform:translateY(-200%); visibility:hidden; transition:none !important; }
+.proj[data-pos="prev"]      { transform:translateY(-100%); }
+.proj[data-pos="active"]    { transform:translateY(0); }
+.proj[data-pos="next"]      { transform:translateY(100%); }
+.proj[data-pos="far-below"] { transform:translateY(200%); visibility:hidden; transition:none !important; }
 .proj-img{
   position:absolute;inset:0;background-size:cover;background-position:center;
   transform:scale(1.06);
@@ -1910,7 +1916,9 @@ document.addEventListener('click', e => {
   if (!href) return;
   if (href.startsWith('#')) {
     e.preventDefault();
-    const t = document.querySelector(href);
+    // #work should land at the spacer (the fixed .projects has top:0 always)
+    const targetId = href === '#work' ? 'projects-spacer' : href.slice(1);
+    const t = document.getElementById(targetId) || document.querySelector(href);
     if (t) smoother.scrollTo(t);
     return;
   }
@@ -1957,7 +1965,9 @@ hamburger.addEventListener('click', () => {
     hamburger.setAttribute('aria-expanded','false');
     hamburger.setAttribute('aria-label','Open menu');
     navDrawer.setAttribute('aria-hidden','true');
-    const t = document.querySelector(el.getAttribute('href'));
+    const rawHref = el.getAttribute('href');
+    const targetId = rawHref === '#work' ? 'projects-spacer' : rawHref.slice(1);
+    const t = document.getElementById(targetId) || document.querySelector(rawHref);
     if (t) setTimeout(() => smoother.scrollTo(t), 320);
   });
 });
