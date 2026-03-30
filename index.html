@@ -534,12 +534,22 @@ body.menu-open .nav-drawer{opacity:1;pointer-events:all;}
 .t-dot{width:3px;height:3px;border-radius:50%;background:var(--sage);opacity:.8;flex-shrink:0;}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-.projects{display:flex;flex-direction:column;}
+/* ── PROJECTS: fixed fullscreen carousel ── */
+.projects-spacer{ pointer-events:none; }
+.projects{
+  position:fixed; inset:0; z-index:50;
+  pointer-events:none; visibility:hidden;
+}
+.projects.carousel-active{ pointer-events:auto; visibility:visible; }
+.proj-track{ position:absolute; inset:0; }
 .proj{
-  position:relative;
-  height:100svh;min-height:580px;
-  overflow:hidden;cursor:none;
-  display:block;text-decoration:none;
+  position:absolute; inset:0; height:100%;
+  overflow:hidden; cursor:none;
+  display:block; text-decoration:none;
+  will-change:transform;
+  transition:transform 0.72s cubic-bezier(0.77,0,0.18,1);
+  /* default: hidden below until JS sets data-pos */
+  transform:translateY(100%);
 }
 .proj-img{
   position:absolute;inset:0;background-size:cover;background-position:center;
@@ -1183,7 +1193,7 @@ footer{
   .hero-h1{font-size:clamp(72px,18vw,120px);}
   .hero-bottom{flex-direction:column;align-items:flex-start;gap:var(--s3);}
   .hero-scroll-hint{display:none;}
-  .proj{height:80svh;}
+  .proj{height:100%;}
   .proj:nth-child(odd) .proj-text,
   .proj:nth-child(even) .proj-text{
     width:85%;top:auto;transform:none;bottom:100px;
@@ -1298,6 +1308,7 @@ footer{
 </div>
 
 <section class="projects" id="work" aria-label="Design projects">
+<div class="proj-track">
 
   <a href="project-car.html" class="proj" aria-label="3D Printed Car — Mini Clubman surface modeled in Rhino 3D and produced as an FDM print, 2025" style="background:#0a0806;">
     <div class="proj-img" role="img" aria-label="3D printed Mini Clubman surface model render" style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png');background-position:center 30%;"></div>
@@ -1370,7 +1381,9 @@ footer{
     <div class="proj-open" aria-hidden="true">↗</div>
   </a>
 
+</div><!-- /.proj-track -->
 </section>
+<div class="projects-spacer" id="projects-spacer" aria-hidden="true"></div>
 
 <section class="about" id="about" aria-labelledby="about-heading">
 
@@ -1511,18 +1524,14 @@ footer{
 </footer>
 
 <script>
+'use strict';
 /* ── HERO IMAGE LOADER ── */
 (function() {
   const HERO_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png';
   const heroEl = document.getElementById('hero-img');
   if (!heroEl) return;
   const img = new Image();
-  img.onload = function() {
-    heroEl.style.backgroundImage = "url('" + HERO_URL + "')";
-  };
-  img.onerror = function() {
-    /* image failed — hero-img stays with the fallback background-color */
-  };
+  img.onload = function() { heroEl.style.backgroundImage = "url('" + HERO_URL + "')"; };
   img.src = HERO_URL;
 })();
 
@@ -1531,240 +1540,311 @@ const cur  = document.getElementById('cur');
 const curR = document.getElementById('cur-r');
 let mx = window.innerWidth/2, my = window.innerHeight/2;
 let rx = mx, ry = my;
-let isDown = false;
-let inLink = false;
-let inProj = false;
-
+let isDown = false, inLink = false, inProj = false;
 const STATES = {
-  default: { dot: 8,   ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
-  link:    { dot: 5,   ring: 64,  ringColor: 'rgba(91,160,164,.6)'  },
-  proj:    { dot: 4,   ring: 110, ringColor: 'rgba(91,160,164,.2)'  },
-  click:   { dot: 12,  ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
+  default: { dot:8,  ring:42,  ringColor:'rgba(91,160,164,.32)' },
+  link:    { dot:5,  ring:64,  ringColor:'rgba(91,160,164,.6)'  },
+  proj:    { dot:4,  ring:110, ringColor:'rgba(91,160,164,.2)'  },
+  click:   { dot:12, ring:42,  ringColor:'rgba(91,160,164,.32)' },
 };
-
-let ringTarget = 42;
-let ringCurrent = 42;
-
+let ringTarget = 42, ringCurrent = 42;
 function getState() {
   if (isDown) return 'click';
   if (inLink) return 'link';
   if (inProj) return 'proj';
   return 'default';
 }
-
 function applyCursorState() {
   const s = STATES[getState()];
-  cur.style.width  = s.dot + 'px';
-  cur.style.height = s.dot + 'px';
+  cur.style.width = cur.style.height = s.dot + 'px';
   ringTarget = s.ring;
   curR.style.borderColor = s.ringColor;
 }
-
 document.addEventListener('mousemove', e => {
   mx = e.clientX; my = e.clientY;
   cur.style.left = mx + 'px'; cur.style.top = my + 'px';
 });
-
 if (window.matchMedia('(pointer:fine)').matches) {
-  (function loop(){
-    const rxNew = rx + (mx - rx) * .1;
-    const ryNew = ry + (my - ry) * .1;
-    const ringNew = ringCurrent + (ringTarget - ringCurrent) * 0.12;
-    if (Math.abs(rxNew - rx) > 0.02 || Math.abs(ryNew - ry) > 0.02 || Math.abs(ringNew - ringCurrent) > 0.05) {
-      rx = rxNew; ry = ryNew;
-      curR.style.left = rx + 'px';
-      curR.style.top  = ry + 'px';
-      ringCurrent = ringNew;
-      curR.style.width  = ringCurrent + 'px';
-      curR.style.height = ringCurrent + 'px';
+  (function loop() {
+    const rxN = rx + (mx - rx) * .1, ryN = ry + (my - ry) * .1;
+    const rN  = ringCurrent + (ringTarget - ringCurrent) * .12;
+    if (Math.abs(rxN-rx)>.02 || Math.abs(ryN-ry)>.02 || Math.abs(rN-ringCurrent)>.05) {
+      rx = rxN; ry = ryN; ringCurrent = rN;
+      curR.style.left = rx+'px'; curR.style.top = ry+'px';
+      curR.style.width = curR.style.height = ringCurrent+'px';
     }
     requestAnimationFrame(loop);
   })();
 }
-
 document.querySelectorAll('a, button, .n-ham').forEach(el => {
   el.addEventListener('mouseenter', () => { inLink = true;  applyCursorState(); });
   el.addEventListener('mouseleave', () => { inLink = false; applyCursorState(); });
 });
-
 document.querySelectorAll('.proj').forEach(el => {
   el.addEventListener('mouseenter', () => { inProj = true;  applyCursorState(); });
   el.addEventListener('mouseleave', () => { inProj = false; applyCursorState(); });
 });
-
 document.addEventListener('mousedown', () => { isDown = true;  applyCursorState(); });
 document.addEventListener('mouseup',   () => { isDown = false; applyCursorState(); });
-document.addEventListener('mouseleave', () => { cur.style.opacity = '0'; curR.style.opacity = '0'; });
-document.addEventListener('mouseenter', () => { cur.style.opacity = '1'; curR.style.opacity = '1'; });
+document.addEventListener('mouseleave', () => { cur.style.opacity='0'; curR.style.opacity='0'; });
+document.addEventListener('mouseenter', () => { cur.style.opacity='1'; curR.style.opacity='1'; });
 applyCursorState();
 
-/* ── SMOOTH SCROLL ── */
+/* ══════════════════════════════════════════════════════════════
+   SMOOTH SCROLLER
+   carouselActive flag lets the carousel own the wheel
+══════════════════════════════════════════════════════════════ */
+let carouselActive = false;
+
 const smoother = (() => {
-  let current = window.scrollY;
-  let target  = window.scrollY;
-  let ticking = false;
-  let programmatic = false; // true while scrollTo() is driving — blocks scroll sync
-  const listeners = [];
-
-  const ease = 0.085; // responsive yet silky; raise toward 0.12 for crisper, lower toward 0.06 for dreamier
-  const easeSnap = 0.11; // slightly punchier during card-to-card snaps
-
+  let cur2 = window.scrollY, tgt = window.scrollY, running = false;
+  const cbs = [], EASE = 0.085;
   function tick() {
-    const diff = target - current;
-    if (Math.abs(diff) < 0.1) {
-      current = target;
-      window.scrollTo(0, current);
-      listeners.forEach(fn => fn(current));
-      ticking = false;
-      programmatic = false;
-      return;
+    const d = tgt - cur2;
+    if (Math.abs(d) < 0.4) {
+      cur2 = tgt; window.scrollTo(0, cur2); cbs.forEach(f => f(cur2)); running = false; return;
     }
-    const activeEase = snapCooldown ? easeSnap : ease;
-    current += diff * activeEase;
-    window.scrollTo(0, current);
-    listeners.forEach(fn => fn(current));
+    cur2 += d * EASE; window.scrollTo(0, cur2); cbs.forEach(f => f(cur2));
     requestAnimationFrame(tick);
   }
-
-  function startTick() {
-    if (ticking) return; // already running — just updating target is enough
-    ticking = true;
-    requestAnimationFrame(tick);
-  }
-
-  /* ── COSMOS SNAP: collect all snap targets (hero + each proj + ticker boundary) ── */
-  function buildSnapTargets() {
-    const targets = [];
-    const hero = document.querySelector('.hero');
-    if (hero) targets.push({ el: hero, top: 0 });
-    document.querySelectorAll('.proj').forEach(proj => {
-      targets.push({ el: proj, top: Math.round(proj.getBoundingClientRect().top + window.scrollY) });
-    });
-    return targets;
-  }
-  let snapTargets = buildSnapTargets();
-  window.addEventListener('resize', () => { setTimeout(() => { snapTargets = buildSnapTargets(); }, 200); }, { passive: true });
-
-  /* Throttle: one snap per gesture — ignore rapid follow-on events */
-  let snapCooldown = false;
-  const SNAP_COOLDOWN_MS = 820; // ~duration for the eased scroll to finish
-
-  /* Determine whether scroll position is currently inside the projects zone */
-  function getSnapIndex(y) {
-    // Which snap target's viewport we're closest to
-    let best = 0, bestDist = Infinity;
-    snapTargets.forEach((t, i) => {
-      const dist = Math.abs(t.top - y);
-      if (dist < bestDist) { bestDist = dist; best = i; }
-    });
-    return best;
-  }
-
-  function isInSnapZone(y) {
-    if (snapTargets.length < 2) return false;
-    const firstProj = snapTargets[1]; // index 0 is hero
-    const lastProj  = snapTargets[snapTargets.length - 1];
-    // Active inside snap zone: from start of first proj to bottom of last proj
-    const zoneStart = firstProj.top - window.innerHeight * 0.3;
-    const zoneEnd   = lastProj.top  + window.innerHeight * 0.85;
-    return y >= zoneStart && y <= zoneEnd;
-  }
+  function go() { if (!running) { running = true; requestAnimationFrame(tick); } }
 
   window.addEventListener('wheel', e => {
+    if (carouselActive) return;
     e.preventDefault();
-    const delta = e.deltaMode === 1 ? e.deltaY * 32
-                : e.deltaMode === 2 ? e.deltaY * window.innerHeight
-                : e.deltaY;
-
-    if (isInSnapZone(target) && !snapCooldown) {
-      const dir = delta > 0 ? 1 : -1;
-      const currentIdx = getSnapIndex(target);
-      const nextIdx = Math.max(0, Math.min(snapTargets.length - 1, currentIdx + dir));
-
-      if (nextIdx === currentIdx) {
-        // At boundary — allow natural scroll out of the zone
-        target = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, target + delta));
-        startTick();
-        return;
-      }
-
-      // Snap to the next card
-      target = snapTargets[nextIdx].top;
-      target = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, target));
-      startTick();
-
-      // Cooldown: block further snaps until this one settles
-      snapCooldown = true;
-      setTimeout(() => { snapCooldown = false; }, SNAP_COOLDOWN_MS);
-    } else {
-      // Normal smooth scroll outside snap zone (or during cooldown allow through)
-      target = Math.max(0, Math.min(
-        document.body.scrollHeight - window.innerHeight,
-        target + delta
-      ));
-      startTick();
-    }
+    const delta = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
+    tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, tgt + delta));
+    go();
   }, { passive: false });
 
-  // Sync native scroll position (touch, keyboard, anchor clicks not intercepted)
-  // but never while our own loop is running — that would reset current mid-animation.
-  window.addEventListener('scroll', () => {
-    if (!ticking) { current = target = window.scrollY; }
-  }, { passive: true });
+  window.addEventListener('scroll', () => { if (!running) cur2 = tgt = window.scrollY; }, { passive:true });
 
   return {
-    on: fn => listeners.push(fn),
-    scrollTo: el => {
-      programmatic = true;
-      current = window.scrollY; // snap current to reality before animating
-      target = Math.round(el.getBoundingClientRect().top + window.scrollY);
-      target = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, target));
-      startTick();
-    }
+    on:        fn  => cbs.push(fn),
+    scrollTo:  el  => { cur2 = window.scrollY; tgt = Math.round(el.getBoundingClientRect().top + window.scrollY); tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, tgt)); go(); },
+    jumpTo:    val => { cur2 = tgt = val; window.scrollTo(0, val); cbs.forEach(f => f(val)); },
+    setTarget: val => { tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val)); go(); },
   };
 })();
 
-/* ── SCROLL EFFECTS ── */
-const heroImg   = document.getElementById('hero-img');
-const navEl     = document.getElementById('nav');
-const projPairs = [...document.querySelectorAll('.proj')].map(p => ({
-  el: p, img: p.querySelector('.proj-img'), cachedRect: null
-}));
-const track = document.getElementById('t-track');
+/* ══════════════════════════════════════════════════════════════
+   FIXED-PANEL CAROUSEL
+══════════════════════════════════════════════════════════════ */
+(function initCarousel() {
+  const section = document.querySelector('.projects');
+  const spacer  = document.getElementById('projects-spacer');
+  if (!section || !spacer) return;
+
+  const projs = Array.from(section.querySelectorAll(':scope .proj'));
+  const N = projs.length;
+  if (!N) return;
+
+  /* Size spacer */
+  function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
+  sizeSpacer();
+  window.addEventListener('resize', sizeSpacer, { passive:true });
+
+  /* Eager-load images */
+  projs.forEach(p => {
+    const img = p.querySelector('.proj-img[data-bg]');
+    if (img) {
+      if (img.dataset.bg)    img.style.backgroundImage    = img.dataset.bg;
+      if (img.dataset.bgPos) img.style.backgroundPosition = img.dataset.bgPos;
+    }
+  });
+
+  /* Build char-by-char titles */
+  projs.forEach(p => {
+    const title = p.querySelector('.proj-title');
+    if (!title) return;
+    const text = title.textContent.trim();
+    title.innerHTML = '';
+    [...text].forEach((ch, i) => {
+      const s = document.createElement('span');
+      s.className = 'ch';
+      s.style.transitionDelay = (i * 18) + 'ms';
+      s.textContent = ch === ' ' ? '\u00a0' : ch;
+      title.appendChild(s);
+    });
+  });
+
+  /* Reveal all .rev inside cards immediately */
+  projs.forEach(p => p.querySelectorAll('.rev').forEach(r => r.classList.add('in')));
+
+  /* Dots */
+  const dotsEl = document.createElement('div');
+  dotsEl.id = 'c-dots'; dotsEl.setAttribute('aria-hidden','true');
+  for (let i=0; i<N; i++) {
+    const d = document.createElement('span'); d.className='c-dot'; dotsEl.appendChild(d);
+  }
+  document.body.appendChild(dotsEl);
+
+  const LABELS = ['Mini Clubman','Sabretta Pen','PH Lamp','Intro to Rhino'];
+
+  let activeIdx = 0;
+  function setPositions(idx) {
+    projs.forEach((p, i) => {
+      const delta = i - idx;
+      if      (delta < -1) p.dataset.pos = 'far-above';
+      else if (delta===-1) p.dataset.pos = 'prev';
+      else if (delta===0)  { p.dataset.pos = 'active'; p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.add('show')); }
+      else if (delta===1)  p.dataset.pos = 'next';
+      else                 p.dataset.pos = 'far-below';
+    });
+    /* update dots */
+    Array.from(dotsEl.children).forEach((d,i) => d.classList.toggle('on', i===idx));
+    /* update side indicator */
+    const ind = window._sectionIndicator;
+    if (ind) {
+      ind.classList.remove('visible');
+      setTimeout(() => { ind.textContent = LABELS[idx]||''; ind.classList.add('visible'); }, 150);
+    }
+  }
+  setPositions(0);
+
+  /* Engagement */
+  let engaged = false;
+  let spacerTop = 0;
+  function calcSpacerTop() { spacerTop = Math.round(spacer.getBoundingClientRect().top + window.scrollY); }
+  calcSpacerTop();
+  window.addEventListener('resize', () => setTimeout(calcSpacerTop, 200), { passive:true });
+
+  function engage(idx) {
+    if (engaged) return;
+    engaged = true; carouselActive = true;
+    activeIdx = Math.max(0, Math.min(N-1, idx));
+    setPositions(activeIdx);
+    section.classList.add('carousel-active');
+    dotsEl.style.opacity = '1';
+    window.scrollTo(0, spacerTop);
+    smoother.jumpTo(spacerTop);
+  }
+
+  function disengage(exitY) {
+    if (!engaged) return;
+    engaged = false; carouselActive = false;
+    section.classList.remove('carousel-active');
+    dotsEl.style.opacity = '0';
+    smoother.jumpTo(exitY);
+    smoother.setTarget(exitY);
+  }
+
+  let transitioning = false;
+  const TRANS_MS = 720;
+
+  function advance(dir) {
+    if (transitioning) return;
+    const next = activeIdx + dir;
+    if (next < 0)  { disengage(Math.max(0, spacerTop - 10)); return; }
+    if (next >= N) { disengage(spacerTop + spacer.offsetHeight + 2); return; }
+    transitioning = true;
+    activeIdx = next;
+    setPositions(activeIdx);
+    setTimeout(() => { transitioning = false; }, TRANS_MS);
+  }
+
+  /* Wheel: bucket accumulation */
+  let bucket = 0;
+  const THRESH = 60;
+  let drainTimer = null;
+  window.addEventListener('wheel', e => {
+    if (!engaged) return;
+    e.preventDefault();
+    const raw = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
+    bucket += raw;
+    clearTimeout(drainTimer);
+    drainTimer = setTimeout(() => { bucket = 0; }, 250);
+    if (bucket >  THRESH) { bucket = 0; advance(+1); }
+    if (bucket < -THRESH) { bucket = 0; advance(-1); }
+  }, { passive:false });
+
+  /* Touch */
+  let ty0 = 0;
+  window.addEventListener('touchstart', e => { if (engaged) ty0 = e.touches[0].clientY; }, { passive:true });
+  window.addEventListener('touchend',   e => {
+    if (!engaged) return;
+    const dy = ty0 - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > 60) advance(dy>0 ? +1 : -1);
+  }, { passive:true });
+
+  /* Keyboard */
+  window.addEventListener('keydown', e => {
+    if (!engaged) return;
+    if (e.key==='ArrowDown'||e.key==='PageDown') { e.preventDefault(); advance(+1); }
+    if (e.key==='ArrowUp'  ||e.key==='PageUp')   { e.preventDefault(); advance(-1); }
+  });
+
+  /* Watch scroll to trigger engage */
+  smoother.on(y => {
+    if (engaged) return;
+    if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
+      engage(Math.min(N-1, Math.floor((y - spacerTop) / window.innerHeight)));
+    }
+  });
+})();
+
+/* Carousel CSS */
+(function(){
+  const s = document.createElement('style');
+  s.textContent = `
+    .projects-spacer { pointer-events:none; }
+    .projects { position:fixed; inset:0; z-index:50; visibility:hidden; pointer-events:none; }
+    .projects.carousel-active { visibility:visible; pointer-events:auto; }
+    .proj-track { position:absolute; inset:0; }
+    .proj {
+      position:absolute; inset:0; height:100%; overflow:hidden; cursor:none;
+      display:block; text-decoration:none; will-change:transform;
+      transition: transform 0.72s cubic-bezier(0.77,0,0.18,1);
+    }
+    .proj[data-pos="far-above"] { transform:translateY(-200%); visibility:hidden; transition:none; }
+    .proj[data-pos="prev"]      { transform:translateY(-100%); }
+    .proj[data-pos="active"]    { transform:translateY(0); }
+    .proj[data-pos="next"]      { transform:translateY(100%); }
+    .proj[data-pos="far-below"] { transform:translateY(200%); visibility:hidden; transition:none; }
+    #c-dots {
+      position:fixed; right:var(--s6); top:50%; transform:translateY(-50%);
+      z-index:600; display:flex; flex-direction:column; gap:9px;
+      pointer-events:none; opacity:0; transition:opacity .4s;
+    }
+    .c-dot {
+      width:4px; height:4px; border-radius:50%;
+      background:rgba(91,160,164,.28); display:block;
+      transition:background .3s, transform .3s;
+    }
+    .c-dot.on { background:var(--sage); transform:scale(1.7); }
+    @media(max-width:768px){ #c-dots { right:14px; } }
+  `;
+  document.head.appendChild(s);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLL EFFECTS
+══════════════════════════════════════════════════════════════ */
+const heroImg = document.getElementById('hero-img');
+const navEl   = document.getElementById('nav');
+const track   = document.getElementById('t-track');
 let lastY = 0;
 
 const prog = document.createElement('div');
-prog.id = 'prog';
-document.body.appendChild(prog);
-
-// Invalidate proj rect cache on resize (already done in resize handler for _projRect; mirror here)
-function invalidateProjRects() {
-  projPairs.forEach(pp => { pp.cachedRect = null; });
-}
-window.addEventListener('resize', invalidateProjRects, { passive: true });
-
-const sections = [
-  { el: document.querySelector('.hero'),    label: 'Intro' },
-  { el: document.querySelectorAll('.proj')[0], label: 'Mini Clubman' },
-  { el: document.querySelectorAll('.proj')[1], label: 'Sabretta Pen' },
-  { el: document.querySelectorAll('.proj')[2], label: 'PH Lamp' },
-  { el: document.querySelectorAll('.proj')[3], label: 'Intro to Rhino' },
-  { el: document.querySelector('.about'),   label: 'About' },
-  { el: document.querySelector('.contact'), label: 'Contact' },
-].filter(s => s.el);
+prog.id = 'prog'; document.body.appendChild(prog);
 
 const sectionIndicator = document.createElement('div');
 sectionIndicator.id = 'section-indicator';
 document.body.appendChild(sectionIndicator);
+window._sectionIndicator = sectionIndicator;
 setTimeout(() => sectionIndicator.classList.add('visible'), 1500);
 
-let currentSectionLabel = '';
+const SECTIONS_DEF = [
+  { el: document.querySelector('.hero'),            label:'Intro'    },
+  { el: document.getElementById('projects-spacer'), label:'Projects' },
+  { el: document.querySelector('.about'),           label:'About'    },
+  { el: document.querySelector('.contact'),         label:'Contact'  },
+].filter(s => s.el);
+
+let currentLabel = '';
 let sectionOffsets = [];
 function buildSectionOffsets() {
-  sectionOffsets = sections.map(s => ({
-    label: s.label,
-    top: s.el.getBoundingClientRect().top + window.scrollY
-  }));
+  sectionOffsets = SECTIONS_DEF.map(s => ({ label:s.label, top: s.el.getBoundingClientRect().top + window.scrollY }));
 }
 buildSectionOffsets();
 
@@ -1772,92 +1852,57 @@ function updateIndicator(y) {
   if (!sectionOffsets.length) return;
   let active = sectionOffsets[0].label;
   const mid = y + window.innerHeight * 0.5;
-  for (const s of sectionOffsets) {
-    if (s.top <= mid) active = s.label;
-  }
-  if (active !== currentSectionLabel) {
-    currentSectionLabel = active;
+  for (const s of sectionOffsets) { if (s.top <= mid) active = s.label; }
+  if (active !== currentLabel) {
+    currentLabel = active;
     sectionIndicator.classList.remove('visible');
-    setTimeout(() => {
-      sectionIndicator.textContent = active;
-      sectionIndicator.classList.add('visible');
-    }, 200);
+    setTimeout(() => { sectionIndicator.textContent = active; sectionIndicator.classList.add('visible'); }, 200);
   }
 }
 
 smoother.on(y => {
   if (heroImg) {
-    if (y <= window.innerHeight)
-      heroImg.style.transform = `scale(1.05) translateY(${y * .22}px)`;
-    else if (lastY <= window.innerHeight)
-      heroImg.style.transform = '';
+    if (y <= window.innerHeight) heroImg.style.transform = `scale(1.05) translateY(${y*.22}px)`;
+    else if (lastY <= window.innerHeight) heroImg.style.transform = '';
   }
   navEl.classList.toggle('scrolled', y > 60);
-  track.style.animationDirection = y > lastY ? 'normal' : 'reverse';
+  if (track) track.style.animationDirection = y > lastY ? 'normal' : 'reverse';
   lastY = y;
   const maxScroll = document.body.scrollHeight - window.innerHeight;
   prog.style.transform = `scaleX(${maxScroll > 0 ? y / maxScroll : 0})`;
-
-  projPairs.forEach(pp => {
-    // Use cached absolute rect; recompute only when null (first call or after resize)
-    if (!pp.cachedRect) {
-      const r = pp.el.getBoundingClientRect();
-      pp.cachedRect = { top: r.top + y, height: r.height };
-    }
-    const top    = pp.cachedRect.top - y;
-    const bottom = top + pp.cachedRect.height;
-    if (bottom < 0 || top > window.innerHeight) return;
-    const pct = (top + pp.cachedRect.height / 2 - window.innerHeight / 2) / window.innerHeight;
-    const maxShift = pp.cachedRect.height * 0.03;
-    const shift = Math.max(-maxShift, Math.min(maxShift, pct * 52));
-    const tilt = tiltState.get(pp.img) || { rx: 0, ry: 0 };
-    pp.img.style.transform = `scale(1.06) translateY(${shift}px) rotateY(${tilt.rx}deg) rotateX(${tilt.ry}deg)`;
-  });
-
   updateIndicator(y);
 });
 
-/* ── PAGE TRANSITIONS ── */
+/* ══════════════════════════════════════════════════════════════
+   PAGE TRANSITIONS & BACK BUTTON FIX
+══════════════════════════════════════════════════════════════ */
 const veil = document.getElementById('veil');
 function navigateTo(href) {
   veil.style.transition = 'clip-path .5s cubic-bezier(0.77,0,0.18,1)';
   veil.style.clipPath = 'inset(0 0% 0 0)';
   setTimeout(() => { window.location.href = href; }, 520);
 }
-
 function onReady(fn) {
-  if (document.readyState !== 'loading') { fn(); } else { window.addEventListener('DOMContentLoaded', fn, { once: true }); }
+  if (document.readyState !== 'loading') fn();
+  else window.addEventListener('DOMContentLoaded', fn, { once:true });
 }
 onReady(() => {
   setTimeout(() => document.querySelector('.hero').classList.add('loaded'), 100);
-  // Both body reveal and veil dismiss in the same rAF — no frame of teal visible
-  requestAnimationFrame(() => {
-    document.body.classList.add('ready');
-    veil.classList.add('gone');
-  });
+  requestAnimationFrame(() => { document.body.classList.add('ready'); veil.classList.add('gone'); });
 });
-/* bfcache restore — re-reveal page when navigating back */
 window.addEventListener('pageshow', e => {
   if (e.persisted) {
-    // Immediately hide the veil with no transition so no teal flash appears
     veil.style.transition = 'none';
     veil.style.clipPath = 'inset(0 100% 0 0)';
     veil.style.pointerEvents = 'none';
-    // Sync class state without triggering any CSS transitions
     veil.classList.remove('gone');
     veil.classList.add('instant');
     document.body.classList.add('ready');
-    // Force reflow to commit inline styles, then restore class-driven state
     void veil.offsetWidth;
     veil.classList.remove('instant');
-    // Re-enable CSS transitions after one frame so future navigations animate normally
-    requestAnimationFrame(() => {
-      veil.style.transition = '';
-      veil.style.clipPath = '';
-    });
+    requestAnimationFrame(() => { veil.style.transition=''; veil.style.clipPath=''; });
   }
 });
-
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href]');
   if (!a) return;
@@ -1874,7 +1919,9 @@ document.addEventListener('click', e => {
   navigateTo(href);
 });
 
-/* ── THEME ── */
+/* ══════════════════════════════════════════════════════════════
+   THEME
+══════════════════════════════════════════════════════════════ */
 const SVG_SUN  = '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
 const SVG_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 let theme = 'dark';
@@ -1882,16 +1929,19 @@ function setTheme(t) {
   theme = t;
   document.documentElement.setAttribute('data-theme', t);
   const btn = document.getElementById('theme-btn');
-  const icon = btn.querySelector('svg');
-  if (icon) icon.innerHTML = t === 'dark' ? SVG_SUN : SVG_MOON;
-  btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
-  try { localStorage.setItem('theme', t); } catch(e) {}
+  const icon = btn && btn.querySelector('svg');
+  if (icon) icon.innerHTML = t==='dark' ? SVG_SUN : SVG_MOON;
+  if (btn) btn.setAttribute('aria-label', t==='dark' ? 'Switch to light theme' : 'Switch to dark theme');
+  try { localStorage.setItem('theme', t); } catch(e){}
 }
-const savedTheme = (() => { try { return localStorage.getItem('theme'); } catch(e) { return null; } })();
-document.getElementById('theme-btn').onclick = () => setTheme(theme === 'dark' ? 'light' : 'dark');
-setTheme(savedTheme === 'light' ? 'light' : 'dark');
+const savedTheme = (()=>{ try{ return localStorage.getItem('theme'); }catch(e){ return null; }})();
+const themeBtn = document.getElementById('theme-btn');
+if (themeBtn) themeBtn.onclick = () => setTheme(theme==='dark' ? 'light' : 'dark');
+setTheme(savedTheme==='light' ? 'light' : 'dark');
 
-/* ── HAMBURGER ── */
+/* ══════════════════════════════════════════════════════════════
+   HAMBURGER
+══════════════════════════════════════════════════════════════ */
 const hamburger = document.getElementById('hamburger');
 const navDrawer = document.getElementById('nav-drawer');
 hamburger.addEventListener('click', () => {
@@ -1904,190 +1954,109 @@ hamburger.addEventListener('click', () => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('click', () => {
     document.body.classList.remove('menu-open');
-    hamburger.setAttribute('aria-expanded', 'false');
-    hamburger.setAttribute('aria-label', 'Open menu');
-    navDrawer.setAttribute('aria-hidden', 'true');
+    hamburger.setAttribute('aria-expanded','false');
+    hamburger.setAttribute('aria-label','Open menu');
+    navDrawer.setAttribute('aria-hidden','true');
     const t = document.querySelector(el.getAttribute('href'));
     if (t) setTimeout(() => smoother.scrollTo(t), 320);
   });
 });
 
-/* ── RESIZE ── */
-let cachedContactRect = null;
+/* ══════════════════════════════════════════════════════════════
+   RESIZE
+══════════════════════════════════════════════════════════════ */
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     buildSectionOffsets();
-    cachedContactRect = null;
-    document.querySelectorAll('.proj').forEach(proj => {
-      proj._projRect = null;
-      const btn = proj.querySelector('.proj-open');
-      if (btn) btn._btnRect = null;
-    });
     if (window.innerWidth > 768) {
       document.body.classList.remove('menu-open');
-      hamburger.setAttribute('aria-expanded', 'false');
-      hamburger.setAttribute('aria-label', 'Open menu');
-      navDrawer.setAttribute('aria-hidden', 'true');
+      hamburger.setAttribute('aria-expanded','false');
+      hamburger.setAttribute('aria-label','Open menu');
+      navDrawer.setAttribute('aria-hidden','true');
     }
   }, 150);
-}, { passive: true });
+}, { passive:true });
 
-/* ── ABOUT: headline line reveal ── */
+/* ══════════════════════════════════════════════════════════════
+   ABOUT / GENERAL REVEALS
+══════════════════════════════════════════════════════════════ */
 const aboutHl = document.querySelector('.about-hl');
 if (aboutHl) {
-  const hlObs = new IntersectionObserver(entries => {
+  const obs = new IntersectionObserver(entries => {
     if (!entries[0].isIntersecting) return;
-    aboutHl.classList.add('in');
-    hlObs.disconnect();
-  }, { threshold: 0.3 });
-  hlObs.observe(aboutHl);
+    aboutHl.classList.add('in'); obs.disconnect();
+  }, { threshold:0.3 });
+  obs.observe(aboutHl);
 }
-
-/* ── ABOUT: pop-word reveal ── */
-const aboutSection = document.querySelector('.about');
-const popWords = document.querySelectorAll('.pop-word');
-const popObs = new IntersectionObserver(entries => {
-  if (!entries[0].isIntersecting) return;
-  popWords.forEach((w, i) => {
-    setTimeout(() => w.classList.add('popped'), 300 + i * 220);
-  });
-  popObs.disconnect();
-}, { threshold: 0.3 });
-if (aboutSection) popObs.observe(aboutSection);
-
-/* ── LAZY-LOAD project images ── */
-const lazyImgObs = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (!e.isIntersecting) return;
-    const img = e.target;
-    const bg  = img.dataset.bg;
-    const pos = img.dataset.bgPos;
-    if (bg)  img.style.backgroundImage    = bg;
-    if (pos) img.style.backgroundPosition = pos;
-    lazyImgObs.unobserve(img);
-  });
-}, { rootMargin: '400px' });
-document.querySelectorAll('.proj-img[data-bg]').forEach(img => {
-  lazyImgObs.observe(img);
-});
-
-/* ── CHAR-BY-CHAR title reveal ── */
-const titleObs = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (!e.isIntersecting) return;
-    e.target.querySelector('.proj-title').querySelectorAll('.ch').forEach(s => s.classList.add('show'));
-    titleObs.unobserve(e.target);
-  });
-}, { threshold: 0.3 });
-document.querySelectorAll('.proj-title').forEach(title => {
-  const proj = title.closest('.proj');
-  if (!proj) return;
-  const text = title.textContent.trim();
-  title.innerHTML = '';
-  text.split('').forEach((char, i) => {
-    const span = document.createElement('span');
-    span.className = 'ch';
-    span.style.transitionDelay = (i * 18) + 'ms';
-    span.textContent = char === ' ' ? '\u00a0' : char;
-    title.appendChild(span);
-  });
-  titleObs.observe(proj);
-});
-
 const io = new IntersectionObserver(entries => entries.forEach(e => {
   if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-}), { threshold: .06 });
-document.querySelectorAll('.rev').forEach(r => io.observe(r));
+}), { threshold:.06 });
+document.querySelectorAll('.rev').forEach(r => { if (!r.closest('.proj')) io.observe(r); });
 
-
-
-/* ── NAV LOGO SCRAMBLE ── */
-const logo = document.querySelector('.n-logo');
-const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
-let logoScrambling = false;
-
-// Grab the existing spans from HTML — don't rebuild the DOM
-const logoFirst = logo.querySelector('.logo-first');
-const logoLast  = logo.querySelector('.logo-last');
-
-logo.addEventListener('mouseenter', () => {
-  if (logoScrambling) return;
-  logoScrambling = true;
-  let iteration = 0;
-  const target = 'GREEN';
-  const interval = setInterval(() => {
-    const scrambled = target.split('').map((char, i) => {
-      if (i < iteration) return char;
-      return scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
-    }).join('');
-    logoLast.textContent = scrambled;
-    if (iteration >= target.length) {
-      clearInterval(interval);
-      logoLast.textContent = 'Green';
-      logoScrambling = false;
-    }
-    iteration += 0.4;
-  }, 28);
-});
-
-
-
-/* ── TILT STATE ── */
-const tiltState = new Map();
+/* ══════════════════════════════════════════════════════════════
+   TILT
+══════════════════════════════════════════════════════════════ */
 document.querySelectorAll('.proj').forEach(proj => {
   const img = proj.querySelector('.proj-img');
-  tiltState.set(img, { rx: 0, ry: 0 });
-  proj.addEventListener('mouseenter', () => { proj._projRect = proj.getBoundingClientRect(); });
+  if (!img) return;
+  proj.addEventListener('mouseenter', () => { proj._r = proj.getBoundingClientRect(); });
   proj.addEventListener('mousemove', e => {
-    if (!proj._projRect) proj._projRect = proj.getBoundingClientRect();
-    const nx = (e.clientX - proj._projRect.left) / proj._projRect.width  - .5;
-    const ny = (e.clientY - proj._projRect.top)  / proj._projRect.height - .5;
-    tiltState.get(img).rx = nx * 4;
-    tiltState.get(img).ry = -ny * 2;
+    if (!proj._r) proj._r = proj.getBoundingClientRect();
+    const nx = (e.clientX - proj._r.left) / proj._r.width  - .5;
+    const ny = (e.clientY - proj._r.top)  / proj._r.height - .5;
+    img.style.transform = `scale(1.06) rotateY(${nx*4}deg) rotateX(${-ny*2}deg)`;
   });
-  proj.addEventListener('mouseleave', () => {
-    tiltState.get(img).rx = 0;
-    tiltState.get(img).ry = 0;
-  });
+  proj.addEventListener('mouseleave', () => { img.style.transform = 'scale(1.06)'; });
 });
-/* ── COPYRIGHT YEAR ── */
-document.getElementById('copy-year').textContent = new Date().getFullYear();
 
-/* ── HERO COORDS — live scroll readout ── */
+/* ══════════════════════════════════════════════════════════════
+   NAV LOGO SCRAMBLE
+══════════════════════════════════════════════════════════════ */
+const logo = document.querySelector('.n-logo');
+const logoLast = logo && logo.querySelector('.logo-last');
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
+let scrambling = false;
+if (logo && logoLast) {
+  logo.addEventListener('mouseenter', () => {
+    if (scrambling) return; scrambling = true;
+    let iter = 0; const TARGET = 'GREEN';
+    const iv = setInterval(() => {
+      logoLast.textContent = TARGET.split('').map((c,i) => i<iter ? c : CHARS[Math.floor(Math.random()*CHARS.length)]).join('');
+      if (iter >= TARGET.length) { clearInterval(iv); logoLast.textContent='Green'; scrambling=false; }
+      iter += 0.4;
+    }, 28);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COPYRIGHT
+══════════════════════════════════════════════════════════════ */
+const copyYear = document.getElementById('copy-year');
+if (copyYear) copyYear.textContent = new Date().getFullYear();
+
+/* ══════════════════════════════════════════════════════════════
+   HERO COORDS
+══════════════════════════════════════════════════════════════ */
 (function(){
   const coords = document.querySelectorAll('.hero-coord-item');
   if (!coords.length) return;
-  // Animate on load: random scramble then settle
-  const labels = ['X','Y','Z'];
-  const digits = '0123456789';
-  let done = false;
-  let frame = 0;
+  const labels=['X','Y','Z'], digits='0123456789';
+  let done=false, frame=0;
   function scramble() {
-    if (done) return;
-    frame++;
-    coords.forEach((el, i) => {
-      if (frame > 18 + i * 6) {
-        el.textContent = labels[i] + ':' + String(Math.floor(Math.random()*9999)).padStart(4,'0');
-      } else {
-        const r = Array.from({length:4}, () => digits[Math.floor(Math.random()*10)]).join('');
-        el.textContent = labels[i] + ':' + r;
-      }
+    if (done) return; frame++;
+    coords.forEach((el,i) => {
+      if (frame > 18+i*6) el.textContent = labels[i]+':'+String(Math.floor(Math.random()*9999)).padStart(4,'0');
+      else el.textContent = labels[i]+':'+Array.from({length:4},()=>digits[Math.floor(Math.random()*10)]).join('');
     });
     if (frame < 36) requestAnimationFrame(scramble);
-    else {
-      done = true;
-      coords[0].textContent = 'X:5312';
-      coords[1].textContent = 'Y:2048';
-      coords[2].textContent = 'Z:0000';
-    }
+    else { done=true; coords[0].textContent='X:5312'; coords[1].textContent='Y:2048'; coords[2].textContent='Z:0000'; }
   }
   setTimeout(scramble, 600);
-  // Update Z on scroll
   window.addEventListener('scroll', () => {
-    const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 9999);
-    coords[2].textContent = 'Z:' + String(pct).padStart(4,'0');
+    const pct = Math.round((window.scrollY/(document.body.scrollHeight-window.innerHeight))*9999);
+    coords[2].textContent = 'Z:'+String(pct).padStart(4,'0');
   }, {passive:true});
 })();
 </script>
