@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- ── PRIMARY SEO ── -->
@@ -142,21 +145,17 @@
 <link rel="manifest" href="site.webmanifest">
 <!-- Three.js + MediaPipe for head-coupled perspective hero -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-/* Inline GLTFLoader r128 — avoids broken CDN paths */
-</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous"></script>
 <script>
-/* Normalise MediaPipe globals — tasks-vision bundle exposes them on
-   the window object as-is in some builds, but in others they are
-   namespaced.  Hoist them so our code can always use window.FaceLandmarker. */
-(function patchMediaPipeGlobals() {
-  // The tasks-vision UMD bundle typically assigns to window directly,
-  // but the namespace may be `mpTasksVision` in some versions.
-  var ns = window.mpTasksVision || window;
-  if (!window.FaceLandmarker && ns.FaceLandmarker)  window.FaceLandmarker  = ns.FaceLandmarker;
-  if (!window.FilesetResolver && ns.FilesetResolver) window.FilesetResolver = ns.FilesetResolver;
+/* Hoist MediaPipe globals — the tasks-vision bundle may namespace under mpTasksVision */
+(function(){
+  var t=0,iv=setInterval(function(){
+    var ns=window.mpTasksVision||window;
+    if(!window.FaceLandmarker&&ns.FaceLandmarker)window.FaceLandmarker=ns.FaceLandmarker;
+    if(!window.FilesetResolver&&ns.FilesetResolver)window.FilesetResolver=ns.FilesetResolver;
+    if((window.FaceLandmarker&&window.FilesetResolver)||++t>80)clearInterval(iv);
+  },150);
 })();
 </script>
 <meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
@@ -2139,7 +2138,6 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
 
 /* ══════════════════════════════════════════════════════════════════
    OFF-AXIS HEAD-COUPLED PERSPECTIVE HERO
-   Inspired by Johnny Chung Lee / icurtis1/off-axis-sneaker
    MediaPipe FaceLandmarker + Three.js GLB model in hero
 ══════════════════════════════════════════════════════════════════ */
 (function() {
@@ -2152,7 +2150,7 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   const GLB_ENABLED   = true;
   const GLB_MODEL_URL = 'https://kieranjgreen18-cyber.github.io/KieranGreen/minisite.glb';
   const GLB_SCALE     = 1.0;
-  const GLB_X         = 1.8;   // right of centre so headline is clear
+  const GLB_X         = 1.8;
   const GLB_Y         = -0.3;
   const GLB_Z         = 1.2;
 
@@ -2163,8 +2161,6 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   const trackingEl = document.getElementById('hcp-tracking');
   const allowBtn   = document.getElementById('hcp-allow');
   const denyBtn    = document.getElementById('hcp-deny');
-  // XYZ coordinate display elements
-  const coordEls   = document.querySelectorAll('.hero-coord-item');
 
   let useCamera      = false;
   let mouseFallback  = false;
@@ -2175,11 +2171,11 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   let glbModel       = null;
   let heroVisible    = true;
   let lastDetectTime = 0;
-  // Auto-spin: model slowly rotates 360° on Y when no input is happening
-  let autoSpinAngle  = 0;
+  // 360° auto-spin when idle
+  let autoSpinY      = 0;
   let lastInputTime  = 0;
-  const AUTO_SPIN_SPEED = 0.003;   // radians per frame
-  const INPUT_IDLE_MS   = 2000;    // ms of no input before spin resumes
+  const SPIN_SPEED   = 0.004;
+  const IDLE_MS      = 2500;
 
   /* ────────────────────────────────
      THREE.JS SCENE
@@ -2187,7 +2183,7 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   function initThree() {
     if (typeof THREE === 'undefined') { console.error('[off-axis] THREE not loaded'); return; }
     const canvas = document.getElementById('hero-3d');
-    if (!canvas) return;
+    if (!canvas) { console.error('[off-axis] #hero-3d canvas missing'); return; }
 
     const hero = document.getElementById('top');
     const W = hero.offsetWidth, H = hero.offsetHeight;
@@ -2245,9 +2241,9 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   }
 
   /* ────────────────────────────────
-     GLB LOADER
+     PLACE MODEL (shared by GLB + fallback)
   ──────────────────────────────── */
-  function placeGLB(obj) {
+  function placeModel(obj) {
     glbModel = obj;
     const box = new THREE.Box3().setFromObject(glbModel);
     const centre = new THREE.Vector3();
@@ -2269,99 +2265,93 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       }
     });
     scene.add(glbModel);
+    console.log('[off-axis] Model placed in scene');
   }
 
-  /* Procedural Mini-ish car — shown when GLB cannot be fetched */
+  /* ────────────────────────────────
+     PROCEDURAL CAR FALLBACK
+     Shown when minisite.glb cannot be fetched
+  ──────────────────────────────── */
   function buildProceduralCar() {
-    console.info('[off-axis] Building procedural car fallback');
-    const group = new THREE.Group();
-    const matBody   = new THREE.MeshStandardMaterial({ color: 0x1a2020, metalness: 0.6, roughness: 0.35 });
-    const matAccent = new THREE.MeshStandardMaterial({ color: 0x5ba0a4, metalness: 0.4, roughness: 0.4  });
-    const matGlass  = new THREE.MeshStandardMaterial({ color: 0x8eccd0, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.55 });
-    const matChrome = new THREE.MeshStandardMaterial({ color: 0xb0b8b8, metalness: 0.95, roughness: 0.1 });
-    const matTyre   = new THREE.MeshStandardMaterial({ color: 0x111414, metalness: 0.0, roughness: 0.9  });
-    const matWheel  = new THREE.MeshStandardMaterial({ color: 0x2a3535, metalness: 0.7, roughness: 0.3  });
-
-    // Body
-    group.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.55, 0.88), matBody), {position: new THREE.Vector3(0,-0.05,0)}));
+    console.log('[off-axis] Building procedural car fallback');
+    const g = new THREE.Group();
+    const mB = new THREE.MeshStandardMaterial({ color: 0x1a2020, metalness: 0.65, roughness: 0.3 });
+    const mA = new THREE.MeshStandardMaterial({ color: 0x5ba0a4, metalness: 0.4,  roughness: 0.4 });
+    const mG = new THREE.MeshStandardMaterial({ color: 0x8eccd0, metalness: 0.1,  roughness: 0.05, transparent: true, opacity: 0.5 });
+    const mC = new THREE.MeshStandardMaterial({ color: 0xb0b8b8, metalness: 0.95, roughness: 0.08 });
+    const mT = new THREE.MeshStandardMaterial({ color: 0x111414, roughness: 0.9 });
+    const mW = new THREE.MeshStandardMaterial({ color: 0x2a3535, metalness: 0.7,  roughness: 0.3 });
+    const add = (geo, mat, px, py, pz, rx, ry, rz) => {
+      const m = new THREE.Mesh(geo, mat);
+      if (px!==undefined) m.position.set(px,py,pz);
+      if (rx!==undefined) m.rotation.set(rx,ry,rz);
+      g.add(m); return m;
+    };
+    // Body slab
+    add(new THREE.BoxGeometry(2.1, 0.52, 0.90), mB, 0, -0.04, 0);
     // Cabin
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.44, 0.82), matBody);
-    cabin.position.set(-0.05, 0.46, 0); group.add(cabin);
+    add(new THREE.BoxGeometry(1.12, 0.46, 0.84), mB, -0.06, 0.47, 0);
     // Windscreen
-    const ws = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.36, 0.74), matGlass);
-    ws.position.set(-0.52, 0.44, 0); ws.rotation.z = -0.38; group.add(ws);
-    // Rear glass
-    const rg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.36, 0.74), matGlass);
-    rg.position.set(0.52, 0.44, 0); rg.rotation.z = 0.38; group.add(rg);
+    add(new THREE.BoxGeometry(0.04, 0.38, 0.76), mG, -0.54, 0.45, 0, 0, 0, -0.37);
+    // Rear screen
+    add(new THREE.BoxGeometry(0.04, 0.38, 0.76), mG,  0.50, 0.45, 0, 0, 0,  0.37);
     // Side windows
-    [-0.41, 0.41].forEach(z => {
-      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.32, 0.03), matGlass);
-      sw.position.set(-0.05, 0.47, z); group.add(sw);
-    });
-    // Bonnet accent
-    const crease = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.04, 0.04), matAccent);
-    crease.position.set(0.6, 0.19, 0); group.add(crease);
-    // Grille
-    const grille = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.28, 0.56), matAccent);
-    grille.position.set(1.02, -0.04, 0); group.add(grille);
+    [-0.42, 0.42].forEach(z => add(new THREE.BoxGeometry(0.94, 0.30, 0.03), mG, -0.06, 0.47, z));
+    // Bonnet crease
+    add(new THREE.BoxGeometry(0.80, 0.04, 0.05), mA, 0.62, 0.20, 0);
+    // Grille box
+    add(new THREE.BoxGeometry(0.07, 0.30, 0.58), mA, 1.05, -0.03, 0);
     // Headlights
-    [0.3, -0.3].forEach(z => {
-      const hl = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16), matChrome);
-      hl.rotation.z = Math.PI / 2; hl.position.set(1.03, 0.05, z); group.add(hl);
+    [0.30, -0.30].forEach(z => {
+      const h = add(new THREE.CylinderGeometry(0.085, 0.085, 0.05, 20), mC, 1.06, 0.06, z);
+      h.rotation.z = Math.PI / 2;
     });
     // Rear panel
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.56), matChrome);
-    boot.position.set(-1.02, 0.0, 0); group.add(boot);
+    add(new THREE.BoxGeometry(0.07, 0.24, 0.58), mC, -1.06, 0.01, 0);
     // Sills
-    [0.44, -0.44].forEach(z => {
-      const sill = new THREE.Mesh(new THREE.BoxGeometry(1.88, 0.1, 0.06), matAccent);
-      sill.position.set(0, -0.28, z); group.add(sill);
-    });
+    [0.45, -0.45].forEach(z => add(new THREE.BoxGeometry(1.90, 0.10, 0.06), mA, 0, -0.27, z));
+    // Roof rack
+    add(new THREE.BoxGeometry(0.88, 0.028, 0.80), mC, -0.06, 0.71, 0);
+    [0.34, -0.34].forEach(x => add(new THREE.BoxGeometry(0.04, 0.06, 0.80), mC, -0.06+x, 0.69, 0));
     // Wheels
-    [[0.62,-0.32,0.48],[0.62,-0.32,-0.48],[-0.62,-0.32,0.48],[-0.62,-0.32,-0.48]].forEach(([wx,wy,wz]) => {
-      const tyre = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 24), matTyre);
-      tyre.rotation.x = Math.PI/2; tyre.position.set(wx,wy,wz); group.add(tyre);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.19, 12), matWheel);
-      rim.rotation.x = Math.PI/2; rim.position.set(wx,wy,wz); group.add(rim);
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 8), matChrome);
-      hub.rotation.x = Math.PI/2; hub.position.set(wx,wy,wz); group.add(hub);
-      for (let i=0;i<5;i++) {
-        const sp = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.19, 0.19), matChrome);
+    [[0.64,-0.31,0.48],[0.64,-0.31,-0.48],[-0.64,-0.31,0.48],[-0.64,-0.31,-0.48]].forEach(([wx,wy,wz]) => {
+      const tyre = new THREE.Mesh(new THREE.CylinderGeometry(0.225, 0.225, 0.185, 28), mT);
+      tyre.rotation.x = Math.PI/2; tyre.position.set(wx,wy,wz); g.add(tyre);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.195, 14), mW);
+      rim.rotation.x = Math.PI/2; rim.position.set(wx,wy,wz); g.add(rim);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.21, 10), mC);
+      hub.rotation.x = Math.PI/2; hub.position.set(wx,wy,wz); g.add(hub);
+      for (let i=0;i<5;i++){
+        const sp = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.196, 0.175), mC);
         sp.rotation.x = Math.PI/2; sp.rotation.z = (i/5)*Math.PI;
-        sp.position.set(wx,wy,wz); group.add(sp);
+        sp.position.set(wx,wy,wz); g.add(sp);
       }
     });
-    // Roof rack
-    const rack = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.03, 0.78), matChrome);
-    rack.position.set(-0.05, 0.695, 0); group.add(rack);
-    [0.35,-0.35].forEach(x => {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.78), matChrome);
-      bar.position.set(-0.05+x, 0.68, 0); group.add(bar);
-    });
-    placeGLB(group);
+    placeModel(g);
   }
 
+  /* ────────────────────────────────
+     GLB LOADER
+  ──────────────────────────────── */
   function loadGLB() {
-    const LoaderClass = (window.THREE && THREE.GLTFLoader)
-                     || window.GLTFLoader
-                     || window.GLTFLoaderClass;
-    if (!LoaderClass) {
-      console.warn('[off-axis] GLTFLoader unavailable — procedural fallback');
-      buildProceduralCar(); return;
+    // GLTFLoader attaches to window.GLTFLoader when loaded as a UMD script
+    const Loader = (typeof THREE !== 'undefined' && THREE.GLTFLoader)
+                || window.GLTFLoader;
+    if (!Loader) {
+      console.log('[off-axis] GLTFLoader not found — using procedural car');
+      buildProceduralCar();
+      return;
     }
-    console.info('[off-axis] Fetching GLB:', GLB_MODEL_URL);
-    const loader = new LoaderClass();
-    loader.load(
+    console.log('[off-axis] Loading GLB:', GLB_MODEL_URL);
+    new Loader().load(
       GLB_MODEL_URL,
-      gltf => { console.log('[off-axis] GLB loaded OK'); placeGLB(gltf.scene); },
+      gltf => { console.log('[off-axis] GLB loaded'); placeModel(gltf.scene); },
       undefined,
       err => {
-        let detail = String(err);
-        if (err instanceof ProgressEvent) {
-          detail = 'Network/CORS failure (ProgressEvent type="' + err.type + '")' +
-                   ' — check that ' + GLB_MODEL_URL + ' is reachable and CORS-enabled.';
-        }
-        console.error('[off-axis] GLB failed:', detail);
+        const msg = (err instanceof ProgressEvent)
+          ? 'Network/CORS error (ProgressEvent) — is ' + GLB_MODEL_URL + ' publicly accessible?'
+          : String(err);
+        console.error('[off-axis] GLB failed:', msg);
         buildProceduralCar();
       }
     );
@@ -2374,6 +2364,10 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
     requestAnimationFrame(renderLoop);
     if (!heroVisible) return;
 
+    const hasInput = Math.abs(raw.x) > 0.01 || Math.abs(raw.y) > 0.01;
+    if (hasInput) lastInputTime = performance.now();
+    const isIdle = (performance.now() - lastInputTime) > IDLE_MS;
+
     if (useCamera || mouseFallback) {
       head.x += (raw.x - head.x) * SMOOTH;
       head.y += (raw.y - head.y) * SMOOTH;
@@ -2381,7 +2375,7 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       head.x *= 0.96; head.y *= 0.96;
     }
 
-    // Face detection — every frame, time-gated at ~60fps
+    // Face detection — time-gated at ~60 fps
     if (useCamera && videoEl && videoEl.readyState >= 2 && faceLandmarker) {
       const now = performance.now();
       if (now - lastDetectTime > 16) {
@@ -2393,42 +2387,32 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       }
     }
 
-    // Track whether user is actively moving the view
-    const hasInput = (Math.abs(raw.x) > 0.01 || Math.abs(raw.y) > 0.01);
-    if (hasInput) lastInputTime = performance.now();
-    const idleSpin = (performance.now() - lastInputTime) > INPUT_IDLE_MS;
-
     // Parallax layers
     layers.forEach(({ mesh, z }) => {
-      const t = (z + 5) / 5; // 0=far, 1=close
+      const t = (z + 5) / 5;
       mesh.position.x = head.x * t * 0.28;
       mesh.position.y = head.y * t * 0.18;
     });
 
-    // GLB — moves + rotates with head; auto-spins when idle
+    // GLB: head-driven OR auto-spin
     if (glbModel) {
       glbModel.position.x = GLB_X + head.x * 0.45;
       glbModel.position.y = GLB_Y + head.y * 0.30;
-
-      if (idleSpin) {
-        // Smooth auto-spin on Y; gently level X
-        autoSpinAngle += AUTO_SPIN_SPEED;
-        glbModel.rotation.y = autoSpinAngle;
+      if (isIdle) {
+        autoSpinY += SPIN_SPEED;
+        glbModel.rotation.y = autoSpinY;
         glbModel.rotation.x += (0 - glbModel.rotation.x) * 0.04;
       } else {
-        // Head-driven rotation — capture current angle so spin resumes smoothly
         glbModel.rotation.y += (-head.x * 0.18 - glbModel.rotation.y) * 0.08;
         glbModel.rotation.x += ( head.y * 0.08 - glbModel.rotation.x) * 0.08;
-        // Keep autoSpinAngle in sync with actual Y so there's no jump on resume
-        autoSpinAngle = glbModel.rotation.y;
+        autoSpinY = glbModel.rotation.y; // keep in sync so resume is smooth
       }
-
-      // Update XYZ coordinate display with live model angles
-      if (coordEls.length >= 3) {
-        const toCoord = v => String(Math.round(Math.abs(v) * 1000)).padStart(4, '0');
-        coordEls[0].textContent = 'X:' + toCoord(glbModel.rotation.x);
-        coordEls[1].textContent = 'Y:' + toCoord(glbModel.rotation.y % (Math.PI * 2));
-        // Z stays as scroll readout — don't overwrite it here
+      // Live XYZ readout
+      const coords = document.querySelectorAll('.hero-coord-item');
+      if (coords.length >= 2) {
+        const fmt = v => String(Math.round(Math.abs(v % (Math.PI*2)) * 1000)).padStart(4,'0');
+        coords[0].textContent = 'X:' + fmt(glbModel.rotation.x);
+        coords[1].textContent = 'Y:' + fmt(glbModel.rotation.y);
       }
     }
 
@@ -2441,15 +2425,12 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
 
   /* ────────────────────────────────
      FACE LANDMARK EXTRACTION
-     Raw webcam coords [0,1]; flip X because webcam is mirrored
   ──────────────────────────────── */
   function extractHeadPos(landmarks) {
     const le = landmarks[33], re = landmarks[263];
     if (!le || !re) return;
-    const midX = (le.x + re.x) / 2;
-    const midY = (le.y + re.y) / 2;
-    raw.x = -(midX - 0.5) * 2 * STRENGTH.x;  // negate: mirror correction
-    raw.y = -(midY - 0.5) * 2 * STRENGTH.y;
+    raw.x = -((le.x + re.x) / 2 - 0.5) * 2 * STRENGTH.x;
+    raw.y = -((le.y + re.y) / 2 - 0.5) * 2 * STRENGTH.y;
     lastInputTime = performance.now();
   }
 
@@ -2485,13 +2466,13 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
     return new Promise(function(res, rej) {
       var t0 = Date.now();
       (function poll() {
-        // Hoist from namespace if needed (tasks-vision bundle may use mpTasksVision)
+        // Hoist from namespace if needed
         var ns = window.mpTasksVision || window;
-        if (!window.FaceLandmarker && ns.FaceLandmarker)  window.FaceLandmarker  = ns.FaceLandmarker;
+        if (!window.FaceLandmarker && ns.FaceLandmarker) window.FaceLandmarker = ns.FaceLandmarker;
         if (!window.FilesetResolver && ns.FilesetResolver) window.FilesetResolver = ns.FilesetResolver;
         if (window.FaceLandmarker && window.FilesetResolver) return res();
-        if (Date.now() - t0 > ms) return rej(new Error('MediaPipe timeout'));
-        setTimeout(poll, 150);
+        if (Date.now() - t0 > ms) return rej(new Error('MediaPipe timeout after ' + ms + 'ms'));
+        setTimeout(poll, 200);
       })();
     });
   }
@@ -2521,7 +2502,7 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   async function handleAllow() {
     allowBtn.disabled = true;
     allowBtn.textContent = 'Loading\u2026';
-    // getUserMedia before any await — gesture token expires after async gap
+    // getUserMedia BEFORE any await — gesture token expires across async gaps
     const streamPromise = navigator.mediaDevices.getUserMedia({
       video: { width: 320, height: 240, facingMode: 'user' },
     });
@@ -2536,7 +2517,7 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
       trackingEl.classList.add('visible');
       hidePrompt();
     } catch(err) {
-      console.info('[off-axis] Falling back to mouse:', err.message);
+      console.log('[off-axis] Camera/MediaPipe failed, falling back to mouse:', err.message);
       hidePrompt();
       enableMouseParallax();
     }
