@@ -2247,43 +2247,124 @@ document.getElementById('copy-year').textContent = new Date().getFullYear();
   /* ────────────────────────────────
      GLB LOADER
   ──────────────────────────────── */
+  function placeGLB(obj) {
+    glbModel = obj;
+    const box = new THREE.Box3().setFromObject(glbModel);
+    const centre = new THREE.Vector3();
+    box.getCenter(centre);
+    glbModel.position.sub(centre);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    glbModel.scale.setScalar((2.2 / maxDim) * GLB_SCALE);
+    const box2 = new THREE.Box3().setFromObject(glbModel);
+    const c2 = new THREE.Vector3();
+    box2.getCenter(c2);
+    glbModel.position.sub(c2);
+    glbModel.position.set(GLB_X, GLB_Y, GLB_Z);
+    glbModel.traverse(child => {
+      if (child.isMesh && child.material) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => { m.envMapIntensity = 1.0; m.needsUpdate = true; });
+      }
+    });
+    scene.add(glbModel);
+  }
+
+  /* Procedural Mini-ish car — shown when GLB cannot be fetched */
+  function buildProceduralCar() {
+    console.info('[off-axis] Building procedural car fallback');
+    const group = new THREE.Group();
+    const matBody   = new THREE.MeshStandardMaterial({ color: 0x1a2020, metalness: 0.6, roughness: 0.35 });
+    const matAccent = new THREE.MeshStandardMaterial({ color: 0x5ba0a4, metalness: 0.4, roughness: 0.4  });
+    const matGlass  = new THREE.MeshStandardMaterial({ color: 0x8eccd0, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.55 });
+    const matChrome = new THREE.MeshStandardMaterial({ color: 0xb0b8b8, metalness: 0.95, roughness: 0.1 });
+    const matTyre   = new THREE.MeshStandardMaterial({ color: 0x111414, metalness: 0.0, roughness: 0.9  });
+    const matWheel  = new THREE.MeshStandardMaterial({ color: 0x2a3535, metalness: 0.7, roughness: 0.3  });
+
+    // Body
+    group.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.55, 0.88), matBody), {position: new THREE.Vector3(0,-0.05,0)}));
+    // Cabin
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.44, 0.82), matBody);
+    cabin.position.set(-0.05, 0.46, 0); group.add(cabin);
+    // Windscreen
+    const ws = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.36, 0.74), matGlass);
+    ws.position.set(-0.52, 0.44, 0); ws.rotation.z = -0.38; group.add(ws);
+    // Rear glass
+    const rg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.36, 0.74), matGlass);
+    rg.position.set(0.52, 0.44, 0); rg.rotation.z = 0.38; group.add(rg);
+    // Side windows
+    [-0.41, 0.41].forEach(z => {
+      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.32, 0.03), matGlass);
+      sw.position.set(-0.05, 0.47, z); group.add(sw);
+    });
+    // Bonnet accent
+    const crease = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.04, 0.04), matAccent);
+    crease.position.set(0.6, 0.19, 0); group.add(crease);
+    // Grille
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.28, 0.56), matAccent);
+    grille.position.set(1.02, -0.04, 0); group.add(grille);
+    // Headlights
+    [0.3, -0.3].forEach(z => {
+      const hl = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16), matChrome);
+      hl.rotation.z = Math.PI / 2; hl.position.set(1.03, 0.05, z); group.add(hl);
+    });
+    // Rear panel
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.56), matChrome);
+    boot.position.set(-1.02, 0.0, 0); group.add(boot);
+    // Sills
+    [0.44, -0.44].forEach(z => {
+      const sill = new THREE.Mesh(new THREE.BoxGeometry(1.88, 0.1, 0.06), matAccent);
+      sill.position.set(0, -0.28, z); group.add(sill);
+    });
+    // Wheels
+    [[0.62,-0.32,0.48],[0.62,-0.32,-0.48],[-0.62,-0.32,0.48],[-0.62,-0.32,-0.48]].forEach(([wx,wy,wz]) => {
+      const tyre = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 24), matTyre);
+      tyre.rotation.x = Math.PI/2; tyre.position.set(wx,wy,wz); group.add(tyre);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.19, 12), matWheel);
+      rim.rotation.x = Math.PI/2; rim.position.set(wx,wy,wz); group.add(rim);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 8), matChrome);
+      hub.rotation.x = Math.PI/2; hub.position.set(wx,wy,wz); group.add(hub);
+      for (let i=0;i<5;i++) {
+        const sp = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.19, 0.19), matChrome);
+        sp.rotation.x = Math.PI/2; sp.rotation.z = (i/5)*Math.PI;
+        sp.position.set(wx,wy,wz); group.add(sp);
+      }
+    });
+    // Roof rack
+    const rack = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.03, 0.78), matChrome);
+    rack.position.set(-0.05, 0.695, 0); group.add(rack);
+    [0.35,-0.35].forEach(x => {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.78), matChrome);
+      bar.position.set(-0.05+x, 0.68, 0); group.add(bar);
+    });
+    placeGLB(group);
+  }
+
   function loadGLB() {
     const LoaderClass = (window.THREE && THREE.GLTFLoader)
                      || window.GLTFLoader
                      || window.GLTFLoaderClass;
-    if (!LoaderClass) { console.warn('[off-axis] GLTFLoader not available'); return; }
+    if (!LoaderClass) {
+      console.warn('[off-axis] GLTFLoader unavailable — procedural fallback');
+      buildProceduralCar(); return;
+    }
+    console.info('[off-axis] Fetching GLB:', GLB_MODEL_URL);
     const loader = new LoaderClass();
-    loader.load(GLB_MODEL_URL, gltf => {
-      glbModel = gltf.scene;
-
-      // Centre and normalise
-      const box = new THREE.Box3().setFromObject(glbModel);
-      const centre = new THREE.Vector3();
-      box.getCenter(centre);
-      glbModel.position.sub(centre);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z);
-      glbModel.scale.setScalar((2.2 / maxDim) * GLB_SCALE);
-
-      // Re-centre after scale
-      const box2 = new THREE.Box3().setFromObject(glbModel);
-      const c2 = new THREE.Vector3();
-      box2.getCenter(c2);
-      glbModel.position.sub(c2);
-
-      glbModel.position.set(GLB_X, GLB_Y, GLB_Z);
-
-      glbModel.traverse(child => {
-        if (child.isMesh && child.material) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(m => { m.envMapIntensity = 1.0; m.needsUpdate = true; });
+    loader.load(
+      GLB_MODEL_URL,
+      gltf => { console.log('[off-axis] GLB loaded OK'); placeGLB(gltf.scene); },
+      undefined,
+      err => {
+        let detail = String(err);
+        if (err instanceof ProgressEvent) {
+          detail = 'Network/CORS failure (ProgressEvent type="' + err.type + '")' +
+                   ' — check that ' + GLB_MODEL_URL + ' is reachable and CORS-enabled.';
         }
-      });
-
-      scene.add(glbModel);
-      console.log('[off-axis] GLB loaded OK');
-    }, undefined, err => console.error('[off-axis] GLB error:', err));
+        console.error('[off-axis] GLB failed:', detail);
+        buildProceduralCar();
+      }
+    );
   }
 
   /* ────────────────────────────────
