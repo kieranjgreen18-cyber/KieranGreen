@@ -206,17 +206,18 @@ html, body {
 
 /*
   model-viewer sizing strategy:
-  - Fixed aspect ratio container so it never collapses
-  - Full width of its column, capped height so it fits viewport
-  - touch-action: none on the viewer itself prevents page scroll
-    from being swallowed by the 3D interaction on mobile
+  - Slightly overflows its column (negative margin) to feel large
+  - Fixed height so it never collapses or over-grows the viewport
+  - Bleed: the model extends to the right edge on desktop,
+    giving it a sense of scale without being boxed in
 */
 .model-wrap {
   position: relative;
-  width: 100%;
-  max-width: 680px;
-  /* Tall enough to feel cinematic, short enough to not overflow */
-  height: clamp(340px, 60vh, 720px);
+  width: 110%;          /* intentional bleed past column edge */
+  max-width: 820px;
+  height: clamp(420px, 72vh, 860px);
+  /* Pull it right so bleed goes toward the page edge, not the text */
+  margin-left: -5%;
 }
 
 model-viewer {
@@ -224,24 +225,72 @@ model-viewer {
   height: 100%;
   background: transparent;
 
-  /* Remove model-viewer's default slot UI */
   --progress-bar-color: var(--c-accent);
   --progress-bar-height: 1px;
   --poster-color: transparent;
+}
 
-  /* model-viewer captures pointer events for orbit.
-     On mobile this competes with page scroll.
-     Setting touch-action: none on the element forces
-     model-viewer to handle all touches (correct for orbit),
-     but we add a thin overlay on mobile to give
-     the user a scroll escape zone — see below. */
+/*
+  GROUND PLANE: CSS gradient floor beneath the model.
+  Because orbit is locked to horizontal-only (min/max elevation
+  set to a narrow band around eye-level), the camera never goes
+  below the model — so this gradient always reads correctly as a
+  floor, not a floating cloud.
+
+  Layers (bottom to top):
+  1. A dark radial gradient — the "pool of shadow" under the car
+  2. A soft horizontal line — the surface the car sits on
+  3. Transparent above — blends into the dark site background
+
+  All via ::before on the model-wrap so it sits behind model-viewer.
+*/
+.model-wrap::before {
+  content: '';
+  position: absolute;
+  /* Position at ~70% down — adjust this % to match where your
+     model's wheels/base actually sit in the frame */
+  bottom: 0; left: -5%; right: -5%;
+  height: 38%;
+  background:
+    /* Elliptical shadow pool — darkest at centre under the model */
+    radial-gradient(
+      ellipse 70% 40% at 50% 100%,
+      rgba(0,0,0,0.55) 0%,
+      rgba(0,0,0,0.18) 55%,
+      transparent 100%
+    ),
+    /* Thin bright horizon line — the surface plane */
+    linear-gradient(
+      to top,
+      rgba(91,160,164,0.06) 0px,
+      rgba(91,160,164,0.03) 1px,
+      transparent 40px
+    );
+  pointer-events: none;
+  z-index: 1; /* sits behind model-viewer (z-index auto) */
+}
+
+/*
+  SIDE VIGNETTE: fades the model into the dark background
+  on the left side so it doesn't look like a floating box.
+  Matches the existing hero-veil / gradient language of the site.
+*/
+.model-wrap::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(to right,  var(--c-bg) 0%, transparent 18%),
+    linear-gradient(to top,    var(--c-bg) 0%, transparent 12%),
+    linear-gradient(to bottom, var(--c-bg) 0%, transparent 10%);
+  pointer-events: none;
+  z-index: 3; /* sits above model-viewer, below reticle overlays */
 }
 
 /* Technical drawing crosshair overlay — pure decoration */
 .model-reticle {
   position: absolute; inset: 0;
   pointer-events: none;
-  /* Corner brackets */
+  z-index: 4; /* above model-viewer AND the vignette ::after */
   --br: 16px;
   --bw: 1px;
   --bc: rgba(91,160,164,.22);
@@ -271,6 +320,7 @@ model-viewer {
   letter-spacing: 0.22em; text-transform: uppercase;
   color: rgba(91,160,164,.35);
   pointer-events: none;
+  z-index: 4;
 }
 .model-label-tl { top: 6px; left: 10px; }
 .model-label-tr { top: 6px; right: 10px; text-align: right; }
@@ -288,6 +338,7 @@ model-viewer {
   white-space: nowrap;
   transition: opacity 0.6s ease;
   pointer-events: none;
+  z-index: 5;
 }
 .model-hint-icon {
   width: 14px; height: 14px;
@@ -326,26 +377,25 @@ model-viewer {
 
   .hero-h1 { font-size: clamp(52px, 14vw, 88px); }
   .hero-sub { max-width: 100%; }
-  .hero-scroll { display: none; } /* hide on mobile — no room */
+  .hero-scroll { display: none; }
 
-  .hero-model-col {
-    /* On mobile the model sits below text */
-    justify-content: center;
-  }
+  .hero-model-col { justify-content: center; }
+
+  /* Reset the bleed — on mobile we want full width, no bleed */
   .model-wrap {
     width: 100%;
     max-width: 100%;
-    height: clamp(260px, 52vw, 440px);
+    margin-left: 0;
+    height: clamp(300px, 58vw, 480px);
   }
 
-  /* Show scroll escape strip on touch */
   .model-scroll-escape { display: block; }
 }
 
 @media (max-width: 480px) {
   .hero { padding: calc(var(--sp-7) + 20px) var(--pad) var(--sp-5); gap: var(--sp-3); }
   .hero-h1 { font-size: clamp(44px, 13vw, 72px); }
-  .model-wrap { height: clamp(220px, 56vw, 360px); }
+  .model-wrap { height: clamp(240px, 60vw, 360px); }
 }
 
 /* ── Loading state for model ── */
@@ -429,20 +479,25 @@ model-viewer::part(default-progress-bar) {
     <div class="model-wrap">
 
       <!--
-        model-viewer attributes:
-        - src: path to GLB (relative — same origin as index.html on GitHub Pages)
-        - camera-controls: enables mouse/touch orbit
-        - auto-rotate: slow spin on load, stops when user interacts
-        - auto-rotate-delay: wait 1s before starting spin
-        - rotation-per-second: slow, cinematic speed
-        - environment-image: "neutral" gives clean studio lighting
-        - shadow-intensity: subtle ground shadow
-        - exposure: slightly boosted to match the dark site
-        - camera-orbit: initial camera angle (azimuth, elevation, radius)
-        - min/max-camera-orbit: constrain vertical rotation
-        - interaction-prompt: "none" — we have our own hint
-        - ar: enable AR button on supported mobile devices
-        - loading: "eager" since it's above the fold
+        model-viewer attributes — v2:
+
+        ORBIT LOCK STRATEGY:
+        min-camera-orbit / max-camera-orbit take three values:
+          azimuth (horizontal)  elevation (vertical)  radius (zoom)
+        "auto" means unconstrained on that axis.
+
+        We lock elevation to a 10° window centred at eye-level (75°–85°
+        from nadir, which is roughly horizontal). This means:
+        - User can spin 360° horizontally (azimuth: auto)
+        - User cannot tilt up to see the roof or down to see the floor
+        - The ground plane CSS always reads correctly as a floor
+        - No "upside down" viewing angle
+
+        CAMERA ORBIT initial position:
+        "30deg 78deg 105%"
+          30deg  = start slightly rotated (not dead-on)
+          78deg  = very close to horizontal eye level
+          105%   = slight pull-back so model doesn't fill frame
       -->
       <model-viewer
         id="mini-viewer"
@@ -451,14 +506,16 @@ model-viewer::part(default-progress-bar) {
         camera-controls
         auto-rotate
         auto-rotate-delay="800"
-        rotation-per-second="12deg"
+        rotation-per-second="10deg"
         environment-image="neutral"
-        shadow-intensity="0.6"
-        shadow-softness="1"
-        exposure="0.85"
-        camera-orbit="25deg 80deg 105%"
-        min-camera-orbit="auto 30deg auto"
-        max-camera-orbit="auto 150deg auto"
+        shadow-intensity="1"
+        shadow-softness="0.8"
+        exposure="0.9"
+        camera-orbit="30deg 78deg 105%"
+        min-camera-orbit="auto 68deg auto"
+        max-camera-orbit="auto 88deg auto"
+        min-field-of-view="20deg"
+        max-field-of-view="40deg"
         interaction-prompt="none"
         ar
         ar-modes="webxr scene-viewer quick-look"
