@@ -151,7 +151,7 @@ model-viewer {
   z-index: var(--z-text);
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   max-width: 52vw;
 
   opacity: 0;
@@ -275,8 +275,6 @@ model-viewer {
   pointer-events: none;
   z-index: var(--z-text);
 }
-.model-label-tl { top: 18px;    left: 22px; }
-.model-label-tr { top: 18px;    right: 22px; text-align: right; }
 .model-label-br { bottom: 18px; right: 22px; text-align: right; }
 
 /* Drag hint */
@@ -318,7 +316,6 @@ model-viewer {
 @media (max-width: 860px) {
   .hero-text { max-width: 80vw; }
   .hero-scroll { display: none; }
-  .model-label-tr { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -363,12 +360,12 @@ model-viewer::part(default-progress-bar) {
     shadow-intensity="2.0"
     shadow-softness="0.7"
     exposure="0.9"
-    camera-orbit="35deg 78deg 110%"
+    camera-orbit="35deg 78deg 72%"
     min-camera-orbit="auto 70deg auto"
     max-camera-orbit="auto 86deg auto"
-    field-of-view="24deg"
-    min-field-of-view="20deg"
-    max-field-of-view="28deg"
+    field-of-view="18deg"
+    min-field-of-view="14deg"
+    max-field-of-view="24deg"
     interaction-prompt="none"
     ar
     ar-modes="webxr scene-viewer quick-look"
@@ -407,10 +404,8 @@ model-viewer::part(default-progress-bar) {
     Scroll
   </div>
 
-  <!-- Corner labels -->
-  <span class="model-label model-label-tl" aria-hidden="true">3D / MINI CLUBMAN</span>
-  <span class="model-label model-label-tr" aria-hidden="true">RHINO 3D · FDM</span>
-  <span class="model-label model-label-br" aria-hidden="true">DRAG TO ROTATE</span>
+  <!-- Corner label — bottom-right only -->
+  <span class="model-label model-label-br" aria-hidden="true">MINI CLUBMAN · RHINO 3D · FDM</span>
 
   <!-- Drag hint -->
   <div class="model-hint" id="model-hint" aria-hidden="true">
