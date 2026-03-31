@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kieran Green — Projects</title>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   FONT FACES — exact match to index.html
+═══════════════════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'D-DIN';
+  src: url('D-DIN.otf') format('opentype');
+  font-weight: 100 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('D-DIN-Italic.otf') format('opentype');
+  font-weight: 100 600; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('D-DIN-Bold.otf') format('opentype');
+  font-weight: 700 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('D-DINCondensed.otf') format('opentype');
+  font-weight: 100 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('D-DINCondensed-Bold.otf') format('opentype');
+  font-weight: 700 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('D-DINCondensed.otf') format('opentype');
+  font-weight: 100 600; font-style: italic; font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS — verbatim from index.html
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --c-bg:       #080909;
+  --c-bg2:      #0f1010;
+  --c-surface:  rgba(255,255,255,0.03);
+  --c-primary:  #edeeed;
+  --c-secondary:#96a8aa;
+  --c-accent:   #5ba0a4;
+  --c-muted:    rgba(150,168,170,0.35);
+  --c-rule:     rgba(255,255,255,0.055);
+
+  --f-condensed: 'D-DIN Condensed', sans-serif;
+  --f-body:      'D-DIN', sans-serif;
+
+  --t-display:  clamp(72px, 13vw, 192px);
+  --t-hero:     clamp(68px, 12vw, 156px);
+  --t-title:    clamp(52px, 7.5vw, 108px);
+  --t-heading:  clamp(36px, 5vw, 68px);
+  --t-section:  clamp(44px, 6.5vw, 96px);
+  --t-subhead:  clamp(18px, 2.2vw, 28px);
+  --t-body:     17px;
+  --t-ui:       15px;
+  --t-meta:     13px;
+  --t-micro:    11px;
+
+  --lh-display: 0.87;
+  --lh-heading: 0.90;
+  --lh-text:    1.60;
+  --lh-body:    1.85;
+
+  --ls-zero:    -0.04em;
+  --ls-tight:    0.01em;
+  --ls-stencil:  0.22em;
+  --ls-mid:      0.16em;
+  --ls-wide:     0.28em;
+
+  --sp-1:  8px;  --sp-2:  16px; --sp-3:  24px; --sp-4:  32px;
+  --sp-5:  40px; --sp-6:  48px; --sp-7:  64px; --sp-8:  80px;
+  --sp-9:  96px; --sp-10: 120px; --sp-11: 160px;
+
+  --pad:   clamp(24px, 4vw, 48px);
+  --max-w: 1440px;
+
+  --ease:     cubic-bezier(0.16, 1, 0.3, 1);
+  --snap:     cubic-bezier(0.77, 0, 0.18, 1);
+  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+
+  --z-base: 1; --z-raised: 10; --z-carousel: 50;
+  --z-nav: 500; --z-overlay: 600;
+  --z-cursor: 9998; --z-top: 9999; --z-veil: 10000;
+}
+
+[data-theme="light"] {
+  --c-bg: #edeeed; --c-bg2: #e4e6e4;
+  --c-surface: rgba(0,0,0,0.03);
+  --c-primary: #080909; --c-secondary: #4a5c5e;
+  --c-rule: rgba(8,9,9,0.08);
+}
+[data-theme="light"] .proj:nth-child(odd)  .proj-veil { background: linear-gradient(to right, rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
+[data-theme="light"] .proj:nth-child(even) .proj-veil { background: linear-gradient(to left,  rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
+[data-theme="light"] #grain { opacity: .02; }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: auto; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--c-bg);
+  color: var(--c-primary);
+  font-family: var(--f-body);
+  font-weight: 300;
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  cursor: none;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+body.ready { opacity: 1; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+img { display: block; max-width: 100%; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPE ROLES
+═══════════════════════════════════════════════════════════════ */
+.type-title  { font-family: var(--f-condensed); font-size: var(--t-title);  font-weight: 100; letter-spacing: var(--ls-zero); line-height: var(--lh-heading); text-transform: uppercase; }
+.type-micro  { font-family: var(--f-condensed); font-size: var(--t-micro);  font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase; }
+.type-body   { font-family: var(--f-body);      font-size: var(--t-body);   font-weight: 300; letter-spacing: var(--ls-tight);   line-height: var(--lh-body); }
+h1 em, h2 em, h3 em { font-style: italic; color: var(--c-accent); font-weight: inherit; }
+p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body); }
+
+/* ═══════════════════════════════════════════════════════════════
+   AMBIENT
+═══════════════════════════════════════════════════════════════ */
+#grain {
+  position: fixed; inset: -25%; width: 150%; height: 150%;
+  pointer-events: none; z-index: var(--z-top); opacity: 0.026;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain .9s steps(2) infinite;
+  contain: strict; will-change: transform;
+}
+@keyframes grain {
+  0%, 100% { transform: translate3d(0,0,0); }
+  33%       { transform: translate3d(-1%,-2%,0); }
+  66%       { transform: translate3d(1%,1%,0); }
+}
+
+#cur {
+  position: fixed; z-index: var(--z-veil); pointer-events: none;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--c-accent); transform: translate(-50%,-50%);
+  mix-blend-mode: difference;
+  transition: width .18s var(--ease), height .18s var(--ease);
+}
+#cur-r {
+  position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1px solid rgba(91,160,164,.32); transform: translate(-50%,-50%);
+}
+#prog {
+  position: fixed; top: 0; left: 0; height: 1px;
+  background: var(--c-accent); z-index: calc(var(--z-veil) - 2);
+  width: 100%; transform: scaleX(0); transform-origin: left;
+  pointer-events: none; box-shadow: 0 0 6px rgba(91,160,164,.5);
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CAROUSEL DOTS
+═══════════════════════════════════════════════════════════════ */
+#c-dots {
+  position: fixed; right: var(--sp-6); top: 50%; transform: translateY(-50%);
+  z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 9px;
+  pointer-events: none; opacity: 0; transition: opacity .4s;
+}
+.c-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(91,160,164,.28); display: block;
+  transition: background .3s, transform .3s;
+}
+.c-dot.on { background: var(--c-accent); transform: scale(1.7); }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════════════════════════════ */
+.rev { opacity: 0; transform: translateY(var(--sp-3)); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+.rev.in { opacity: 1; transform: translateY(0); }
+.d1 { transition-delay: .1s; } .d2 { transition-delay: .22s; } .d3 { transition-delay: .36s; }
+
+/* ═══════════════════════════════════════════════════════════════
+   CAROUSEL — exact CSS from index.html
+═══════════════════════════════════════════════════════════════ */
+.projects-spacer { pointer-events: none; }
+
+.projects {
+  position: fixed; inset: 0; z-index: var(--z-carousel);
+  pointer-events: none; visibility: hidden;
+}
+.projects.carousel-active { pointer-events: auto; visibility: visible; }
+
+.proj-track { position: absolute; inset: 0; }
+
+.proj {
+  position: absolute; inset: 0; height: 100%;
+  overflow: hidden; cursor: none;
+  display: block; text-decoration: none;
+  will-change: transform;
+  transition: transform 0.72s var(--snap);
+  transform: translateY(100%);
+}
+.proj[data-pos="far-above"] { transform: translateY(-200%); visibility: hidden; transition: none !important; }
+.proj[data-pos="prev"]      { transform: translateY(-100%); }
+.proj[data-pos="active"]    { transform: translateY(0); }
+.proj[data-pos="next"]      { transform: translateY(100%); }
+.proj[data-pos="far-below"] { transform: translateY(200%); visibility: hidden; transition: none !important; }
+
+.proj-img {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  transform: scale(1.06);
+  filter: saturate(.7) brightness(.55);
+  transition: transform 1.1s var(--ease), filter 1.1s ease;
+  will-change: transform;
+}
+.proj:hover .proj-img { transform: scale(1.01); filter: saturate(.92) brightness(.7); }
+
+.proj:nth-child(odd)  .proj-veil { position: absolute; inset: 0; background: linear-gradient(to right, rgba(8,9,9,.95) 0%, rgba(8,9,9,.6) 42%, transparent 72%); }
+.proj:nth-child(even) .proj-veil { position: absolute; inset: 0; background: linear-gradient(to left,  rgba(8,9,9,.95) 0%, rgba(8,9,9,.6) 42%, transparent 72%); }
+
+.proj-line {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: linear-gradient(to bottom, transparent, var(--c-accent), transparent);
+  opacity: 0; transition: opacity .5s var(--ease), transform .6s var(--ease);
+  transform: scaleY(0); transform-origin: center;
+}
+.proj:nth-child(odd)  .proj-line { left: 0; }
+.proj:nth-child(even) .proj-line { right: 0; }
+.proj:hover .proj-line { opacity: 1; transform: scaleY(1); }
+
+.proj-text {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 44%; z-index: 2;
+  transition: transform .7s var(--ease);
+  will-change: transform;
+}
+.proj:nth-child(odd)  .proj-text { left: var(--pad); }
+.proj:nth-child(even) .proj-text { right: var(--pad); text-align: right; }
+.proj:hover .proj-text { transform: translateY(calc(-50% - 10px)); }
+
+.proj-num {
+  font-family: var(--f-condensed);
+  font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); margin-bottom: var(--sp-2);
+  display: flex; align-items: center; gap: var(--sp-1);
+}
+.proj:nth-child(even) .proj-num { justify-content: flex-end; }
+.proj-num::before { content: ''; width: var(--sp-2); height: 1px; background: var(--c-accent); }
+.proj:nth-child(even) .proj-num::before { display: none; }
+.proj:nth-child(even) .proj-num::after  { content: ''; width: var(--sp-2); height: 1px; background: var(--c-accent); }
+
+.proj-title {
+  font-family: var(--f-condensed);
+  font-size: var(--t-title);
+  font-weight: 100; letter-spacing: var(--ls-zero); line-height: .88;
+  text-transform: uppercase; color: var(--c-primary);
+  margin-bottom: var(--sp-3);
+}
+.proj-title .ch {
+  display: inline-block; opacity: 0; transform: translateY(8px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.proj-title .ch.show { opacity: 1; transform: translateY(0); }
+
+.proj-desc {
+  font-family: var(--f-body);
+  font-size: var(--t-ui); line-height: var(--lh-body);
+  color: var(--c-primary); font-weight: 300; letter-spacing: .01em;
+  opacity: 0; transform: translateY(var(--sp-2));
+  transition: opacity .55s var(--ease) .05s, transform .55s var(--ease) .05s;
+  max-width: 340px; margin-bottom: var(--sp-4);
+}
+.proj:nth-child(even) .proj-desc { margin-left: auto; }
+.proj:hover .proj-desc { opacity: .75; transform: translateY(0); }
+
+.proj-tags {
+  display: flex; flex-wrap: wrap; gap: var(--sp-1);
+  opacity: 0; transform: translateY(var(--sp-1));
+  transition: opacity .5s var(--ease) .12s, transform .5s var(--ease) .12s;
+}
+.proj:nth-child(even) .proj-tags { justify-content: flex-end; }
+.proj:hover .proj-tags { opacity: 1; transform: translateY(0); }
+
+.proj-tag {
+  font-family: var(--f-condensed);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--c-primary);
+  border: 1px solid rgba(255,255,255,.18);
+  padding: 6px 12px 5px;
+  background: rgba(255,255,255,.04);
+  transition: border-color .25s, color .25s, background .25s;
+}
+.proj:hover .proj-tag { border-color: rgba(91,160,164,.5); color: var(--c-accent); background: rgba(91,160,164,.08); }
+
+.proj-ghost {
+  position: absolute;
+  font-family: var(--f-condensed);
+  font-size: clamp(240px, 36vw, 520px);
+  font-weight: 700; color: transparent;
+  -webkit-text-stroke: 1px rgba(91,160,164,.05);
+  line-height: 1; pointer-events: none; user-select: none;
+  bottom: -60px; letter-spacing: -.06em;
+  transition: -webkit-text-stroke .5s;
+}
+.proj:nth-child(odd)  .proj-ghost { right: -30px; }
+.proj:nth-child(even) .proj-ghost { left: -30px; }
+.proj:hover .proj-ghost { -webkit-text-stroke: 1px rgba(91,160,164,.12); }
+
+.proj-open {
+  position: absolute; bottom: var(--pad);
+  width: var(--sp-7); height: var(--sp-7);
+  border: 1px solid rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-condensed); font-size: 18px; font-weight: 700;
+  color: var(--c-primary);
+  opacity: 0; transition: opacity .45s var(--ease), border-color .25s, background .25s, color .25s;
+  cursor: none;
+}
+.proj:nth-child(odd)  .proj-open { right: var(--pad); }
+.proj:nth-child(even) .proj-open { left: var(--pad); }
+.proj:hover .proj-open { opacity: 1; }
+.proj-open:hover { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-bg); }
+
+.proj-swipe-hint {
+  position: absolute;
+  bottom: calc(var(--pad) + var(--sp-9));
+  left: 50%; transform: translateX(-50%);
+  font-family: var(--f-condensed);
+  font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.5);
+  display: none; align-items: center; gap: var(--sp-2);
+  animation: swipeHintFade 2.5s ease 1s forwards;
+  pointer-events: none; white-space: nowrap;
+}
+.proj-swipe-hint::before { content: '↕'; font-size: 14px; }
+@keyframes swipeHintFade { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   REDUCED MOTION
+═══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  #grain { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — exact from index.html
+═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .proj-text { width: 55%; }
+}
+
+@media (max-width: 768px) {
+  body { cursor: auto; }
+  #cur, #cur-r { display: none !important; }
+
+  .proj:nth-child(odd)  .proj-text,
+  .proj:nth-child(even) .proj-text {
+    width: 88%; top: auto; transform: none;
+    bottom: 100px; left: var(--pad); right: auto; text-align: left;
+  }
+  .proj:hover .proj-text { transform: none; }
+  .proj:nth-child(odd)  .proj-num,
+  .proj:nth-child(even) .proj-num { justify-content: flex-start; }
+  .proj:nth-child(even) .proj-num::after  { display: none; }
+  .proj:nth-child(even) .proj-num::before { display: inline-block; }
+  .proj:nth-child(even) .proj-veil { background: linear-gradient(to right, rgba(8,9,9,.95) 0%, rgba(8,9,9,.6) 42%, transparent 72%); }
+  .proj:nth-child(odd)  .proj-tags,
+  .proj:nth-child(even) .proj-tags { justify-content: flex-start; }
+  .proj:nth-child(odd)  .proj-open,
+  .proj:nth-child(even) .proj-open { bottom: var(--pad); right: var(--pad); left: auto; }
+  .proj-ghost { display: none; }
+  .proj-title { font-size: clamp(44px, 13vw, 80px); }
+  .proj-desc { max-width: 100%; }
+  #c-dots { right: 14px; }
+
+  /* On mobile the active slide should always show desc/tags/open (no hover state) */
+  .proj[data-pos="active"] .proj-desc { opacity: .75; transform: translateY(0); }
+  .proj[data-pos="active"] .proj-tags { opacity: 1;   transform: translateY(0); }
+  .proj[data-pos="active"] .proj-open { opacity: 1; }
+  .proj[data-pos="active"] .proj-title .ch { opacity: 1; transform: translateY(0); }
+
+  .proj-swipe-hint { display: flex; }
+}
+
+@media (max-width: 480px) {
+  .proj-title { font-size: clamp(38px, 12vw, 60px); }
+}
+
+@media (pointer: coarse) {
+  #cur, #cur-r { display: none !important; }
+  body { cursor: auto; }
+  .proj { cursor: pointer; }
+  .proj-swipe-hint { display: flex; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="cur"   aria-hidden="true"></div>
+<div id="cur-r" aria-hidden="true"></div>
+<div id="grain" aria-hidden="true"></div>
+<div id="prog"  aria-hidden="true"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PROJECTS CAROUSEL
+     Architecture: .projects is position:fixed (invisible until
+     carousel-active). The spacer below sets the scroll distance.
+══════════════════════════════════════════════════════════════ -->
+<section class="projects" id="work" aria-label="Design projects">
+  <div class="proj-track">
+
+    <a href="project-car.html" class="proj"
+       aria-label="3D Printed Car — Mini Clubman surface modeled in Rhino 3D and produced as an FDM print, 2025"
+       style="background:#0a0806;">
+      <div class="proj-img" role="img" aria-label="3D printed Mini Clubman surface model render"
+           style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/minihero.png');background-position:center 30%;"></div>
+      <div class="proj-veil"       aria-hidden="true"></div>
+      <div class="proj-line"       aria-hidden="true"></div>
+      <div class="proj-ghost"      aria-hidden="true">01</div>
+      <div class="proj-swipe-hint" aria-hidden="true">Swipe to navigate</div>
+      <div class="proj-text rev">
+        <div class="proj-num type-micro">01 — 2025</div>
+        <h2 class="proj-title type-title">3D Printed Car</h2>
+        <p class="proj-desc type-body">Surface modeled my personal Mini Clubman in Rhino 3D, then brought it to life as an FDM print.</p>
+        <div class="proj-tags">
+          <span class="proj-tag">Rhino 3D</span>
+          <span class="proj-tag">FDM</span>
+          <span class="proj-tag">Surface Modeling</span>
+        </div>
+      </div>
+      <div class="proj-open" aria-hidden="true">↗</div>
+    </a>
+
+    <a href="project-pen.html" class="proj"
+       aria-label="Sabretta Pen — ballpoint pen design inspired by 1930s roadster fenders, modeled and animated in Rhino 3D and Keyshot, 2025"
+       style="background:#08090a;">
+      <div class="proj-img" role="img" aria-label="Sabretta pen product visualization render"
+           style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/sabrettahero.png');background-position:center 40%;"></div>
+      <div class="proj-veil"  aria-hidden="true"></div>
+      <div class="proj-line"  aria-hidden="true"></div>
+      <div class="proj-ghost" aria-hidden="true">02</div>
+      <div class="proj-text rev">
+        <div class="proj-num type-micro">02 — 2025</div>
+        <h2 class="proj-title type-title">Sabretta Pen</h2>
+        <p class="proj-desc type-body">A ballpoint pen with genuine desire behind it — form drawn from the fenders of 1930s roadsters. Modeled, animated, directed.</p>
+        <div class="proj-tags">
+          <span class="proj-tag">Rhino 3D</span>
+          <span class="proj-tag">Keyshot</span>
+          <span class="proj-tag">Premiere Pro</span>
+        </div>
+      </div>
+      <div class="proj-open" aria-hidden="true">↗</div>
+    </a>
+
+    <a href="project-lamp.html" class="proj"
+       aria-label="Poul Henningsen Lamp — CAD study of the iconic PH lamp, exploring light diffusion through geometry in Rhino 3D, 2025"
+       style="background:#080a09;">
+      <div class="proj-img" role="img" aria-label="Poul Henningsen PH lamp CAD model render"
+           style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/lamphero.png');background-position:center 20%;"></div>
+      <div class="proj-veil"  aria-hidden="true"></div>
+      <div class="proj-line"  aria-hidden="true"></div>
+      <div class="proj-ghost" aria-hidden="true">03</div>
+      <div class="proj-text rev">
+        <div class="proj-num type-micro">03 — 2025</div>
+        <h2 class="proj-title type-title">Poul Henningsen Lamp</h2>
+        <p class="proj-desc type-body">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
+        <div class="proj-tags">
+          <span class="proj-tag">Rhino 3D</span>
+          <span class="proj-tag">CAD Modeling</span>
+        </div>
+      </div>
+      <div class="proj-open" aria-hidden="true">↗</div>
+    </a>
+
+    <a href="project-rhino-intro.html" class="proj"
+       aria-label="Intro to Rhino — headphones, power drill, and Minion helmet modeled across four weeks of Rhino 3D fundamentals, 2025"
+       style="background:#080909;">
+      <div class="proj-img" role="img" aria-label="Power drill and headphones modeled in Rhino 3D"
+           style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/drillhero.jpg');background-position:center;"></div>
+      <div class="proj-veil"  aria-hidden="true"></div>
+      <div class="proj-line"  aria-hidden="true"></div>
+      <div class="proj-ghost" aria-hidden="true">04</div>
+      <div class="proj-text rev">
+        <div class="proj-num type-micro">04 — 2025</div>
+        <h2 class="proj-title type-title">Intro to Rhino</h2>
+        <p class="proj-desc type-body">Headphones, a power drill, and a Minion helmet — what four weeks of learning Rhino 3D looks like.</p>
+        <div class="proj-tags">
+          <span class="proj-tag">Rhino 3D</span>
+          <span class="proj-tag">Keyshot</span>
+          <span class="proj-tag">SubD</span>
+        </div>
+      </div>
+      <div class="proj-open" aria-hidden="true">↗</div>
+    </a>
+
+  </div>
+</section>
+
+<!-- Spacer lives in normal document flow so scroll distance works.
+     JS will set its height = 4 × 100vh. -->
+<div class="projects-spacer" id="projects-spacer" aria-hidden="true"></div>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════════════════
+   SMOOTH SCROLLER
+══════════════════════════════════════════════════════════════ */
+let carouselActive = false;
+const isMobile = window.matchMedia('(max-width: 768px)');
+
+const smoother = (() => {
+  let cur2 = window.scrollY, tgt = window.scrollY, running = false;
+  const cbs = [], EASE = 0.085;
+  function tick() {
+    const d = tgt - cur2;
+    if (Math.abs(d) < 0.4) { cur2 = tgt; window.scrollTo(0, cur2); cbs.forEach(f => f(cur2)); running = false; return; }
+    cur2 += d * EASE; window.scrollTo(0, cur2); cbs.forEach(f => f(cur2));
+    requestAnimationFrame(tick);
+  }
+  function go() { if (!running) { running = true; requestAnimationFrame(tick); } }
+
+  window.addEventListener('wheel', e => {
+    if (carouselActive) return;
+    if (isMobile.matches) return;
+    e.preventDefault();
+    const delta = e.deltaMode === 1 ? e.deltaY*32 : e.deltaMode === 2 ? e.deltaY*window.innerHeight : e.deltaY;
+    tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, tgt + delta));
+    go();
+  }, { passive: false });
+
+  window.addEventListener('scroll', () => { if (!running) cur2 = tgt = window.scrollY; }, { passive: true });
+
+  return {
+    on:        fn  => cbs.push(fn),
+    scrollTo:  el  => { cur2 = window.scrollY; tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, Math.round(el.getBoundingClientRect().top + window.scrollY))); go(); },
+    jumpTo:    val => { cur2 = tgt = val; window.scrollTo(0, val); cbs.forEach(f => f(val)); },
+    setTarget: val => { tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val)); go(); },
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   CAROUSEL
+══════════════════════════════════════════════════════════════ */
+(function initCarousel() {
+  const section = document.querySelector('.projects');
+  const spacer  = document.getElementById('projects-spacer');
+  if (!section || !spacer) return;
+
+  const projs = Array.from(section.querySelectorAll(':scope .proj'));
+  const N = projs.length;
+  if (!N) return;
+
+  /* Size spacer */
+  function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
+  sizeSpacer();
+  window.addEventListener('resize', sizeSpacer, { passive: true });
+
+  /* Char-by-char title animation */
+  projs.forEach(p => {
+    const title = p.querySelector('.proj-title');
+    if (!title) return;
+    const text = title.textContent.trim();
+    title.innerHTML = '';
+    [...text].forEach((ch, i) => {
+      const s = document.createElement('span');
+      s.className = 'ch';
+      s.style.transitionDelay = (i * 18) + 'ms';
+      s.textContent = ch === ' ' ? '\u00a0' : ch;
+      title.appendChild(s);
+    });
+  });
+
+  /* Reveal .rev inside cards immediately */
+  projs.forEach(p => p.querySelectorAll('.rev').forEach(r => r.classList.add('in')));
+
+  /* Build dots */
+  const dotsEl = document.createElement('div');
+  dotsEl.id = 'c-dots';
+  dotsEl.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < N; i++) {
+    const d = document.createElement('span');
+    d.className = 'c-dot';
+    dotsEl.appendChild(d);
+  }
+  document.body.appendChild(dotsEl);
+
+  const LABELS = ['3D Printed Car', 'Sabretta Pen', 'PH Lamp', 'Intro to Rhino'];
+  let activeIdx = 0;
+
+  function setPositions(idx) {
+    projs.forEach((p, i) => {
+      const delta = i - idx;
+      if      (delta < -1)  p.dataset.pos = 'far-above';
+      else if (delta === -1) p.dataset.pos = 'prev';
+      else if (delta === 0) {
+        p.dataset.pos = 'active';
+        p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.add('show'));
+      }
+      else if (delta === 1) p.dataset.pos = 'next';
+      else                  p.dataset.pos = 'far-below';
+    });
+    Array.from(dotsEl.children).forEach((d, i) => d.classList.toggle('on', i === idx));
+  }
+  setPositions(0);
+
+  let engaged = false;
+  let spacerTop = 0;
+  function calcSpacerTop() { spacerTop = Math.round(spacer.getBoundingClientRect().top + window.scrollY); }
+  calcSpacerTop();
+  window.addEventListener('resize', () => setTimeout(calcSpacerTop, 200), { passive: true });
+
+  function engage(idx) {
+    if (engaged) return;
+    engaged = true; carouselActive = true;
+    activeIdx = Math.max(0, Math.min(N-1, idx));
+    setPositions(activeIdx);
+    section.classList.add('carousel-active');
+    dotsEl.style.opacity = '1';
+    window.scrollTo(0, spacerTop);
+    smoother.jumpTo(spacerTop);
+  }
+
+  function disengage(exitY) {
+    if (!engaged) return;
+    engaged = false; carouselActive = false;
+    section.classList.remove('carousel-active');
+    dotsEl.style.opacity = '0';
+    smoother.jumpTo(exitY);
+    smoother.setTarget(exitY);
+  }
+
+  let transitioning = false;
+  const TRANS_MS = 720;
+
+  function advance(dir) {
+    if (transitioning) return;
+    const next = activeIdx + dir;
+    if (next < 0)  { disengage(Math.max(0, spacerTop - 10));         return; }
+    if (next >= N) { disengage(spacerTop + spacer.offsetHeight + 2); return; }
+    transitioning = true;
+    activeIdx = next;
+    setPositions(activeIdx);
+    setTimeout(() => { transitioning = false; }, TRANS_MS);
+  }
+
+  /* ── WHEEL (desktop) ── */
+  let bucket = 0;
+  const THRESH = 60;
+  let drainTimer = null;
+  window.addEventListener('wheel', e => {
+    if (!engaged) return;
+    e.preventDefault();
+    const raw = e.deltaMode === 1 ? e.deltaY*32 : e.deltaMode === 2 ? e.deltaY*window.innerHeight : e.deltaY;
+    bucket += raw;
+    clearTimeout(drainTimer);
+    drainTimer = setTimeout(() => { bucket = 0; }, 250);
+    if (bucket >  THRESH) { bucket = 0; advance(+1); }
+    if (bucket < -THRESH) { bucket = 0; advance(-1); }
+  }, { passive: false });
+
+  /* ── TOUCH ── */
+  let ty0 = 0, tx0 = 0, touchActive = false;
+
+  window.addEventListener('touchstart', e => {
+    ty0 = e.touches[0].clientY;
+    tx0 = e.touches[0].clientX;
+    touchActive = true;
+  }, { passive: true });
+
+  window.addEventListener('touchmove', e => {
+    if (!engaged || !touchActive) return;
+    const dy = Math.abs(e.touches[0].clientY - ty0);
+    const dx = Math.abs(e.touches[0].clientX - tx0);
+    if (dy > dx && dy > 10) e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchend', e => {
+    if (!touchActive) return;
+    touchActive = false;
+    const dy = ty0 - e.changedTouches[0].clientY;
+    const dx = Math.abs(e.changedTouches[0].clientX - tx0);
+    if (Math.abs(dy) > 50 && Math.abs(dy) > dx * 1.2) {
+      if (engaged) {
+        advance(dy > 0 ? +1 : -1);
+      } else {
+        const y = window.scrollY;
+        if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
+          engage(Math.min(N-1, Math.floor((y - spacerTop) / window.innerHeight)));
+          setTimeout(() => advance(dy > 0 ? +1 : -1), 50);
+        }
+      }
+    }
+  }, { passive: true });
+
+  /* ── KEYBOARD ── */
+  window.addEventListener('keydown', e => {
+    if (!engaged) return;
+    if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
+    if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); advance(-1); }
+    if (e.key === 'Escape') { disengage(spacerTop - 10); }
+  });
+
+  /* ── DESKTOP: engage via smoother scroll watch ── */
+  smoother.on(y => {
+    if (isMobile.matches) return;
+    if (engaged) return;
+    if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
+      engage(Math.min(N-1, Math.floor((y - spacerTop) / window.innerHeight)));
+    }
+  });
+
+  /* ── MOBILE FIX ──────────────────────────────────────────────
+     The original site's mobile path used IntersectionObserver
+     on the spacer but it had two bugs:
+     1. It only called engage(0) — never re-engaged if the user
+        scrolled past and came back.
+     2. The disengage on exit only checked rect.top > 0 (upward
+        exit) but had no handler for downward exit, so scrolling
+        past the last card left the carousel stuck visible.
+
+     Fix: proper bi-directional exit + re-entry from either side.
+  ────────────────────────────────────────────────────────────── */
+  if (isMobile.matches) {
+    /* Keep spacerTop fresh on native scroll */
+    window.addEventListener('scroll', calcSpacerTop, { passive: true });
+
+    const mobileObs = new IntersectionObserver(entries => {
+      const entry = entries[0];
+      if (entry.isIntersecting) {
+        if (!engaged) {
+          calcSpacerTop();
+          engage(0);
+        }
+      } else {
+        if (engaged) {
+          const rect = entry.boundingClientRect;
+          if (rect.top > 0) {
+            /* Spacer scrolled below viewport edge — user went back up */
+            disengage(Math.max(0, spacerTop - 10));
+          } else {
+            /* Spacer scrolled above viewport — user went past it */
+            disengage(spacerTop + spacer.offsetHeight + 2);
+          }
+        }
+      }
+    }, { threshold: 0.005, rootMargin: '0px' });
+
+    mobileObs.observe(spacer);
+  }
+
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   PROGRESS BAR
+══════════════════════════════════════════════════════════════ */
+const prog = document.getElementById('prog');
+function onScroll(y) {
+  const maxScroll = document.body.scrollHeight - window.innerHeight;
+  if (prog) prog.style.transform = `scaleX(${maxScroll > 0 ? y / maxScroll : 0})`;
+}
+smoother.on(onScroll);
+if (isMobile.matches) {
+  window.addEventListener('scroll', () => onScroll(window.scrollY), { passive: true });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CUSTOM CURSOR
+══════════════════════════════════════════════════════════════ */
+const cur  = document.getElementById('cur');
+const curR = document.getElementById('cur-r');
+let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+let rx = mx, ry = my;
+let isDown = false, inLink = false, inProj = false;
+const STATES = {
+  default: { dot: 8,  ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
+  link:    { dot: 5,  ring: 64,  ringColor: 'rgba(91,160,164,.6)'  },
+  proj:    { dot: 4,  ring: 110, ringColor: 'rgba(91,160,164,.2)'  },
+  click:   { dot: 12, ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
+};
+let ringTarget = 42, ringCurrent = 42;
+function getState() { return isDown ? 'click' : inLink ? 'link' : inProj ? 'proj' : 'default'; }
+function applyCursorState() {
+  const s = STATES[getState()];
+  if (cur) { cur.style.width = cur.style.height = s.dot + 'px'; }
+  ringTarget = s.ring;
+  if (curR) curR.style.borderColor = s.ringColor;
+}
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; if (cur) { cur.style.left = mx+'px'; cur.style.top = my+'px'; } });
+if (window.matchMedia('(pointer:fine)').matches) {
+  (function loop() {
+    const rxN = rx+(mx-rx)*.1, ryN = ry+(my-ry)*.1, rN = ringCurrent+(ringTarget-ringCurrent)*.12;
+    if (Math.abs(rxN-rx)>.02 || Math.abs(ryN-ry)>.02 || Math.abs(rN-ringCurrent)>.05) {
+      rx=rxN; ry=ryN; ringCurrent=rN;
+      if (curR) { curR.style.left=rx+'px'; curR.style.top=ry+'px'; curR.style.width=curR.style.height=ringCurrent+'px'; }
+    }
+    requestAnimationFrame(loop);
+  })();
+}
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => { inLink=true;  applyCursorState(); });
+  el.addEventListener('mouseleave', () => { inLink=false; applyCursorState(); });
+});
+document.querySelectorAll('.proj').forEach(el => {
+  el.addEventListener('mouseenter', () => { inProj=true;  applyCursorState(); });
+  el.addEventListener('mouseleave', () => { inProj=false; applyCursorState(); });
+});
+document.addEventListener('mousedown',  () => { isDown=true;  applyCursorState(); });
+document.addEventListener('mouseup',    () => { isDown=false; applyCursorState(); });
+document.addEventListener('mouseleave', () => { if(cur) cur.style.opacity='0'; if(curR) curR.style.opacity='0'; });
+document.addEventListener('mouseenter', () => { if(cur) cur.style.opacity='1'; if(curR) curR.style.opacity='1'; });
+applyCursorState();
+
+/* ══════════════════════════════════════════════════════════════
+   CARD TILT — desktop only
+══════════════════════════════════════════════════════════════ */
+if (!window.matchMedia('(pointer:coarse)').matches) {
+  document.querySelectorAll('.proj').forEach(proj => {
+    const img = proj.querySelector('.proj-img');
+    if (!img) return;
+    proj.addEventListener('mouseenter', () => { proj._r = proj.getBoundingClientRect(); });
+    proj.addEventListener('mousemove', e => {
+      if (!proj._r) proj._r = proj.getBoundingClientRect();
+      const nx = (e.clientX - proj._r.left) / proj._r.width  - .5;
+      const ny = (e.clientY - proj._r.top)  / proj._r.height - .5;
+      img.style.transform = `scale(1.06) rotateY(${nx*4}deg) rotateX(${-ny*2}deg)`;
+    });
+    proj.addEventListener('mouseleave', () => { img.style.transform = 'scale(1.06)'; });
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   READY
+══════════════════════════════════════════════════════════════ */
+requestAnimationFrame(() => { document.body.classList.add('ready'); });
+</script>
+
+</body>
+</html>
