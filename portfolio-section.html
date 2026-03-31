@@ -734,6 +734,19 @@ const smoother = (() => {
     }
   });
 
+  /* ── INITIAL ENGAGE: if spacer is already in view on load (e.g. standalone page) ── */
+  requestAnimationFrame(() => {
+    calcSpacerTop();
+    const y = window.scrollY;
+    if (!engaged && spacerTop <= window.innerHeight) {
+      if (isMobile.matches) {
+        engage(0);
+      } else {
+        engage(Math.min(N-1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
+      }
+    }
+  });
+
   /* ── MOBILE FIX ──────────────────────────────────────────────
      The original site's mobile path used IntersectionObserver
      on the spacer but it had two bugs:
