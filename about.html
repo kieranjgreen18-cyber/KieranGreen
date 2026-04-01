@@ -6,6 +6,7 @@
 <title>About — Kieran Green</title>
 <style>
 
+/* ── Fonts ── */
 @font-face {
   font-family: 'D-DIN';
   src: url('D-DIN.otf') format('opentype');
@@ -32,41 +33,51 @@
   font-weight: 700 900; font-style: normal; font-display: swap;
 }
 
+/* ── Tokens ── */
 :root {
-  --c-bg:       #080909;
-  --c-primary:  #edeeed;
-  --c-secondary:#96a8aa;
-  --c-accent:   #5ba0a4;
-  --c-muted:    rgba(150,168,170,0.35);
-  --c-rule:     rgba(255,255,255,0.055);
-  --f-cond:     'D-DIN Condensed', 'Arial Narrow', sans-serif;
-  --f-body:     'D-DIN', Arial, sans-serif;
-  --t-heading:  clamp(36px, 5vw, 72px);
-  --t-micro:    11px;
-  --lh-heading: 0.90;
-  --lh-body:    1.85;
-  --ls-zero:   -0.04em;
-  --ls-tight:   0.01em;
-  --ls-stencil: 0.22em;
-  --pad:        clamp(24px, 4vw, 56px);
-  --ease:       cubic-bezier(0.16, 1, 0.3, 1);
-  --snap:       cubic-bezier(0.77, 0, 0.18, 1);
-  --ease-out:   cubic-bezier(0.0,  0, 0.2,  1);
+  --c-bg:        #080909;
+  --c-primary:   #edeeed;
+  --c-secondary: #96a8aa;
+  --c-accent:    #5ba0a4;
+  --c-muted:     rgba(150,168,170,0.35);
+  --c-rule:      rgba(255,255,255,0.055);
+  --f-cond:      'D-DIN Condensed', 'Arial Narrow', sans-serif;
+  --f-body:      'D-DIN', Arial, sans-serif;
+  --t-heading:   clamp(36px, 5vw, 72px);
+  --t-micro:     11px;
+  --lh-heading:  0.90;
+  --lh-body:     1.85;
+  --ls-zero:    -0.04em;
+  --ls-tight:    0.01em;
+  --ls-stencil:  0.22em;
+  --pad:         clamp(24px, 4vw, 56px);
+  --ease:        cubic-bezier(0.16, 1, 0.3, 1);
+  --snap:        cubic-bezier(0.77, 0, 0.18, 1);
+  --ease-out:    cubic-bezier(0.0,  0, 0.2,  1);
 }
 
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html, body {
+/* ── Reset — NOTE: no overflow:hidden on html/body.
+   That would block vertical scrolling.              ── */
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+}
+html {
+  /* overflow-x only — never block vertical scroll */
   overflow-x: hidden;
+}
+body {
   background: var(--c-bg);
   color: var(--c-primary);
   font-family: var(--f-body);
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* DO NOT set overflow-y here — must remain auto/scroll */
 }
 em     { font-style: italic; color: var(--c-accent); }
 strong { color: var(--c-primary); font-weight: 700; }
 
-/* ── Grain ── */
+/* ── Grain overlay ── */
 .grain {
   position: fixed; inset: -25%; width: 150%; height: 150%;
   pointer-events: none; z-index: 999; opacity: 0.026;
@@ -79,39 +90,54 @@ strong { color: var(--c-primary); font-weight: 700; }
   66%      { transform: translate3d(1%,1%,0); }
 }
 
-/* ════════════════════════════════════════════════════════
-   SCROLLYTELLING SHELL
+/* ══════════════════════════════════════════════════════════
+   SCROLLYTELLING ARCHITECTURE
+   ──────────────────────────────────────────────────────────
+   .about-root        tall scroll container. Must NOT have
+                      overflow:hidden — that breaks sticky.
+                      Height = panels × 100vh.
 
-   .about-root   — tall scroll container (creates distance)
-   .about-sticky — position:sticky viewport, 100vh tall
-                   MUST have position:relative for absolute
-                   children to anchor correctly
-════════════════════════════════════════════════════════ */
+   .about-sticky      position:sticky; top:0; height:100vh.
+                      This is the visible "camera".
+                      CRITICAL: it must have a non-auto
+                      height so it doesn't collapse.
+
+   .panels-host       position:relative wrapper INSIDE sticky.
+                      This is the containing block for the
+                      absolute panels. Must be 100% × 100%.
+
+   .panel             position:absolute; inset:0.
+                      All panels stack here. JS swaps classes
+                      to control which is visible.
+   ══════════════════════════════════════════════════════════ */
+
 .about-root {
-  height: 400vh; /* 4 panels × 100vh */
+  /* 4 panels — each gets 100vh of scroll travel */
+  height: 400vh;
+  /* NEVER overflow:hidden here — it breaks position:sticky */
 }
 
 .about-sticky {
   position: sticky;
   top: 0;
+  /* Explicit pixel height — never 100% (that collapses in some browsers) */
   height: 100vh;
   width: 100%;
+  /* overflow:hidden clips content visually but does NOT affect
+     the scroll of the parent — this is safe here              */
   overflow: hidden;
   background: var(--c-bg);
-
-  /* THIS IS THE FIX — explicit positioning context */
-  position: sticky; /* repeated for clarity, not needed */
 }
 
-/* Establish positioning context explicitly via a wrapper */
+/* ── This div is the containing block for absolute panels ── */
 .panels-host {
-  position: relative; /* <-- panels anchor here */
+  position: relative;  /* <-- THE containing block */
   width: 100%;
-  height: 100%;
+  height: 100%;        /* fills .about-sticky exactly */
   overflow: hidden;
 }
 
-/* ── Vertical rule lines ── */
+/* ── Decorative vertical rule lines ── */
 .v-rules {
   position: absolute; inset: 0;
   display: flex; justify-content: space-between;
@@ -120,39 +146,40 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 .v-rule { width: 1px; height: 100%; background: var(--c-rule); }
 
-/* ════════════════════════════════════════════════════════
-   PANELS — all absolute, stacked, one visible at a time
-════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   PANEL SYSTEM
+   Default (no class): hidden, offset down 56px
+   .is-active        : visible, in place
+   .is-after         : hidden, offset up 44px (already passed)
+   ══════════════════════════════════════════════════════════ */
 .panel {
-  position: absolute;  /* anchors to .panels-host */
-  top: 0; left: 0; right: 0; bottom: 0;
+  position: absolute;
+  inset: 0;              /* top:0; right:0; bottom:0; left:0 */
   display: grid;
   grid-template-columns: 1fr 1fr;
-  will-change: transform, opacity;
   z-index: 2;
+  will-change: transform, opacity;
 
-  /* Default: hidden below */
+  /* Default state: below viewport, invisible */
   opacity: 0;
   transform: translateY(56px);
   pointer-events: none;
-  transition:
-    transform 0.85s var(--ease),
-    opacity   0.70s var(--ease);
+  transition: transform 0.85s var(--ease), opacity 0.70s var(--ease);
 }
 
 .panel.is-active {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+  /* inherit transition from base .panel rule */
 }
 
 .panel.is-after {
   opacity: 0;
   transform: translateY(-44px);
   pointer-events: none;
-  transition:
-    transform 0.60s var(--snap),
-    opacity   0.50s var(--ease-out);
+  /* faster, snappier exit */
+  transition: transform 0.55s var(--snap), opacity 0.45s var(--ease-out);
 }
 
 /* ── Left column ── */
@@ -161,11 +188,12 @@ strong { color: var(--c-primary); font-weight: 700; }
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 80px var(--pad) 80px var(--pad);
+  padding: 80px var(--pad);
   border-right: 1px solid var(--c-rule);
   overflow: hidden;
 }
 
+/* Ghost oversized chapter number */
 .ghost-num {
   position: absolute;
   top: -0.06em; left: -0.04em;
@@ -177,22 +205,32 @@ strong { color: var(--c-primary); font-weight: 700; }
   text-transform: uppercase;
   color: transparent;
   -webkit-text-stroke: 1px rgba(91,160,164,0.07);
-  pointer-events: none; user-select: none;
+  pointer-events: none;
+  user-select: none;
 }
 
+/* Eyebrow index label */
 .ch-index {
   font-family: var(--f-cond);
-  font-size: var(--t-micro); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
   color: var(--c-accent);
-  display: flex; align-items: center; gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 28px;
 }
 .ch-index::before {
-  content: ''; width: 32px; height: 1px;
-  background: var(--c-accent); flex-shrink: 0;
+  content: '';
+  display: block;
+  width: 32px; height: 1px;
+  background: var(--c-accent);
+  flex-shrink: 0;
 }
 
+/* Big muted left-column label */
 .ch-label {
   font-family: var(--f-cond);
   font-size: clamp(40px, 5vw, 70px);
@@ -200,7 +238,8 @@ strong { color: var(--c-primary); font-weight: 700; }
   letter-spacing: var(--ls-zero);
   line-height: 0.92;
   text-transform: uppercase;
-  color: var(--c-secondary); opacity: 0.4;
+  color: var(--c-secondary);
+  opacity: 0.4;
 }
 
 /* ── Right column ── */
@@ -211,6 +250,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   padding: 80px var(--pad) 80px 56px;
 }
 
+/* Animated accent rule */
 .ch-rule {
   display: block;
   width: 40px; height: 1px;
@@ -222,6 +262,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 .panel.is-active .ch-rule { transform: scaleX(1); }
 
+/* Chapter title with per-line reveal */
 .ch-title {
   font-family: var(--f-cond);
   font-size: var(--t-heading);
@@ -232,20 +273,35 @@ strong { color: var(--c-primary); font-weight: 700; }
   color: var(--c-primary);
   margin-bottom: 36px;
 }
-.ch-title .tline { display: block; overflow: hidden; }
+/* Each line is an overflow:hidden clip */
+.ch-title .tline {
+  display: block;
+  overflow: hidden;
+  /* Add a touch of line padding so descenders aren't clipped */
+  padding-bottom: 0.08em;
+}
+/* Each word slides up from inside the clip */
 .ch-title .tword {
   display: inline-block;
-  transform: translateY(100%);
+  transform: translateY(110%);
   opacity: 0;
-  transition: transform 0.75s var(--ease), opacity 0.75s var(--ease);
+  transition: transform 0.75s var(--ease), opacity 0.60s var(--ease);
 }
-.panel.is-active .tline:nth-child(1) .tword { transform: translateY(0); opacity: 1; transition-delay: 0.08s; }
-.panel.is-active .tline:nth-child(2) .tword { transform: translateY(0); opacity: 1; transition-delay: 0.20s; }
-.panel.is-active .tline:nth-child(3) .tword { transform: translateY(0); opacity: 1; transition-delay: 0.32s; }
+/* Staggered delays per line */
+.panel.is-active .tline:nth-child(1) .tword {
+  transform: translateY(0); opacity: 1; transition-delay: 0.08s;
+}
+.panel.is-active .tline:nth-child(2) .tword {
+  transform: translateY(0); opacity: 1; transition-delay: 0.20s;
+}
+.panel.is-active .tline:nth-child(3) .tword {
+  transform: translateY(0); opacity: 1; transition-delay: 0.32s;
+}
 
+/* Body paragraph */
 .ch-body {
   font-family: var(--f-body);
-  font-size: clamp(15px, 1.15vw, 17px);
+  font-size: clamp(15px, 1.1vw, 17px);
   font-weight: 300;
   letter-spacing: var(--ls-tight);
   line-height: var(--lh-body);
@@ -253,27 +309,32 @@ strong { color: var(--c-primary); font-weight: 700; }
   max-width: 460px;
   opacity: 0;
   transform: translateY(16px);
-  transition: opacity 0.75s var(--ease) 0.44s, transform 0.75s var(--ease) 0.44s;
+  transition: opacity 0.75s var(--ease) 0.44s,
+              transform 0.75s var(--ease) 0.44s;
 }
 .panel.is-active .ch-body { opacity: 1; transform: translateY(0); }
 
-/* ── Statement panel ── */
+/* ── Statement panel (panel 3) ── */
 .panel-statement {
   grid-template-columns: 1fr;
   align-items: center;
   padding: 80px var(--pad);
 }
 
+/* Oversized watermark monogram */
 .stmt-wm {
   position: absolute;
-  right: calc(var(--pad) - 0.04em); bottom: -0.1em;
+  right: calc(var(--pad) - 0.04em);
+  bottom: -0.1em;
   font-family: var(--f-cond);
   font-size: clamp(120px, 18vw, 260px);
   font-weight: 700;
-  letter-spacing: var(--ls-zero); line-height: 1;
+  letter-spacing: var(--ls-zero);
+  line-height: 1;
   color: transparent;
   -webkit-text-stroke: 1px rgba(91,160,164,0.09);
-  user-select: none; pointer-events: none;
+  user-select: none;
+  pointer-events: none;
   opacity: 0;
   transition: opacity 1s var(--ease) 0.5s;
 }
@@ -283,88 +344,130 @@ strong { color: var(--c-primary); font-weight: 700; }
 
 .stmt-kicker {
   font-family: var(--f-cond);
-  font-size: var(--t-micro); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
   color: var(--c-accent);
-  display: flex; align-items: center; gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 36px;
-  opacity: 0; transform: translateY(12px);
+  opacity: 0;
+  transform: translateY(12px);
   transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
 }
-.stmt-kicker::before { content: ''; width: 32px; height: 1px; background: var(--c-accent); }
+.stmt-kicker::before {
+  content: '';
+  display: block;
+  width: 32px; height: 1px;
+  background: var(--c-accent);
+  flex-shrink: 0;
+}
 .panel.is-active .stmt-kicker { opacity: 1; transform: none; }
 
 .stmt-text {
   font-family: var(--f-body);
   font-size: clamp(18px, 1.85vw, 26px);
   font-weight: 300;
-  letter-spacing: var(--ls-tight); line-height: 1.65;
+  letter-spacing: var(--ls-tight);
+  line-height: 1.65;
   color: var(--c-secondary);
-  opacity: 0; transform: translateY(20px);
-  transition: opacity 0.9s var(--ease) 0.18s, transform 0.9s var(--ease) 0.18s;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.9s var(--ease) 0.18s,
+              transform 0.9s var(--ease) 0.18s;
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
 /* ── Progress dots ── */
 .prog-dots {
   position: absolute;
-  right: 20px; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 10px;
-  z-index: 50; pointer-events: none;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 50;
+  pointer-events: none;
 }
 .prog-dot {
-  width: 4px; height: 4px; border-radius: 50%;
+  width: 4px; height: 4px;
+  border-radius: 50%;
   background: var(--c-muted);
   transition: background 0.4s, transform 0.4s;
 }
-.prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
+.prog-dot.on {
+  background: var(--c-accent);
+  transform: scale(1.8);
+}
 
 /* ── Scroll hint ── */
 .scroll-hint {
   position: absolute;
-  bottom: 32px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   font-family: var(--f-cond);
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--c-secondary); opacity: 0.5;
-  pointer-events: none; z-index: 50;
-  transition: opacity 0.5s;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-secondary);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.5s ease;
 }
 .scroll-hint.hide { opacity: 0; }
+
 .hint-line {
   width: 1px; height: 48px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
   animation: pulse 2.2s ease infinite;
 }
 @keyframes pulse {
-  0%,100% { opacity:.4; transform:scaleY(1); }
-  50%      { opacity:.9; transform:scaleY(.6); }
+  0%,100% { opacity: 0.4; transform: scaleY(1); }
+  50%      { opacity: 0.9; transform: scaleY(0.6); }
 }
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .about-root { height: 400vh; }
-  .panel { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .panel {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
   .col-left {
     justify-content: flex-start;
-    padding: 64px var(--pad) 24px;
-    border-right: none; border-bottom: 1px solid var(--c-rule);
+    padding: 60px var(--pad) 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--c-rule);
   }
-  .ghost-num, .stmt-wm, .prog-dots { display: none; }
-  .col-right { padding: 32px var(--pad) 64px; }
-  .panel-statement { grid-template-rows: 1fr; }
+  .col-right {
+    padding: 28px var(--pad) 60px;
+  }
+  .ghost-num  { display: none; }
+  .stmt-wm    { display: none; }
+  .prog-dots  { display: none; }
+  .panel-statement { grid-template-columns: 1fr; grid-template-rows: 1fr; }
 }
 @media (max-width: 480px) {
   .ch-title { font-size: clamp(30px, 8vw, 48px); }
+  .stmt-text { font-size: clamp(16px, 5vw, 22px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .panel, .ch-title .tword, .ch-body, .ch-rule,
   .stmt-kicker, .stmt-text, .stmt-wm {
     transition-duration: 0.15s !important;
-    transition-delay: 0s !important;
+    transition-delay:    0s    !important;
   }
-  .panel, .panel.is-active, .panel.is-after { transform: none !important; }
+  .panel         { transform: none !important; }
+  .panel.is-after { transform: none !important; }
 }
 
 </style>
@@ -373,10 +476,22 @@ strong { color: var(--c-primary); font-weight: 700; }
 
 <div class="grain" aria-hidden="true"></div>
 
+<!--
+  ═══════════════════════════════════════════════════════════
+  HOW TO EMBED IN INDEX.HTML:
+  Replace the existing <section class="about"> block with
+  everything from <section class="about-root"> to </section>.
+  Remove <html>/<head>/<body> tags — keep only the
+  <section>, and the <script> block.
+  ═══════════════════════════════════════════════════════════
+-->
+
 <section class="about-root" id="about" aria-labelledby="about-h2">
+
   <div class="about-sticky">
     <div class="panels-host">
 
+      <!-- Decorative vertical rules -->
       <div class="v-rules" aria-hidden="true">
         <div class="v-rule"></div>
         <div class="v-rule"></div>
@@ -385,7 +500,7 @@ strong { color: var(--c-primary); font-weight: 700; }
         <div class="v-rule"></div>
       </div>
 
-      <!-- Panel 0 — Engine Bay -->
+      <!-- ═══ PANEL 0 — Engine Bay ═══ -->
       <div class="panel" data-panel="0">
         <div class="col-left">
           <div class="ghost-num" aria-hidden="true">01</div>
@@ -403,7 +518,7 @@ strong { color: var(--c-primary); font-weight: 700; }
         </div>
       </div>
 
-      <!-- Panel 1 — Shop Floor -->
+      <!-- ═══ PANEL 1 — Shop Floor ═══ -->
       <div class="panel" data-panel="1">
         <div class="col-left">
           <div class="ghost-num" aria-hidden="true">02</div>
@@ -421,7 +536,7 @@ strong { color: var(--c-primary); font-weight: 700; }
         </div>
       </div>
 
-      <!-- Panel 2 — Practice Room -->
+      <!-- ═══ PANEL 2 — Practice Room ═══ -->
       <div class="panel" data-panel="2">
         <div class="col-left">
           <div class="ghost-num" aria-hidden="true">03</div>
@@ -439,7 +554,7 @@ strong { color: var(--c-primary); font-weight: 700; }
         </div>
       </div>
 
-      <!-- Panel 3 — Statement -->
+      <!-- ═══ PANEL 3 — Personal Statement ═══ -->
       <div class="panel panel-statement" data-panel="3">
         <div class="stmt-wm" aria-hidden="true">KG</div>
         <div class="stmt-wrap">
@@ -457,85 +572,143 @@ strong { color: var(--c-primary); font-weight: 700; }
       </div>
 
       <!-- Scroll hint -->
-      <div class="scroll-hint" id="scroll-hint" aria-hidden="true">
+      <div class="scroll-hint" id="about-scroll-hint" aria-hidden="true">
         <div class="hint-line"></div>
         <span>Scroll</span>
       </div>
 
     </div><!-- /.panels-host -->
   </div><!-- /.about-sticky -->
+
 </section>
 
 <script>
+/* ══════════════════════════════════════════════════════════
+   ABOUT SCROLLYTELLING — SCROLL ENGINE
+   ══════════════════════════════════════════════════════════
+
+   HOW IT WORKS:
+   .about-root is 400vh tall. .about-sticky is position:sticky
+   and stays locked to the top. As the user scrolls through
+   the 400vh range, we map the scroll distance to 0..1 and
+   then to a panel index 0..3.
+
+   KEY INSIGHT for getBoundingClientRect():
+   When scrollY=0 and root is at top of page:
+     rect.top = 0  →  progress = 0/range = 0  →  panel 0 ✓
+
+   When scrolled halfway through the root:
+     rect.top = -(range/2)  →  progress = 0.5  →  panel 2 ✓
+
+   This works for both standalone page and embedded in index.
+   ══════════════════════════════════════════════════════════ */
+
 (function () {
   'use strict';
 
   var root    = document.querySelector('.about-root');
-  var panels  = Array.from(document.querySelectorAll('.panel'));
+  var host    = document.querySelector('.panels-host');
+  var panels  = Array.from(document.querySelectorAll('[data-panel]'));
   var dots    = Array.from(document.querySelectorAll('.prog-dot'));
-  var hint    = document.getElementById('scroll-hint');
-  var N       = panels.length;   // 4
-  var current = -1;              // force first render
+  var hint    = document.getElementById('about-scroll-hint');
+  var N       = panels.length;  // 4
+  var current = -1;             // -1 forces first activate() to run
 
-  /* ── Scroll progress 0→1 through the root container ──
-     getBoundingClientRect works whether section is at
-     top of page (standalone) or mid-page (in index).     */
-  function getProgress() {
+  /* ── 1. Scroll progress 0→1 ───────────────────────────
+     range = scrollable distance through the root.
+     -rect.top = how far root has scrolled off the top.    */
+  function progress() {
     var rect  = root.getBoundingClientRect();
     var range = root.offsetHeight - window.innerHeight;
     if (range <= 0) return 0;
-    return Math.max(0, Math.min(1, -rect.top / range));
+    var raw = -rect.top / range;
+    return raw < 0 ? 0 : raw > 1 ? 1 : raw;
   }
 
-  /* ── Map progress to panel index ── */
-  function toIndex(p) {
-    return Math.min(Math.floor(p * N), N - 1);
+  /* ── 2. Map 0..1 to panel index 0..N-1 ─────────────── */
+  function toPanel(p) {
+    var idx = Math.floor(p * N);
+    return idx >= N ? N - 1 : idx;
   }
 
-  /* ── Apply classes ── */
+  /* ── 3. Apply states ─────────────────────────────────── */
   function activate(idx) {
     if (idx === current) return;
     current = idx;
 
-    panels.forEach(function (el, i) {
+    var i, el;
+    for (i = 0; i < panels.length; i++) {
+      el = panels[i];
       el.classList.remove('is-active', 'is-after');
-      if (i < idx)      el.classList.add('is-after');
+      if      (i < idx)  el.classList.add('is-after');
       else if (i === idx) el.classList.add('is-active');
-      /* panels after idx get neither class → default (hidden below) */
-    });
+      /* panels with index > idx: no class → default hidden-below */
+    }
 
-    dots.forEach(function (d, i) {
-      d.classList.toggle('on', i === idx);
-    });
+    for (i = 0; i < dots.length; i++) {
+      if (i === idx) dots[i].classList.add('on');
+      else           dots[i].classList.remove('on');
+    }
 
-    if (idx > 0) hint.classList.add('hide');
-    else         hint.classList.remove('hide');
+    if (hint) {
+      if (idx > 0) hint.classList.add('hide');
+      else         hint.classList.remove('hide');
+    }
   }
 
-  /* ── Scroll handler ── */
+  /* ── 4. Scroll handler ──────────────────────────────── */
   function onScroll() {
-    activate(toIndex(getProgress()));
+    activate(toPanel(progress()));
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  /* ── First render — tiny delay so CSS transitions fire ── */
-  setTimeout(function () { onScroll(); }, 50);
+  /* ── 5. Initial render ──────────────────────────────────
+     We wait for DOMContentLoaded to ensure layout is done,
+     then fire immediately. Using setTimeout(0) as a fallback
+     ensures it runs after any inline scripts that may affect
+     scroll position (e.g. the smoother in index.html).      */
+  function init() {
+    /* Force panel 0 active immediately on load */
+    activate(toPanel(progress()));
+  }
 
-  /* ── Keyboard navigation ── */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    /* Already parsed */
+    setTimeout(init, 0);
+  }
+
+  /* ── 6. Keyboard nav ────────────────────────────────── */
   window.addEventListener('keydown', function (e) {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' &&
         e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+
     var rect = root.getBoundingClientRect();
+    /* Only intercept when the section is in view */
     if (rect.top > window.innerHeight || rect.bottom < 0) return;
+
     e.preventDefault();
     var dir  = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
-    var next = Math.max(0, Math.min(N - 1, current + dir));
-    var range = root.offsetHeight - window.innerHeight;
-    window.scrollTo({ top: root.offsetTop + ((next + 0.5) / N) * range, behavior: 'smooth' });
+    var next = current + dir;
+    if (next < 0) next = 0;
+    if (next >= N) next = N - 1;
+
+    /* Scroll to midpoint of target panel's slice */
+    var range  = root.offsetHeight - window.innerHeight;
+    var target = root.offsetTop + ((next + 0.5) / N) * range;
+    window.scrollTo({ top: target, behavior: 'smooth' });
   });
+
+  /* ── 7. Handle index.html's custom smoother ─────────────
+     The index uses a custom smoother object that overrides
+     window.scrollTo. If this script is embedded there, the
+     scroll listener fires correctly because the smoother
+     updates scrollY normally. No changes needed.            */
 
 })();
 </script>
+
 </body>
 </html>
