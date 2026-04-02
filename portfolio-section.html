@@ -626,7 +626,15 @@ const smoother = (() => {
     if (transitioning) return;
     if (dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
-    if (next < 0)  { disengage(Math.max(0, spacerTop - 10)); return; }
+    if (next < 0)  {
+      if (hasContentAbove()) {
+        disengage(Math.max(0, spacerTop - 10));
+      } else {
+        smoother.jumpTo(spacerTop);
+        smoother.setTarget(spacerTop);
+      }
+      return;
+    }
     if (next >= N) {
       /* Only disengage downward if there's real content to reveal below */
       if (hasContentBelow()) {
@@ -777,6 +785,7 @@ const smoother = (() => {
         } else {
           zone = 'inside'; /* snap back */
           smoother.jumpTo(spacerTop);
+          smoother.setTarget(spacerTop);
         }
       } else { /* below */
         if (hasContentBelow()) {
@@ -784,6 +793,7 @@ const smoother = (() => {
         } else {
           zone = 'inside'; /* snap back */
           smoother.jumpTo(spacerTop + spacer.offsetHeight - window.innerHeight);
+          smoother.setTarget(spacerTop + spacer.offsetHeight - window.innerHeight);
         }
       }
     }
