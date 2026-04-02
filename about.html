@@ -55,7 +55,7 @@
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { overflow-x: hidden; }
+html { overflow-x: hidden; overscroll-behavior: none; }
 body {
   background: var(--c-bg);
   color: var(--c-primary);
@@ -545,20 +545,23 @@ strong { color: var(--c-primary); font-weight: 700; }
   }
 
   /* ─────────────────────────────────────────────────────
+     COOLDOWN — prevents immediate re-engage after exit
+  ───────────────────────────────────────────────────── */
+  var disengageCooldown = false;
+
+  /* ─────────────────────────────────────────────────────
      ENGAGE — lock scroll, show stage
   ───────────────────────────────────────────────────── */
   function engage(idx) {
-    if (engaged) return;
+    if (engaged || disengageCooldown) return;
     engaged = true;
 
     activeIdx = (idx < 0) ? 0 : (idx >= N) ? N - 1 : idx;
     setPanel(activeIdx);
     stage.classList.add('engaged');
 
-    /* Lock scroll position to spacer top */
+    /* Lock scroll position to spacer top via jumpTo (no animation) */
     window.scrollTo(0, spacerTop);
-
-    /* If the index smoother exists, tell it too */
     if (window._aboutSmootherJump) window._aboutSmootherJump(spacerTop);
   }
 
@@ -569,6 +572,9 @@ strong { color: var(--c-primary); font-weight: 700; }
     if (!engaged) return;
     engaged = false;
     stage.classList.remove('engaged');
+    disengageCooldown = true;
+    setTimeout(function () { disengageCooldown = false; }, 600);
+    exitY = Math.max(0, exitY);
     window.scrollTo(0, exitY);
     if (window._aboutSmootherJump) window._aboutSmootherJump(exitY);
   }
@@ -581,13 +587,13 @@ strong { color: var(--c-primary); font-weight: 700; }
     var next = activeIdx + dir;
 
     if (next < 0) {
-      /* Exit above — scroll back to just before spacer */
-      disengage(Math.max(0, spacerTop - 2));
+      /* Exit above — scroll back to half a viewport before spacer */
+      disengage(Math.max(0, spacerTop - Math.round(VH * 0.5)));
       return;
     }
     if (next >= N) {
-      /* Exit below — scroll to just after spacer */
-      disengage(spacerTop + spacer.offsetHeight + 2);
+      /* Exit below — scroll solidly past the entire spacer */
+      disengage(spacerTop + spacer.offsetHeight);
       return;
     }
 
@@ -619,29 +625,28 @@ strong { color: var(--c-primary); font-weight: 700; }
     }
 
     /* Not engaged: check if scroll position is entering the spacer */
-    /* We read the CURRENT scroll target (or scrollY if no smoother) */
+    if (disengageCooldown) return;
     var currentY = window.scrollY;
-    if (currentY >= spacerTop && currentY < spacerTop + spacer.offsetHeight) {
+    if (currentY >= spacerTop + 4 && currentY < spacerTop + spacer.offsetHeight - 4) {
       e.preventDefault();
-      engage(0);
+      engage(Math.min(N - 1, Math.floor((currentY - spacerTop) / PANEL_H)));
     }
-  }, { passive: false });  /* MUST be non-passive to call preventDefault */
+  }, { passive: false });
 
   /* ─────────────────────────────────────────────────────
-     NATIVE SCROLL WATCH — catches scroll from nav links,
-     programmatic scrollTo, or momentum scroll landing
-     inside the spacer zone
+     NATIVE SCROLL WATCH — catches nav link scrolls etc.
   ───────────────────────────────────────────────────── */
   window.addEventListener('scroll', function () {
     if (engaged) {
       /* Enforce lock: keep scrollY at spacerTop */
-      if (window.scrollY !== spacerTop) {
+      if (Math.abs(window.scrollY - spacerTop) > 2) {
         window.scrollTo(0, spacerTop);
       }
       return;
     }
+    if (disengageCooldown) return;
     var y = window.scrollY;
-    if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
+    if (y >= spacerTop + 4 && y < spacerTop + spacer.offsetHeight - 4) {
       engage(Math.min(N - 1, Math.floor((y - spacerTop) / PANEL_H)));
     }
   }, { passive: true });
@@ -672,9 +677,9 @@ strong { color: var(--c-primary); font-weight: 700; }
     if (Math.abs(dy) > 48 && Math.abs(dy) > dx * 1.2) {
       if (engaged) {
         advance(dy > 0 ? +1 : -1);
-      } else {
+      } else if (!disengageCooldown) {
         var y = window.scrollY;
-        if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
+        if (y >= spacerTop + 4 && y < spacerTop + spacer.offsetHeight - 4) {
           engage(0);
           setTimeout(function () { advance(dy > 0 ? +1 : -1); }, 60);
         }
@@ -689,7 +694,7 @@ strong { color: var(--c-primary); font-weight: 700; }
     if (!engaged) return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
     if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); advance(-1); }
-    if (e.key === 'Escape') { disengage(Math.max(0, spacerTop - 2)); }
+    if (e.key === 'Escape') { disengage(Math.max(0, spacerTop - Math.round(VH * 0.5))); }
   });
 
   /* ─────────────────────────────────────────────────────
