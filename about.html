@@ -466,261 +466,309 @@ strong { color: var(--c-primary); font-weight: 700; }
 </section>
 
 <script>
-(function () {
-  'use strict';
+'use strict';
 
-  /* ════════════════════════════════════════════════════════
-     ABOUT SCROLL-LOCK ENGINE
-     Mirrors the index carousel pattern exactly:
-     - A spacer div holds scroll real estate
-     - A fixed stage shows the content
-     - Wheel events are intercepted while engaged
-     - Advance/disengage snap scroll position
+/* ══════════════════════════════════════════════════════════════
+   ABOUT SCROLL-LOCK ENGINE  (portfolio-grade wheel model)
+   ──────────────────────────────────────────────────────────────
+   Visual behaviour: text panels animate in/out (unchanged).
+   Scroll engine:    velocity-decay wheel + zone state machine
+                     transplanted from portfolio-section.html.
+══════════════════════════════════════════════════════════════ */
 
-     Works standalone AND embedded in index.html.
-     When embedded, it hooks into the existing `smoother`.
-  ════════════════════════════════════════════════════════ */
+const isMobile = window.matchMedia('(max-width:768px)');
+let stageActive = false; /* mirrors carouselActive in portfolio */
 
-  var spacer  = document.querySelector('.about-spacer');
-  var stage   = document.getElementById('about-stage');
-  var panels  = Array.from(document.querySelectorAll('[data-panel]'));
-  var dots    = Array.from(document.querySelectorAll('.prog-dot'));
-  var hint    = document.getElementById('about-scroll-hint');
-  var N       = panels.length;         // 4
-  var VH      = window.innerHeight;
-
-  /* Each panel gets 1 × VH of scroll distance */
-  var PANEL_H = VH;
-
-  /* ── Size the spacer to hold all panels ── */
-  function sizeSpacerAndVH() {
-    VH = window.innerHeight;
-    PANEL_H = VH;
-    spacer.style.height = (N * PANEL_H) + 'px';
+/* ══ SMOOTH SCROLLER ══════════════════════════════════════════ */
+const smoother = (() => {
+  let cur2 = window.scrollY, tgt = window.scrollY, running = false;
+  const cbs = [], EASE = 0.085;
+  function tick() {
+    const d = tgt - cur2;
+    if (Math.abs(d) < 0.4) { cur2 = tgt; window.scrollTo(0, cur2); cbs.forEach(f => f(cur2)); running = false; return; }
+    cur2 += d * EASE; window.scrollTo(0, cur2); cbs.forEach(f => f(cur2));
+    requestAnimationFrame(tick);
   }
-  sizeSpacerAndVH();
-  window.addEventListener('resize', function () {
-    sizeSpacerAndVH();
-    if (engaged) calcSpacerTop();
-  }, { passive: true });
+  function go() { if (!running) { running = true; requestAnimationFrame(tick); } }
+  window.addEventListener('wheel', e => {
+    if (stageActive) return;
+    if (isMobile.matches) return;
+    e.preventDefault();
+    const delta = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
+    tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, tgt + delta));
+    go();
+  }, { passive: false });
+  window.addEventListener('scroll', () => { if (!running) cur2 = tgt = window.scrollY; }, { passive: true });
+  return {
+    on:        fn  => cbs.push(fn),
+    jumpTo:    val => { cur2 = tgt = val; window.scrollTo(0, val); cbs.forEach(f => f(val)); },
+    setTarget: val => { tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val)); go(); },
+  };
+})();
 
-  /* ── Where does the spacer start in document space? ── */
-  var spacerTop = 0;
+/* ══ ABOUT PANEL ENGINE ══════════════════════════════════════ */
+(function initAbout() {
+
+  const spacer = document.querySelector('.about-spacer');
+  const stage  = document.getElementById('about-stage');
+  const panels = Array.from(document.querySelectorAll('[data-panel]'));
+  const dots   = Array.from(document.querySelectorAll('.prog-dot'));
+  const hint   = document.getElementById('about-scroll-hint');
+  const N      = panels.length;
+  if (!spacer || !stage || !N) return;
+
+  /* ── Spacer sizing ── */
+  function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
+  sizeSpacer();
+  window.addEventListener('resize', sizeSpacer, { passive: true });
+
+  /* ── Spacer position ── */
+  let spacerTop = 0;
   function calcSpacerTop() {
     spacerTop = Math.round(spacer.getBoundingClientRect().top + window.scrollY);
   }
   calcSpacerTop();
-  window.addEventListener('resize', function () {
-    setTimeout(calcSpacerTop, 200);
-  }, { passive: true });
+  window.addEventListener('resize', () => setTimeout(calcSpacerTop, 200), { passive: true });
 
-  /* ─────────────────────────────────────────────────────
-     STATE
-  ───────────────────────────────────────────────────── */
-  var engaged      = false;
-  var activeIdx    = 0;
-  var transitioning = false;
-  var TRANS_MS     = 800;
-
-  /* ─────────────────────────────────────────────────────
-     PANEL SWITCHING
-  ───────────────────────────────────────────────────── */
+  /* ── Panel switching (visual — unchanged from original) ── */
+  let activeIdx = 0;
   function setPanel(idx) {
     activeIdx = idx;
-
-    panels.forEach(function (el, i) {
+    panels.forEach((el, i) => {
       el.classList.remove('is-active', 'is-after');
-      if      (i < idx)  el.classList.add('is-after');
-      else if (i === idx) el.classList.add('is-active');
+      if      (i < idx)   el.classList.add('is-after');
+      else if (i === idx)  el.classList.add('is-active');
     });
-
-    dots.forEach(function (d, i) {
-      d.classList.toggle('on', i === idx);
-    });
-
-    if (hint) {
-      if (idx > 0) hint.classList.add('hide');
-      else         hint.classList.remove('hide');
-    }
+    dots.forEach((d, i) => d.classList.toggle('on', i === idx));
+    if (hint) hint.classList.toggle('hide', idx > 0);
   }
 
-  /* ─────────────────────────────────────────────────────
-     COOLDOWN — prevents immediate re-engage after exit
-  ───────────────────────────────────────────────────── */
-  var disengageCooldown = false;
+  /* ── Engage / Disengage ── */
+  let engaged = false;
 
-  /* ─────────────────────────────────────────────────────
-     ENGAGE — lock scroll, show stage
-  ───────────────────────────────────────────────────── */
   function engage(idx) {
-    if (engaged || disengageCooldown) return;
-    engaged = true;
-
-    activeIdx = (idx < 0) ? 0 : (idx >= N) ? N - 1 : idx;
+    if (engaged) return;
+    engaged = true; stageActive = true;
+    activeIdx = Math.max(0, Math.min(N - 1, idx));
     setPanel(activeIdx);
     stage.classList.add('engaged');
-
-    /* Lock scroll position to spacer top via jumpTo (no animation) */
     window.scrollTo(0, spacerTop);
-    if (window._aboutSmootherJump) window._aboutSmootherJump(spacerTop);
+    smoother.jumpTo(spacerTop);
+    /* reset wheel velocity */
+    wVel = 0; wLastTime = 0;
   }
 
-  /* ─────────────────────────────────────────────────────
-     DISENGAGE — release scroll, hide stage
-  ───────────────────────────────────────────────────── */
   function disengage(exitY) {
     if (!engaged) return;
-    engaged = false;
+    engaged = false; stageActive = false;
     stage.classList.remove('engaged');
-    disengageCooldown = true;
-    setTimeout(function () { disengageCooldown = false; }, 600);
-    exitY = Math.max(0, exitY);
-    window.scrollTo(0, exitY);
-    if (window._aboutSmootherJump) window._aboutSmootherJump(exitY);
+    smoother.jumpTo(exitY);
+    smoother.setTarget(exitY);
+    wVel = 0; wLastTime = 0;
   }
 
-  /* ─────────────────────────────────────────────────────
-     ADVANCE — go to next/prev panel or exit
-  ───────────────────────────────────────────────────── */
-  function advance(dir) {
-    if (transitioning) return;
-    var next = activeIdx + dir;
+  /* ── Transition guard ── */
+  let transitioning = false;
+  let lastAdvanceAt = 0;
+  const TRANS_MS = 820;
 
+  function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
+  function hasContentBelow() {
+    const spacerBottom = spacerTop + spacer.offsetHeight;
+    return (document.body.scrollHeight - spacerBottom) > window.innerHeight * 0.5;
+  }
+
+  function advance(dir) {
+    const now = performance.now();
+    if (transitioning || (now - lastAdvanceAt) < TRANS_MS) return;
+    const next = activeIdx + dir;
     if (next < 0) {
-      /* Exit above — scroll back to half a viewport before spacer */
-      disengage(Math.max(0, spacerTop - Math.round(VH * 0.5)));
+      if (hasContentAbove()) {
+        disengage(Math.max(0, spacerTop - 10));
+      }
       return;
     }
     if (next >= N) {
-      /* Exit below — scroll solidly past the entire spacer */
-      disengage(spacerTop + spacer.offsetHeight);
+      if (hasContentBelow()) {
+        disengage(spacerTop + spacer.offsetHeight + 2);
+      }
       return;
     }
-
     transitioning = true;
+    lastAdvanceAt = now;
     setPanel(next);
-    setTimeout(function () { transitioning = false; }, TRANS_MS);
+    setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
 
-  /* ─────────────────────────────────────────────────────
-     WHEEL
-     Simple: fire on first event that exceeds a tiny
-     threshold, then ignore all events until the gesture
-     is physically over (no events for 150ms).
-     Works identically for mouse wheel and trackpad.
-  ───────────────────────────────────────────────────── */
-  var THRESH       = 30;
-  var gestureTimer = null;
-  var gestureFired = false;
+  /* ── Wheel — velocity-decay model (from portfolio) ── */
+  let wVel = 0;
+  let wLastTime = 0;
+  const W_THRESH = 200;
+  const W_DECAY  = 0.75;
+  const W_CLAMP  = 90;
 
-  window.addEventListener('wheel', function (e) {
-    if (!engaged) {
-      /* Not engaged: check if we're in the spacer zone and engage */
-      if (disengageCooldown) return;
-      var currentY = window.scrollY;
-      if (currentY >= spacerTop && currentY < spacerTop + spacer.offsetHeight) {
-        e.preventDefault();
-        engage(Math.min(N - 1, Math.floor((currentY - spacerTop) / PANEL_H)));
-      }
-      return;
-    }
+  window.addEventListener('wheel', e => {
+    if (!engaged) return;
     e.preventDefault();
 
-    var raw = e.deltaMode === 1 ? e.deltaY * 32
-            : e.deltaMode === 2 ? e.deltaY * VH
-            : e.deltaY;
+    const now = performance.now();
+    const raw = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
 
-    /* Reset the gesture-end timer on every event */
-    clearTimeout(gestureTimer);
-    gestureTimer = setTimeout(function () {
-      gestureFired = false;
-    }, 150);
-
-    /* Only fire once per gesture */
-    if (gestureFired) return;
-    if (Math.abs(raw) < THRESH) return;
-
-    gestureFired = true;
-    advance(raw > 0 ? +1 : -1);
-
-  }, { passive: false });
-
-  /* ─────────────────────────────────────────────────────
-     NATIVE SCROLL WATCH — catches programmatic scrollTo
-     and nav link jumps landing inside the spacer zone.
-     Kept simple: no enforce-lock loop.
-  ───────────────────────────────────────────────────── */
-  var scrollLock = false;
-  window.addEventListener('scroll', function () {
-    if (engaged) return; /* stage handles its own position */
-    if (disengageCooldown) return;
-    var y = window.scrollY;
-    if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
-      if (!scrollLock) {
-        scrollLock = true;
-        engage(Math.min(N - 1, Math.floor((y - spacerTop) / PANEL_H)));
-        setTimeout(function () { scrollLock = false; }, 400);
-      }
+    const gap = now - wLastTime;
+    if (gap > 300 || wLastTime === 0) {
+      wVel = 0;
+    } else {
+      wVel *= Math.pow(W_DECAY, gap / 16);
     }
-  }, { passive: true });
+    wLastTime = now;
 
-  /* ─────────────────────────────────────────────────────
-     TOUCH — swipe up/down
-  ───────────────────────────────────────────────────── */
-  var ty0 = 0, tx0 = 0, touchLive = false;
+    wVel += Math.sign(raw) * Math.min(Math.abs(raw), W_CLAMP);
 
-  window.addEventListener('touchstart', function (e) {
-    ty0 = e.touches[0].clientY;
-    tx0 = e.touches[0].clientX;
-    touchLive = true;
-  }, { passive: true });
-
-  window.addEventListener('touchmove', function (e) {
-    if (!engaged || !touchLive) return;
-    var dy = Math.abs(e.touches[0].clientY - ty0);
-    var dx = Math.abs(e.touches[0].clientX - tx0);
-    if (dy > dx && dy > 8) e.preventDefault();
+    if (wVel >  W_THRESH) { wVel = 0; advance(+1); }
+    if (wVel < -W_THRESH) { wVel = 0; advance(-1); }
   }, { passive: false });
 
-  window.addEventListener('touchend', function (e) {
-    if (!touchLive) return;
-    touchLive = false;
-    var dy = ty0 - e.changedTouches[0].clientY;
-    var dx = Math.abs(e.changedTouches[0].clientX - tx0);
-    if (Math.abs(dy) > 48 && Math.abs(dy) > dx * 1.2) {
+  /* ── Touch ── */
+  let ty0 = 0, tx0 = 0, touchActive = false;
+  window.addEventListener('touchstart', e => {
+    ty0 = e.touches[0].clientY; tx0 = e.touches[0].clientX; touchActive = true;
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (!engaged || !touchActive) return;
+    const dy = Math.abs(e.touches[0].clientY - ty0);
+    const dx = Math.abs(e.touches[0].clientX - tx0);
+    if (dy > dx && dy > 10) e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchend', e => {
+    if (!touchActive) return;
+    touchActive = false;
+    const dy = ty0 - e.changedTouches[0].clientY;
+    const dx = Math.abs(e.changedTouches[0].clientX - tx0);
+    if (Math.abs(dy) > 50 && Math.abs(dy) > dx * 1.2) {
       if (engaged) {
         advance(dy > 0 ? +1 : -1);
-      } else if (!disengageCooldown) {
-        var y = window.scrollY;
-        if (y >= spacerTop + 4 && y < spacerTop + spacer.offsetHeight - 4) {
-          engage(0);
-          setTimeout(function () { advance(dy > 0 ? +1 : -1); }, 60);
+      } else {
+        const y = window.scrollY;
+        if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
+          engage(Math.min(N - 1, Math.floor((y - spacerTop) / window.innerHeight)));
+          setTimeout(() => advance(dy > 0 ? +1 : -1), 50);
         }
       }
     }
   }, { passive: true });
 
-  /* ─────────────────────────────────────────────────────
-     KEYBOARD
-  ───────────────────────────────────────────────────── */
-  window.addEventListener('keydown', function (e) {
+  /* ── Keyboard ── */
+  window.addEventListener('keydown', e => {
     if (!engaged) return;
-    if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
-    if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); advance(-1); }
-    if (e.key === 'Escape') { disengage(Math.max(0, spacerTop - Math.round(VH * 0.5))); }
+    if (e.key==='ArrowDown'||e.key==='PageDown') { e.preventDefault(); advance(+1); }
+    if (e.key==='ArrowUp'  ||e.key==='PageUp')   { e.preventDefault(); advance(-1); }
+    if (e.key==='Escape') disengage(Math.max(0, spacerTop - 10));
   });
 
-  /* ─────────────────────────────────────────────────────
-     INDEX.HTML INTEGRATION HOOK
-     The index smoother intercepts wheel events globally.
-     When embedded, expose a jump function so we can
-     sync the smoother's internal position.
-  ───────────────────────────────────────────────────── */
-  window._aboutSmootherJump = null; /* filled by index.html if needed */
+  /* ══════════════════════════════════════════════════════════════
+     UNIFIED ZONE STATE MACHINE (from portfolio)
+     ──────────────────────────────────────────────────────────────
+     'above'  — above the spacer
+     'inside' — inside the spacer (stage owns scroll)
+     'below'  — below the spacer
 
-  /* ─────────────────────────────────────────────────────
-     INIT — set panel 0, recalc spacer position
-  ───────────────────────────────────────────────────── */
+     Zone transitions fire engage/disengage exactly once.
+     Re-entry always resumes on the correct edge panel:
+       from above → panel 0 | from below → panel N-1
+  ══════════════════════════════════════════════════════════════ */
+
+  const HYSTERESIS = 20;
+  let zone = null;
+
+  function getZone(y) {
+    const sh = spacer.offsetHeight;
+    if (y < spacerTop - HYSTERESIS)      return 'above';
+    if (y > spacerTop + sh + HYSTERESIS) return 'below';
+    return 'inside';
+  }
+
+  function onScrollPosition(y) {
+    calcSpacerTop();
+    const newZone = getZone(y);
+    if (newZone === zone) return;
+
+    const prevZone = zone;
+    zone = newZone;
+
+    if (newZone === 'inside') {
+      engage(prevZone === 'below' ? N - 1 : 0);
+
+    } else if (prevZone === 'inside') {
+      if (newZone === 'above') {
+        if (hasContentAbove()) {
+          disengage(Math.max(0, spacerTop - HYSTERESIS - 1));
+        } else {
+          zone = 'inside';
+          smoother.jumpTo(spacerTop);
+        }
+      } else {
+        if (hasContentBelow()) {
+          disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1);
+        } else {
+          zone = 'inside';
+          smoother.jumpTo(spacerTop + spacer.offsetHeight - window.innerHeight);
+        }
+      }
+    }
+  }
+
+  /* Desktop: pipe smoother output into zone detector */
+  smoother.on(y => { if (!isMobile.matches) onScrollPosition(y); });
+
+  /* Set initial zone */
+  requestAnimationFrame(() => {
+    calcSpacerTop();
+    const y = window.scrollY;
+    zone = getZone(y);
+    if (zone === 'inside') {
+      engage(Math.min(N - 1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
+    }
+  });
+
+  /* Mobile: IntersectionObserver */
+  if (isMobile.matches) {
+    let mobileZone = null;
+    window.addEventListener('scroll', calcSpacerTop, { passive: true });
+
+    const obs = new IntersectionObserver(entries => {
+      const entry = entries[0];
+      calcSpacerTop();
+
+      if (entry.isIntersecting) {
+        const prevMZ = mobileZone;
+        mobileZone = 'inside';
+        engage(prevMZ === 'below' ? N - 1 : 0);
+      } else {
+        const exitUpward = entry.boundingClientRect.top > 0;
+        if (exitUpward) {
+          if (hasContentAbove()) {
+            mobileZone = 'above';
+            disengage(Math.max(0, spacerTop - HYSTERESIS - 1));
+          } else {
+            mobileZone = 'inside';
+            window.scrollTo(0, spacerTop);
+          }
+        } else {
+          if (hasContentBelow()) {
+            mobileZone = 'below';
+            disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1);
+          } else {
+            mobileZone = 'inside';
+            window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight);
+          }
+        }
+      }
+    }, { threshold: 0.005, rootMargin: '0px' });
+
+    obs.observe(spacer);
+  }
+
+  /* Init */
   setPanel(0);
   calcSpacerTop();
 
