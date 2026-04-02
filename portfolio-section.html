@@ -114,25 +114,17 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
 
 /* ── DOTS / NAV ──────────────────────────────────────────────── */
 #c-dots {
-  position:fixed; right:var(--sp-5); top:50%; transform:translateY(-50%);
+  position:fixed; right:20px; top:50%; transform:translateY(-50%);
   z-index:var(--z-overlay);
-  display:flex; flex-direction:column; align-items:flex-end; gap:14px;
+  display:flex; flex-direction:column; gap:10px;
   pointer-events:none; opacity:0; transition:opacity .5s var(--ease);
 }
-.c-dot-wrap { display:flex; align-items:center; gap:10px; }
-.c-dot-label {
-  font-family:var(--f-condensed); font-size:10px; font-weight:700;
-  letter-spacing:.18em; text-transform:uppercase; color:var(--c-accent);
-  opacity:0; transform:translateX(6px);
-  transition:opacity .3s var(--ease),transform .3s var(--ease); white-space:nowrap;
-}
-.c-dot-wrap.on .c-dot-label { opacity:1; transform:translateX(0); }
 .c-dot {
-  width:4px; height:4px; border-radius:50%; background:rgba(91,160,164,.28);
+  width:4px; height:4px; border-radius:50%; background:var(--c-muted);
   display:block; flex-shrink:0;
-  transition:background .3s,transform .35s var(--ease);
+  transition:background .4s, transform .4s;
 }
-.c-dot-wrap.on .c-dot { background:var(--c-accent); transform:scale(1.9); }
+.c-dot.on { background:var(--c-accent); transform:scale(1.8); }
 
 /* ── SLIDE COUNTER ───────────────────────────────────────────── */
 #slide-counter {
@@ -344,7 +336,6 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
   .proj-title { font-size:clamp(44px,13vw,80px); }
   .proj-desc { max-width:100%; }
   #c-dots { right:14px; }
-  .c-dot-label { display:none; }
   #slide-counter { display:none; }
   .proj[data-pos="active"] .proj-desc { opacity:1; transform:translateY(0); }
   .proj[data-pos="active"] .proj-tags { opacity:1; transform:translateY(0); }
@@ -541,22 +532,15 @@ const smoother = (() => {
   projs.forEach(p => p.querySelectorAll('.rev').forEach(r => r.classList.add('in')));
 
   /* Dots */
-  const LABELS = ['3D Printed Car','Sabretta Pen','PH Lamp','Intro to Rhino'];
   const dotsEl = document.createElement('nav');
   dotsEl.id = 'c-dots';
   dotsEl.setAttribute('aria-label','Project navigation');
-  const dotWraps = [];
+  const dotEls = [];
   for (let i = 0; i < N; i++) {
-    const wrap = document.createElement('div');
-    wrap.className = 'c-dot-wrap';
-    const lbl = document.createElement('span');
-    lbl.className = 'c-dot-label';
-    lbl.textContent = LABELS[i] || ('0'+(i+1));
     const d = document.createElement('span');
     d.className = 'c-dot';
-    wrap.appendChild(lbl); wrap.appendChild(d);
-    dotsEl.appendChild(wrap);
-    dotWraps.push(wrap);
+    dotsEl.appendChild(d);
+    dotEls.push(d);
   }
   document.body.appendChild(dotsEl);
 
@@ -575,7 +559,7 @@ const smoother = (() => {
       else                  p.dataset.pos = 'far-below';
       if (delta !== 0) p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.remove('show'));
     });
-    dotWraps.forEach((w,i) => w.classList.toggle('on', i===idx));
+    dotEls.forEach((d,i) => d.classList.toggle('on', i===idx));
     if (scCur) scCur.textContent = String(idx+1).padStart(2,'0');
   }
   setPositions(0);
