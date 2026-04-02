@@ -148,10 +148,35 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
 .sc-cur { color:var(--c-accent); }
 .sc-sep { opacity:.4; }
 
-/* ── SCROLL REVEAL ──────────────────────────────────────────── */
-.rev { opacity:0; transform:translateY(var(--sp-3)); transition:opacity .9s var(--ease),transform .9s var(--ease); }
-.rev.in { opacity:1; transform:translateY(0); }
-.d1{transition-delay:.1s} .d2{transition-delay:.22s} .d3{transition-delay:.36s}
+/* ── TEXT PEEL ANIMATION ────────────────────────────────────── */
+.proj-text {
+  position:absolute; top:50%;
+  width:44%; z-index:2; will-change:transform;
+  opacity:0;
+  transform:translateY(calc(-50% + 24px));
+  /* default: no transition — text is hidden off-screen on non-active cards */
+  transition:none;
+}
+.proj:nth-child(odd)  .proj-text { left:var(--pad); }
+.proj:nth-child(even) .proj-text { right:var(--pad); text-align:right; }
+
+/* Card arriving — delay text until card has landed (~0.5s into the 0.72s slide) */
+.proj[data-pos="active"] .proj-text {
+  opacity:1;
+  transform:translateY(-50%);
+  transition:opacity .55s var(--ease) .42s, transform .55s var(--ease) .42s;
+}
+.proj[data-pos="active"]:hover .proj-text {
+  transform:translateY(calc(-50% - 12px));
+  transition:opacity .55s var(--ease) .42s, transform .35s var(--ease);
+}
+/* Card leaving — text fades out quickly, no delay, card is sliding away */
+.proj[data-pos="prev"] .proj-text,
+.proj[data-pos="next"] .proj-text {
+  opacity:0;
+  transform:translateY(calc(-50% - 20px));
+  transition:opacity .25s var(--ease-out), transform .25s var(--ease-out);
+}
 
 /* ── CAROUSEL LAYOUT ────────────────────────────────────────── */
 .projects-spacer { pointer-events:none; }
@@ -208,14 +233,6 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
 .proj:nth-child(odd)  .proj-line { left:0; }
 .proj:nth-child(even) .proj-line { right:0; }
 .proj:hover .proj-line { opacity:1; transform:scaleY(1); }
-
-.proj-text {
-  position:absolute; top:50%; transform:translateY(-50%);
-  width:44%; z-index:2; transition:transform .7s var(--ease); will-change:transform;
-}
-.proj:nth-child(odd)  .proj-text { left:var(--pad); }
-.proj:nth-child(even) .proj-text { right:var(--pad); text-align:right; }
-.proj:hover .proj-text { transform:translateY(calc(-50% - 12px)); }
 
 .proj-num {
   font-family:var(--f-condensed); font-size:var(--t-micro); font-weight:700;
@@ -328,10 +345,12 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
   #cur,#cur-r { display:none !important; }
   .proj:nth-child(odd) .proj-text,
   .proj:nth-child(even) .proj-text {
-    width:88%; top:auto; transform:none;
-    bottom:110px; left:var(--pad); right:auto; text-align:left;
+    width:88%; top:auto; bottom:110px; left:var(--pad); right:auto; text-align:left;
+    transform:translateY(20px);
   }
-  .proj:hover .proj-text { transform:none; }
+  .proj[data-pos="active"] .proj-text { transform:translateY(0); }
+  .proj[data-pos="prev"] .proj-text   { transform:translateY(-20px); }
+  .proj[data-pos="active"]:hover .proj-text { transform:translateY(0); }
   .proj:nth-child(odd)  .proj-num,
   .proj:nth-child(even) .proj-num { justify-content:flex-start; }
   .proj:nth-child(even) .proj-num::after  { display:none; }
@@ -382,7 +401,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-ghost"      aria-hidden="true">01</div>
       <div class="proj-counter"    aria-hidden="true"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-swipe-hint" aria-hidden="true">Swipe to navigate</div>
-      <div class="proj-text rev">
+      <div class="proj-text">
         <div class="proj-num type-micro">Mar 2025</div>
         <h2 class="proj-title type-title">3D Printed Car</h2>
         <p class="proj-desc type-body">Surface modeled my personal Mini Clubman in Rhino 3D, then brought it to life as an FDM print.</p>
@@ -404,7 +423,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">02</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">02</span><span class="sc-sep">/</span><span>04</span></div>
-      <div class="proj-text rev">
+      <div class="proj-text">
         <div class="proj-num type-micro">Feb 2025</div>
         <h2 class="proj-title type-title">Sabretta Pen</h2>
         <p class="proj-desc type-body">A ballpoint pen with genuine desire behind it — form drawn from the fenders of 1930s roadsters. Modeled, animated, directed.</p>
@@ -426,7 +445,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">03</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">03</span><span class="sc-sep">/</span><span>04</span></div>
-      <div class="proj-text rev">
+      <div class="proj-text">
         <div class="proj-num type-micro">Apr 2025</div>
         <h2 class="proj-title type-title">Poul Henningsen Lamp</h2>
         <p class="proj-desc type-body">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
@@ -447,7 +466,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">04</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">04</span><span class="sc-sep">/</span><span>04</span></div>
-      <div class="proj-text rev">
+      <div class="proj-text">
         <div class="proj-num type-micro">Jan 2025</div>
         <h2 class="proj-title type-title">Intro to Rhino</h2>
         <p class="proj-desc type-body">Headphones, a power drill, and a Minion helmet — what four weeks of learning Rhino 3D looks like.</p>
@@ -527,12 +546,11 @@ const smoother = (() => {
     [...text].forEach((ch, i) => {
       const s = document.createElement('span');
       s.className = 'ch';
-      s.style.transitionDelay = (i * 20) + 'ms';
       s.textContent = ch === ' ' ? '\u00a0' : ch;
       title.appendChild(s);
     });
   });
-  /* .rev elements animate in when their card becomes active via data-pos, not on init */
+
 
   /* Dots */
   const LABELS = ['3D Printed Car','Sabretta Pen','PH Lamp','Intro to Rhino'];
@@ -556,26 +574,35 @@ const smoother = (() => {
 
   let activeIdx = 0;
 
-  function setPositions(idx) {
+  function setPositions(idx, animate) {
     projs.forEach((p, i) => {
       const delta = i - idx;
       if      (delta < -1)  p.dataset.pos = 'far-above';
       else if (delta === -1) p.dataset.pos = 'prev';
       else if (delta === 0) {
         p.dataset.pos = 'active';
-        p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.add('show'));
-        p.querySelectorAll('.rev').forEach(r => r.classList.add('in'));
+        if (animate) {
+          p.querySelectorAll('.proj-title .ch').forEach((s, ci) => {
+            s.style.transitionDelay = (420 + ci * 20) + 'ms';
+            s.classList.add('show');
+          });
+        }
       }
       else if (delta === 1) p.dataset.pos = 'next';
       else                  p.dataset.pos = 'far-below';
       if (delta !== 0) {
-        p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.remove('show'));
-        p.querySelectorAll('.rev').forEach(r => r.classList.remove('in'));
+        p.querySelectorAll('.proj-title .ch').forEach(s => {
+          s.style.transitionDelay = '0ms';
+          s.classList.remove('show');
+        });
       }
     });
     dotWraps.forEach((w,i) => w.classList.toggle('on', i===idx));
   }
-  setPositions(0);
+  /* Init: set positions without triggering text animations.
+     Cards get data-pos but proj-text has transition:none by default
+     so nothing flashes visible — animation only fires after engage(). */
+  setPositions(0, false);
 
   let engaged = false;
   let spacerTop = 0;
@@ -587,13 +614,16 @@ const smoother = (() => {
     if (engaged) return;
     engaged = true; carouselActive = true;
     activeIdx = Math.max(0, Math.min(N-1, idx));
-    setPositions(activeIdx);
     section.classList.add('carousel-active');
     dotsEl.style.opacity = '1';
     window.scrollTo(0, spacerTop);
     smoother.jumpTo(spacerTop);
-    /* reset wheel state */
     wVel = 0; wLastTime = 0;
+    /* Reset the target card to 'next' so the CSS transition has a state change to animate from */
+    projs[activeIdx].dataset.pos = 'next';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPositions(activeIdx, true));
+    });
   }
 
   function disengage(exitY) {
@@ -651,7 +681,7 @@ const smoother = (() => {
     lastAdvanceAt = now;
     lastAdvanceDir = dir;
     activeIdx = next;
-    setPositions(activeIdx);
+    setPositions(activeIdx, true);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
 
