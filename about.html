@@ -610,43 +610,51 @@ strong { color: var(--c-primary); font-weight: 700; }
   }
 
   /* ─────────────────────────────────────────────────────
-     WHEEL — intercept while engaged, trigger on approach
+     WHEEL — one advance per gesture, works for both
+     trackpad (many small deltaY events) and mouse wheel
+     (one large deltaY event per click).
 
-     One-advance-per-gesture guarantee:
-     After advance() fires we enter a "locked" window equal
-     to TRANS_MS. During that window all wheel events are
-     swallowed (preventDefault still called) but nothing
-     accumulates. This means even a long trackpad swipe only
-     ever moves one panel per gesture.
+     Strategy:
+     - Accumulate deltaY into bucket while gesture is live
+     - Fire advance() as soon as bucket crosses THRESH
+     - After firing, set wheelLocked = true so the rest of
+       the current gesture is swallowed (trackpad fix)
+     - wheelLocked clears when the gesture ends: detected by
+       a 80ms gap in wheel events (gesture-end detection),
+       NOT a fixed timer — so the next mouse click or new
+       trackpad gesture is always responsive
   ───────────────────────────────────────────────────── */
-  var THRESH      = 50;
+  var THRESH         = 50;
+  var gestureEndMs   = 80;   /* ms of silence = gesture over */
 
   window.addEventListener('wheel', function (e) {
-    /* While engaged: intercept everything */
     if (engaged) {
       e.preventDefault();
-
-      /* Swallow events during transition — no accumulation */
-      if (wheelLocked) return;
 
       var raw = e.deltaMode === 1 ? e.deltaY * 32
               : e.deltaMode === 2 ? e.deltaY * VH
               : e.deltaY;
-      bucket += raw;
 
-      /* Drain bucket if gesture pauses */
+      /* Gesture-end detection: reset lock & bucket when
+         wheel events stop for gestureEndMs              */
       clearTimeout(drainTimer);
-      drainTimer = setTimeout(function () { bucket = 0; }, 300);
+      drainTimer = setTimeout(function () {
+        wheelLocked = false;
+        bucket = 0;
+      }, gestureEndMs);
+
+      /* After firing, swallow the rest of this gesture */
+      if (wheelLocked) return;
+
+      bucket += raw;
 
       if (bucket >  THRESH) {
         bucket = 0;
         wheelLocked = true;
-        setTimeout(function () { wheelLocked = false; bucket = 0; }, TRANS_MS);
         advance(+1);
       } else if (bucket < -THRESH) {
         bucket = 0;
         wheelLocked = true;
-        setTimeout(function () { wheelLocked = false; bucket = 0; }, TRANS_MS);
         advance(-1);
       }
       return;
