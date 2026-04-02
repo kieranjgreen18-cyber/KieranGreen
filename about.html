@@ -331,19 +331,19 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 /* ── Panel photo gallery ── */
-.col-left {
-  /* ensure relative for absolutely-placed photo frames */
-  position: relative;
-}
+/* ch-index and ch-label must sit above the gallery */
+.ch-index, .ch-label { position: relative; z-index: 2; }
 
 .photo-gallery {
+  /* Occupies the upper portion of the column, leaving bottom text clear */
   position: absolute;
-  inset: 0;
+  top: 0; left: 0; right: 0;
+  bottom: 200px; /* clear space for ch-index + ch-label at bottom */
   pointer-events: none;
   overflow: hidden;
+  z-index: 1;
 }
 
-/* Each panel gets its own gallery composition */
 /* Panel 0 — large centered frame, slight tilt */
 .panel[data-panel="0"] .photo-gallery .pf-main {
   position: absolute;
@@ -354,25 +354,25 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 .panel[data-panel="0"] .photo-gallery .pf-accent {
   position: absolute;
-  bottom: 13%; right: 6%;
+  bottom: 4%; right: 6%;
   width: 30%;
   aspect-ratio: 3/4;
   transform: rotate(2.2deg);
   z-index: 2;
 }
 
-/* Panel 1 — two side-by-side offset frames */
+/* Panel 1 — staggered portrait + landscape */
 .panel[data-panel="1"] .photo-gallery .pf-main {
   position: absolute;
-  top: 18%; left: 8%;
-  width: 56%;
+  top: 12%; left: 8%;
+  width: 54%;
   aspect-ratio: 3/4;
   transform: rotate(-0.8deg);
 }
 .panel[data-panel="1"] .photo-gallery .pf-accent {
   position: absolute;
-  bottom: 14%; right: 5%;
-  width: 44%;
+  bottom: 4%; right: 5%;
+  width: 46%;
   aspect-ratio: 4/3;
   transform: rotate(1.6deg);
   z-index: 2;
@@ -381,14 +381,14 @@ strong { color: var(--c-primary); font-weight: 700; }
 /* Panel 2 — wide panoramic + small square detail */
 .panel[data-panel="2"] .photo-gallery .pf-main {
   position: absolute;
-  top: 22%; left: 5%;
+  top: 14%; left: 5%;
   width: 74%;
   aspect-ratio: 16/10;
   transform: rotate(0.6deg);
 }
 .panel[data-panel="2"] .photo-gallery .pf-accent {
   position: absolute;
-  bottom: 12%; right: 4%;
+  bottom: 4%; right: 4%;
   width: 34%;
   aspect-ratio: 1/1;
   transform: rotate(-2deg);
