@@ -521,9 +521,6 @@ strong { color: var(--c-primary); font-weight: 700; }
   var activeIdx    = 0;
   var transitioning = false;
   var TRANS_MS     = 800;
-  var bucket       = 0;
-  var drainTimer   = null;
-  var wheelLocked  = false;
 
   /* ─────────────────────────────────────────────────────
      PANEL SWITCHING
@@ -577,10 +574,6 @@ strong { color: var(--c-primary); font-weight: 700; }
     stage.classList.remove('engaged');
     disengageCooldown = true;
     setTimeout(function () { disengageCooldown = false; }, 600);
-    /* Clear wheel state so next engage starts fresh */
-    wheelLocked = false;
-    bucket = 0;
-    clearTimeout(drainTimer);
     exitY = Math.max(0, exitY);
     window.scrollTo(0, exitY);
     if (window._aboutSmootherJump) window._aboutSmootherJump(exitY);
@@ -610,80 +603,64 @@ strong { color: var(--c-primary); font-weight: 700; }
   }
 
   /* ─────────────────────────────────────────────────────
-     WHEEL — one advance per gesture, works for both
-     trackpad (many small deltaY events) and mouse wheel
-     (one large deltaY event per click).
-
-     Strategy:
-     - Accumulate deltaY into bucket while gesture is live
-     - Fire advance() as soon as bucket crosses THRESH
-     - After firing, set wheelLocked = true so the rest of
-       the current gesture is swallowed (trackpad fix)
-     - wheelLocked clears when the gesture ends: detected by
-       a 80ms gap in wheel events (gesture-end detection),
-       NOT a fixed timer — so the next mouse click or new
-       trackpad gesture is always responsive
+     WHEEL
+     Simple: fire on first event that exceeds a tiny
+     threshold, then ignore all events until the gesture
+     is physically over (no events for 150ms).
+     Works identically for mouse wheel and trackpad.
   ───────────────────────────────────────────────────── */
-  var THRESH         = 50;
-  var gestureEndMs   = 80;   /* ms of silence = gesture over */
+  var THRESH       = 30;
+  var gestureTimer = null;
+  var gestureFired = false;
 
   window.addEventListener('wheel', function (e) {
-    if (engaged) {
-      e.preventDefault();
-
-      var raw = e.deltaMode === 1 ? e.deltaY * 32
-              : e.deltaMode === 2 ? e.deltaY * VH
-              : e.deltaY;
-
-      /* Gesture-end detection: reset lock & bucket when
-         wheel events stop for gestureEndMs              */
-      clearTimeout(drainTimer);
-      drainTimer = setTimeout(function () {
-        wheelLocked = false;
-        bucket = 0;
-      }, gestureEndMs);
-
-      /* After firing, swallow the rest of this gesture */
-      if (wheelLocked) return;
-
-      bucket += raw;
-
-      if (bucket >  THRESH) {
-        bucket = 0;
-        wheelLocked = true;
-        advance(+1);
-      } else if (bucket < -THRESH) {
-        bucket = 0;
-        wheelLocked = true;
-        advance(-1);
+    if (!engaged) {
+      /* Not engaged: check if we're in the spacer zone and engage */
+      if (disengageCooldown) return;
+      var currentY = window.scrollY;
+      if (currentY >= spacerTop && currentY < spacerTop + spacer.offsetHeight) {
+        e.preventDefault();
+        engage(Math.min(N - 1, Math.floor((currentY - spacerTop) / PANEL_H)));
       }
       return;
     }
+    e.preventDefault();
 
-    /* Not engaged: check if scroll position is entering the spacer */
-    if (disengageCooldown) return;
-    var currentY = window.scrollY;
-    if (currentY >= spacerTop + 4 && currentY < spacerTop + spacer.offsetHeight - 4) {
-      e.preventDefault();
-      engage(Math.min(N - 1, Math.floor((currentY - spacerTop) / PANEL_H)));
-    }
+    var raw = e.deltaMode === 1 ? e.deltaY * 32
+            : e.deltaMode === 2 ? e.deltaY * VH
+            : e.deltaY;
+
+    /* Reset the gesture-end timer on every event */
+    clearTimeout(gestureTimer);
+    gestureTimer = setTimeout(function () {
+      gestureFired = false;
+    }, 150);
+
+    /* Only fire once per gesture */
+    if (gestureFired) return;
+    if (Math.abs(raw) < THRESH) return;
+
+    gestureFired = true;
+    advance(raw > 0 ? +1 : -1);
+
   }, { passive: false });
 
   /* ─────────────────────────────────────────────────────
-     NATIVE SCROLL WATCH — catches nav link scrolls etc.
+     NATIVE SCROLL WATCH — catches programmatic scrollTo
+     and nav link jumps landing inside the spacer zone.
+     Kept simple: no enforce-lock loop.
   ───────────────────────────────────────────────────── */
+  var scrollLock = false;
   window.addEventListener('scroll', function () {
-    if (engaged) {
-      /* Enforce lock: keep scrollY at spacerTop */
-      if (Math.abs(window.scrollY - spacerTop) > 2) {
-        window.scrollTo(0, spacerTop);
-      }
-      return;
-    }
+    if (engaged) return; /* stage handles its own position */
     if (disengageCooldown) return;
     var y = window.scrollY;
-    if (y >= spacerTop + 4 && y < spacerTop + spacer.offsetHeight - 4) {
-      engage(Math.min(N - 1, Math.floor((y - spacerTop) / PANEL_H)));
+    if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
+      if (!scrollLock) {
+        scrollLock = true;
+        engage(Math.min(N - 1, Math.floor((y - spacerTop) / PANEL_H)));
+        setTimeout(function () { scrollLock = false; }, 400);
+      }
     }
   }, { passive: true });
 
