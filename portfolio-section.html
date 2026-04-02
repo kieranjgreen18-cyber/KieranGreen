@@ -383,7 +383,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-counter"    aria-hidden="true"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-swipe-hint" aria-hidden="true">Swipe to navigate</div>
       <div class="proj-text rev">
-        <div class="proj-num type-micro">01 — 2025</div>
+        <div class="proj-num type-micro">Mar 2025</div>
         <h2 class="proj-title type-title">3D Printed Car</h2>
         <p class="proj-desc type-body">Surface modeled my personal Mini Clubman in Rhino 3D, then brought it to life as an FDM print.</p>
         <div class="proj-tags" role="list">
@@ -405,7 +405,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-ghost" aria-hidden="true">02</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">02</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text rev">
-        <div class="proj-num type-micro">02 — 2025</div>
+        <div class="proj-num type-micro">Feb 2025</div>
         <h2 class="proj-title type-title">Sabretta Pen</h2>
         <p class="proj-desc type-body">A ballpoint pen with genuine desire behind it — form drawn from the fenders of 1930s roadsters. Modeled, animated, directed.</p>
         <div class="proj-tags" role="list">
@@ -427,7 +427,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-ghost" aria-hidden="true">03</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">03</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text rev">
-        <div class="proj-num type-micro">03 — 2025</div>
+        <div class="proj-num type-micro">Apr 2025</div>
         <h2 class="proj-title type-title">Poul Henningsen Lamp</h2>
         <p class="proj-desc type-body">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
         <div class="proj-tags" role="list">
@@ -448,7 +448,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-ghost" aria-hidden="true">04</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">04</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text rev">
-        <div class="proj-num type-micro">04 — 2025</div>
+        <div class="proj-num type-micro">Jan 2025</div>
         <h2 class="proj-title type-title">Intro to Rhino</h2>
         <p class="proj-desc type-body">Headphones, a power drill, and a Minion helmet — what four weeks of learning Rhino 3D looks like.</p>
         <div class="proj-tags" role="list">
@@ -532,7 +532,7 @@ const smoother = (() => {
       title.appendChild(s);
     });
   });
-  projs.forEach(p => p.querySelectorAll('.rev').forEach(r => r.classList.add('in')));
+  /* .rev elements animate in when their card becomes active via data-pos, not on init */
 
   /* Dots */
   const LABELS = ['3D Printed Car','Sabretta Pen','PH Lamp','Intro to Rhino'];
@@ -564,10 +564,14 @@ const smoother = (() => {
       else if (delta === 0) {
         p.dataset.pos = 'active';
         p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.add('show'));
+        p.querySelectorAll('.rev').forEach(r => r.classList.add('in'));
       }
       else if (delta === 1) p.dataset.pos = 'next';
       else                  p.dataset.pos = 'far-below';
-      if (delta !== 0) p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.remove('show'));
+      if (delta !== 0) {
+        p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.remove('show'));
+        p.querySelectorAll('.rev').forEach(r => r.classList.remove('in'));
+      }
     });
     dotWraps.forEach((w,i) => w.classList.toggle('on', i===idx));
   }
