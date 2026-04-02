@@ -262,15 +262,15 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
   position:absolute;
   font-family:var(--f-condensed); font-size:clamp(200px,34vw,480px);
   font-weight:700; color:transparent;
-  -webkit-text-stroke:1px rgba(91,160,164,.042);
+  -webkit-text-stroke:1px rgba(150,168,170,.10);
   line-height:1; pointer-events:none; user-select:none;
   bottom:-80px; letter-spacing:-.07em;
   transition:-webkit-text-stroke .6s; will-change:transform;
 }
 .proj:nth-child(odd)  .proj-ghost { right:-20px; }
 .proj:nth-child(even) .proj-ghost { left:-20px; }
-.proj[data-pos="active"] .proj-ghost { -webkit-text-stroke:1px rgba(91,160,164,.07); }
-.proj:hover .proj-ghost { -webkit-text-stroke:1px rgba(91,160,164,.13); }
+.proj[data-pos="active"] .proj-ghost { -webkit-text-stroke:1px rgba(150,168,170,.17); }
+.proj:hover .proj-ghost { -webkit-text-stroke:1px rgba(150,168,170,.27); }
 
 .proj-open {
   position:absolute; bottom:var(--pad); width:var(--sp-7); height:var(--sp-7);
