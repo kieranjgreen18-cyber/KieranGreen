@@ -574,6 +574,7 @@ const smoother = (() => {
   /* ── Transition guard ── */
   let transitioning = false;
   let lastAdvanceAt = 0;
+  let lastAdvanceDir = 0;
   const TRANS_MS = 820;
 
   function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
@@ -584,7 +585,8 @@ const smoother = (() => {
 
   function advance(dir) {
     const now = performance.now();
-    if (transitioning || (now - lastAdvanceAt) < TRANS_MS) return;
+    if (transitioning) return;
+    if (dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
     if (next < 0) {
       if (hasContentAbove()) {
@@ -600,6 +602,7 @@ const smoother = (() => {
     }
     transitioning = true;
     lastAdvanceAt = now;
+    lastAdvanceDir = dir;
     setPanel(next);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }

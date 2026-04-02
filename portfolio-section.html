@@ -617,6 +617,7 @@ const smoother = (() => {
   ────────────────────────────────────────────────────────── */
   let transitioning = false;
   let lastAdvanceAt = 0;
+  let lastAdvanceDir = 0;
   const TRANS_MS = 820;
 
   /* True if there is real content below the spacer to scroll into */
@@ -628,7 +629,11 @@ const smoother = (() => {
 
   function advance(dir) {
     const now = performance.now();
-    if (transitioning || (now - lastAdvanceAt) < TRANS_MS) return;
+    /* Cooldown only applies to same-direction repeats.
+       A direction reversal is always allowed through immediately — the
+       transitioning flag is the only guard that matters in that case. */
+    if (transitioning) return;
+    if (dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
     if (next < 0)  { disengage(Math.max(0, spacerTop - 10)); return; }
     if (next >= N) {
@@ -641,6 +646,7 @@ const smoother = (() => {
     }
     transitioning = true;
     lastAdvanceAt = now;
+    lastAdvanceDir = dir;
     activeIdx = next;
     setPositions(activeIdx);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
