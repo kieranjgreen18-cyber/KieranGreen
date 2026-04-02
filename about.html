@@ -521,6 +521,9 @@ strong { color: var(--c-primary); font-weight: 700; }
   var activeIdx    = 0;
   var transitioning = false;
   var TRANS_MS     = 800;
+  var bucket       = 0;
+  var drainTimer   = null;
+  var wheelLocked  = false;
 
   /* ─────────────────────────────────────────────────────
      PANEL SWITCHING
@@ -574,6 +577,10 @@ strong { color: var(--c-primary); font-weight: 700; }
     stage.classList.remove('engaged');
     disengageCooldown = true;
     setTimeout(function () { disengageCooldown = false; }, 600);
+    /* Clear wheel state so next engage starts fresh */
+    wheelLocked = false;
+    bucket = 0;
+    clearTimeout(drainTimer);
     exitY = Math.max(0, exitY);
     window.scrollTo(0, exitY);
     if (window._aboutSmootherJump) window._aboutSmootherJump(exitY);
@@ -604,23 +611,44 @@ strong { color: var(--c-primary); font-weight: 700; }
 
   /* ─────────────────────────────────────────────────────
      WHEEL — intercept while engaged, trigger on approach
+
+     One-advance-per-gesture guarantee:
+     After advance() fires we enter a "locked" window equal
+     to TRANS_MS. During that window all wheel events are
+     swallowed (preventDefault still called) but nothing
+     accumulates. This means even a long trackpad swipe only
+     ever moves one panel per gesture.
   ───────────────────────────────────────────────────── */
-  var bucket    = 0;
-  var THRESH    = 50;
-  var drainTimer = null;
+  var THRESH      = 50;
 
   window.addEventListener('wheel', function (e) {
     /* While engaged: intercept everything */
     if (engaged) {
       e.preventDefault();
+
+      /* Swallow events during transition — no accumulation */
+      if (wheelLocked) return;
+
       var raw = e.deltaMode === 1 ? e.deltaY * 32
               : e.deltaMode === 2 ? e.deltaY * VH
               : e.deltaY;
       bucket += raw;
+
+      /* Drain bucket if gesture pauses */
       clearTimeout(drainTimer);
-      drainTimer = setTimeout(function () { bucket = 0; }, 250);
-      if (bucket >  THRESH) { bucket = 0; advance(+1); }
-      if (bucket < -THRESH) { bucket = 0; advance(-1); }
+      drainTimer = setTimeout(function () { bucket = 0; }, 300);
+
+      if (bucket >  THRESH) {
+        bucket = 0;
+        wheelLocked = true;
+        setTimeout(function () { wheelLocked = false; bucket = 0; }, TRANS_MS);
+        advance(+1);
+      } else if (bucket < -THRESH) {
+        bucket = 0;
+        wheelLocked = true;
+        setTimeout(function () { wheelLocked = false; bucket = 0; }, TRANS_MS);
+        advance(-1);
+      }
       return;
     }
 
