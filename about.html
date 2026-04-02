@@ -180,7 +180,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   line-height: 1;
   text-transform: uppercase;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(150,168,170,0.17);
+  -webkit-text-stroke: 1px rgba(91,160,164,0.07);
   pointer-events: none; user-select: none;
 }
 .ch-index {
@@ -330,6 +330,141 @@ strong { color: var(--c-primary); font-weight: 700; }
   50%      { opacity: 0.9; transform: scaleY(0.6); }
 }
 
+/* ── Panel photo gallery ── */
+.col-left {
+  /* ensure relative for absolutely-placed photo frames */
+  position: relative;
+}
+
+.photo-gallery {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Each panel gets its own gallery composition */
+/* Panel 0 — large centered frame, slight tilt */
+.panel[data-panel="0"] .photo-gallery .pf-main {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-52%, -52%) rotate(-1.4deg);
+  width: 66%;
+  aspect-ratio: 4/3;
+}
+.panel[data-panel="0"] .photo-gallery .pf-accent {
+  position: absolute;
+  bottom: 13%; right: 6%;
+  width: 30%;
+  aspect-ratio: 3/4;
+  transform: rotate(2.2deg);
+  z-index: 2;
+}
+
+/* Panel 1 — two side-by-side offset frames */
+.panel[data-panel="1"] .photo-gallery .pf-main {
+  position: absolute;
+  top: 18%; left: 8%;
+  width: 56%;
+  aspect-ratio: 3/4;
+  transform: rotate(-0.8deg);
+}
+.panel[data-panel="1"] .photo-gallery .pf-accent {
+  position: absolute;
+  bottom: 14%; right: 5%;
+  width: 44%;
+  aspect-ratio: 4/3;
+  transform: rotate(1.6deg);
+  z-index: 2;
+}
+
+/* Panel 2 — wide panoramic + small square detail */
+.panel[data-panel="2"] .photo-gallery .pf-main {
+  position: absolute;
+  top: 22%; left: 5%;
+  width: 74%;
+  aspect-ratio: 16/10;
+  transform: rotate(0.6deg);
+}
+.panel[data-panel="2"] .photo-gallery .pf-accent {
+  position: absolute;
+  bottom: 12%; right: 4%;
+  width: 34%;
+  aspect-ratio: 1/1;
+  transform: rotate(-2deg);
+  z-index: 2;
+}
+
+/* Shared photo frame styles */
+.photo-frame {
+  border: 1px solid rgba(91,160,164,0.18);
+  overflow: hidden;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.55),
+    0 2px 8px rgba(0,0,0,0.35),
+    inset 0 0 0 1px rgba(255,255,255,0.035);
+  opacity: 0;
+  transform-origin: center center;
+  transition:
+    opacity 0.85s var(--ease) 0.12s,
+    transform 0.85s var(--ease) 0.12s;
+}
+.panel.is-active .photo-frame {
+  opacity: 1;
+}
+.panel.is-active .pf-main   { transition-delay: 0.08s; }
+.panel.is-active .pf-accent { transition-delay: 0.22s; }
+
+.photo-frame img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.75) brightness(0.88);
+  transition: filter 0.6s ease;
+}
+.photo-frame:hover img { filter: saturate(0.9) brightness(0.96); }
+
+/* Placeholder photo (no real image) */
+.photo-placeholder {
+  width: 100%; height: 100%;
+  background:
+    linear-gradient(135deg,
+      rgba(91,160,164,0.06) 0%,
+      rgba(8,9,9,0) 60%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(91,160,164,0.05) 39px,
+      rgba(91,160,164,0.05) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(91,160,164,0.05) 39px,
+      rgba(91,160,164,0.05) 40px
+    );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.placeholder-label {
+  font-family: var(--f-cond);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  color: rgba(91,160,164,0.30);
+  text-align: center;
+  line-height: 1.8;
+  padding: 8px;
+}
+
+.col-left:has(.photo-gallery) .ghost-num {
+  display: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .panel { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -389,6 +524,14 @@ strong { color: var(--c-primary); font-weight: 700; }
     <div class="panel" data-panel="0">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">01</div>
+        <div class="photo-gallery" aria-hidden="true">
+          <div class="photo-frame pf-main">
+            <img src="saab.jpg" alt="Rebuilding the Saab engine bay">
+          </div>
+          <div class="photo-frame pf-accent">
+            <div class="photo-placeholder"><span class="placeholder-label">Detail<br>Shot</span></div>
+          </div>
+        </div>
         <div class="ch-index">01 — Origin</div>
         <div class="ch-label" aria-hidden="true">The<br>Engine<br>Bay</div>
       </div>
@@ -407,6 +550,14 @@ strong { color: var(--c-primary); font-weight: 700; }
     <div class="panel" data-panel="1">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">02</div>
+        <div class="photo-gallery" aria-hidden="true">
+          <div class="photo-frame pf-main">
+            <div class="photo-placeholder"><span class="placeholder-label">Shop<br>Floor<br>Photo</span></div>
+          </div>
+          <div class="photo-frame pf-accent">
+            <div class="photo-placeholder"><span class="placeholder-label">Bike<br>Detail</span></div>
+          </div>
+        </div>
         <div class="ch-index">02 — Experience</div>
         <div class="ch-label" aria-hidden="true">The<br>Shop<br>Floor</div>
       </div>
@@ -425,6 +576,14 @@ strong { color: var(--c-primary); font-weight: 700; }
     <div class="panel" data-panel="2">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">03</div>
+        <div class="photo-gallery" aria-hidden="true">
+          <div class="photo-frame pf-main">
+            <div class="photo-placeholder"><span class="placeholder-label">Guitar<br>Photo</span></div>
+          </div>
+          <div class="photo-frame pf-accent">
+            <div class="photo-placeholder"><span class="placeholder-label">Detail</span></div>
+          </div>
+        </div>
         <div class="ch-index">03 — Instinct</div>
         <div class="ch-label" aria-hidden="true">The<br>Practice<br>Room</div>
       </div>
