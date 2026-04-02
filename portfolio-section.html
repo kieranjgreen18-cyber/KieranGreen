@@ -116,27 +116,36 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
 #c-dots {
   position:fixed; right:20px; top:50%; transform:translateY(-50%);
   z-index:var(--z-overlay);
-  display:flex; flex-direction:column; gap:10px;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
   pointer-events:none; opacity:0; transition:opacity .5s var(--ease);
 }
+.c-dot-wrap { display:flex; align-items:center; }
+.c-dot-label { display:none; }
 .c-dot {
   width:4px; height:4px; border-radius:50%; background:var(--c-muted);
   display:block; flex-shrink:0;
-  transition:background .4s, transform .4s;
+  transition:background .4s,transform .4s;
 }
-.c-dot.on { background:var(--c-accent); transform:scale(1.8); }
+.c-dot-wrap.on .c-dot { background:var(--c-accent); transform:scale(1.8); }
 
-/* ── SLIDE COUNTER ───────────────────────────────────────────── */
-#slide-counter {
-  position:fixed; bottom:var(--pad); left:var(--pad);
-  z-index:var(--z-overlay);
+/* ── SLIDE COUNTER (per-card, lives with ghost number) ───────── */
+.proj-counter {
+  position:absolute;
   font-family:var(--f-condensed); font-size:var(--t-micro); font-weight:700;
   letter-spacing:.2em; text-transform:uppercase; color:rgba(91,160,164,.5);
-  opacity:0; transition:opacity .4s; pointer-events:none;
   display:flex; align-items:center; gap:var(--sp-2);
+  pointer-events:none; z-index:2;
+  opacity:0; transition:opacity .4s var(--ease);
 }
-#slide-counter::before { content:''; width:28px; height:1px; background:currentColor; }
-.sc-cur { color:var(--c-accent); transition:color .3s; }
+.proj[data-pos="active"] .proj-counter { opacity:1; }
+/* odd cards: counter bottom-right (same side as ghost) */
+.proj:nth-child(odd)  .proj-counter { bottom:calc(var(--pad) + 4px); right:var(--pad); }
+/* even cards: counter bottom-left (same side as ghost) */
+.proj:nth-child(even) .proj-counter { bottom:calc(var(--pad) + 4px); left:var(--pad); }
+.proj-counter::before { content:''; width:28px; height:1px; background:currentColor; }
+.proj:nth-child(even) .proj-counter::before { display:none; }
+.proj:nth-child(even) .proj-counter::after  { content:''; width:28px; height:1px; background:currentColor; }
+.sc-cur { color:var(--c-accent); }
 .sc-sep { opacity:.4; }
 
 /* ── SCROLL REVEAL ──────────────────────────────────────────── */
@@ -262,15 +271,15 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
   position:absolute;
   font-family:var(--f-condensed); font-size:clamp(200px,34vw,480px);
   font-weight:700; color:transparent;
-  -webkit-text-stroke:1px rgba(150,168,170,.10);
+  -webkit-text-stroke:1px rgba(91,160,164,.042);
   line-height:1; pointer-events:none; user-select:none;
   bottom:-80px; letter-spacing:-.07em;
   transition:-webkit-text-stroke .6s; will-change:transform;
 }
 .proj:nth-child(odd)  .proj-ghost { right:-20px; }
 .proj:nth-child(even) .proj-ghost { left:-20px; }
-.proj[data-pos="active"] .proj-ghost { -webkit-text-stroke:1px rgba(150,168,170,.17); }
-.proj:hover .proj-ghost { -webkit-text-stroke:1px rgba(150,168,170,.27); }
+.proj[data-pos="active"] .proj-ghost { -webkit-text-stroke:1px rgba(91,160,164,.07); }
+.proj:hover .proj-ghost { -webkit-text-stroke:1px rgba(91,160,164,.13); }
 
 .proj-open {
   position:absolute; bottom:var(--pad); width:var(--sp-7); height:var(--sp-7);
@@ -280,7 +289,8 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
   opacity:0; transition:opacity .45s var(--ease),border-color .25s,background .25s,color .25s,transform .3s var(--ease);
   cursor:none;
 }
-.proj-open { right:var(--pad); left:auto; }
+.proj:nth-child(odd)  .proj-open { left:var(--pad); }
+.proj:nth-child(even) .proj-open { right:var(--pad); }
 .proj:hover .proj-open { opacity:1; }
 .proj-open:hover { border-color:var(--c-accent); background:var(--c-accent); color:var(--c-bg); transform:scale(1.08) rotate(8deg); }
 
@@ -329,12 +339,13 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
   .proj:nth-child(even) .proj-veil { background:linear-gradient(to right,rgba(8,9,9,.97) 0%,rgba(8,9,9,.72) 38%,rgba(8,9,9,.18) 65%,transparent 80%); }
   .proj:nth-child(odd)  .proj-tags,
   .proj:nth-child(even) .proj-tags { justify-content:flex-start; }
-  .proj-open { bottom:var(--pad); right:var(--pad); left:auto; }
+  .proj:nth-child(odd)  .proj-open,
+  .proj:nth-child(even) .proj-open { bottom:var(--pad); right:var(--pad); left:auto; }
   .proj-ghost { display:none; }
   .proj-title { font-size:clamp(44px,13vw,80px); }
   .proj-desc { max-width:100%; }
   #c-dots { right:14px; }
-  #slide-counter { display:none; }
+  .proj-counter { display:none; }
   .proj[data-pos="active"] .proj-desc { opacity:1; transform:translateY(0); }
   .proj[data-pos="active"] .proj-tags { opacity:1; transform:translateY(0); }
   .proj[data-pos="active"] .proj-open { opacity:1; }
@@ -357,11 +368,6 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
 <div id="grain" aria-hidden="true"></div>
 <div id="prog"  aria-hidden="true"></div>
 
-<div id="slide-counter" aria-hidden="true">
-  <span class="sc-cur" id="sc-cur">01</span>
-  <span class="sc-sep">/</span>
-  <span id="sc-tot">04</span>
-</div>
 
 <section class="projects" id="work" aria-label="Design projects" role="region">
   <div class="proj-track">
@@ -374,6 +380,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-veil"       aria-hidden="true"></div>
       <div class="proj-line"       aria-hidden="true"></div>
       <div class="proj-ghost"      aria-hidden="true">01</div>
+      <div class="proj-counter"    aria-hidden="true"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-swipe-hint" aria-hidden="true">Swipe to navigate</div>
       <div class="proj-text rev">
         <div class="proj-num type-micro">01 — 2025</div>
@@ -396,6 +403,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">02</div>
+      <div class="proj-counter" aria-hidden="true"><span class="sc-cur">02</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text rev">
         <div class="proj-num type-micro">02 — 2025</div>
         <h2 class="proj-title type-title">Sabretta Pen</h2>
@@ -417,6 +425,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">03</div>
+      <div class="proj-counter" aria-hidden="true"><span class="sc-cur">03</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text rev">
         <div class="proj-num type-micro">03 — 2025</div>
         <h2 class="proj-title type-title">Poul Henningsen Lamp</h2>
@@ -437,6 +446,7 @@ h2 em { font-style:italic; color:var(--c-accent); font-weight:inherit; }
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">04</div>
+      <div class="proj-counter" aria-hidden="true"><span class="sc-cur">04</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text rev">
         <div class="proj-num type-micro">04 — 2025</div>
         <h2 class="proj-title type-title">Intro to Rhino</h2>
@@ -498,16 +508,11 @@ const smoother = (() => {
 (function initCarousel() {
   const section = document.querySelector('.projects');
   const spacer  = document.getElementById('projects-spacer');
-  const scCur   = document.getElementById('sc-cur');
-  const scTot   = document.getElementById('sc-tot');
-  const counter = document.getElementById('slide-counter');
   if (!section || !spacer) return;
 
   const projs = Array.from(section.querySelectorAll(':scope .proj'));
   const N = projs.length;
   if (!N) return;
-
-  if (scTot) scTot.textContent = String(N).padStart(2,'0');
 
   function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
   sizeSpacer();
@@ -530,15 +535,22 @@ const smoother = (() => {
   projs.forEach(p => p.querySelectorAll('.rev').forEach(r => r.classList.add('in')));
 
   /* Dots */
+  const LABELS = ['3D Printed Car','Sabretta Pen','PH Lamp','Intro to Rhino'];
   const dotsEl = document.createElement('nav');
   dotsEl.id = 'c-dots';
   dotsEl.setAttribute('aria-label','Project navigation');
-  const dotEls = [];
+  const dotWraps = [];
   for (let i = 0; i < N; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'c-dot-wrap';
+    const lbl = document.createElement('span');
+    lbl.className = 'c-dot-label';
+    lbl.textContent = LABELS[i] || ('0'+(i+1));
     const d = document.createElement('span');
     d.className = 'c-dot';
-    dotsEl.appendChild(d);
-    dotEls.push(d);
+    wrap.appendChild(lbl); wrap.appendChild(d);
+    dotsEl.appendChild(wrap);
+    dotWraps.push(wrap);
   }
   document.body.appendChild(dotsEl);
 
@@ -557,8 +569,7 @@ const smoother = (() => {
       else                  p.dataset.pos = 'far-below';
       if (delta !== 0) p.querySelectorAll('.proj-title .ch').forEach(s => s.classList.remove('show'));
     });
-    dotEls.forEach((d,i) => d.classList.toggle('on', i===idx));
-    if (scCur) scCur.textContent = String(idx+1).padStart(2,'0');
+    dotWraps.forEach((w,i) => w.classList.toggle('on', i===idx));
   }
   setPositions(0);
 
@@ -575,7 +586,6 @@ const smoother = (() => {
     setPositions(activeIdx);
     section.classList.add('carousel-active');
     dotsEl.style.opacity = '1';
-    if (counter) counter.style.opacity = '1';
     window.scrollTo(0, spacerTop);
     smoother.jumpTo(spacerTop);
     /* reset wheel state */
@@ -587,7 +597,6 @@ const smoother = (() => {
     engaged = false; carouselActive = false;
     section.classList.remove('carousel-active');
     dotsEl.style.opacity = '0';
-    if (counter) counter.style.opacity = '0';
     smoother.jumpTo(exitY);
     smoother.setTarget(exitY);
     wVel = 0; wLastTime = 0;
