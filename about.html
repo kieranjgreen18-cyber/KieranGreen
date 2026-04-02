@@ -482,7 +482,7 @@ let stageActive = false; /* mirrors carouselActive in portfolio */
 /* ══ SMOOTH SCROLLER ══════════════════════════════════════════ */
 const smoother = (() => {
   let cur2 = window.scrollY, tgt = window.scrollY, running = false;
-  const cbs = [], EASE = 0.085;
+  const cbs = [], EASE = 0.11;
   function tick() {
     const d = tgt - cur2;
     if (Math.abs(d) < 0.4) { cur2 = tgt; window.scrollTo(0, cur2); cbs.forEach(f => f(cur2)); running = false; return; }
@@ -494,8 +494,12 @@ const smoother = (() => {
     if (stageActive) return;
     if (isMobile.matches) return;
     e.preventDefault();
-    const delta = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
+    const raw = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
+    const MIN_DELTA = 24;
+    const delta = raw === 0 ? 0 : Math.sign(raw) * Math.max(Math.abs(raw), MIN_DELTA);
     tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, tgt + delta));
+    /* Fire zone detection immediately on intent (tgt), not just on lerped position. */
+    cbs.forEach(f => f(tgt));
     go();
   }, { passive: false });
   window.addEventListener('scroll', () => { if (!running) cur2 = tgt = window.scrollY; }, { passive: true });
@@ -603,9 +607,10 @@ const smoother = (() => {
   /* ── Wheel — velocity-decay model (from portfolio) ── */
   let wVel = 0;
   let wLastTime = 0;
-  const W_THRESH = 200;
-  const W_DECAY  = 0.75;
+  const W_THRESH = 160;
+  const W_DECAY  = 0.94;
   const W_CLAMP  = 90;
+  const W_MIN    = 20;
 
   window.addEventListener('wheel', e => {
     if (!engaged) return;
@@ -615,14 +620,15 @@ const smoother = (() => {
     const raw = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
 
     const gap = now - wLastTime;
-    if (gap > 300 || wLastTime === 0) {
+    if (gap > 600 || wLastTime === 0) {
       wVel = 0;
     } else {
       wVel *= Math.pow(W_DECAY, gap / 16);
     }
     wLastTime = now;
 
-    wVel += Math.sign(raw) * Math.min(Math.abs(raw), W_CLAMP);
+    const contrib = raw === 0 ? 0 : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
+    wVel += contrib;
 
     if (wVel >  W_THRESH) { wVel = 0; advance(+1); }
     if (wVel < -W_THRESH) { wVel = 0; advance(-1); }
