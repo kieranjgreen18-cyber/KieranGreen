@@ -322,16 +322,18 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   will-change: transform;
 }
 
-/* Section indicator */
+/* Section indicator — lives on the LEFT to avoid dot-nav collision */
 #section-indicator {
-  position: fixed; right: var(--sp-6); top: 50%; transform: translateY(-50%);
+  position: fixed; left: var(--sp-3); top: 50%; transform: translateY(-50%) rotate(180deg);
   z-index: var(--z-overlay); writing-mode: vertical-rl;
   font-family: var(--f-condensed); font-size: 8px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(91,160,164,.35); pointer-events: none;
+  color: rgba(91,160,164,.30); pointer-events: none;
   opacity: 0; transition: opacity .4s;
 }
 #section-indicator.visible { opacity: 1; }
+#section-indicator.stage-hidden { opacity: 0 !important; }
+@media (max-width: 768px) { #section-indicator { display: none; } }
 
 /* ════════════════════════════════════════════════════════════════
    § NAVIGATION
@@ -845,22 +847,20 @@ model-viewer#mini-viewer {
 .proj-swipe-hint::before { content: '↕'; font-size: 14px; }
 @keyframes swipeHintFade { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 
-/* Dots nav */
+/* Carousel dots nav — right rail, dots only (no labels) */
 #c-dots {
-  position: fixed; right: var(--sp-6); top: 50%; transform: translateY(-50%);
-  z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 9px;
+  position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+  z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 10px;
   pointer-events: none; opacity: 0; transition: opacity .4s;
+  background: none; /* ensure no stray background */
 }
 .c-dot-wrap {
-  display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+  display: flex; align-items: center; justify-content: flex-end;
+  width: 8px; /* fixed width — no labels bleeding out */
 }
 .c-dot-label {
-  font-family: var(--f-condensed); font-size: 8px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(91,160,164,.35); white-space: nowrap;
-  opacity: 0; transition: opacity .3s;
+  display: none; /* labels suppressed globally — section-indicator handles context */
 }
-.c-dot-wrap.on .c-dot-label { opacity: 1; }
 .c-dot {
   width: 4px; height: 4px; border-radius: 50%;
   background: rgba(91,160,164,.28); display: block;
@@ -1034,8 +1034,8 @@ model-viewer#mini-viewer {
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
-/* About progress dots */
-.prog-dots {
+/* About progress dots — inside about-stage, right rail */
+.about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 10px;
   z-index: 50; pointer-events: none;
@@ -1067,6 +1067,23 @@ model-viewer#mini-viewer {
   0%,100% { opacity: .4; transform: scaleY(1); }
   50%      { opacity: .9; transform: scaleY(.6); }
 }
+
+/* Section transition wipe — shared by carousel and about stages */
+.stage-edge {
+  position: absolute; left: 0; right: 0; z-index: 200;
+  height: 80px; pointer-events: none;
+  opacity: 0; transition: opacity .5s var(--ease);
+}
+.stage-edge-top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--c-bg) 0%, transparent 100%);
+}
+.stage-edge-bot {
+  bottom: 0;
+  background: linear-gradient(to top, var(--c-bg) 0%, transparent 100%);
+}
+.projects.carousel-active .stage-edge { opacity: 1; }
+.about-stage.engaged .stage-edge { opacity: 1; }
 
 /* ════════════════════════════════════════════════════════════════
    § PERSONAL STATEMENT VIDEO PLAYER
@@ -1245,9 +1262,14 @@ footer {
   color: var(--c-muted);
 }
 
-/* ════════════════════════════════════════════════════════════════
-   § SCROLL REVEAL
-════════════════════════════════════════════════════════════════ */
+/* Section transition crossfade flash prevention */
+#section-flash {
+  position: fixed; inset: 0; z-index: calc(var(--z-about) + 5);
+  background: var(--c-bg);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+#section-flash.show { opacity: 1; pointer-events: none; }
 .rev {
   opacity: 0; transform: translateY(var(--sp-3));
   transition: opacity .9s var(--ease), transform .9s var(--ease);
@@ -1341,8 +1363,6 @@ footer {
   .proj-ghost { display: none; }
   .proj-title { font-size: clamp(44px, 13vw, 80px); }
   .proj-desc { max-width: 100%; }
-  #c-dots { right: 14px; }
-  .c-dot-label { display: none; }
 
   /* About panels */
   .panel { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -1365,7 +1385,6 @@ footer {
   /* Footer */
   footer { flex-direction: column; gap: var(--sp-1); text-align: center; padding: var(--sp-3) var(--pad); }
 
-  #section-indicator { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -1380,12 +1399,16 @@ footer {
 <body>
 
 <!-- Ambient overlays -->
-<div id="veil"   aria-hidden="true"></div>
-<div id="cur"    aria-hidden="true"></div>
-<div id="cur-r"  aria-hidden="true"></div>
-<div id="grain"  aria-hidden="true"></div>
-<div id="prog"   aria-hidden="true"></div>
+<div id="veil"          aria-hidden="true"></div>
+<div id="cur"           aria-hidden="true"></div>
+<div id="cur-r"         aria-hidden="true"></div>
+<div id="grain"         aria-hidden="true"></div>
+<div id="prog"          aria-hidden="true"></div>
+<div id="section-flash" aria-hidden="true"></div>
 <div id="section-indicator" aria-hidden="true"></div>
+
+<!-- Carousel dot nav — static so CSS position:fixed applies cleanly -->
+<nav id="c-dots" aria-label="Project navigation" aria-hidden="true"></nav>
 
 <!-- Mobile Nav Drawer -->
 <nav class="nav-drawer" id="nav-drawer" aria-hidden="true" aria-label="Mobile navigation">
@@ -1541,6 +1564,8 @@ footer {
      PROJECTS CAROUSEL
 ══════════════════════════════════════════════════════════════ -->
 <section class="projects" id="work" aria-label="Design projects" role="region">
+  <div class="stage-edge stage-edge-top" aria-hidden="true"></div>
+  <div class="stage-edge stage-edge-bot" aria-hidden="true"></div>
   <div class="proj-track">
 
     <a href="project-car.html" class="proj"
@@ -1655,6 +1680,8 @@ footer {
   aria-label="About Kieran Green"
   aria-labelledby="about-h2"
 >
+  <div class="stage-edge stage-edge-top" aria-hidden="true"></div>
+  <div class="stage-edge stage-edge-bot" aria-hidden="true"></div>
   <div class="panels-host">
 
     <div class="v-rules" aria-hidden="true">
@@ -1914,6 +1941,21 @@ const smoother = (() => {
 })();
 
 /* ══════════════════════════════════════════════════════════════
+   SECTION TRANSITION FLASH
+══════════════════════════════════════════════════════════════ */
+const sectionFlashEl = document.getElementById('section-flash');
+function sectionFlash(cb, delay = 120) {
+  if (!sectionFlashEl) { cb && cb(); return; }
+  sectionFlashEl.classList.add('show');
+  setTimeout(() => {
+    cb && cb();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      sectionFlashEl.classList.remove('show');
+    }));
+  }, delay);
+}
+
+/* ══════════════════════════════════════════════════════════════
    HERO — 3D VIEWER SETUP
 ══════════════════════════════════════════════════════════════ */
 const heroText    = document.getElementById('hero-text');
@@ -2089,19 +2131,19 @@ if (viewer) {
     });
   });
 
-  /* Dots */
+  /* Dots — build wrappers; the #c-dots nav is already in the DOM as static HTML */
   const LABELS = ['3D Printed Car','Sabretta Pen','PH Lamp','Intro to Rhino'];
-  const dotsEl = document.createElement('nav');
-  dotsEl.id = 'c-dots'; dotsEl.setAttribute('aria-label','Project navigation');
+  const dotsEl = document.getElementById('c-dots');
   const dotWraps = [];
-  for (let i = 0; i < N; i++) {
-    const wrap = document.createElement('div'); wrap.className = 'c-dot-wrap';
-    const lbl  = document.createElement('span'); lbl.className = 'c-dot-label'; lbl.textContent = LABELS[i] || '0'+(i+1);
-    const d    = document.createElement('span'); d.className = 'c-dot';
-    wrap.appendChild(lbl); wrap.appendChild(d);
-    dotsEl.appendChild(wrap); dotWraps.push(wrap);
+  if (dotsEl) {
+    for (let i = 0; i < N; i++) {
+      const wrap = document.createElement('div'); wrap.className = 'c-dot-wrap';
+      const d    = document.createElement('span'); d.className = 'c-dot';
+      d.setAttribute('aria-label', LABELS[i] || '0'+(i+1));
+      wrap.appendChild(d);
+      dotsEl.appendChild(wrap); dotWraps.push(wrap);
+    }
   }
-  document.body.appendChild(dotsEl);
 
   let activeIdx = 0;
 
@@ -2132,6 +2174,8 @@ if (viewer) {
   setPositions(0, false);
 
   let engaged = false;
+  let wVel = 0, wLastTime = 0;
+  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
   let spacerTop = 0;
   function calcSpacerTop() { spacerTop = Math.round(spacer.getBoundingClientRect().top + window.scrollY); }
   calcSpacerTop();
@@ -2142,7 +2186,8 @@ if (viewer) {
     engaged = true; carouselActive = true;
     activeIdx = Math.max(0, Math.min(N-1, idx));
     section.classList.add('carousel-active');
-    dotsEl.style.opacity = '1';
+    if (dotsEl) dotsEl.style.opacity = '1';
+    if (secInd) secInd.classList.add('stage-hidden');
     window.scrollTo(0, spacerTop);
     smoother.jumpTo(spacerTop);
     wVel = 0; wLastTime = 0;
@@ -2151,12 +2196,15 @@ if (viewer) {
   }
   function disengage(exitY) {
     if (!engaged) return;
-    engaged = false; carouselActive = false;
-    section.classList.remove('carousel-active');
-    dotsEl.style.opacity = '0';
-    smoother.jumpTo(exitY);
-    smoother.setTarget(exitY);
-    wVel = 0; wLastTime = 0;
+    sectionFlash(() => {
+      engaged = false; carouselActive = false;
+      section.classList.remove('carousel-active');
+      if (dotsEl) dotsEl.style.opacity = '0';
+      if (secInd) secInd.classList.remove('stage-hidden');
+      smoother.jumpTo(exitY);
+      smoother.setTarget(exitY);
+      wVel = 0; wLastTime = 0;
+    }, 80);
   }
 
   let transitioning = false, lastAdvanceAt = 0, lastAdvanceDir = 0;
@@ -2178,9 +2226,6 @@ if (viewer) {
     activeIdx = next; setPositions(activeIdx, true);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
-
-  let wVel = 0, wLastTime = 0;
-  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
 
   window.addEventListener('wheel', e => {
     if (!engaged) return; e.preventDefault();
@@ -2303,23 +2348,30 @@ if (viewer) {
   }
 
   let engaged = false;
+  let wVel = 0, wLastTime = 0;
+  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
+
   function engage(idx) {
     if (engaged) return;
     engaged = true; stageActive = true;
     activeIdx = Math.max(0, Math.min(N-1, idx));
     setPanel(activeIdx);
     stage.classList.add('engaged');
+    if (secInd) secInd.classList.add('stage-hidden');
     window.scrollTo(0, spacerTop);
     smoother.jumpTo(spacerTop);
     wVel = 0; wLastTime = 0;
   }
   function disengage(exitY) {
     if (!engaged) return;
-    engaged = false; stageActive = false;
-    stage.classList.remove('engaged');
-    smoother.jumpTo(exitY);
-    smoother.setTarget(exitY);
-    wVel = 0; wLastTime = 0;
+    sectionFlash(() => {
+      engaged = false; stageActive = false;
+      stage.classList.remove('engaged');
+      if (secInd) secInd.classList.remove('stage-hidden');
+      smoother.jumpTo(exitY);
+      smoother.setTarget(exitY);
+      wVel = 0; wLastTime = 0;
+    }, 80);
   }
 
   let transitioning = false, lastAdvanceAt = 0, lastAdvanceDir = 0;
@@ -2339,8 +2391,6 @@ if (viewer) {
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
 
-  let wVel = 0, wLastTime = 0;
-  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
   window.addEventListener('wheel', e => {
     if (!engaged) return; e.preventDefault();
     const now = performance.now();
