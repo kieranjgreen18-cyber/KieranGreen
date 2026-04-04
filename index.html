@@ -201,57 +201,47 @@ strong { color: var(--c-primary); font-weight: 700; }
 /* ══════════════════════════════════════════════════════════════
    §4  TYPOGRAPHY SYSTEM
 ══════════════════════════════════════════════════════════════ */
-/* Role: hero — largest wordmark */
 .type-hero {
   font-family: var(--f-condensed); font-size: var(--t-hero);
   font-weight: 400; letter-spacing: var(--ls-zero);
   line-height: var(--lh-display); text-transform: uppercase;
 }
-/* Role: title — major section headings */
 .type-title {
   font-family: var(--f-condensed); font-size: var(--t-title);
   font-weight: 400; letter-spacing: var(--ls-zero);
   line-height: var(--lh-heading); text-transform: uppercase;
 }
-/* Role: heading — tertiary headings */
 .type-heading {
   font-family: var(--f-condensed); font-size: var(--t-heading);
   font-weight: 400; letter-spacing: var(--ls-zero);
   line-height: var(--lh-heading); text-transform: uppercase;
 }
-/* Role: subhead */
 .type-subhead {
   font-family: var(--f-condensed); font-size: var(--t-subhead);
   font-weight: 400; letter-spacing: var(--ls-zero);
   line-height: var(--lh-heading); text-transform: uppercase;
 }
-/* Role: body */
 .type-body {
   font-family: var(--f-body); font-size: var(--t-body);
   font-weight: 400; letter-spacing: var(--ls-tight); line-height: var(--lh-body);
 }
-/* Role: ui — compact body, labels */
 .type-ui {
   font-family: var(--f-body); font-size: var(--t-ui);
   font-weight: 400; letter-spacing: var(--ls-tight); line-height: var(--lh-text);
 }
-/* Role: label — accent labels */
 .type-label {
   font-family: var(--f-condensed); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent);
 }
-/* Role: meta */
 .type-meta {
   font-family: var(--f-condensed); font-size: var(--t-meta);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
 }
-/* Role: micro — smallest */
 .type-micro {
   font-family: var(--f-condensed); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
 }
-/* Role: statement — personal statement */
 .type-statement {
   font-family: var(--f-body); font-size: clamp(17px, 1.75vw, 25px);
   font-weight: 400; letter-spacing: var(--ls-tight); line-height: 1.68;
@@ -263,7 +253,6 @@ p strong { color: var(--c-primary); font-weight: 700; }
 /* ══════════════════════════════════════════════════════════════
    §5  AMBIENT OVERLAYS
 ══════════════════════════════════════════════════════════════ */
-/* Film grain */
 #grain {
   position: fixed; inset: -25%; width: 150%; height: 150%;
   pointer-events: none; z-index: var(--z-top); opacity: 0.026;
@@ -277,7 +266,6 @@ p strong { color: var(--c-primary); font-weight: 700; }
   66%       { transform: translate3d(1%,1%,0); }
 }
 
-/* Page entrance veil */
 #veil {
   position: fixed; inset: 0; z-index: var(--z-veil);
   background: var(--c-accent);
@@ -288,7 +276,6 @@ p strong { color: var(--c-primary); font-weight: 700; }
 #veil.gone    { clip-path: inset(0 100% 0 0); pointer-events: none; transition: clip-path .85s var(--snap); }
 #veil.instant { transition: none !important; clip-path: inset(0 100% 0 0) !important; pointer-events: none; }
 
-/* Custom cursor */
 #cur {
   position: fixed; z-index: var(--z-veil); pointer-events: none;
   width: 8px; height: 8px; border-radius: 50%;
@@ -307,7 +294,6 @@ p strong { color: var(--c-primary); font-weight: 700; }
   will-change: transform;
 }
 
-/* Scroll progress bar */
 #prog {
   position: fixed; top: 0; left: 0; height: 1px;
   background: var(--c-accent); z-index: calc(var(--z-veil) - 2);
@@ -316,7 +302,6 @@ p strong { color: var(--c-primary); font-weight: 700; }
   will-change: transform;
 }
 
-/* Section indicator */
 #section-indicator {
   position: fixed; left: var(--sp-3); top: 50%; transform: translateY(-50%) rotate(180deg);
   z-index: var(--z-overlay); writing-mode: vertical-rl;
@@ -328,12 +313,12 @@ p strong { color: var(--c-primary); font-weight: 700; }
 #section-indicator.visible { opacity: 1; }
 #section-indicator.stage-hidden { opacity: 0 !important; }
 
-/* Section crossfade */
+/* Section crossfade overlay */
 #section-flash {
   position: fixed; inset: 0; z-index: calc(var(--z-about) + 5);
   background: var(--c-bg);
   opacity: 0; pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 #section-flash.show { opacity: 1; pointer-events: none; }
 
@@ -378,22 +363,23 @@ nav#nav.scrolled {
   position: relative; overflow: hidden; transition: color .25s;
 }
 .n-links a::after {
-  content: ''; position: absolute; bottom: -1px; left: 0;
+  content: ''; position: absolute; bottom: -2px; left: 0;
   width: 100%; height: 1px; background: var(--c-accent);
   transform: scaleX(0); transform-origin: left;
-  transition: transform .35s var(--ease);
+  transition: transform .32s var(--ease);
 }
-.n-links a:hover { color: var(--c-primary); }
+.n-links a:hover { color: var(--c-accent); }
 .n-links a:hover::after { transform: scaleX(1); }
 
 .n-right {
-  display: flex; align-items: center; gap: var(--sp-2);
+  display: flex; align-items: center; gap: var(--sp-3);
   opacity: 0; animation: fd .6s var(--ease) .18s forwards;
 }
 .n-avail {
+  display: flex; align-items: center; gap: 7px;
   font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-secondary); display: flex; align-items: center; gap: 7px;
+  color: var(--c-secondary);
 }
 .n-avail-dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--c-accent);
@@ -425,7 +411,6 @@ body.menu-open .n-ham span:nth-child(1) { transform: translateY(6px) rotate(45de
 body.menu-open .n-ham span:nth-child(2) { opacity: 0; }
 body.menu-open .n-ham span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
-/* Mobile drawer */
 .nav-drawer {
   position: fixed; inset: 0; z-index: calc(var(--z-nav) - 1);
   background: rgba(8,9,9,.98);
@@ -459,6 +444,8 @@ model-viewer#mini-viewer {
   --progress-bar-color: transparent;
   --progress-mask: transparent;
   background: var(--c-bg);
+  /* model-viewer captures pointer events for 3D drag — that is intentional.
+     We do NOT intercept its wheel events; scroll passes through naturally. */
 }
 .hero-vignette {
   position: absolute; inset: 0; pointer-events: none;
@@ -1258,84 +1245,76 @@ footer {
   .ch-title      { font-size: clamp(28px, 7.5vw, 46px); }
   .type-statement{ font-size: clamp(15px, 4.5vw, 21px); }
   .contact-h     { font-size: clamp(44px, 13vw, 68px); }
-  .c-link, .c-soc, .c-dl { font-size: clamp(17px, 5.5vw, 26px); }
 }
 </style>
 </head>
-<body>
+<body id="top">
 
-<!-- ── Ambient overlays ── -->
-<div id="veil"           aria-hidden="true"></div>
-<div id="cur"            aria-hidden="true"></div>
-<div id="cur-r"          aria-hidden="true"></div>
-<div id="grain"          aria-hidden="true"></div>
-<div id="prog"           aria-hidden="true"></div>
-<div id="section-flash"  aria-hidden="true"></div>
-<div id="section-indicator" aria-hidden="true"></div>
+<!-- Ambient overlays -->
+<div id="grain" aria-hidden="true"></div>
+<div id="veil"  aria-hidden="true"></div>
+<div id="prog"  aria-hidden="true" role="progressbar" aria-label="Page scroll progress"></div>
+<div id="section-indicator" aria-hidden="true">Hero</div>
+<div id="section-flash" aria-hidden="true"></div>
 
-<!-- Carousel dot nav -->
-<nav id="c-dots" aria-label="Project navigation" aria-hidden="true"></nav>
+<!-- Custom cursor -->
+<div id="cur"   aria-hidden="true"></div>
+<div id="cur-r" aria-hidden="true"></div>
 
-<!-- Mobile Nav Drawer -->
-<nav class="nav-drawer" id="nav-drawer" aria-hidden="true" aria-label="Mobile navigation">
-  <a href="#top"     id="dw-top">Home</a>
-  <a href="#work"    id="dw-work">Projects</a>
-  <a href="#about"   id="dw-about">About</a>
-  <a href="#contact" id="dw-contact">Contact</a>
-</nav>
-
-<!-- Primary Navigation -->
+<!-- ═══════════════════════════════════════════════════════════
+     NAVIGATION
+═══════════════════════════════════════════════════════════ -->
 <nav id="nav" aria-label="Main navigation">
-  <a href="#top" class="n-logo" aria-label="Kieran Green — Home">
-    <span class="logo-first">Kieran</span><span class="logo-sep" aria-hidden="true">/</span><span class="logo-last">Green</span>
+  <a href="#top" class="n-logo" aria-label="Kieran Green — home">
+    <span class="logo-first">Kieran</span>
+    <span class="logo-sep" aria-hidden="true">·</span>
+    <span class="logo-last">Green</span>
   </a>
+
   <div class="n-links" role="list">
-    <a href="#work"    role="listitem">Projects</a>
+    <a href="#work"    role="listitem">Work</a>
     <a href="#about"   role="listitem">About</a>
     <a href="#contact" role="listitem">Contact</a>
   </div>
+
   <div class="n-right">
     <div class="n-avail" aria-label="Currently available for work">
       <div class="n-avail-dot" aria-hidden="true"></div>
       Available
     </div>
     <button class="n-theme" id="theme-btn" aria-label="Switch to light theme">
-      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="4"/>
-        <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-        <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
       </svg>
     </button>
     <button class="n-ham" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
-      <span></span><span></span><span></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
     </button>
   </div>
 </nav>
 
+<nav class="nav-drawer" id="nav-drawer" aria-label="Mobile navigation" aria-hidden="true">
+  <a href="#top"     id="dw-top">Hero</a>
+  <a href="#work"    id="dw-work">Work</a>
+  <a href="#about"   id="dw-about">About</a>
+  <a href="#contact" id="dw-contact">Contact</a>
+</nav>
+
 <!-- ═══════════════════════════════════════════════════════════
-     HERO — Interactive 3D Model
+     HERO
 ═══════════════════════════════════════════════════════════ -->
-<section class="hero" id="top" aria-labelledby="hero-heading">
+<section class="hero" aria-labelledby="hero-heading">
 
   <model-viewer
     id="mini-viewer"
-    src="https://kieranjgreen18-cyber.github.io/KieranGreen/minisite.glb"
-    alt="Interactive 3D model of Kieran Green's Mini Clubman — drag to explore"
-    camera-controls
-    auto-rotate
-    auto-rotate-delay="0"
-    rotation-per-second="3deg"
-    skybox-image="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr"
-    skybox-height="1.2m"
-    shadow-intensity="2.0"
-    shadow-softness="0.7"
-    exposure="0.9"
-    camera-orbit="-20deg 92deg 50%"
-    min-camera-orbit="auto 84deg auto"
-    max-camera-orbit="auto 98deg auto"
-    field-of-view="18deg"
+    src="https://kieranjgreen18-cyber.github.io/KieranGreen/mini.glb"
+    alt="3D model of Kieran Green's Mini Clubman, surface modeled in Rhino 3D"
+    camera-orbit="-30deg 78deg 5m"
+    min-camera-orbit="auto auto 3m"
+    max-camera-orbit="auto auto 9m"
+    field-of-view="22deg"
     min-field-of-view="14deg"
     max-field-of-view="24deg"
     interaction-prompt="none"
@@ -1533,6 +1512,9 @@ footer {
 </section>
 
 <div class="projects-spacer" id="projects-spacer" aria-hidden="true"></div>
+
+<!-- Carousel dot nav — rendered by JS -->
+<div id="c-dots" aria-hidden="true"></div>
 
 <!-- ═══════════════════════════════════════════════════════════
      ABOUT — Scroll-lock panel engine
@@ -1766,9 +1748,10 @@ footer {
 'use strict';
 
 /* ══════════════════════════════════════════════════════════════
-   ORCHESTRATOR — single source of truth for which module owns input
-   States: 'scroll' | 'carousel' | 'about'
-   Only ONE state is ever active. All wheel/touch listeners check this.
+   ████  ORCHESTRATOR
+   Single authority over which module owns input.
+   Valid states: 'scroll' | 'carousel' | 'about'
+   ONLY ONE state active at any moment.
 ══════════════════════════════════════════════════════════════ */
 const App = (() => {
   let _state = 'scroll';
@@ -1786,32 +1769,58 @@ const App = (() => {
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   SMOOTH SCROLLER — only active when state === 'scroll'
+   ████  TRANSITION LOCK
+   Prevents re-entrant state changes during flash transitions.
+══════════════════════════════════════════════════════════════ */
+let isTransitioning = false;
+
+function setState(next) {
+  if (App.state === next || isTransitioning) return;
+  isTransitioning = true;
+  App.set(next); // modules respond to this via App.on()
+  requestAnimationFrame(() => { isTransitioning = false; });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ████  SMOOTH SCROLLER
+   Active only when App.state === 'scroll'.
+   Uses ONLY smoother.setTarget / smoother.jumpTo — never window.scrollBy.
 ══════════════════════════════════════════════════════════════ */
 const smoother = (() => {
   let cur = window.scrollY, tgt = window.scrollY, running = false;
   let suppressCbs = false;
-  const cbs = [], EASE = 0.09;
+  const cbs = [];
+  const EASE = 0.09;
   const isMobile = window.matchMedia('(max-width:768px)');
 
   function tick() {
     const d = tgt - cur;
     if (Math.abs(d) < 0.4) {
-      cur = tgt; window.scrollTo(0, cur);
+      cur = tgt;
+      window.scrollTo(0, cur);
       if (!suppressCbs) cbs.forEach(f => f(cur));
-      running = false; return;
+      running = false;
+      return;
     }
-    cur += d * EASE; window.scrollTo(0, cur);
+    cur += d * EASE;
+    window.scrollTo(0, cur);
     if (!suppressCbs) cbs.forEach(f => f(cur));
     requestAnimationFrame(tick);
   }
   function go() { if (!running) { running = true; requestAnimationFrame(tick); } }
 
+  /* — The ONE global wheel handler — */
   window.addEventListener('wheel', e => {
+    /* Only the smoother handles wheel in 'scroll' state.
+       Carousel and About modules each have their own wheel listener
+       that guards on App.state === 'carousel' / 'about'.
+       Hero does NOT have a wheel listener — it was removed. */
     if (App.state !== 'scroll') return;
     if (isMobile.matches) return;
     e.preventDefault();
-    const raw = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+    const raw = e.deltaMode === 1 ? e.deltaY * 32
+              : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+              : e.deltaY;
     const delta = raw === 0 ? 0 : Math.sign(raw) * Math.max(Math.abs(raw), 24);
     tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, tgt + delta));
     if (!suppressCbs) cbs.forEach(f => f(tgt));
@@ -1824,54 +1833,54 @@ const smoother = (() => {
 
   return {
     on:     fn  => cbs.push(fn),
-    // jumpTo: teleport + suppress — cbs never fire
+
+    /* jumpTo: teleport instantly, suppress callbacks during jump */
     jumpTo: val => {
       suppressCbs = true;
-      cur = tgt = val; window.scrollTo(0, val);
+      cur = tgt = val;
+      window.scrollTo(0, val);
       suppressCbs = false;
     },
-    // setTarget: animate toward val, cbs fire each tick
+
+    /* setTarget: smooth animate toward val, callbacks fire each tick */
     setTarget: val => {
       tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val));
       go();
     },
-    // suppressedSetTarget: animate toward val but hold cbs suppressed until
-    // the animation completes, then fire once. Used by disengage() so zone
-    // detectors don't re-trigger mid-transition.
+
+    /* suppressedSetTarget: animate but hold cbs until animation settles,
+       then fire once — prevents adjacent zone detectors from re-triggering. */
     suppressedSetTarget: (val, onComplete) => {
       tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val));
       suppressCbs = true;
-      // Un-suppress after the inertia settles (~400ms is plenty for EASE=0.09 over ~1vh)
-      // then fire callbacks once so nav/progress bar update.
       const unsuppress = () => {
         suppressCbs = false;
         cbs.forEach(f => f(val));
         onComplete && onComplete();
       };
-      // Use a one-shot rAF chain: run the tick but check when it stops
-      let lastY = cur;
-      let stuckFrames = 0;
+      let lastY = cur, stuckFrames = 0;
       const monitor = () => {
-        if (!suppressCbs) return; // already unsuppressed externally
+        if (!suppressCbs) return;
         const y = window.scrollY;
         if (Math.abs(y - val) < 2) { unsuppress(); return; }
         if (Math.abs(y - lastY) < 0.5) { stuckFrames++; } else { stuckFrames = 0; }
-        if (stuckFrames > 8) { unsuppress(); return; } // give up after ~8 stalled frames
+        if (stuckFrames > 8) { unsuppress(); return; }
         lastY = y;
         requestAnimationFrame(monitor);
       };
       go();
       requestAnimationFrame(monitor);
     },
+
     isMobile,
   };
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   SECTION FLASH TRANSITION
+   ████  SECTION FLASH — brief bg crossfade between sections
 ══════════════════════════════════════════════════════════════ */
 const flashEl = document.getElementById('section-flash');
-function sectionFlash(cb, delay = 100) {
+function sectionFlash(cb, delay = 80) {
   if (!flashEl) { cb && cb(); return; }
   flashEl.classList.add('show');
   setTimeout(() => {
@@ -1881,7 +1890,9 @@ function sectionFlash(cb, delay = 100) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   HERO MODULE
+   ████  HERO MODULE
+   Responds to scroll position and mouse movement only.
+   Does NOT call preventDefault, scrollBy, or own any scroll input.
 ══════════════════════════════════════════════════════════════ */
 const HeroModule = (() => {
   const heroText   = document.getElementById('hero-text');
@@ -1892,6 +1903,7 @@ const HeroModule = (() => {
   const viewer     = document.getElementById('mini-viewer');
   const errorEl    = document.getElementById('model-error');
 
+  /* — Reveal on load — */
   function reveal() {
     requestAnimationFrame(() => {
       [heroText, heroScroll, heroCoords, modelLabel, modelHint].forEach(el => {
@@ -1899,51 +1911,28 @@ const HeroModule = (() => {
       });
     });
   }
-
   if (document.readyState === 'complete') setTimeout(reveal, 120);
   else window.addEventListener('load', () => setTimeout(reveal, 120));
 
+  /* — Model-viewer setup (materials, error, hint hide) — */
   if (viewer) {
-    let hintDone = false;
-    function dismissHint() {
-      if (hintDone) return; hintDone = true;
-      modelHint && modelHint.classList.add('hidden');
-    }
-    viewer.addEventListener('camera-change', dismissHint, { once: true });
-    setTimeout(dismissHint, 5000);
-
-    viewer.addEventListener('error', () => errorEl && errorEl.classList.add('visible'));
-
-    const pauseRotate  = () => viewer.removeAttribute('auto-rotate');
-    const resumeRotate = () => setTimeout(() => viewer.setAttribute('auto-rotate', ''), 800);
-    viewer.addEventListener('mousedown',  pauseRotate);
-    viewer.addEventListener('mouseup',    resumeRotate);
-    viewer.addEventListener('mouseleave', resumeRotate);
-    viewer.addEventListener('touchstart', pauseRotate, { passive: true });
-    viewer.addEventListener('touchend',   resumeRotate);
-
-    viewer.addEventListener('load', async () => {
-      await viewer.updateComplete;
-      viewer.jumpCameraToGoal();
+    viewer.addEventListener('error', () => {
+      if (errorEl) errorEl.classList.add('visible');
     });
-
-    viewer.addEventListener('load', async () => {
-      await viewer.updateComplete;
-      const model = viewer.model;
-      if (!model?.materials?.length) return;
-      const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
-      const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
-      let bodyFound = false;
-      model.materials.forEach((mat, i) => {
-        const name = mat.name || '';
-        if (skipRe.test(name)) return;
+    viewer.addEventListener('load', () => {
+      if (modelHint) {
+        const hideHint = () => modelHint.classList.add('hidden');
+        viewer.addEventListener('camera-change', hideHint, { once: true });
+      }
+      const mats = viewer.model?.materials;
+      if (!mats) return;
+      mats.forEach(mat => {
         const pbr = mat.pbrMetallicRoughness;
         if (!pbr) return;
-        if (bodyRe.test(name) || (!bodyFound && i === 0)) {
-          bodyFound = true;
-          pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
-          pbr.setMetallicFactor(0.0);
-          pbr.setRoughnessFactor(0.36);
+        if (mat.name?.toLowerCase().includes('body') || mat.name?.toLowerCase().includes('paint')) {
+          pbr.setBaseColorFactor([0.86, 0.84, 0.82, 1.0]);
+          pbr.setMetallicFactor(0.82);
+          pbr.setRoughnessFactor(0.18);
           if (mat.extensions?.KHR_materials_clearcoat) {
             mat.extensions.KHR_materials_clearcoat.clearcoatFactor = 1.0;
             mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
@@ -1956,36 +1945,13 @@ const HeroModule = (() => {
       });
     });
 
-    // Prevent model-viewer eating scroll
-    const heroSection = document.querySelector('.hero');
-    if (heroSection) {
-      heroSection.addEventListener('wheel', e => {
-        if (e.ctrlKey || e.metaKey) return;
-        e.preventDefault(); e.stopPropagation();
-        window.scrollBy({ top: e.deltaY, left: e.deltaX, behavior: 'auto' });
-      }, { passive: false });
-
-      let t0y = 0, t0x = 0, tScrolling = null;
-      heroSection.addEventListener('touchstart', e => {
-        if (e.touches.length === 1) { t0y = e.touches[0].clientY; t0x = e.touches[0].clientX; tScrolling = null; }
-      }, { passive: true });
-      heroSection.addEventListener('touchmove', e => {
-        if (e.touches.length !== 1) return;
-        const dy = t0y - e.touches[0].clientY, dx = t0x - e.touches[0].clientX;
-        if (tScrolling === null) {
-          if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
-          tScrolling = Math.abs(dy) > Math.abs(dx) * 1.4;
-        }
-        if (tScrolling) {
-          e.preventDefault();
-          window.scrollBy({ top: dy * 1.6, behavior: 'auto' });
-          t0y = e.touches[0].clientY; t0x = e.touches[0].clientX;
-        }
-      }, { passive: false });
-    }
+    /* ── REMOVED: hero wheel/touch interception ──
+       The hero section no longer calls e.preventDefault() on wheel events.
+       model-viewer uses pointer events for 3D drag; scroll passes straight
+       through to the smoother's global wheel listener above. */
   }
 
-  // CAD coordinate scramble
+  /* — CAD coordinate scramble (purely visual, no scroll logic) — */
   (() => {
     const coords = document.querySelectorAll('.hero-coord-item');
     if (!coords.length) return;
@@ -2009,6 +1975,7 @@ const HeroModule = (() => {
       }
     }
     setTimeout(scramble, 700);
+    /* Z coordinate follows scroll position — read-only, no scroll control */
     window.addEventListener('scroll', () => {
       if (!done) return;
       const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 9999);
@@ -2018,7 +1985,8 @@ const HeroModule = (() => {
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   PROJECTS CAROUSEL MODULE
+   ████  PROJECTS CAROUSEL MODULE
+   Owns input only when App.state === 'carousel'.
 ══════════════════════════════════════════════════════════════ */
 (function initCarousel() {
   const section = document.querySelector('.projects');
@@ -2029,18 +1997,19 @@ const HeroModule = (() => {
   const N = projs.length;
   if (!N) return;
 
-  /* — Wheel state (isolated) — */
+  /* — Velocity state — */
   let wVel = 0, wLastTime = -Infinity;
   const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
 
-  /* — Touch state (isolated) — */
+  /* — Touch state — */
   let ty0 = 0, tx0 = 0, tTime0 = 0, touchActive = false;
 
+  /* — Spacer height = N viewports — */
   function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
   sizeSpacer();
   window.addEventListener('resize', sizeSpacer, { passive: true });
 
-  // Per-character title animation
+  /* — Per-character title animation — */
   projs.forEach(p => {
     const title = p.querySelector('.proj-title');
     if (!title) return;
@@ -2054,7 +2023,7 @@ const HeroModule = (() => {
     });
   });
 
-  // Carousel dot nav
+  /* — Dot nav — */
   const LABELS = ['3D Printed Car', 'Sabretta Pen', 'PH Lamp', 'Intro to Rhino'];
   const dotsEl = document.getElementById('c-dots');
   const dotWraps = [];
@@ -2072,7 +2041,7 @@ const HeroModule = (() => {
   function setPositions(idx, animate) {
     projs.forEach((p, i) => {
       const delta = i - idx;
-      if      (delta < -1)   p.dataset.pos = 'far-above';
+      if      (delta < -1)  p.dataset.pos = 'far-above';
       else if (delta === -1) p.dataset.pos = 'prev';
       else if (delta === 0) {
         p.dataset.pos = 'active';
@@ -2103,39 +2072,40 @@ const HeroModule = (() => {
   function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
   function hasContentBelow() { return (document.body.scrollHeight - (spacerTop + spacer.offsetHeight)) > window.innerHeight * 0.5; }
 
-  /* — engage/disengage — */
+  /* ── engage: take ownership ── */
+  let carouselZone = null;
+
   function engage(idx) {
     if (App.state === 'carousel') return;
-    App.set('carousel');
+    setState('carousel');                       // uses transition lock
     activeIdx = Math.max(0, Math.min(N - 1, idx));
     section.classList.add('carousel-active');
     if (dotsEl) dotsEl.style.opacity = '1';
     secInd && secInd.classList.add('stage-hidden');
-    smoother.jumpTo(spacerTop);
+    smoother.jumpTo(spacerTop);                 // hard jump — NO scrollBy
     wVel = 0; wLastTime = -Infinity;
     projs[activeIdx].dataset.pos = 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => setPositions(activeIdx, true)));
   }
 
+  /* ── disengage: release ownership ── */
   function disengage(exitY) {
     if (App.state !== 'carousel') return;
     const maxScroll = document.body.scrollHeight - window.innerHeight;
     const safeExit = Math.max(0, Math.min(maxScroll, exitY));
-    zone = safeExit < spacerTop ? 'above' : 'below';
+    carouselZone = safeExit < spacerTop ? 'above' : 'below';
     sectionFlash(() => {
-      App.set('scroll');
+      setState('scroll');
       section.classList.remove('carousel-active');
       if (dotsEl) dotsEl.style.opacity = '0';
       secInd && secInd.classList.remove('stage-hidden');
       wVel = 0; wLastTime = -Infinity;
       smoother.jumpTo(safeExit);
-      // suppressedSetTarget keeps zone callbacks silent while scroll settles,
-      // so the adjacent about-spacer zone doesn't immediately trigger.
-      smoother.suppressedSetTarget(safeExit);
+      smoother.suppressedSetTarget(safeExit);   // keep zone-cbs silent while settling
     }, 80);
   }
 
-  /* — slide advance — */
+  /* ── slide advance ── */
   let transitioning = false, lastAdvanceAt = 0, lastAdvanceDir = 0;
   const TRANS_MS = 820;
 
@@ -2144,28 +2114,27 @@ const HeroModule = (() => {
     if (transitioning && dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
     if (next < 0) {
-      // Exit above: page top — guaranteed above all spacers
       if (hasContentAbove()) disengage(0);
       else { smoother.jumpTo(spacerTop); smoother.suppressedSetTarget(spacerTop); }
       return;
     }
     if (next >= N) {
-      // Exit below: page bottom — guaranteed below all spacers
       if (hasContentBelow()) disengage(document.body.scrollHeight - window.innerHeight);
       return;
     }
     transitioning = true; lastAdvanceAt = now; lastAdvanceDir = dir;
-    // Do NOT reset wVel — carry it so rapid scrolling works across the transition window
     activeIdx = next; setPositions(activeIdx, true);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
 
-  /* — Wheel listener — */
+  /* ── Wheel listener (only fires when state === 'carousel') ── */
   window.addEventListener('wheel', e => {
     if (App.state !== 'carousel') return;
     e.preventDefault();
     const now = performance.now();
-    const raw = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+    const raw = e.deltaMode === 1 ? e.deltaY * 32
+              : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+              : e.deltaY;
     const gap = now - wLastTime;
     if (gap > 600) wVel = 0;
     else wVel *= Math.pow(W_DECAY, gap / 16);
@@ -2176,7 +2145,7 @@ const HeroModule = (() => {
     if (wVel < -W_THRESH) { wVel += W_THRESH; advance(-1); }
   }, { passive: false });
 
-  /* — Touch listeners — */
+  /* ── Touch listeners ── */
   window.addEventListener('touchstart', e => {
     ty0 = e.touches[0].clientY; tx0 = e.touches[0].clientX;
     tTime0 = performance.now(); touchActive = true;
@@ -2208,7 +2177,7 @@ const HeroModule = (() => {
     }
   }, { passive: true });
 
-  /* — Keyboard — */
+  /* ── Keyboard ── */
   window.addEventListener('keydown', e => {
     if (App.state !== 'carousel') return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
@@ -2216,25 +2185,20 @@ const HeroModule = (() => {
     if (e.key === 'Escape') disengage(Math.max(0, spacerTop - window.innerHeight));
   });
 
-  /* — Scroll zone detection — */
-  // zone tracks last known position relative to the spacer.
-  // It is reset by disengage() before callbacks resume, so onScrollPos
-  // always sees the correct previous zone when it next fires.
+  /* ── Scroll zone detection (only in 'scroll' state) ── */
   const HYSTERESIS = 20;
-  let zone = null;
   function getZone(y) {
-    if (y < spacerTop - HYSTERESIS)                       return 'above';
-    if (y > spacerTop + spacer.offsetHeight + HYSTERESIS) return 'below';
+    if (y < spacerTop - HYSTERESIS)                        return 'above';
+    if (y > spacerTop + spacer.offsetHeight + HYSTERESIS)  return 'below';
     return 'inside';
   }
   function onScrollPos(y) {
     if (App.state !== 'scroll') return;
     calcSpacerTop();
     const newZone = getZone(y);
-    if (newZone === zone) return;
-    const prevZone = zone;
-    zone = newZone;
-    // Only engage — never disengage from here (disengage is driven by advance())
+    if (newZone === carouselZone) return;
+    const prevZone = carouselZone;
+    carouselZone = newZone;
     if (newZone === 'inside') {
       engage(prevZone === 'below' ? N - 1 : 0);
     }
@@ -2244,10 +2208,11 @@ const HeroModule = (() => {
   requestAnimationFrame(() => {
     calcSpacerTop();
     const y = window.scrollY;
-    zone = getZone(y);
-    if (zone === 'inside') engage(Math.min(N - 1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
+    carouselZone = getZone(y);
+    if (carouselZone === 'inside') engage(Math.min(N - 1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
   });
 
+  /* ── Mobile: use IntersectionObserver ── */
   if (smoother.isMobile.matches) {
     let mobileZone = null;
     window.addEventListener('scroll', calcSpacerTop, { passive: true });
@@ -2257,14 +2222,19 @@ const HeroModule = (() => {
         const prev = mobileZone; mobileZone = 'inside'; engage(prev === 'below' ? N - 1 : 0);
       } else {
         const up = entry.boundingClientRect.top > 0;
-        if (up) { if (hasContentAbove()) { mobileZone = 'above'; disengage(Math.max(0, spacerTop - HYSTERESIS - 1)); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop); } }
-        else    { if (hasContentBelow()) { mobileZone = 'below'; disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
+        if (up) {
+          if (hasContentAbove()) { mobileZone = 'above'; disengage(Math.max(0, spacerTop - HYSTERESIS - 1)); }
+          else { mobileZone = 'inside'; window.scrollTo(0, spacerTop); }
+        } else {
+          if (hasContentBelow()) { mobileZone = 'below'; disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1); }
+          else { mobileZone = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); }
+        }
       }
     }, { threshold: 0.005, rootMargin: '0px' });
     obs.observe(spacer);
   }
 
-  /* — Card tilt (desktop) — */
+  /* ── Card tilt (desktop pointer) ── */
   if (!window.matchMedia('(pointer:coarse)').matches) {
     projs.forEach(proj => {
       const img = proj.querySelector('.proj-img');
@@ -2282,7 +2252,9 @@ const HeroModule = (() => {
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   ABOUT MODULE
+   ████  ABOUT MODULE
+   Owns input only when App.state === 'about'.
+   Enters/exits cleanly via sectionFlash. Does NOT fight smoother.
 ══════════════════════════════════════════════════════════════ */
 (function initAbout() {
   const spacer = document.querySelector('.about-spacer');
@@ -2293,11 +2265,11 @@ const HeroModule = (() => {
   const N      = panels.length;
   if (!spacer || !stage || !N) return;
 
-  /* — Wheel state (isolated) — */
+  /* — Velocity state — */
   let wVel = 0, wLastTime = -Infinity;
   const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
 
-  /* — Touch state (isolated) — */
+  /* — Touch state — */
   let aty0 = 0, atx0 = 0, atTouchActive = false;
 
   function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
@@ -2324,30 +2296,33 @@ const HeroModule = (() => {
   function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
   function hasContentBelow() { return (document.body.scrollHeight - (spacerTop + spacer.offsetHeight)) > window.innerHeight * 0.5; }
 
+  /* ── engage: take ownership ── */
+  let aboutZone = null;
+
   function engage(idx) {
     if (App.state === 'about') return;
-    App.set('about');
+    setState('about');
     activeIdx = Math.max(0, Math.min(N - 1, idx));
     setPanel(activeIdx);
     stage.classList.add('engaged');
     secInd && secInd.classList.add('stage-hidden');
-    smoother.jumpTo(spacerTop);
+    smoother.jumpTo(spacerTop);                 // hard jump to spacer — NO scrollBy
     wVel = 0; wLastTime = -Infinity;
   }
+
+  /* ── disengage: release ownership ── */
   function disengage(exitY) {
     if (App.state !== 'about') return;
     const maxScroll = document.body.scrollHeight - window.innerHeight;
     const safeExit = Math.max(0, Math.min(maxScroll, exitY));
-    zone = safeExit < spacerTop ? 'above' : 'below';
+    aboutZone = safeExit < spacerTop ? 'above' : 'below';
     sectionFlash(() => {
-      App.set('scroll');
+      setState('scroll');
       stage.classList.remove('engaged');
       secInd && secInd.classList.remove('stage-hidden');
       wVel = 0; wLastTime = -Infinity;
       smoother.jumpTo(safeExit);
-      // suppressedSetTarget keeps zone callbacks silent while scroll settles,
-      // so the adjacent carousel-spacer zone doesn't immediately re-trigger.
-      smoother.suppressedSetTarget(safeExit);
+      smoother.suppressedSetTarget(safeExit);   // suppress cbs while settling
     }, 80);
   }
 
@@ -2359,28 +2334,26 @@ const HeroModule = (() => {
     if (transitioning && dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
     if (next < 0) {
-      // Exit above: go to page top — guaranteed above all spacers
       if (hasContentAbove()) disengage(0);
       return;
     }
     if (next >= N) {
-      // Exit below: go to page bottom — guaranteed below all spacers
       if (hasContentBelow()) disengage(document.body.scrollHeight - window.innerHeight);
       return;
     }
     transitioning = true; lastAdvanceAt = now; lastAdvanceDir = dir;
-    // Do NOT reset wVel here — let it carry over so the velocity accumulator
-    // keeps working for rapid consecutive scrolls after the transition window.
     setPanel(next);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
 
-  /* — Wheel listener — */
+  /* ── Wheel listener (only fires when state === 'about') ── */
   window.addEventListener('wheel', e => {
     if (App.state !== 'about') return;
     e.preventDefault();
     const now = performance.now();
-    const raw = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+    const raw = e.deltaMode === 1 ? e.deltaY * 32
+              : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+              : e.deltaY;
     const gap = now - wLastTime;
     if (gap > 600) wVel = 0;
     else wVel *= Math.pow(W_DECAY, gap / 16);
@@ -2391,7 +2364,7 @@ const HeroModule = (() => {
     if (wVel < -W_THRESH) { wVel += W_THRESH; advance(-1); }
   }, { passive: false });
 
-  /* — Touch listeners — */
+  /* ── Touch listeners ── */
   window.addEventListener('touchstart', e => {
     aty0 = e.touches[0].clientY; atx0 = e.touches[0].clientX; atTouchActive = true;
   }, { passive: true });
@@ -2417,7 +2390,7 @@ const HeroModule = (() => {
     }
   }, { passive: true });
 
-  /* — Keyboard — */
+  /* ── Keyboard ── */
   window.addEventListener('keydown', e => {
     if (App.state !== 'about') return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
@@ -2425,23 +2398,20 @@ const HeroModule = (() => {
     if (e.key === 'Escape') disengage(Math.max(0, spacerTop - window.innerHeight));
   });
 
-  /* — Scroll zone detection — */
-  // zone is reset by disengage() before callbacks resume — no disengaging flag needed.
+  /* ── Scroll zone detection (only in 'scroll' state) ── */
   const HYSTERESIS = 20;
-  let zone = null;
   function getZone(y) {
-    if (y < spacerTop - HYSTERESIS)                       return 'above';
-    if (y > spacerTop + spacer.offsetHeight + HYSTERESIS) return 'below';
+    if (y < spacerTop - HYSTERESIS)                        return 'above';
+    if (y > spacerTop + spacer.offsetHeight + HYSTERESIS)  return 'below';
     return 'inside';
   }
   function onScrollPos(y) {
     if (App.state !== 'scroll') return;
     calcSpacerTop();
     const newZone = getZone(y);
-    if (newZone === zone) return;
-    const prev = zone;
-    zone = newZone;
-    // Only engage — disengage is driven by advance()
+    if (newZone === aboutZone) return;
+    const prev = aboutZone;
+    aboutZone = newZone;
     if (newZone === 'inside') {
       engage(prev === 'below' ? N - 1 : 0);
     }
@@ -2450,10 +2420,12 @@ const HeroModule = (() => {
 
   requestAnimationFrame(() => {
     calcSpacerTop();
-    const y = window.scrollY; zone = getZone(y);
-    if (zone === 'inside') engage(Math.min(N - 1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
+    const y = window.scrollY;
+    aboutZone = getZone(y);
+    if (aboutZone === 'inside') engage(Math.min(N - 1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
   });
 
+  /* ── Mobile: IntersectionObserver ── */
   if (smoother.isMobile.matches) {
     let mz = null;
     window.addEventListener('scroll', calcSpacerTop, { passive: true });
@@ -2462,12 +2434,18 @@ const HeroModule = (() => {
       if (entry.isIntersecting) { const prev = mz; mz = 'inside'; engage(prev === 'below' ? N - 1 : 0); }
       else {
         const up = entry.boundingClientRect.top > 0;
-        if (up) { if (hasContentAbove()) { mz = 'above'; disengage(Math.max(0, spacerTop - HYSTERESIS - 1)); } else { mz = 'inside'; window.scrollTo(0, spacerTop); } }
-        else    { if (hasContentBelow()) { mz = 'below'; disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1); } else { mz = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
+        if (up) {
+          if (hasContentAbove()) { mz = 'above'; disengage(Math.max(0, spacerTop - HYSTERESIS - 1)); }
+          else { mz = 'inside'; window.scrollTo(0, spacerTop); }
+        } else {
+          if (hasContentBelow()) { mz = 'below'; disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1); }
+          else { mz = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); }
+        }
       }
     }, { threshold: 0.005, rootMargin: '0px' });
     obs.observe(spacer);
   }
+
   setPanel(0); calcSpacerTop();
 })();
 
@@ -2598,6 +2576,7 @@ window.addEventListener('pageshow', e => {
 
 /* ══════════════════════════════════════════════════════════════
    SMOOTH ANCHOR NAV
+   Uses smoother.setTarget exclusively — no window.scrollBy.
 ══════════════════════════════════════════════════════════════ */
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href]');
@@ -2606,6 +2585,14 @@ document.addEventListener('click', e => {
   if (!href) return;
   if (href.startsWith('#')) {
     e.preventDefault();
+    // If locked in carousel or about, release first
+    if (App.state === 'carousel' || App.state === 'about') {
+      App.set('scroll');
+      document.querySelector('.projects')?.classList.remove('carousel-active');
+      document.getElementById('about-stage')?.classList.remove('engaged');
+      document.getElementById('c-dots').style.opacity = '0';
+      secInd && secInd.classList.remove('stage-hidden');
+    }
     const targetId = href === '#work' ? 'projects-spacer' : href.slice(1);
     const t = document.getElementById(targetId) || document.querySelector(href);
     if (t) smoother.setTarget(Math.round(t.getBoundingClientRect().top + window.scrollY));
