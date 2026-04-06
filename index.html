@@ -330,7 +330,7 @@ p strong { color: var(--c-primary); font-weight: 700; }
 
 /* Section crossfade */
 #section-flash {
-  position: fixed; inset: 0; z-index: calc(var(--z-about) + 5);
+  position: fixed; inset: 0; z-index: calc(var(--z-overlay) + 10);
   background: var(--c-bg);
   opacity: 0; pointer-events: none;
   transition: opacity 0.2s ease;
@@ -631,8 +631,9 @@ model-viewer#mini-viewer {
 .projects {
   position: fixed; inset: 0; z-index: var(--z-carousel);
   pointer-events: none; visibility: hidden;
+  contain: layout style;
 }
-.projects.carousel-active { pointer-events: auto; visibility: visible; }
+.projects.carousel-active { pointer-events: auto; visibility: visible; z-index: var(--z-overlay); }
 .proj-track { position: absolute; inset: 0; }
 
 .proj {
@@ -640,14 +641,16 @@ model-viewer#mini-viewer {
   overflow: hidden; cursor: none;
   display: block; text-decoration: none;
   will-change: transform;
-  transition: transform 0.72s var(--snap);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.72s var(--snap), opacity 0.36s ease;
   transform: translateY(100%);
 }
-.proj[data-pos="far-above"] { transform: translateY(-200%); visibility: hidden; transition: none !important; }
-.proj[data-pos="prev"]      { transform: translateY(-100%); }
-.proj[data-pos="active"]    { transform: translateY(0); }
-.proj[data-pos="next"]      { transform: translateY(100%); }
-.proj[data-pos="far-below"] { transform: translateY(200%); visibility: hidden; transition: none !important; }
+.proj[data-pos="far-above"] { transform: translateY(-200%); opacity: 0; pointer-events: none; }
+.proj[data-pos="prev"]      { transform: translateY(-100%); opacity: 1; pointer-events: none; }
+.proj[data-pos="active"]    { transform: translateY(0);     opacity: 1; pointer-events: auto; }
+.proj[data-pos="next"]      { transform: translateY(100%);  opacity: 1; pointer-events: none; }
+.proj[data-pos="far-below"] { transform: translateY(200%);  opacity: 0; pointer-events: none; }
 
 .proj-img {
   position: absolute; inset: 0;
@@ -655,7 +658,6 @@ model-viewer#mini-viewer {
   transform: scale(1.06);
   filter: saturate(.7) brightness(.52);
   transition: transform 1.1s var(--ease), filter 1.1s ease;
-  will-change: transform;
 }
 .proj:hover .proj-img { transform: scale(1.02); filter: saturate(.95) brightness(.68); }
 
@@ -673,9 +675,9 @@ model-viewer#mini-viewer {
 .proj:hover .proj-line { opacity: 1; transform: scaleY(1); }
 
 .proj-text {
-  position: absolute; top: 50%; transform: translateY(-50%);
+  position: absolute; top: 50%; transform: translateY(calc(-50% + var(--text-hover, 0px)));
   width: 44%; z-index: 2;
-  transition: transform .7s var(--ease);
+  transition: --text-hover .7s var(--ease), transform .7s var(--ease);
   will-change: transform;
 }
 .proj:nth-child(odd)  .proj-text { left: var(--pad); }
@@ -813,9 +815,12 @@ model-viewer#mini-viewer {
 .about-stage {
   position: fixed; inset: 0; z-index: var(--z-about);
   background: var(--c-bg);
-  pointer-events: none; visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  contain: layout style;
 }
-.about-stage.engaged { pointer-events: auto; visibility: visible; }
+.about-stage.engaged { pointer-events: auto; opacity: 1; }
 .panels-host { position: relative; width: 100%; height: 100%; overflow: hidden; }
 
 .v-rules {
@@ -1697,8 +1702,8 @@ footer {
       <div class="ps-video-frame">
         <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
         <iframe
-          src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1"
-          title="Kieran Green — Personal Statement"
+          src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1&color=white"
+          title="Kieran Green — Industrial Design Personal Statement"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
           loading="lazy"
@@ -1784,6 +1789,9 @@ const App = (() => {
     on(fn) { _listeners.push(fn); },
   };
 })();
+
+/* Declared early so carousel/about IIFEs can reference it immediately */
+var secInd = document.getElementById('section-indicator');
 
 /* ══════════════════════════════════════════════════════════════
    SMOOTH SCROLLER — only active when state === 'scroll'
@@ -2068,12 +2076,13 @@ const HeroModule = (() => {
   }
 
   let activeIdx = 0;
+  let zone = null;
 
   function setPositions(idx, animate) {
     projs.forEach((p, i) => {
       const delta = i - idx;
-      if      (delta < -1)   p.dataset.pos = 'far-above';
-      else if (delta === -1) p.dataset.pos = 'prev';
+      if      (delta < -1)   { p.dataset.pos = 'far-above'; }
+      else if (delta === -1) { p.dataset.pos = 'prev'; }
       else if (delta === 0) {
         p.dataset.pos = 'active';
         if (animate) {
@@ -2083,12 +2092,15 @@ const HeroModule = (() => {
           });
         }
       }
-      else if (delta === 1)  p.dataset.pos = 'next';
-      else                   p.dataset.pos = 'far-below';
+      else if (delta === 1)  { p.dataset.pos = 'next'; }
+      else                   { p.dataset.pos = 'far-below'; }
       if (delta !== 0) {
         p.querySelectorAll('.proj-title .ch').forEach(s => {
           s.style.transitionDelay = '0ms'; s.classList.remove('show');
         });
+        // Clear any stuck tilt transform on non-active slides
+        const img = p.querySelector('.proj-img');
+        if (img) img.style.transform = '';
       }
     });
     dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
@@ -2113,7 +2125,7 @@ const HeroModule = (() => {
     secInd && secInd.classList.add('stage-hidden');
     smoother.jumpTo(spacerTop);
     wVel = 0; wLastTime = -Infinity;
-    projs[activeIdx].dataset.pos = 'next';
+    setPositions(activeIdx, false);
     requestAnimationFrame(() => requestAnimationFrame(() => setPositions(activeIdx, true)));
   }
 
@@ -2144,14 +2156,14 @@ const HeroModule = (() => {
     if (transitioning && dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
     if (next < 0) {
-      // Exit above: page top — guaranteed above all spacers
-      if (hasContentAbove()) disengage(0);
+      // Exit above: land just before the projects-spacer so hero/ticker are visible
+      if (hasContentAbove()) disengage(Math.max(0, spacerTop - 2));
       else { smoother.jumpTo(spacerTop); smoother.suppressedSetTarget(spacerTop); }
       return;
     }
     if (next >= N) {
-      // Exit below: page bottom — guaranteed below all spacers
-      if (hasContentBelow()) disengage(document.body.scrollHeight - window.innerHeight);
+      // Exit below: land just past the projects-spacer so About section triggers naturally
+      if (hasContentBelow()) disengage(spacerTop + spacer.offsetHeight + 2);
       return;
     }
     transitioning = true; lastAdvanceAt = now; lastAdvanceDir = dir;
@@ -2213,7 +2225,7 @@ const HeroModule = (() => {
     if (App.state !== 'carousel') return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
     if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); advance(-1); }
-    if (e.key === 'Escape') disengage(Math.max(0, spacerTop - window.innerHeight));
+    if (e.key === 'Escape') disengage(Math.max(0, spacerTop - 2));
   });
 
   /* — Scroll zone detection — */
@@ -2221,7 +2233,6 @@ const HeroModule = (() => {
   // It is reset by disengage() before callbacks resume, so onScrollPos
   // always sees the correct previous zone when it next fires.
   const HYSTERESIS = 20;
-  let zone = null;
   function getZone(y) {
     if (y < spacerTop - HYSTERESIS)                       return 'above';
     if (y > spacerTop + spacer.offsetHeight + HYSTERESIS) return 'below';
@@ -2257,8 +2268,8 @@ const HeroModule = (() => {
         const prev = mobileZone; mobileZone = 'inside'; engage(prev === 'below' ? N - 1 : 0);
       } else {
         const up = entry.boundingClientRect.top > 0;
-        if (up) { if (hasContentAbove()) { mobileZone = 'above'; disengage(Math.max(0, spacerTop - HYSTERESIS - 1)); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop); } }
-        else    { if (hasContentBelow()) { mobileZone = 'below'; disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
+        if (up) { if (hasContentAbove()) { mobileZone = 'above'; disengage(Math.max(0, spacerTop - 2)); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop); } }
+        else    { if (hasContentBelow()) { mobileZone = 'below'; disengage(spacerTop + spacer.offsetHeight + 2); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
       }
     }, { threshold: 0.005, rootMargin: '0px' });
     obs.observe(spacer);
@@ -2269,8 +2280,12 @@ const HeroModule = (() => {
     projs.forEach(proj => {
       const img = proj.querySelector('.proj-img');
       if (!img) return;
-      proj.addEventListener('mouseenter', () => { proj._r = proj.getBoundingClientRect(); });
+      proj.addEventListener('mouseenter', () => {
+        if (proj.dataset.pos !== 'active') return;
+        proj._r = proj.getBoundingClientRect();
+      });
       proj.addEventListener('mousemove', e => {
+        if (proj.dataset.pos !== 'active') return;
         if (!proj._r) proj._r = proj.getBoundingClientRect();
         const nx = (e.clientX - proj._r.left) / proj._r.width  - 0.5;
         const ny = (e.clientY - proj._r.top)  / proj._r.height - 0.5;
@@ -2310,6 +2325,8 @@ const HeroModule = (() => {
   window.addEventListener('resize', () => setTimeout(calcSpacerTop, 200), { passive: true });
 
   let activeIdx = 0;
+  let zone = null;
+
   function setPanel(idx) {
     activeIdx = idx;
     panels.forEach((el, i) => {
@@ -2359,13 +2376,13 @@ const HeroModule = (() => {
     if (transitioning && dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
     if (next < 0) {
-      // Exit above: go to page top — guaranteed above all spacers
-      if (hasContentAbove()) disengage(0);
+      // Exit above: land just before the about-spacer so projects carousel catches it
+      if (hasContentAbove()) disengage(Math.max(0, spacerTop - 2));
       return;
     }
     if (next >= N) {
-      // Exit below: go to page bottom — guaranteed below all spacers
-      if (hasContentBelow()) disengage(document.body.scrollHeight - window.innerHeight);
+      // Exit below: land just past the about-spacer into normal scroll
+      if (hasContentBelow()) disengage(spacerTop + spacer.offsetHeight + 2);
       return;
     }
     transitioning = true; lastAdvanceAt = now; lastAdvanceDir = dir;
@@ -2422,13 +2439,12 @@ const HeroModule = (() => {
     if (App.state !== 'about') return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
     if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); advance(-1); }
-    if (e.key === 'Escape') disengage(Math.max(0, spacerTop - window.innerHeight));
+    if (e.key === 'Escape') disengage(Math.max(0, spacerTop - 2));
   });
 
   /* — Scroll zone detection — */
   // zone is reset by disengage() before callbacks resume — no disengaging flag needed.
   const HYSTERESIS = 20;
-  let zone = null;
   function getZone(y) {
     if (y < spacerTop - HYSTERESIS)                       return 'above';
     if (y > spacerTop + spacer.offsetHeight + HYSTERESIS) return 'below';
@@ -2462,8 +2478,8 @@ const HeroModule = (() => {
       if (entry.isIntersecting) { const prev = mz; mz = 'inside'; engage(prev === 'below' ? N - 1 : 0); }
       else {
         const up = entry.boundingClientRect.top > 0;
-        if (up) { if (hasContentAbove()) { mz = 'above'; disengage(Math.max(0, spacerTop - HYSTERESIS - 1)); } else { mz = 'inside'; window.scrollTo(0, spacerTop); } }
-        else    { if (hasContentBelow()) { mz = 'below'; disengage(spacerTop + spacer.offsetHeight + HYSTERESIS + 1); } else { mz = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
+        if (up) { if (hasContentAbove()) { mz = 'above'; disengage(Math.max(0, spacerTop - 2)); } else { mz = 'inside'; window.scrollTo(0, spacerTop); } }
+        else    { if (hasContentBelow()) { mz = 'below'; disengage(spacerTop + spacer.offsetHeight + 2); } else { mz = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
       }
     }, { threshold: 0.005, rootMargin: '0px' });
     obs.observe(spacer);
@@ -2543,17 +2559,17 @@ document.querySelectorAll('.rev').forEach(r => io.observe(r));
    NAV + SECTION INDICATOR
 ══════════════════════════════════════════════════════════════ */
 const navEl  = document.getElementById('nav');
-var   secInd = document.getElementById('section-indicator');
+// secInd declared early above, before carousel/about IIFEs
 const SECTIONS = [
   { id: 'top',     label: 'Hero' },
-  { id: 'work',    label: 'Projects' },
-  { id: 'about',   label: 'About' },
+  { id: 'work',    label: 'Projects',  fallback: 'projects-spacer' },
+  { id: 'about',   label: 'About',     fallback: 'about-stage' },
   { id: 'contact', label: 'Contact' },
 ];
 let sectionOffsets = [];
 function buildSectionOffsets() {
   sectionOffsets = SECTIONS.map(s => {
-    const el = document.getElementById(s.id) || document.getElementById('projects-spacer');
+    const el = document.getElementById(s.id) || (s.fallback ? document.getElementById(s.fallback) : null);
     return { label: s.label, top: el ? el.getBoundingClientRect().top + window.scrollY : 0 };
   });
 }
