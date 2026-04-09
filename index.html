@@ -6,8 +6,10 @@
 <title>Kieran Green — Industrial Designer | CAD, Surface Modeling & Product Visualization</title>
 <meta name="description" content="Kieran Green is an industrial designer specialising in CAD modeling, surface development, and product visualization using Rhino 3D and Keyshot. Seeking internships and collaborations.">
 <meta name="author" content="Kieran Green">
+<meta name="keywords" content="Kieran Green, industrial designer, CAD modeling, Rhino 3D, Keyshot, surface modeling, SubD modeling, FDM prototyping, product visualization, form development, product design">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <link rel="canonical" href="https://kieranjgreen18-cyber.github.io/KieranGreen/">
+
 <meta property="og:type" content="profile">
 <meta property="og:title" content="Kieran Green — Industrial Designer">
 <meta property="og:description" content="CAD modeling, surface development, and product visualization — from first sketch to something you can hold.">
@@ -16,6 +18,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Kieran Green — Industrial Designer">
 <meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/miniheroheader.png">
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -25,28 +28,33 @@
   ]
 }
 </script>
+
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 <meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
+
+<!-- 3D Model Viewer -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+<!-- Font preloads -->
 <link rel="preload" as="font" type="font/woff2" href="https://kieranjgreen18-cyber.github.io/KieranGreen/AnyConv.com__D-DINCondensed.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="https://kieranjgreen18-cyber.github.io/KieranGreen/AnyConv.com__D-DIN.woff2" crossorigin>
 
 <style>
-/* ══════════════════════════════════════════════════════════════
-   §1  FONT FACES
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § FONT FACES
+═══════════════════════════════════════════════════════════════ */
 @font-face {
   font-family: 'D-DIN';
   src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/AnyConv.com__D-DIN.woff2') format('woff2'),
        url('D-DIN.otf') format('opentype');
-  font-weight: 400; font-style: normal; font-display: swap;
+  font-weight: 300 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
   src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/AnyConv.com__D-DIN-Italic.woff2') format('woff2'),
        url('D-DIN-Italic.otf') format('opentype');
-  font-weight: 400; font-style: italic; font-display: swap;
+  font-weight: 300 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
@@ -57,7 +65,7 @@
   font-family: 'D-DIN Condensed';
   src: url('https://kieranjgreen18-cyber.github.io/KieranGreen/AnyConv.com__D-DINCondensed.woff2') format('woff2'),
        url('D-DINCondensed.otf') format('opentype');
-  font-weight: 400; font-style: normal; font-display: swap;
+  font-weight: 100 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
@@ -65,111 +73,145 @@
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   §2  DESIGN TOKENS
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § DESIGN TOKENS
+═══════════════════════════════════════════════════════════════ */
 :root {
-  /* — Color Palette — */
-  --c-bg:        #080909;
-  --c-bg2:       #0d0e0e;
-  --c-surface:   rgba(255,255,255,0.03);
-  --c-primary:   #edeeed;
-  --c-secondary: #96a8aa;
-  --c-accent:    #5ba0a4;
-  --c-accent-hi: #7ec8cc;
-  --c-muted:     rgba(150,168,170,0.35);
-  --c-rule:      rgba(255,255,255,0.06);
+  /* ── Color Palette ── */
+  --c-bg:         #080909;
+  --c-bg2:        #0d0e0e;
+  --c-surface:    rgba(255,255,255,0.032);
+  --c-surface2:   rgba(255,255,255,0.055);
+  --c-primary:    #edeeed;
+  --c-secondary:  #96a8aa;
+  --c-tertiary:   #5e7172;
+  --c-accent:     #5ba0a4;
+  --c-accent-hi:  #7ec8cc;
+  --c-accent-lo:  rgba(91,160,164,0.12);
+  --c-muted:      rgba(150,168,170,0.35);
+  --c-rule:       rgba(255,255,255,0.055);
+  --c-rule-hi:    rgba(255,255,255,0.10);
 
-  /* — Fonts — */
-  --f-condensed: 'D-DIN Condensed', 'Arial Narrow', sans-serif;
-  --f-body:      'D-DIN', 'Arial', sans-serif;
+  /* ── Typography — roles ── */
+  --f-heading:   'D-DIN Condensed', sans-serif;
+  --f-body:      'D-DIN', sans-serif;
+  --f-ui:        'D-DIN', sans-serif;
+  --f-meta:      'D-DIN Condensed', sans-serif;
 
-  /* — Type Scale (fluid) — */
-  --t-display:  clamp(72px, 13vw, 192px);
-  --t-hero:     clamp(68px, 12vw, 156px);
-  --t-title:    clamp(48px, 7vw, 108px);
-  --t-heading:  clamp(32px, 5vw, 68px);
-  --t-subhead:  clamp(18px, 2.2vw, 28px);
-  --t-body:     17px;
-  --t-ui:       15px;
-  --t-meta:     13px;
-  --t-micro:    11px;
+  /* ── Type Scale — fluid clamp() ── */
+  --t-display:   clamp(80px, 14vw, 200px);
+  --t-hero:      clamp(72px, 12.5vw, 160px);
+  --t-title:     clamp(54px, 8vw, 112px);
+  --t-section:   clamp(46px, 7vw, 100px);
+  --t-heading:   clamp(38px, 5.5vw, 72px);
+  --t-subhead:   clamp(20px, 2.4vw, 30px);
+  --t-body:      17px;
+  --t-ui:        15px;
+  --t-meta:      13px;
+  --t-micro:     11px;
+  --t-nano:      10px;
 
-  /* — Line Heights — */
-  --lh-display: 0.87;
-  --lh-heading: 0.90;
-  --lh-text:    1.60;
-  --lh-body:    1.85;
+  /* ── Line Heights ── */
+  --lh-display:  0.86;
+  --lh-heading:  0.90;
+  --lh-snug:     1.20;
+  --lh-text:     1.62;
+  --lh-body:     1.88;
 
-  /* — Letter Spacing — */
-  --ls-zero:    -0.04em;
-  --ls-tight:    0.01em;
-  --ls-stencil:  0.22em;
-  --ls-mid:      0.16em;
-  --ls-wide:     0.28em;
+  /* ── Letter Spacing ── */
+  --ls-tight:   -0.04em;
+  --ls-zero:    -0.02em;
+  --ls-base:     0.00em;
+  --ls-open:     0.01em;
+  --ls-stencil:  0.20em;
+  --ls-wide:     0.26em;
+  --ls-xwide:    0.32em;
 
-  /* — Spacing Scale (8px base) — */
-  --sp-1:   8px;
-  --sp-2:   16px;
-  --sp-3:   24px;
-  --sp-4:   32px;
-  --sp-5:   40px;
-  --sp-6:   48px;
-  --sp-7:   64px;
-  --sp-8:   80px;
-  --sp-9:   96px;
-  --sp-10:  120px;
-  --sp-11:  160px;
+  /* ── Spacing Scale (8px base) ── */
+  --s-1:    8px;
+  --s-2:   16px;
+  --s-3:   24px;
+  --s-4:   32px;
+  --s-5:   40px;
+  --s-6:   48px;
+  --s-7:   64px;
+  --s-8:   80px;
+  --s-9:   96px;
+  --s-10: 120px;
+  --s-11: 160px;
+  --s-12: 200px;
 
-  /* — Layout — */
-  --pad:   clamp(24px, 4vw, 56px);
-  --max-w: 1440px;
+  /* ── Layout ── */
+  --pad:         clamp(24px, 4.5vw, 56px);
+  --pad-sm:      clamp(16px, 3vw, 32px);
+  --max-w:       1500px;
+  --max-w-text:  680px;
 
-  /* — Motion — */
-  --ease:     cubic-bezier(0.16, 1, 0.3, 1);
-  --snap:     cubic-bezier(0.77, 0, 0.18, 1);
-  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
-  --dur-fast: 0.25s;
-  --dur-mid:  0.50s;
-  --dur-slow: 0.75s;
-  --dur-xl:   1.10s;
+  /* ── Easing ── */
+  --ease:        cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+  --snap:        cubic-bezier(0.77, 0, 0.18, 1);
+  --ease-out:    cubic-bezier(0.0, 0, 0.2, 1);
+  --spring:      cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* — Z-Index Layers — */
-  --z-base:     1;
-  --z-raised:   10;
-  --z-carousel: 50;
-  --z-about:    400;
-  --z-nav:      500;
-  --z-overlay:  600;
-  --z-cursor:   9998;
-  --z-top:      9999;
-  --z-veil:     10000;
+  /* ── Durations ── */
+  --dur-instant: 0.15s;
+  --dur-fast:    0.28s;
+  --dur-mid:     0.52s;
+  --dur-slow:    0.78s;
+  --dur-xl:      1.10s;
+  --dur-xxl:     1.60s;
+
+  /* ── Z-index Layers ── */
+  --z-base:      1;
+  --z-gallery:   5;
+  --z-text:      10;
+  --z-raised:    20;
+  --z-carousel:  50;
+  --z-about:     400;
+  --z-nav:       500;
+  --z-overlay:   600;
+  --z-stage:     200; /* stage-edge and panel vignette */
+  --z-cursor:    9998;
+  --z-top:       9999;
+  --z-veil:      10000;
+
+  /* ── Shadows ── */
+  --shadow-sm:   0 2px 12px rgba(0,0,0,0.45);
+  --shadow-md:   0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);
+  --shadow-lg:   0 20px 60px rgba(0,0,0,0.65), 0 4px 16px rgba(0,0,0,0.40);
+  --shadow-glow: 0 0 40px rgba(91,160,164,0.08);
 }
 
-/* — Light Theme — */
+/* ── Light Theme ── */
 [data-theme="light"] {
-  --c-bg:       #edeeed;
-  --c-bg2:      #e2e4e2;
-  --c-surface:  rgba(0,0,0,0.03);
-  --c-primary:  #080909;
-  --c-secondary:#4a5c5e;
-  --c-rule:     rgba(8,9,9,0.08);
+  --c-bg:        #edeeed;
+  --c-bg2:       #e4e6e4;
+  --c-surface:   rgba(0,0,0,0.032);
+  --c-surface2:  rgba(0,0,0,0.055);
+  --c-primary:   #080909;
+  --c-secondary: #4a5c5e;
+  --c-tertiary:  #7a9092;
+  --c-rule:      rgba(8,9,9,0.08);
+  --c-rule-hi:   rgba(8,9,9,0.14);
+  --shadow-sm:   0 2px 12px rgba(0,0,0,0.10);
+  --shadow-md:   0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:   0 20px 60px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.08);
 }
-[data-theme="light"] #nav { background: linear-gradient(to bottom, rgba(237,238,237,.9), transparent); }
-[data-theme="light"] #nav.scrolled { background: rgba(237,238,237,0.92); }
-[data-theme="light"] .hero-vignette { background: linear-gradient(to right, rgba(237,238,237,0.97) 0%, rgba(237,238,237,0.72) 30%, rgba(237,238,237,0.2) 58%, transparent 76%), linear-gradient(to top, rgba(237,238,237,0.95) 0%, rgba(237,238,237,0.42) 8%, transparent 18%), linear-gradient(to bottom, rgba(237,238,237,0.55) 0%, transparent 14%); }
-[data-theme="light"] .proj:nth-child(odd)  .proj-veil { background: linear-gradient(to right, rgba(237,238,237,.97) 0%, rgba(237,238,237,.6) 44%, transparent 72%); }
-[data-theme="light"] .proj:nth-child(even) .proj-veil { background: linear-gradient(to left,  rgba(237,238,237,.97) 0%, rgba(237,238,237,.6) 44%, transparent 72%); }
-[data-theme="light"] .ticker { background: rgba(0,0,0,.035); }
+[data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.9) 0%, transparent 100%); }
+[data-theme="light"] nav.scrolled { background: rgba(237,238,237,0.94); backdrop-filter: blur(32px) saturate(1.5); }
+[data-theme="light"] .hero-vignette { background: linear-gradient(to right, rgba(237,238,237,0.97) 0%, rgba(237,238,237,0.75) 28%, rgba(237,238,237,0.25) 58%, transparent 78%), linear-gradient(to top, rgba(237,238,237,0.95) 0%, rgba(237,238,237,0.45) 7%, transparent 18%), linear-gradient(to bottom, rgba(237,238,237,0.60) 0%, transparent 16%); }
+[data-theme="light"] .proj:nth-child(odd)  .proj-veil { background: linear-gradient(to right, rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
+[data-theme="light"] .proj:nth-child(even) .proj-veil { background: linear-gradient(to left,  rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
+[data-theme="light"] .ticker { background: rgba(0,0,0,.04); }
 [data-theme="light"] .ticker::before { background: linear-gradient(to right, var(--c-bg), transparent); }
 [data-theme="light"] .ticker::after  { background: linear-gradient(to left,  var(--c-bg), transparent); }
-[data-theme="light"] #grain { opacity: .018; }
-[data-theme="light"] .col-bottom { background: linear-gradient(to bottom, transparent, rgba(237,238,237,0.8) 28%, var(--c-bg) 56%); }
-[data-theme="light"] .contact-img { opacity: .14; }
+[data-theme="light"] #grain { opacity: .02; }
+[data-theme="light"] .col-bottom { background: linear-gradient(to bottom, transparent 0%, rgba(237,238,237,0.8) 25%, var(--c-bg) 55%); }
 
-/* ══════════════════════════════════════════════════════════════
-   §3  RESET & BASE
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § RESET & BASE
+═══════════════════════════════════════════════════════════════ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: auto; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
 body {
@@ -184,89 +226,99 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   opacity: 0;
-  transition: opacity 0.7s ease;
+  transition: opacity var(--dur-slow) var(--ease);
 }
 body.ready { opacity: 1; }
 :focus { outline: none; }
-:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; border-radius: 1px; }
-img { display: block; max-width: 100%; }
+:focus-visible { outline: 1.5px solid var(--c-accent); outline-offset: 4px; border-radius: 2px; }
+img { display: block; max-width: 100%; height: auto; }
 em { font-style: italic; color: var(--c-accent); }
 strong { color: var(--c-primary); font-weight: 700; }
+
+/* ── Screen reader only ── */
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0;
   margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
   white-space: nowrap; border: 0;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   §4  TYPOGRAPHY SYSTEM
-══════════════════════════════════════════════════════════════ */
-/* Role: hero — largest wordmark */
-.type-hero {
-  font-family: var(--f-condensed); font-size: var(--t-hero);
-  font-weight: 400; letter-spacing: var(--ls-zero);
+/* ═══════════════════════════════════════════════════════════════
+   § TYPOGRAPHY SYSTEM — Systematic roles
+═══════════════════════════════════════════════════════════════ */
+/* Role: display — largest hero wordmark */
+.t-display {
+  font-family: var(--f-heading); font-size: var(--t-display);
+  font-weight: 100; letter-spacing: var(--ls-tight);
   line-height: var(--lh-display); text-transform: uppercase;
 }
-/* Role: title — major section headings */
-.type-title {
-  font-family: var(--f-condensed); font-size: var(--t-title);
-  font-weight: 400; letter-spacing: var(--ls-zero);
+/* Role: section-title — major section headings */
+.t-title {
+  font-family: var(--f-heading); font-size: var(--t-title);
+  font-weight: 100; letter-spacing: var(--ls-tight);
   line-height: var(--lh-heading); text-transform: uppercase;
 }
-/* Role: heading — tertiary headings */
-.type-heading {
-  font-family: var(--f-condensed); font-size: var(--t-heading);
-  font-weight: 400; letter-spacing: var(--ls-zero);
+/* Role: subheading — supporting headings */
+.t-heading {
+  font-family: var(--f-heading); font-size: var(--t-heading);
+  font-weight: 100; letter-spacing: var(--ls-tight);
+  line-height: var(--lh-heading); text-transform: uppercase;
+  color: var(--c-primary);
+}
+/* Role: subhead — tertiary headings */
+.t-subhead {
+  font-family: var(--f-heading); font-size: var(--t-subhead);
+  font-weight: 100; letter-spacing: var(--ls-tight);
   line-height: var(--lh-heading); text-transform: uppercase;
 }
-/* Role: subhead */
-.type-subhead {
-  font-family: var(--f-condensed); font-size: var(--t-subhead);
-  font-weight: 400; letter-spacing: var(--ls-zero);
-  line-height: var(--lh-heading); text-transform: uppercase;
-}
-/* Role: body */
-.type-body {
+/* Role: body — paragraph text */
+.t-body {
   font-family: var(--f-body); font-size: var(--t-body);
-  font-weight: 400; letter-spacing: var(--ls-tight); line-height: var(--lh-body);
+  font-weight: 400; letter-spacing: var(--ls-open); line-height: var(--lh-body);
 }
 /* Role: ui — compact body, labels */
-.type-ui {
+.t-ui {
   font-family: var(--f-body); font-size: var(--t-ui);
-  font-weight: 400; letter-spacing: var(--ls-tight); line-height: var(--lh-text);
+  font-weight: 400; letter-spacing: var(--ls-open); line-height: var(--lh-text);
 }
 /* Role: label — accent labels */
-.type-label {
-  font-family: var(--f-condensed); font-size: var(--t-micro);
+.t-label {
+  font-family: var(--f-meta); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent);
 }
-/* Role: meta */
-.type-meta {
-  font-family: var(--f-condensed); font-size: var(--t-meta);
+/* Role: meta — metadata, dates */
+.t-meta {
+  font-family: var(--f-meta); font-size: var(--t-meta);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
 }
-/* Role: micro — smallest */
-.type-micro {
-  font-family: var(--f-condensed); font-size: var(--t-micro);
+/* Role: caption — smallest text */
+.t-micro {
+  font-family: var(--f-meta); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
 }
-/* Role: statement — personal statement */
-.type-statement {
-  font-family: var(--f-body); font-size: clamp(17px, 1.75vw, 25px);
-  font-weight: 400; letter-spacing: var(--ls-tight); line-height: 1.68;
+/* Role: chapter — decorative ghost text */
+.t-chapter {
+  font-family: var(--f-heading); font-size: clamp(42px, 5.5vw, 74px);
+  font-weight: 100; letter-spacing: var(--ls-tight); line-height: 0.92;
+  text-transform: uppercase; color: var(--c-secondary); opacity: 0.36;
+}
+/* Role: statement — personal statement body */
+.t-statement {
+  font-family: var(--f-body); font-size: clamp(19px, 1.9vw, 27px);
+  font-weight: 400; letter-spacing: var(--ls-open); line-height: var(--lh-body);
   color: var(--c-secondary);
 }
-h1 em, h2 em, h3 em { font-style: italic; color: var(--c-accent); font-weight: inherit; }
-p strong { color: var(--c-primary); font-weight: 700; }
 
-/* ══════════════════════════════════════════════════════════════
-   §5  AMBIENT OVERLAYS
-══════════════════════════════════════════════════════════════ */
-/* Film grain */
+h1 em, h2 em, h3 em { font-style: italic; color: var(--c-accent); font-weight: inherit; }
+p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body); }
+
+/* ═══════════════════════════════════════════════════════════════
+   § AMBIENT OVERLAYS
+═══════════════════════════════════════════════════════════════ */
+/* Film grain — hardware accelerated */
 #grain {
   position: fixed; inset: -25%; width: 150%; height: 150%;
-  pointer-events: none; z-index: var(--z-top); opacity: 0.026;
+  pointer-events: none; z-index: var(--z-top); opacity: 0.024;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation: grain .9s steps(2) infinite;
   contain: strict; will-change: transform;
@@ -280,86 +332,135 @@ p strong { color: var(--c-primary); font-weight: 700; }
 /* Page entrance veil */
 #veil {
   position: fixed; inset: 0; z-index: var(--z-veil);
-  background: var(--c-accent);
+  background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-hi) 100%);
   clip-path: inset(0 0% 0 0);
   pointer-events: all;
-  will-change: clip-path;
+  will-change: clip-path, opacity;
 }
-#veil.gone    { clip-path: inset(0 100% 0 0); pointer-events: none; transition: clip-path .85s var(--snap); }
+#veil.gone    { clip-path: inset(0 100% 0 0); pointer-events: none; transition: clip-path var(--dur-slow) var(--snap); }
 #veil.instant { transition: none !important; clip-path: inset(0 100% 0 0) !important; pointer-events: none; }
 
-/* Custom cursor */
+/* ── Cursor: CAD crosshair reticle ── */
+/* Horizontal arm */
 #cur {
   position: fixed; z-index: var(--z-veil); pointer-events: none;
-  width: 8px; height: 8px; border-radius: 50%;
+  width: 16px; height: 1px;
   background: var(--c-accent);
-  transform: translate(-50%,-50%);
-  mix-blend-mode: difference;
-  transition: width .18s var(--ease), height .18s var(--ease), opacity .2s;
+  transform: translate(-50%, -50%);
   will-change: transform;
+  transition: width var(--dur-fast) var(--ease),
+              opacity var(--dur-fast) var(--ease),
+              background var(--dur-fast);
 }
+/* Center gap — punched out of horizontal arm */
+#cur::before {
+  content: '';
+  position: absolute; top: 0; left: 50%;
+  width: 4px; height: 1px;
+  background: var(--c-bg);
+  transform: translateX(-50%);
+  transition: width var(--dur-fast) var(--ease);
+}
+/* Vertical arm */
+#cur::after {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: 1px; height: 16px;
+  background: var(--c-accent);
+  transform: translate(-50%, -50%);
+  transition: height var(--dur-fast) var(--ease),
+              background var(--dur-fast);
+}
+/* Corner bracket — lazy follower */
 #cur-r {
   position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
-  width: 42px; height: 42px; border-radius: 50%;
-  border: 1px solid rgba(91,160,164,.32);
+  width: 20px; height: 20px;
   transform: translate(-50%,-50%);
-  transition: opacity .2s;
   will-change: transform;
+  transition: width var(--dur-mid) var(--ease),
+              height var(--dur-mid) var(--ease),
+              opacity var(--dur-fast);
+}
+/* Corner brackets drawn via box-shadow */
+#cur-r {
+  --bc: rgba(91,160,164,.55);
+  --bs: 20px;
+}
+#cur-r::before,
+#cur-r::after {
+  content: '';
+  position: absolute;
+  width: 6px; height: 6px;
+  border-color: var(--bc, rgba(91,160,164,.55));
+  border-style: solid;
+  transition: border-color var(--dur-fast),
+              width var(--dur-mid) var(--ease),
+              height var(--dur-mid) var(--ease);
+}
+#cur-r::before {
+  top: 0; left: 0;
+  border-width: 1px 0 0 1px;
+}
+#cur-r::after {
+  bottom: 0; right: 0;
+  border-width: 0 1px 1px 0;
 }
 
 /* Scroll progress bar */
 #prog {
-  position: fixed; top: 0; left: 0; height: 1px;
-  background: var(--c-accent); z-index: calc(var(--z-veil) - 2);
+  position: fixed; top: 0; left: 0; height: 1.5px;
+  background: linear-gradient(to right, var(--c-accent), var(--c-accent-hi)); z-index: calc(var(--z-veil) - 2);
   width: 100%; transform: scaleX(0); transform-origin: left;
-  pointer-events: none; box-shadow: 0 0 6px rgba(91,160,164,.5);
+  pointer-events: none; box-shadow: 0 0 8px rgba(91,160,164,.55);
   will-change: transform;
 }
 
-/* Section indicator */
+/* Section indicator — vertical, left rail */
 #section-indicator {
-  position: fixed; left: var(--sp-3); top: 50%; transform: translateY(-50%) rotate(180deg);
+  position: fixed; left: var(--s-3); top: 50%; transform: translateY(-50%) rotate(180deg);
   z-index: var(--z-overlay); writing-mode: vertical-rl;
-  font-family: var(--f-condensed); font-size: 8px; font-weight: 700;
+  font-family: var(--f-meta); font-size: 8px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: rgba(91,160,164,.28); pointer-events: none;
-  opacity: 0; transition: opacity .4s;
+  opacity: 0; transition: opacity var(--dur-mid) var(--ease);
 }
 #section-indicator.visible { opacity: 1; }
 #section-indicator.stage-hidden { opacity: 0 !important; }
 
-/* Section crossfade */
+/* Section crossfade flash prevention */
 #section-flash {
-  position: fixed; inset: 0; z-index: calc(var(--z-overlay) + 10);
+  position: fixed; inset: 0; z-index: calc(var(--z-about) + 5);
   background: var(--c-bg);
   opacity: 0; pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--dur-fast) ease;
 }
 #section-flash.show { opacity: 1; pointer-events: none; }
 
-/* ══════════════════════════════════════════════════════════════
-   §6  NAVIGATION
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § NAVIGATION
+═══════════════════════════════════════════════════════════════ */
 nav#nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
   display: flex; align-items: center; justify-content: space-between;
-  padding: var(--sp-3) var(--pad);
-  background: linear-gradient(to bottom, rgba(8,9,9,.75) 0%, transparent 100%);
-  transition: padding .4s var(--ease), background .45s, backdrop-filter .45s;
+  padding: var(--s-3) var(--pad);
+  background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
+  transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), backdrop-filter var(--dur-mid), border-color var(--dur-mid);
 }
 nav#nav.scrolled {
-  padding: var(--sp-2) var(--pad);
-  background: rgba(8,9,9,.9);
+  padding: var(--s-2) var(--pad);
+  background: rgba(8,9,9,.90);
   backdrop-filter: blur(32px) saturate(1.6);
   border-bottom: 1px solid var(--c-rule);
 }
+
+/* Logo */
 .n-logo {
-  font-family: var(--f-condensed); font-size: clamp(13px, 1.4vw, 17px);
-  font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  font-family: var(--f-heading); font-size: clamp(12px, 1.2vw, 15px);
+  font-weight: 700; letter-spacing: var(--ls-wide); text-transform: uppercase;
   color: var(--c-secondary); text-decoration: none; cursor: none;
   opacity: 0; animation: fd .6s var(--ease) .05s forwards;
   display: inline-flex; align-items: baseline; gap: .35em;
-  transition: color .25s;
+  transition: color .28s var(--ease);
 }
 .logo-first { transition: color .25s; }
 .logo-sep   { font-weight: 700; letter-spacing: 0; color: rgba(91,160,164,.4); margin: 0 -.15em; }
@@ -367,18 +468,19 @@ nav#nav.scrolled {
 .n-logo:hover .logo-first,
 .n-logo:hover .logo-last { color: var(--c-primary); }
 
+/* Desktop nav links */
 .n-links {
-  display: flex; align-items: center; gap: var(--sp-4);
+  display: flex; align-items: center; gap: var(--s-4);
   opacity: 0; animation: fd .6s var(--ease) .12s forwards;
 }
 .n-links a {
-  font-family: var(--f-condensed); font-size: 14px; font-weight: 700;
+  font-family: var(--f-heading); font-size: 14px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-secondary); text-decoration: none; cursor: none;
   position: relative; overflow: hidden; transition: color .25s;
 }
 .n-links a::after {
-  content: ''; position: absolute; bottom: -1px; left: 0;
+  content: ''; position: absolute; bottom: 0; left: 0;
   width: 100%; height: 1px; background: var(--c-accent);
   transform: scaleX(0); transform-origin: left;
   transition: transform .35s var(--ease);
@@ -386,12 +488,15 @@ nav#nav.scrolled {
 .n-links a:hover { color: var(--c-primary); }
 .n-links a:hover::after { transform: scaleX(1); }
 
+/* Right controls group */
 .n-right {
-  display: flex; align-items: center; gap: var(--sp-2);
+  display: flex; align-items: center; gap: var(--s-2);
   opacity: 0; animation: fd .6s var(--ease) .18s forwards;
 }
+
+/* Availability badge */
 .n-avail {
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-secondary); display: flex; align-items: center; gap: 7px;
 }
@@ -405,12 +510,16 @@ nav#nav.scrolled {
   70%  { box-shadow: 0 0 0 6px rgba(91,160,164,0); }
   100% { box-shadow: 0 0 0 0   rgba(91,160,164,0); }
 }
+
+/* Theme toggle */
 .n-theme {
   background: none; border: none; cursor: none; padding: 6px;
   color: var(--c-secondary); transition: color .25s;
   display: flex; align-items: center; justify-content: center;
 }
 .n-theme:hover { color: var(--c-accent); }
+
+/* Hamburger */
 .n-ham {
   background: none; border: none; cursor: none;
   width: 36px; height: 36px; padding: 8px;
@@ -418,41 +527,42 @@ nav#nav.scrolled {
 }
 .n-ham span {
   display: block; width: 100%; height: 1px; background: var(--c-secondary);
-  transition: transform .3s var(--ease), opacity .25s, background .25s;
+  transition: transform var(--dur-mid) var(--ease), opacity var(--dur-fast), background var(--dur-fast);
   transform-origin: center;
 }
-body.menu-open .n-ham span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+body.menu-open .n-ham span:nth-child(1) { transform: translateY(6px) rotate(45deg); background: var(--c-primary); }
 body.menu-open .n-ham span:nth-child(2) { opacity: 0; }
-body.menu-open .n-ham span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+body.menu-open .n-ham span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); background: var(--c-primary); }
 
 /* Mobile drawer */
 .nav-drawer {
   position: fixed; inset: 0; z-index: calc(var(--z-nav) - 1);
   background: rgba(8,9,9,.98);
-  backdrop-filter: blur(28px);
+  backdrop-filter: blur(40px) saturate(1.4);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: var(--sp-3);
+  gap: var(--s-3);
   transform: translateY(-100%);
-  transition: transform .5s var(--snap);
+  transition: transform var(--dur-mid) var(--snap);
   pointer-events: none;
 }
 body.menu-open .nav-drawer { transform: translateY(0); pointer-events: auto; }
 .nav-drawer a {
-  font-family: var(--f-condensed); font-size: clamp(44px, 10vw, 72px);
-  font-weight: 400; letter-spacing: var(--ls-zero); text-transform: uppercase;
+  font-family: var(--f-heading); font-size: clamp(44px, 10vw, 72px);
+  font-weight: 100; letter-spacing: var(--ls-tight); text-transform: uppercase;
   color: var(--c-secondary); text-decoration: none; cursor: pointer;
   transition: color .3s var(--ease);
 }
 .nav-drawer a:hover { color: var(--c-accent); }
 
-/* ══════════════════════════════════════════════════════════════
-   §7  HERO SECTION
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § HERO SECTION
+═══════════════════════════════════════════════════════════════ */
 .hero {
   position: relative;
   min-height: 100svh;
   overflow: hidden;
 }
+
 model-viewer#mini-viewer {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -460,6 +570,8 @@ model-viewer#mini-viewer {
   --progress-mask: transparent;
   background: var(--c-bg);
 }
+
+/* Vignette gradient — left-weighted for text legibility */
 .hero-vignette {
   position: absolute; inset: 0; pointer-events: none;
   background:
@@ -467,80 +579,95 @@ model-viewer#mini-viewer {
     linear-gradient(to top,     rgba(8,9,9,0.95) 0%, rgba(8,9,9,0.42) 7%,  transparent 18%),
     linear-gradient(to bottom,  rgba(8,9,9,0.55) 0%, transparent 16%);
 }
+
+/* Hero text — bottom left, revealed on load */
 .hero-text {
-  position: absolute; bottom: var(--sp-8); left: var(--pad);
+  position: absolute; bottom: var(--s-8); left: var(--pad);
   z-index: 20; max-width: 62vw;
-  opacity: 0; transform: translateY(24px);
+  opacity: 0; transform: translateY(20px);
   transition: opacity var(--dur-slow) var(--ease) 0.3s,
               transform var(--dur-xl) var(--ease) 0.3s;
   will-change: opacity, transform;
 }
 .hero-text.is-revealed { opacity: 1; transform: translateY(0); }
 
+/* Eyebrow line */
 .hero-eyebrow {
-  display: flex; align-items: center; gap: var(--sp-2);
-  margin-bottom: var(--sp-4);
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  display: flex; align-items: center; gap: var(--s-2);
+  margin-bottom: var(--s-4);
+  font-family: var(--f-meta); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent);
+  transform: translateX(-6px);
+  transition: transform 0.6s var(--ease) 0.22s;
+}
+.hero-text.is-revealed .hero-eyebrow {
+  transform: translateX(0);
 }
 .hero-eyebrow-line {
   display: block; width: 0; height: 1px; background: var(--c-accent);
   transition: width var(--dur-slow) var(--ease) 0.55s;
 }
-.hero-text.is-revealed .hero-eyebrow-line { width: var(--sp-4); }
+.hero-text.is-revealed .hero-eyebrow-line { width: var(--s-4); }
 
+/* Hero H1 — staggered word reveal */
 .hero-h1 {
-  font-family: var(--f-condensed);
+  font-family: var(--f-heading);
   font-size: var(--t-hero);
-  font-weight: 400; letter-spacing: var(--ls-zero);
+  font-weight: 100; letter-spacing: var(--ls-tight);
   line-height: var(--lh-display); text-transform: uppercase;
-  color: var(--c-primary); margin-bottom: var(--sp-5);
+  color: var(--c-primary); margin-bottom: var(--s-5);
 }
 .hero-h1 .line { display: block; overflow: hidden; }
 .hero-h1 .word {
-  display: inline-block; opacity: 0; transform: translateY(44px);
+  display: inline-block; opacity: 0; transform: translateY(40px);
   will-change: opacity, transform;
 }
-.hero-text.is-revealed .hero-h1 .line:nth-child(1) .word { animation: slideUp .9s var(--ease) .36s forwards; }
-.hero-text.is-revealed .hero-h1 .line:nth-child(2) .word { animation: slideUp .9s var(--ease) .48s forwards; }
-.hero-text.is-revealed .hero-h1 .line:nth-child(3) .word { animation: slideUp .9s var(--ease) .60s forwards; }
-.hero-text.is-revealed .hero-h1 .line:nth-child(4) .word { animation: slideUp .9s var(--ease) .72s forwards; }
+.hero-text.is-revealed .hero-h1 .line:nth-child(1) .word { animation: slideUp .9s var(--ease) .38s forwards; }
+.hero-text.is-revealed .hero-h1 .line:nth-child(2) .word { animation: slideUp .9s var(--ease) .50s forwards; }
+.hero-text.is-revealed .hero-h1 .line:nth-child(3) .word { animation: slideUp .9s var(--ease) .62s forwards; }
+.hero-text.is-revealed .hero-h1 .line:nth-child(4) .word { animation: slideUp .9s var(--ease) .74s forwards; }
 @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
 .hero-h1 em { font-style: italic; color: var(--c-accent); letter-spacing: -.03em; }
 
+/* Hero subtext */
 .hero-sub {
   font-family: var(--f-body); font-size: var(--t-ui); font-weight: 400;
-  letter-spacing: .04em; line-height: 1.75; text-transform: uppercase;
-  color: var(--c-primary); max-width: 380px;
-  opacity: 0; transition: opacity var(--dur-slow) var(--ease) 0.82s;
+  letter-spacing: var(--ls-open); line-height: 1.75; text-transform: uppercase;
+  color: var(--c-primary); max-width: 390px;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity var(--dur-slow) var(--ease) 0.82s,
+              transform var(--dur-slow) var(--ease) 0.82s;
 }
-.hero-text.is-revealed .hero-sub { opacity: .55; }
+.hero-text.is-revealed .hero-sub { opacity: .52; transform: translateY(0); }
 
+/* Availability badge */
 .hero-avail {
-  display: inline-flex; align-items: center; gap: 7px; margin-top: var(--sp-4);
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  display: inline-flex; align-items: center; gap: 7px; margin-top: var(--s-4);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-secondary);
-  opacity: 0; transition: opacity var(--dur-slow) var(--ease) 0.96s;
+  opacity: 0; transition: opacity var(--dur-slow) var(--ease) 0.95s;
 }
 .hero-text.is-revealed .hero-avail { opacity: 1; }
 .hero-avail-dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--c-accent);
+  box-shadow: 0 0 0 0 rgba(91,160,164,.5);
   animation: ping 2.5s ease infinite; flex-shrink: 0;
 }
 
+/* Scroll hint — bottom right */
 .hero-scroll {
-  position: absolute; bottom: var(--sp-8); right: var(--pad); z-index: 20;
+  position: absolute; bottom: var(--s-8); right: var(--pad); z-index: var(--z-raised);
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   color: var(--c-secondary);
-  font-family: var(--f-condensed); font-size: 10px; font-weight: 700;
+  font-family: var(--f-meta); font-size: var(--t-nano); font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
-  opacity: 0; transition: opacity var(--dur-slow) var(--ease) 0.96s;
+  opacity: 0; transition: opacity var(--dur-slow) var(--ease) 0.95s;
 }
 .hero-scroll.is-revealed { opacity: 0.6; }
 .hero-scroll-line {
-  width: 1px; height: var(--sp-6);
+  width: 1px; height: var(--s-6);
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
   animation: scrollPulse 2.2s ease infinite;
 }
@@ -549,27 +676,32 @@ model-viewer#mini-viewer {
   50%       { opacity: .9; transform: scaleY(.6); }
 }
 
+/* Corner CAD coordinates */
 .hero-coords {
-  position: absolute; top: var(--sp-9); right: var(--pad); z-index: 20;
+  position: absolute; top: var(--s-9); right: var(--pad); z-index: var(--z-raised);
   display: flex; flex-direction: column; gap: 4px;
   opacity: 0; transition: opacity var(--dur-slow) var(--ease) 1.0s;
 }
 .hero-coords.is-revealed { opacity: 1; }
 .hero-coord-item {
-  font-family: var(--f-condensed); font-size: 8px; font-weight: 700;
+  font-family: var(--f-meta); font-size: 8px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: rgba(91,160,164,.28); text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
+/* Model metadata label */
 .model-label {
-  position: absolute; z-index: 20; pointer-events: none;
+  position: absolute; z-index: var(--z-raised); pointer-events: none;
   color: rgba(91,160,164,0.18);
   opacity: 0; transition: opacity var(--dur-slow) var(--ease) 1.1s;
 }
 .model-label.is-revealed { opacity: 1; }
-.model-label-br { bottom: var(--sp-2); right: var(--sp-3); text-align: right; }
+.model-label-br {
+  bottom: var(--s-2); right: var(--s-3); text-align: right;
+}
 
+/* Drag affordance */
 .model-hint {
   position: absolute; bottom: 22%; left: 62%; transform: translateX(-50%);
   z-index: 20; color: rgba(91,160,164,0.38);
@@ -586,26 +718,27 @@ model-viewer#mini-viewer {
 }
 @keyframes hintSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+/* Model error fallback */
 .model-error {
-  display: none; position: absolute; inset: 0; z-index: 20;
+  display: none; position: absolute; inset: 0; z-index: var(--z-raised);
   align-items: center; justify-content: center;
-  flex-direction: column; gap: var(--sp-2);
+  flex-direction: column; gap: var(--s-2);
   color: rgba(91,160,164,0.35); text-align: center;
 }
 .model-error.visible { display: flex; }
 
-/* ══════════════════════════════════════════════════════════════
-   §8  TICKER
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § TICKER
+═══════════════════════════════════════════════════════════════ */
 .ticker {
-  overflow: hidden; padding: var(--sp-2) 0;
-  background: rgba(255,255,255,.038);
-  border-top: 1px solid var(--c-rule); border-bottom: 1px solid var(--c-rule);
+  overflow: hidden; padding: var(--s-2) 0;
+  background: rgba(255,255,255,.04);
+  border-top: 1px solid var(--c-rule-hi); border-bottom: 1px solid var(--c-rule-hi);
   position: relative; z-index: var(--z-raised);
 }
 .ticker::before, .ticker::after {
   content: ''; position: absolute; top: 0; bottom: 0;
-  width: var(--sp-9); z-index: 2; pointer-events: none;
+  width: var(--s-9); z-index: 2; pointer-events: none;
 }
 .ticker::before { left: 0;  background: linear-gradient(to right, var(--c-bg), transparent); }
 .ticker::after  { right: 0; background: linear-gradient(to left,  var(--c-bg), transparent); }
@@ -615,91 +748,99 @@ model-viewer#mini-viewer {
   will-change: transform;
 }
 .t-item {
-  display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-4);
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-4);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-primary); opacity: .4; white-space: nowrap; transition: opacity .25s;
+  color: var(--c-primary); opacity: .38; white-space: nowrap;
+  transition: opacity .28s;
+}
+.t-item:hover { opacity: .75;
 }
 .t-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--c-accent); opacity: .8; flex-shrink: 0; }
 @keyframes tick { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-/* ══════════════════════════════════════════════════════════════
-   §9  PROJECTS CAROUSEL — fixed fullscreen scroll-lock
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § PROJECTS CAROUSEL — fixed fullscreen scroll-lock
+═══════════════════════════════════════════════════════════════ */
 .projects-spacer { pointer-events: none; }
 
 .projects {
   position: fixed; inset: 0; z-index: var(--z-carousel);
   pointer-events: none; visibility: hidden;
-  contain: layout style;
 }
-.projects.carousel-active { pointer-events: auto; visibility: visible; z-index: var(--z-overlay); }
+.projects.carousel-active { pointer-events: auto; visibility: visible; }
 .proj-track { position: absolute; inset: 0; }
 
+/* Individual project slide */
 .proj {
   position: absolute; inset: 0; height: 100%;
   overflow: hidden; cursor: none;
   display: block; text-decoration: none;
   will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transition: transform 0.72s var(--snap), opacity 0.36s ease;
+  transition: transform 0.72s var(--snap);
   transform: translateY(100%);
 }
-.proj[data-pos="far-above"] { transform: translateY(-200%); opacity: 0; pointer-events: none; }
-.proj[data-pos="prev"]      { transform: translateY(-100%); opacity: 1; pointer-events: none; }
-.proj[data-pos="active"]    { transform: translateY(0);     opacity: 1; pointer-events: auto; }
-.proj[data-pos="next"]      { transform: translateY(100%);  opacity: 1; pointer-events: none; }
-.proj[data-pos="far-below"] { transform: translateY(200%);  opacity: 0; pointer-events: none; }
+.proj[data-pos="far-above"] { transform: translateY(-200%); visibility: hidden; transition: none !important; }
+.proj[data-pos="prev"]      { transform: translateY(-100%); }
+.proj[data-pos="active"]    { transform: translateY(0); }
+.proj[data-pos="next"]      { transform: translateY(100%); }
+.proj[data-pos="far-below"] { transform: translateY(200%); visibility: hidden; transition: none !important; }
 
+/* Background image */
 .proj-img {
   position: absolute; inset: 0;
   background-size: cover; background-position: center;
   transform: scale(1.06);
-  filter: saturate(.7) brightness(.52);
-  transition: transform 1.1s var(--ease), filter 1.1s ease;
+  filter: saturate(.68) brightness(.52);
+  transition: transform 1.15s var(--ease), filter 1.15s ease;
+  will-change: transform, filter;
 }
-.proj:hover .proj-img { transform: scale(1.02); filter: saturate(.95) brightness(.68); }
+.proj:hover .proj-img { transform: scale(1.01); filter: saturate(.92) brightness(.7); }
 
-.proj:nth-child(odd)  .proj-veil { position: absolute; inset: 0; background: linear-gradient(to right, rgba(8,9,9,.96) 0%, rgba(8,9,9,.62) 44%, transparent 72%); }
-.proj:nth-child(even) .proj-veil { position: absolute; inset: 0; background: linear-gradient(to left,  rgba(8,9,9,.96) 0%, rgba(8,9,9,.62) 44%, transparent 72%); }
+/* Directional gradient veil */
+.proj:nth-child(odd)  .proj-veil { position: absolute; inset: 0; background: linear-gradient(to right, rgba(8,9,9,.95) 0%, rgba(8,9,9,.6) 42%, transparent 72%); }
+.proj:nth-child(even) .proj-veil { position: absolute; inset: 0; background: linear-gradient(to left,  rgba(8,9,9,.95) 0%, rgba(8,9,9,.6) 42%, transparent 72%); }
 
+/* Side accent line on hover */
 .proj-line {
-  position: absolute; top: 0; bottom: 0; width: 1px;
-  background: linear-gradient(to bottom, transparent, var(--c-accent), transparent);
-  opacity: 0; transition: opacity .5s var(--ease), transform .6s var(--ease);
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: linear-gradient(to bottom, transparent 0%, var(--c-accent) 30%, var(--c-accent) 70%, transparent 100%);
+  opacity: 0; transition: opacity .52s var(--ease), transform .64s var(--ease);
   transform: scaleY(0); transform-origin: center;
 }
 .proj:nth-child(odd)  .proj-line { left: 0; }
 .proj:nth-child(even) .proj-line { right: 0; }
 .proj:hover .proj-line { opacity: 1; transform: scaleY(1); }
 
+/* Text block — vertically centered */
 .proj-text {
-  position: absolute; top: 50%; transform: translateY(calc(-50% + var(--text-hover, 0px)));
+  position: absolute; top: 50%; transform: translateY(-50%);
   width: 44%; z-index: 2;
-  transition: --text-hover .7s var(--ease), transform .7s var(--ease);
+  transition: transform .7s var(--ease);
   will-change: transform;
 }
 .proj:nth-child(odd)  .proj-text { left: var(--pad); }
 .proj:nth-child(even) .proj-text { right: var(--pad); text-align: right; }
-.proj:hover .proj-text { transform: translateY(calc(-50% - 12px)); }
+.proj:hover .proj-text { transform: translateY(calc(-50% - 10px)); }
 
+/* Project number label */
 .proj-num {
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-accent); margin-bottom: var(--sp-2);
-  display: flex; align-items: center; gap: var(--sp-1);
+  color: var(--c-accent); margin-bottom: var(--s-2);
+  display: flex; align-items: center; gap: var(--s-1);
 }
 .proj:nth-child(even) .proj-num { justify-content: flex-end; }
-.proj-num::before { content: ''; width: var(--sp-2); height: 1px; background: var(--c-accent); }
+.proj-num::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
 .proj:nth-child(even) .proj-num::before { display: none; }
-.proj:nth-child(even) .proj-num::after  { content: ''; width: var(--sp-2); height: 1px; background: var(--c-accent); }
+.proj:nth-child(even) .proj-num::after  { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
 
+/* Project title — per-char animation */
 .proj-title {
-  font-family: var(--f-condensed); font-size: var(--t-title);
-  font-weight: 400; letter-spacing: var(--ls-zero); line-height: .88;
+  font-family: var(--f-heading); font-size: var(--t-title);
+  font-weight: 100; letter-spacing: var(--ls-tight); line-height: var(--lh-heading);
   text-transform: uppercase; color: var(--c-primary);
-  margin-bottom: var(--sp-3);
+  margin-bottom: var(--s-3);
 }
 .proj-title .ch {
   display: inline-block; opacity: 0; transform: translateY(8px);
@@ -707,36 +848,39 @@ model-viewer#mini-viewer {
 }
 .proj-title .ch.show { opacity: 1; transform: translateY(0); }
 
+/* Description — reveals on hover */
 .proj-desc {
   font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-body);
-  color: var(--c-primary); font-weight: 400; letter-spacing: .01em;
-  opacity: 0; transform: translateY(var(--sp-2));
-  transition: opacity .55s var(--ease) .06s, transform .55s var(--ease) .06s;
-  max-width: 340px; margin-bottom: var(--sp-4);
+  color: var(--c-primary); font-weight: 400; letter-spacing: var(--ls-open);
+  opacity: 0; transform: translateY(var(--s-2));
+  transition: opacity .55s var(--ease) .05s, transform .55s var(--ease) .05s;
+  max-width: 340px; margin-bottom: var(--s-4);
 }
 .proj:nth-child(even) .proj-desc { margin-left: auto; }
-.proj:hover .proj-desc { opacity: .72; transform: translateY(0); }
+.proj:hover .proj-desc { opacity: .75; transform: translateY(0); }
 
+/* Tag pills */
 .proj-tags {
-  display: flex; flex-wrap: wrap; gap: var(--sp-1);
-  opacity: 0; transform: translateY(var(--sp-1));
+  display: flex; flex-wrap: wrap; gap: var(--s-1);
+  opacity: 0; transform: translateY(var(--s-1));
   transition: opacity .5s var(--ease) .12s, transform .5s var(--ease) .12s;
 }
 .proj:nth-child(even) .proj-tags { justify-content: flex-end; }
 .proj:hover .proj-tags { opacity: 1; transform: translateY(0); }
 .proj-tag {
-  font-family: var(--f-condensed); font-size: 12px; font-weight: 700;
+  font-family: var(--f-heading); font-size: 12px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
   color: var(--c-primary);
-  border: 1px solid rgba(255,255,255,.15); padding: 6px 12px 5px;
-  background: rgba(255,255,255,.038);
+  border: 1px solid rgba(255,255,255,.18); padding: 6px 12px 5px;
+  background: rgba(255,255,255,.04);
   transition: border-color .25s, color .25s, background .25s;
 }
-.proj:hover .proj-tag { border-color: rgba(91,160,164,.5); color: var(--c-accent); background: rgba(91,160,164,.08); }
+.proj:hover .proj-tag { border-color: rgba(91,160,164,.5); color: var(--c-accent); background: var(--c-accent-lo); }
 
+/* Ghost number watermark */
 .proj-ghost {
   position: absolute;
-  font-family: var(--f-condensed); font-size: clamp(240px, 36vw, 520px);
+  font-family: var(--f-heading); font-size: clamp(240px, 36vw, 520px);
   font-weight: 700; color: transparent;
   -webkit-text-stroke: 1px rgba(91,160,164,.05);
   line-height: 1; pointer-events: none; user-select: none;
@@ -745,20 +889,24 @@ model-viewer#mini-viewer {
 }
 .proj:nth-child(odd)  .proj-ghost { right: -30px; }
 .proj:nth-child(even) .proj-ghost { left: -30px; }
+.proj:nth-child(even):hover .proj-ghost { transform: translateX(6px) !important; }
 .proj:hover .proj-ghost { -webkit-text-stroke: 1px rgba(91,160,164,.12); }
 
+/* Slide counter */
 .proj-counter {
   position: absolute; bottom: var(--pad); left: 50%; transform: translateX(-50%);
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: rgba(91,160,164,.35); display: flex; align-items: center; gap: 4px;
 }
 .sc-cur { color: rgba(91,160,164,.65); }
+.sc-sep { margin: 0 1px; }
 
+/* Arrow CTA */
 .proj-open {
   position: absolute; bottom: var(--pad);
-  width: var(--sp-7); height: var(--sp-7);
-  border: 1px solid rgba(255,255,255,.14);
+  width: var(--s-7); height: var(--s-7);
+  border: 1px solid rgba(255,255,255,.15);
   display: flex; align-items: center; justify-content: center;
   color: var(--c-primary);
   opacity: 0; transition: opacity .45s var(--ease), border-color .25s, background .25s, color .25s;
@@ -770,20 +918,21 @@ model-viewer#mini-viewer {
 .proj-open:hover { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-bg); }
 .proj[data-pos="active"] .proj-open { opacity: 1; }
 
+/* Mobile swipe hint */
 .proj-swipe-hint {
-  position: absolute; bottom: calc(var(--pad) + var(--sp-9));
+  position: absolute; bottom: calc(var(--pad) + var(--s-9));
   left: 50%; transform: translateX(-50%);
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: rgba(91,160,164,.5);
-  display: none; align-items: center; gap: var(--sp-2);
+  display: none; align-items: center; gap: var(--s-2);
   animation: swipeHintFade 2.5s ease 1s forwards;
   pointer-events: none; white-space: nowrap;
 }
 .proj-swipe-hint::before { content: '↕'; font-size: 14px; }
 @keyframes swipeHintFade { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 
-/* Carousel dots */
+/* Carousel dot nav — right rail */
 #c-dots {
   position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
   z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 10px;
@@ -797,9 +946,9 @@ model-viewer#mini-viewer {
 }
 .c-dot-wrap.on .c-dot { background: var(--c-accent); transform: scale(1.7); }
 
-/* Stage edges */
+/* Stage edge fades */
 .stage-edge {
-  position: absolute; left: 0; right: 0; z-index: 200;
+  position: absolute; left: 0; right: 0; z-index: var(--z-stage);
   height: 80px; pointer-events: none;
   opacity: 0; transition: opacity .5s var(--ease);
 }
@@ -808,21 +957,32 @@ model-viewer#mini-viewer {
 .projects.carousel-active .stage-edge { opacity: 1; }
 .about-stage.engaged .stage-edge { opacity: 1; }
 
-/* ══════════════════════════════════════════════════════════════
-   §10  ABOUT — scroll-lock panel engine
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § ABOUT — scroll-lock panel engine
+═══════════════════════════════════════════════════════════════ */
 .about-spacer { pointer-events: none; }
+
 .about-stage {
   position: fixed; inset: 0; z-index: var(--z-about);
   background: var(--c-bg);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  contain: layout style;
+  pointer-events: none; visibility: hidden;
+  will-change: visibility;
 }
-.about-stage.engaged { pointer-events: auto; opacity: 1; }
-.panels-host { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.about-stage.engaged { pointer-events: auto; visibility: visible; }
 
+.panels-host {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+}
+/* Subtle vignette overlay for depth */
+.panels-host::after {
+  content: '';
+  position: absolute; inset: 0; z-index: var(--z-stage);
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, var(--c-bg) 0%, transparent 6%, transparent 94%, var(--c-bg) 100%);
+}
+
+/* Decorative vertical rules */
 .v-rules {
   position: absolute; inset: 0;
   display: flex; justify-content: space-between;
@@ -830,6 +990,7 @@ model-viewer#mini-viewer {
 }
 .v-rule { width: 1px; height: 100%; background: var(--c-rule); }
 
+/* Panel transitions */
 .panel {
   position: absolute; inset: 0;
   display: grid; grid-template-columns: 1fr 1fr;
@@ -841,43 +1002,49 @@ model-viewer#mini-viewer {
   opacity: 1; transform: translateY(0); pointer-events: auto;
 }
 .panel.is-after {
-  opacity: 0; transform: translateY(-44px); pointer-events: none;
+  opacity: 0; transform: translateY(-46px); pointer-events: none;
+  transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
+}
+.panel.is-below {
+  opacity: 0; transform: translateY(58px); pointer-events: none;
+  transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
+}
+.panel.is-below {
+  opacity: 0; transform: translateY(56px); pointer-events: none;
   transition: transform 0.55s var(--snap), opacity 0.45s var(--ease-out);
 }
 
+/* Left column */
 .col-left {
   position: relative; display: flex; flex-direction: column;
   border-right: 1px solid var(--c-rule); overflow: hidden;
 }
 .ghost-num {
   position: absolute; top: -0.06em; left: -0.04em;
-  font-family: var(--f-condensed); font-size: clamp(180px, 26vw, 360px);
-  font-weight: 400; letter-spacing: var(--ls-zero); line-height: 1;
+  font-family: var(--f-heading); font-size: clamp(180px, 26vw, 360px);
+  font-weight: 100; letter-spacing: var(--ls-tight); line-height: 1;
   text-transform: uppercase; color: transparent;
-  -webkit-text-stroke: 1px rgba(91,160,164,0.07);
+  -webkit-text-stroke: 1px rgba(91,160,164,0.065);
   pointer-events: none; user-select: none; z-index: 1;
 }
 .col-top { flex: 1 1 0; min-height: 0; position: relative; overflow: hidden; z-index: 5; }
 .col-bottom {
   flex: 0 0 auto; position: relative; z-index: 10;
-  padding: var(--sp-3) var(--pad) var(--sp-8);
-  background: linear-gradient(to bottom, transparent 0%, rgba(8,9,9,0.82) 28%, var(--c-bg) 56%);
+  padding: var(--s-3) var(--pad) var(--s-8);
+  background: linear-gradient(to bottom, transparent 0%, rgba(8,9,9,0.8) 25%, var(--c-bg) 55%);
 }
 
+/* Chapter index */
 .ch-index {
-  display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-4);
+  display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-4);
 }
 .ch-index::before {
-  content: ''; display: block; width: 32px; height: 1px;
-  background: var(--c-accent); flex-shrink: 0;
+  content: ''; display: block; width: 32px; height: 1.5px;
+  background: linear-gradient(to right, var(--c-accent), var(--c-accent-hi)); flex-shrink: 0;
 }
-.ch-label {
-  font-family: var(--f-condensed); font-size: clamp(40px, 5vw, 70px);
-  font-weight: 400; letter-spacing: var(--ls-zero); line-height: 0.92;
-  text-transform: uppercase; color: var(--c-secondary); opacity: 0.4;
-  display: block;
-}
+.ch-label { display: block; }
 
+/* Photo gallery */
 .photo-gallery { position: absolute; inset: 0; pointer-events: none; }
 .panel[data-panel="0"] .pf-main   { position: absolute; top: 50%; left: 50%; transform: translate(-52%,-52%) rotate(-1.4deg); width: 66%; aspect-ratio: 4/3; }
 .panel[data-panel="0"] .pf-accent { position: absolute; bottom: 5%; right: 6%; width: 28%; aspect-ratio: 3/4; transform: rotate(2.2deg); z-index: 2; }
@@ -888,9 +1055,9 @@ model-viewer#mini-viewer {
 
 .photo-frame {
   overflow: hidden;
-  border: 1px solid rgba(91,160,164,0.14);
-  box-shadow: 0 12px 48px rgba(0,0,0,.68), 0 2px 8px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.04);
-  opacity: 0; transition: opacity 0.9s var(--ease);
+  border: 1px solid rgba(91,160,164,0.16);
+  box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.038);
+  opacity: 0; transition: opacity 0.9s var(--ease), box-shadow 0.6s ease;
 }
 .panel.is-active .pf-main   { opacity: 1; transition-delay: .05s; }
 .panel.is-active .pf-accent { opacity: 1; transition-delay: .22s; }
@@ -908,23 +1075,25 @@ model-viewer#mini-viewer {
   display: flex; align-items: center; justify-content: center;
 }
 .placeholder-label {
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(91,160,164,.28); text-align: center; line-height: 1.8;
+  color: rgba(91,160,164,0.28); text-align: center; line-height: 1.8;
 }
 
+/* Right column */
 .col-right {
   display: flex; flex-direction: column; justify-content: center;
-  padding: var(--sp-8) var(--pad) var(--sp-8) var(--sp-7);
+  padding: var(--s-8) var(--pad) var(--s-8) var(--s-7);
 }
 .ch-rule {
   display: block; width: 40px; height: 1px; background: var(--c-accent);
-  margin-bottom: var(--sp-4); transform: scaleX(0); transform-origin: left;
+  margin-bottom: var(--s-4); transform: scaleX(0); transform-origin: left;
   transition: transform 0.6s var(--ease) 0.1s;
 }
 .panel.is-active .ch-rule { transform: scaleX(1); }
-.ch-title { margin-bottom: var(--sp-5); }
+.ch-title { margin-bottom: var(--s-5); line-height: var(--lh-heading); }
 
+/* Per-word reveal in titles */
 .ch-title .tline { display: block; overflow: hidden; padding-bottom: .06em; }
 .ch-title .tword {
   display: inline-block; transform: translateY(110%); opacity: 0;
@@ -943,20 +1112,20 @@ model-viewer#mini-viewer {
 /* Statement panel */
 .panel-statement {
   grid-template-columns: 1fr; align-items: center;
-  padding: var(--sp-8) var(--pad);
+  padding: var(--s-8) var(--pad);
 }
 .stmt-wm {
   position: absolute; right: calc(var(--pad) - 0.04em); bottom: -0.1em;
-  font-family: var(--f-condensed); font-size: clamp(120px, 18vw, 260px);
-  font-weight: 700; letter-spacing: var(--ls-zero); line-height: 1;
-  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.09);
+  font-family: var(--f-heading); font-size: clamp(120px, 18vw, 260px);
+  font-weight: 700; letter-spacing: var(--ls-tight); line-height: 1;
+  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,0.09);
   user-select: none; pointer-events: none;
   opacity: 0; transition: opacity 1s var(--ease) .5s;
 }
 .panel.is-active .stmt-wm { opacity: 1; }
 .stmt-wrap { max-width: 820px; }
 .stmt-kicker {
-  display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-5);
+  display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-5);
   opacity: 0; transform: translateY(12px);
   transition: opacity .6s var(--ease), transform .6s var(--ease);
 }
@@ -968,10 +1137,11 @@ model-viewer#mini-viewer {
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
+/* About progress dots */
 .about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 10px;
-  z-index: 50; pointer-events: none;
+  z-index: var(--z-carousel); pointer-events: none;
 }
 .prog-dot {
   width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
@@ -979,10 +1149,11 @@ model-viewer#mini-viewer {
 }
 .prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
 
+/* About scroll hint */
 .about-scroll-hint {
   position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: var(--sp-1);
-  font-family: var(--f-condensed); font-size: 10px; font-weight: 700;
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
+  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
   color: var(--c-secondary); opacity: .5;
   pointer-events: none; z-index: 50; transition: opacity .5s ease;
@@ -998,38 +1169,39 @@ model-viewer#mini-viewer {
   50%      { opacity: .9; transform: scaleY(.6); }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   §11  PERSONAL STATEMENT VIDEO
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § PERSONAL STATEMENT VIDEO
+═══════════════════════════════════════════════════════════════ */
 .personal-statement {
   position: relative; background: var(--c-bg);
   border-top: 1px solid var(--c-rule); overflow: hidden;
 }
 .personal-statement-inner {
   max-width: var(--max-w); margin: 0 auto;
-  padding: var(--sp-10) var(--pad);
+  padding: var(--s-10) var(--pad);
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: var(--sp-7); align-items: center;
+  gap: var(--s-7); align-items: center;
 }
-.ps-text-col { display: flex; flex-direction: column; gap: var(--sp-5); }
+.ps-text-col { display: flex; flex-direction: column; gap: var(--s-5); }
 .ps-eyebrow {
-  display: flex; align-items: center; gap: var(--sp-2);
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  display: flex; align-items: center; gap: var(--s-2);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
 }
-.ps-eyebrow::before { content: ''; width: var(--sp-2); height: 1px; background: var(--c-accent); flex-shrink: 0; }
+.ps-eyebrow::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); flex-shrink: 0; }
 .ps-heading {
-  font-family: var(--f-condensed); font-size: clamp(44px, 6.5vw, 96px);
-  font-weight: 400; letter-spacing: var(--ls-zero); line-height: .92;
+  font-family: var(--f-heading); font-size: clamp(48px, 7vw, 96px);
+  font-weight: 100; letter-spacing: var(--ls-tight); line-height: .92;
   text-transform: uppercase; color: var(--c-primary);
 }
-.ps-heading em { font-style: italic; color: var(--c-accent); font-weight: 400; }
-.ps-body { color: var(--c-secondary); max-width: 440px; font-size: var(--t-body); line-height: var(--lh-body); }
+.ps-heading em { font-style: italic; color: var(--c-accent); font-weight: 100; }
+.ps-body { color: var(--c-secondary); max-width: 440px; }
 .ps-video-col { position: relative; }
 .ps-video-frame {
   position: relative; width: 100%; aspect-ratio: 16/9;
-  background: #000; overflow: hidden;
+  background: var(--c-bg); overflow: hidden;
   border: 1px solid var(--c-rule); cursor: none;
+  box-shadow: var(--shadow-lg);
 }
 .ps-video-frame::before {
   content: ''; position: absolute; inset: 0;
@@ -1041,25 +1213,25 @@ model-viewer#mini-viewer {
 }
 .ps-film-bar {
   position: absolute; left: 0; right: 0;
-  height: clamp(20px, 3vw, 38px); background: var(--c-bg); z-index: 4; pointer-events: none;
+  height: clamp(20px, 3vw, 40px); background: var(--c-bg); z-index: 4; pointer-events: none;
 }
 .ps-film-bar-top { top: 0; }
 .ps-film-bar-bot { bottom: 0; }
 .ps-film-meta {
   position: absolute; bottom: 0; left: 0; right: 0;
-  height: clamp(20px, 3vw, 38px); z-index: 5; pointer-events: none;
+  height: clamp(20px, 3vw, 40px); z-index: 5; pointer-events: none;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 var(--sp-3);
+  padding: 0 var(--s-3);
 }
 .ps-film-meta span {
-  font-family: var(--f-condensed); font-size: 9px; font-weight: 700;
+  font-family: var(--f-heading); font-size: 9px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: rgba(91,160,164,.4);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   §12  CONTACT
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § CONTACT
+═══════════════════════════════════════════════════════════════ */
 .contact {
   position: relative; overflow: hidden;
   min-height: 100svh; display: flex; align-items: center;
@@ -1076,47 +1248,47 @@ model-viewer#mini-viewer {
 }
 .contact-wm {
   position: absolute; right: -2vw; bottom: -4vh;
-  font-family: var(--f-condensed); font-size: clamp(180px,28vw,380px); font-weight: 700;
+  font-family: var(--f-heading); font-size: clamp(180px,28vw,380px); font-weight: 700;
   color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.06);
   pointer-events: none; user-select: none;
   line-height: 1; letter-spacing: -.06em; text-transform: uppercase; white-space: nowrap;
 }
 .contact-inner {
-  position: relative; z-index: 2; padding: var(--sp-10) var(--pad);
-  width: 60%; display: flex; flex-direction: column; gap: var(--sp-5);
+  position: relative; z-index: 2; padding: var(--s-10) var(--pad);
+  width: 60%; display: flex; flex-direction: column; gap: var(--s-5);
 }
 .contact-kicker {
-  display: flex; align-items: center; gap: var(--sp-2);
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  display: flex; align-items: center; gap: var(--s-2);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
 }
-.contact-kicker::before { content: ''; width: var(--sp-2); height: 1px; background: var(--c-accent); }
+.contact-kicker::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
 .contact-h {
-  font-family: var(--f-condensed); font-size: clamp(64px, 10vw, 148px); font-weight: 400;
-  letter-spacing: var(--ls-zero); line-height: .88; text-transform: uppercase; color: var(--c-primary);
+  font-family: var(--f-heading); font-size: clamp(72px, 11vw, 148px); font-weight: 100;
+  letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; color: var(--c-primary);
 }
-.contact-h em { font-style: italic; color: var(--c-accent); font-weight: 400; }
+.contact-h em { font-style: italic; color: var(--c-accent); font-weight: 100; }
 .contact-sub {
-  font-size: var(--t-ui); line-height: var(--lh-text);
-  color: var(--c-secondary); font-weight: 400; letter-spacing: .01em; max-width: 380px;
+  font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-text);
+  color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open); max-width: 390px;
 }
 .contact-fields { display: flex; flex-direction: column; gap: 0; }
 .c-field {
-  padding: var(--sp-3) 0; border-bottom: 1px solid var(--c-rule);
+  padding: var(--s-3) 0; border-bottom: 1px solid var(--c-rule);
   display: grid; grid-template-columns: clamp(80px,10vw,120px) 1fr;
-  gap: var(--sp-3); align-items: center;
+  gap: var(--s-3); align-items: center;
 }
 .c-field:first-child { border-top: 1px solid var(--c-rule); }
 .c-field-label {
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent); opacity: .6;
 }
 .c-link, .c-soc, .c-dl {
-  font-family: var(--f-condensed); font-size: var(--t-subhead); font-weight: 400;
-  letter-spacing: var(--ls-zero); text-transform: uppercase;
+  font-family: var(--f-heading); font-size: var(--t-subhead); font-weight: 100;
+  letter-spacing: var(--ls-tight); text-transform: uppercase;
   color: var(--c-primary); text-decoration: none; cursor: none;
-  display: inline-flex; align-items: center; gap: var(--sp-2);
+  display: inline-flex; align-items: center; gap: var(--s-2);
   transition: color .25s, gap .3s var(--ease);
   background: none; padding: 0; border: none; position: relative;
 }
@@ -1126,57 +1298,81 @@ model-viewer#mini-viewer {
   transform: scaleX(0); transform-origin: left;
   transition: transform .35s var(--ease);
 }
-.c-link:hover, .c-soc:hover, .c-dl:hover { color: var(--c-accent); gap: var(--sp-3); }
+.c-link:hover, .c-soc:hover, .c-dl:hover { color: var(--c-accent); gap: var(--s-3); }
+.c-link:active, .c-soc:active, .c-dl:active { opacity: 0.72; }
 .c-link:hover::after, .c-soc:hover::after, .c-dl:hover::after { transform: scaleX(1); }
-.c-row { display: flex; gap: var(--sp-4); flex-wrap: wrap; align-items: center; }
+.c-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: center; }
 
-/* ══════════════════════════════════════════════════════════════
-   §13  FOOTER
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § FOOTER
+═══════════════════════════════════════════════════════════════ */
 footer {
-  padding: var(--sp-3) var(--pad);
+  padding: var(--s-3) var(--pad);
   border-top: 1px solid var(--c-rule);
   display: flex; align-items: center; justify-content: space-between;
   background: var(--c-bg2);
 }
 .f-logo {
-  font-family: var(--f-condensed); font-size: var(--t-ui); font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-ui); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-secondary);
 }
 .f-logo em { font-style: italic; color: var(--c-accent); }
 .f-copy {
-  font-family: var(--f-condensed); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-meta); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-muted);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   §14  SCROLL REVEAL
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § SCROLL REVEAL
+═══════════════════════════════════════════════════════════════ */
 .rev {
-  opacity: 0; transform: translateY(var(--sp-3));
-  transition: opacity .9s var(--ease), transform .9s var(--ease);
+  opacity: 0; transform: translateY(var(--s-3));
+  transition: opacity var(--dur-slow) var(--ease), transform var(--dur-xl) var(--ease);
 }
 .rev.in { opacity: 1; transform: translateY(0); }
-.d1 { transition-delay: .10s; }
-.d2 { transition-delay: .22s; }
-.d3 { transition-delay: .36s; }
 
-/* ══════════════════════════════════════════════════════════════
-   §15  KEYFRAMES
-══════════════════════════════════════════════════════════════ */
-@keyframes fu { from { opacity: 0; transform: translateY(var(--sp-2)); } to { opacity: 1; transform: translateY(0); } }
+/* Rev-stagger: animated children with cascade delay */
+.rev-stagger > * {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity var(--dur-slow) var(--ease), transform var(--dur-xl) var(--ease);
+}
+.rev-stagger.in > *:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.00s; }
+.rev-stagger.in > *:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.09s; }
+.rev-stagger.in > *:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.18s; }
+.rev-stagger.in > *:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.27s; }
+.rev-stagger.in > *:nth-child(5) { opacity: 1; transform: none; transition-delay: 0.36s; }
+.rev-stagger.in > *:nth-child(6) { opacity: 1; transform: none; transition-delay: 0.45s; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.d1 { transition-delay: 0.08s; }
+.d2 { transition-delay: 0.20s; }
+.d3 { transition-delay: 0.34s; }
+
+/* ═══════════════════════════════════════════════════════════════
+   § KEYFRAMES
+═══════════════════════════════════════════════════════════════ */
+@keyframes fu { from { opacity: 0; transform: translateY(var(--s-2)); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fd { from { opacity: 0; transform: translateY(-10px); }       to { opacity: 1; transform: translateY(0); } }
 
-/* ══════════════════════════════════════════════════════════════
-   §16  ACCESSIBILITY
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § ACCESSIBILITY
+═══════════════════════════════════════════════════════════════ */
 @media (pointer: coarse) {
   #cur, #cur-r { display: none !important; }
   body { cursor: auto; }
   a, button, .n-ham { cursor: pointer; }
-  .proj, .c-link, .c-soc, .c-dl { cursor: pointer; }
+  .proj { cursor: pointer; }
+  .c-link, .c-soc, .c-dl { cursor: pointer; }
   .proj-swipe-hint { display: flex; }
-  .proj[data-pos="active"] .proj-open { opacity: 1; }
+  .proj[data-pos="active"] .proj-open  { opacity: 1; }
   .proj[data-pos="active"] .proj-title .ch { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1189,31 +1385,36 @@ footer {
   .t-track { animation: none !important; }
   .hero-text, .hero-scroll, .model-label, .model-hint, .hero-coords,
   .hero-h1 .word, .n-logo, .n-links, .n-right { opacity: 1 !important; transform: none !important; }
-  .hero-eyebrow-line { width: var(--sp-4) !important; }
+  .hero-eyebrow-line { width: var(--s-4) !important; }
   .hero-sub, .hero-avail { opacity: 1 !important; }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   §17  RESPONSIVE
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   § RESPONSIVE
+═══════════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .proj-text { width: 55%; }
-  .personal-statement-inner { grid-template-columns: 1fr; gap: var(--sp-6); }
+  .personal-statement-inner { grid-template-columns: 1fr; gap: var(--s-6); }
   .ps-text-col { text-align: center; align-items: center; }
   .ps-eyebrow { justify-content: center; }
   .ps-body { max-width: 560px; }
 }
 
 @media (max-width: 768px) {
+  /* Nav */
   .n-links, .n-avail { display: none; }
   .n-ham { display: flex; }
-  nav#nav { background: linear-gradient(to bottom, rgba(8,9,9,.96), rgba(8,9,9,.72) 60%, transparent); }
-  nav#nav.scrolled { background: rgba(8,9,9,.96); }
+  nav#nav { background: linear-gradient(to bottom, rgba(8,9,9,.95) 0%, rgba(8,9,9,.75) 60%, transparent 100%); }
+  nav#nav.scrolled { background: rgba(8,9,9,.95); }
   #section-indicator { display: none; }
 
-  .hero-text { max-width: 88vw; bottom: var(--sp-7); }
-  .hero-h1   { font-size: clamp(52px, 13vw, 84px); }
-  .hero-scroll, .hero-coords, .model-label-br, .model-hint { display: none; }
+  /* Hero */
+  .hero-text { max-width: 88vw; bottom: var(--s-7); }
+  .hero-h1   { font-size: clamp(54px, 14vw, 88px); }
+  .hero-scroll { display: none; }
+  .hero-coords { display: none; }
+  .model-label-br { display: none; }
+  .model-hint { display: none; }
   .hero-vignette {
     background:
       linear-gradient(to right,  rgba(8,9,9,0.97) 0%, rgba(8,9,9,0.75) 28%, rgba(8,9,9,0.25) 58%, transparent 78%),
@@ -1221,6 +1422,7 @@ footer {
       linear-gradient(to bottom, rgba(8,9,9,0.60) 0%, transparent 16%);
   }
 
+  /* Carousel */
   .proj:nth-child(odd)  .proj-text,
   .proj:nth-child(even) .proj-text {
     width: 88%; top: auto; transform: none;
@@ -1231,51 +1433,274 @@ footer {
   .proj:nth-child(even) .proj-num { justify-content: flex-start; }
   .proj:nth-child(even) .proj-num::after  { display: none; }
   .proj:nth-child(even) .proj-num::before { display: inline-block; }
-  .proj:nth-child(even) .proj-veil { background: linear-gradient(to right, rgba(8,9,9,.96) 0%, rgba(8,9,9,.62) 44%, transparent 72%); }
+  .proj:nth-child(even) .proj-veil { background: linear-gradient(to right, rgba(8,9,9,.95) 0%, rgba(8,9,9,.6) 42%, transparent 72%); }
   .proj:nth-child(odd)  .proj-tags,
   .proj:nth-child(even) .proj-tags { justify-content: flex-start; }
   .proj:nth-child(odd)  .proj-open,
   .proj:nth-child(even) .proj-open { bottom: var(--pad); right: var(--pad); left: auto; }
   .proj-ghost { display: none; }
-  .proj-title { font-size: clamp(40px, 12vw, 78px); }
-  .proj-desc  { max-width: 100%; }
+  .proj-title { font-size: clamp(44px, 13vw, 80px); }
+  .proj-desc { max-width: 100%; }
 
+  /* About panels */
   .panel { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .col-left { border-right: none; border-bottom: 1px solid var(--c-rule); max-height: 44vh; }
-  .col-top  { min-height: 120px; }
-  .col-bottom { padding: var(--sp-3) var(--pad) var(--sp-4); }
-  .col-right  { padding: var(--sp-4) var(--pad) var(--sp-8); }
+  .col-left { border-right: none; border-bottom: 1px solid var(--c-rule); max-height: 45vh; }
+  .col-top { min-height: 120px; }
+  .col-bottom { padding: var(--s-3) var(--pad) var(--s-4); }
+  .col-right  { padding: var(--s-4) var(--pad) var(--s-8); }
   .ghost-num, .stmt-wm, .prog-dots { display: none; }
   .panel-statement { grid-template-columns: 1fr; grid-template-rows: 1fr; }
 
-  .personal-statement-inner { padding: var(--sp-8) var(--pad); }
+  /* Personal statement */
+  .personal-statement-inner { padding: var(--s-8) var(--pad); }
 
-  .contact-inner { width: 100%; padding: var(--sp-8) var(--pad); }
+  /* Contact */
+  .contact-inner { width: 100%; padding: var(--s-8) var(--pad); }
   .contact-img, .contact-wm { display: none; }
-  .contact-h { font-size: clamp(52px, 12vw, 80px); }
-  .c-field { grid-template-columns: 1fr; gap: var(--sp-1); }
+  .contact-h { font-size: clamp(56px, 13vw, 80px); }
+  .c-field { grid-template-columns: 1fr; gap: var(--s-1); }
 
-  footer { flex-direction: column; gap: var(--sp-1); text-align: center; padding: var(--sp-3) var(--pad); }
+  /* Footer */
+  footer { flex-direction: column; gap: var(--s-1); text-align: center; padding: var(--s-3) var(--pad); }
 }
 
 @media (max-width: 480px) {
-  .hero-h1       { font-size: clamp(44px, 13vw, 64px); }
-  .ch-title      { font-size: clamp(28px, 7.5vw, 46px); }
-  .type-statement{ font-size: clamp(15px, 4.5vw, 21px); }
-  .contact-h     { font-size: clamp(44px, 13vw, 68px); }
-  .c-link, .c-soc, .c-dl { font-size: clamp(17px, 5.5vw, 26px); }
+  .hero-h1 { font-size: clamp(48px, 14vw, 68px); }
+  .ch-title { font-size: clamp(30px, 8vw, 48px); }
+  .t-statement { font-size: clamp(16px, 5vw, 22px); }
+  .contact-h { font-size: clamp(48px, 14vw, 72px); }
+  .c-link, .c-soc, .c-dl { font-size: clamp(18px, 6vw, 28px); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   § ENHANCED MICRO-INTERACTIONS & AWWWARDS POLISH
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Cursor blend enhancement ── */
+/* cursor enhancements handled in crosshair section above */
+
+/* Nav link padding-bottom already set above for underline space */
+
+/* ── Hero eyebrow reveal transition ── */
+.hero-eyebrow {
+  transform: translateX(-6px);
+  transition: transform 0.6s var(--ease) 0.22s;
+}
+.hero-text.is-revealed .hero-eyebrow {
+  transform: translateX(0);
+}
+
+/* ── Hero sub reveal ── */
+.hero-text.is-revealed .hero-sub {
+  opacity: 0.52;
+  transform: translateY(0);
+  transition: opacity var(--dur-slow) var(--ease) 0.85s,
+              transform var(--dur-slow) var(--ease) 0.85s;
+}
+
+/* ── Ticker pause on hover ── */
+.ticker:hover .t-track { animation-play-state: paused; }
+
+/* ── Project slide: image parallax depth ── */
+.proj[data-pos="active"] .proj-img {
+  transform: scale(1.0);
+}
+
+/* ── Project open button enhanced hover ── */
+.proj-open {
+  transition: opacity var(--dur-mid) var(--ease),
+              border-color var(--dur-fast),
+              background var(--dur-fast),
+              color var(--dur-fast),
+              transform var(--dur-fast) var(--spring);
+}
+.proj-open:hover {
+  transform: scale(1.08);
+}
+.proj-open:active {
+  transform: scale(0.96);
+  transition-duration: 0.08s;
+}
+
+/* ── Project tag stagger on slide active ── */
+.proj[data-pos="active"] .proj-tag:nth-child(1) { transition-delay: 0.60s; }
+.proj[data-pos="active"] .proj-tag:nth-child(2) { transition-delay: 0.68s; }
+.proj[data-pos="active"] .proj-tag:nth-child(3) { transition-delay: 0.76s; }
+
+/* ── About panel: photo hover lift ── */
+.panel.is-active .photo-frame:hover {
+  transform: translateY(-4px) rotate(0.5deg);
+  box-shadow: var(--shadow-lg), 0 0 24px rgba(91,160,164,0.10);
+  transition: transform 0.42s var(--ease), box-shadow 0.42s ease;
+}
+/* photo-frame transitions consolidated above */
+
+/* ── Contact field row hover ── */
+.c-field {
+  transition: background var(--dur-fast) ease;
+  border-radius: 2px;
+}
+.c-field:hover {
+  background: var(--c-surface);
+  padding-left: var(--s-2);
+}
+
+/* ── Footer subtle gradient edge ── */
+footer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: var(--pad); right: var(--pad);
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--c-accent-lo), transparent);
+  pointer-events: none;
+}
+footer { position: relative; }
+
+/* ── Prog-dot glow when active ── */
+.prog-dot.on {
+  box-shadow: 0 0 6px rgba(91,160,164,0.55);
+}
+
+/* ── C-dot glow when active ── */
+.c-dot-wrap.on .c-dot {
+  box-shadow: 0 0 5px rgba(91,160,164,0.50);
+}
+
+/* ── Hint line enhanced pulse ── */
+@keyframes hintPulse {
+  0%   { opacity: 0.38; transform: scaleY(1) translateY(0); }
+  50%  { opacity: 0.88; transform: scaleY(0.55) translateY(8px); }
+  100% { opacity: 0.38; transform: scaleY(1) translateY(0); }
+}
+.hint-line, .hero-scroll-line {
+  animation: hintPulse 2.2s ease infinite;
+}
+
+/* ── About stage: vertical rule fade-in ── */
+.about-stage.engaged .v-rule {
+  animation: fadeIn 0.8s var(--ease) both;
+}
+.about-stage.engaged .v-rule:nth-child(1) { animation-delay: 0.05s; }
+.about-stage.engaged .v-rule:nth-child(2) { animation-delay: 0.10s; }
+.about-stage.engaged .v-rule:nth-child(3) { animation-delay: 0.15s; }
+.about-stage.engaged .v-rule:nth-child(4) { animation-delay: 0.20s; }
+.about-stage.engaged .v-rule:nth-child(5) { animation-delay: 0.25s; }
+
+/* ── PS video frame shimmer border ── */
+.ps-video-frame::after {
+  content: '';
+  position: absolute; inset: 0;
+  border: 1px solid rgba(91,160,164,0.06);
+  pointer-events: none; z-index: 3;
+}
+
+/* ── Ghost number enhanced depth ── */
+.proj:hover .proj-ghost {
+  -webkit-text-stroke: 1px rgba(91,160,164,0.14);
+  transform: translateX(-6px);
+  transition: -webkit-text-stroke var(--dur-mid) ease,
+              transform var(--dur-slow) var(--ease);
+}
+.proj-ghost {
+  transition: -webkit-text-stroke var(--dur-mid) ease,
+              transform var(--dur-slow) var(--ease);
+}
+
+/* ── Scroll hint fade on first scroll ── */
+@keyframes scrollHintFade {
+  0%   { opacity: 0.58; }
+  80%  { opacity: 0.58; }
+  100% { opacity: 0; }
+}
+.hero-scroll.is-revealed {
+  animation: scrollHintFade 5s var(--ease) 2s forwards;
+}
+
+/* ── Mobile: swipe hint entry animation ── */
+@keyframes swipeReveal {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.proj-swipe-hint {
+  animation: swipeReveal 0.5s var(--ease) 0.4s both, swipeHintFade 2.5s ease 1s forwards;
+}
+
+/* ── About scroll hint: only first panel ── */
+.about-scroll-hint {
+  transition: opacity var(--dur-mid) var(--ease);
+}
+
+/* ── Keyboard focus ring enhancement ── */
+a:focus-visible,
+button:focus-visible {
+  outline: 1.5px solid var(--c-accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* ── Selection color ── */
+::selection {
+  background: rgba(91,160,164,0.28);
+  color: var(--c-primary);
+}
+
+
+/* ── Custom scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--c-bg); }
+::-webkit-scrollbar-thumb { background: var(--c-tertiary); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-accent); }
+
+
+/* ── Skip navigation link ── */
+.skip-link {
+  position: fixed;
+  top: var(--s-3);
+  left: var(--s-3);
+  z-index: calc(var(--z-veil) + 1);
+  background: var(--c-accent);
+  color: var(--c-bg);
+  font-family: var(--f-meta);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: var(--s-2) var(--s-3);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.skip-link:focus {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  outline: none;
+}
+
+
+/* ── Performance: CSS containment ── */
+.proj           { contain: layout style; }
+.panel          { contain: layout style; }
+.personal-statement { contain: layout; }
+.contact        { contain: layout; }
+.ticker         { contain: layout style; }
+
 </style>
 </head>
 <body>
 
+<!-- Skip navigation for keyboard users -->
+<a href="#hero-heading" class="skip-link">Skip to main content</a>
+
 <!-- ── Ambient overlays ── -->
-<div id="veil"           aria-hidden="true"></div>
-<div id="cur"            aria-hidden="true"></div>
-<div id="cur-r"          aria-hidden="true"></div>
-<div id="grain"          aria-hidden="true"></div>
-<div id="prog"           aria-hidden="true"></div>
-<div id="section-flash"  aria-hidden="true"></div>
+<div id="veil"          aria-hidden="true"></div>
+<div id="cur"           aria-hidden="true"></div>
+<div id="cur-r"         aria-hidden="true"></div>
+<div id="grain"         aria-hidden="true"></div>
+<div id="prog"          aria-hidden="true"></div>
+<div id="section-flash" aria-hidden="true"></div>
 <div id="section-indicator" aria-hidden="true"></div>
 
 <!-- Carousel dot nav -->
@@ -1291,7 +1716,7 @@ footer {
 
 <!-- Primary Navigation -->
 <nav id="nav" aria-label="Main navigation">
-  <a href="#top" class="n-logo" aria-label="Kieran Green — Home">
+  <a href="#top" class="n-logo" aria-label="Kieran Green — Home" aria-current="page">
     <span class="logo-first">Kieran</span><span class="logo-sep" aria-hidden="true">/</span><span class="logo-last">Green</span>
   </a>
   <div class="n-links" role="list">
@@ -1305,7 +1730,7 @@ footer {
       Available
     </div>
     <button class="n-theme" id="theme-btn" aria-label="Switch to light theme">
-      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
         <circle cx="12" cy="12" r="4"/>
         <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
         <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
@@ -1327,7 +1752,7 @@ footer {
   <model-viewer
     id="mini-viewer"
     src="https://kieranjgreen18-cyber.github.io/KieranGreen/minisite.glb"
-    alt="Interactive 3D model of Kieran Green's Mini Clubman — drag to explore"
+    alt="Interactive 3D model of Kieran Green's Mini Clubman, fully surface modeled in Rhino 3D — drag to rotate"
     camera-controls
     auto-rotate
     auto-rotate-delay="0"
@@ -1348,12 +1773,14 @@ footer {
     ar-modes="webxr scene-viewer quick-look"
     loading="eager"
     tone-mapping="commerce"
+    reveal="auto"
   ></model-viewer>
 
   <div class="hero-vignette" aria-hidden="true"></div>
 
+  <!-- Text block — bottom left -->
   <div class="hero-text" id="hero-text">
-    <p class="hero-eyebrow type-micro" aria-hidden="true">
+    <p class="hero-eyebrow t-micro" aria-hidden="true">
       <span class="hero-eyebrow-line"></span>
       Industrial Designer
     </p>
@@ -1363,39 +1790,44 @@ footer {
       <span class="line"><span class="word"><em>future,</em></span></span>
       <span class="line"><span class="word">today.</span></span>
     </h1>
-    <p class="hero-sub type-ui">
+    <p class="hero-sub t-ui">
       CAD modeling, form development, and product visualization —
       from first sketch to something you can hold.
     </p>
-    <div class="hero-avail type-micro" aria-label="Currently available for work">
+    <div class="hero-avail t-micro" aria-label="Currently available for work">
       <div class="hero-avail-dot" aria-hidden="true"></div>
       Available
     </div>
   </div>
 
-  <div class="hero-scroll type-micro" id="hero-scroll" aria-hidden="true">
+  <!-- Scroll hint — bottom right -->
+  <div class="hero-scroll t-micro" id="hero-scroll" aria-hidden="true" role="presentation">
     <div class="hero-scroll-line"></div>
     Scroll
   </div>
 
+  <!-- CAD corner coordinates -->
   <div class="hero-coords" id="hero-coords" aria-hidden="true">
     <span class="hero-coord-item">X:0000</span>
     <span class="hero-coord-item">Y:0000</span>
     <span class="hero-coord-item">Z:0000</span>
   </div>
 
-  <span class="model-label model-label-br type-micro" id="model-label" aria-hidden="true">
+  <!-- Model metadata -->
+  <span class="model-label model-label-br t-micro" id="model-label" aria-hidden="true">
     MINI CLUBMAN · RHINO 3D · FDM
   </span>
 
-  <div class="model-hint type-micro" id="model-hint" aria-hidden="true">
+  <!-- Drag affordance -->
+  <div class="model-hint t-micro" id="model-hint" aria-hidden="true">
     <div class="model-hint-icon" aria-hidden="true">↻</div>
     Drag to rotate
   </div>
 
+  <!-- Error fallback -->
   <div class="model-error" id="model-error" role="alert" aria-live="assertive">
-    <span class="type-micro">Model unavailable</span>
-    <span class="type-micro" style="opacity:.4;">CHECK GLB PATH</span>
+    <span class="t-micro">Model unavailable</span>
+    <span class="t-micro" style="opacity:.4;">CHECK GLB PATH</span>
   </div>
 
 </section>
@@ -1403,7 +1835,7 @@ footer {
 <!-- Skills ticker -->
 <div class="ticker" aria-hidden="true">
   <div class="t-track" id="t-track">
-    <div class="t-item" style="opacity:.7;color:var(--c-accent);padding-left:var(--sp-6)"><span class="t-dot"></span>KG·IDes·2025</div>
+    <div class="t-item" style="opacity:.7;color:var(--c-accent);padding-left:var(--s-6)"><span class="t-dot"></span>KG·IDes·2025</div>
     <div class="t-item"><span class="t-dot"></span>Rhino 3D</div>
     <div class="t-item"><span class="t-dot"></span>Keyshot</div>
     <div class="t-item"><span class="t-dot"></span>FDM Prototyping</div>
@@ -1446,9 +1878,9 @@ footer {
       <div class="proj-counter"    aria-hidden="true"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-swipe-hint" aria-hidden="true">Swipe to navigate</div>
       <div class="proj-text">
-        <div class="proj-num type-micro">Mar 2025</div>
-        <h2 class="proj-title type-title">3D Printed Car</h2>
-        <p class="proj-desc type-body">Surface modeled my personal Mini Clubman in Rhino 3D, then brought it to life as an FDM print.</p>
+        <div class="proj-num t-micro">Mar 2025</div>
+        <h2 class="proj-title t-title">3D Printed Car</h2>
+        <p class="proj-desc t-body">Surface modeled my personal Mini Clubman in Rhino 3D, then brought it to life as an FDM print.</p>
         <div class="proj-tags" role="list">
           <span class="proj-tag" role="listitem">Rhino 3D</span>
           <span class="proj-tag" role="listitem">FDM</span>
@@ -1456,13 +1888,13 @@ footer {
         </div>
       </div>
       <div class="proj-open" aria-label="Open project">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14L14 4M7 4h7v7"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M4 14L14 4M7 4h7v7"/></svg>
       </div>
     </a>
 
     <!-- Project 02 — Sabretta Pen -->
     <a href="project-pen.html" class="proj"
-       aria-label="Sabretta Pen — ballpoint pen design inspired by 1930s roadster fenders, 2025"
+       aria-label="Sabretta Pen — ballpoint pen design inspired by 1930s roadster fenders, modeled and animated in Rhino 3D and Keyshot, 2025"
        style="background:#08090a;">
       <div class="proj-img" role="img" aria-label="Sabretta pen product visualization render"
            style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/sabrettahero.png');background-position:center 40%;"></div>
@@ -1471,9 +1903,9 @@ footer {
       <div class="proj-ghost" aria-hidden="true">02</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">02</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text">
-        <div class="proj-num type-micro">Feb 2025</div>
-        <h2 class="proj-title type-title">Sabretta Pen</h2>
-        <p class="proj-desc type-body">A ballpoint pen with genuine desire behind it — form drawn from the fenders of 1930s roadsters. Modeled, animated, directed.</p>
+        <div class="proj-num t-micro">Feb 2025</div>
+        <h2 class="proj-title t-title">Sabretta Pen</h2>
+        <p class="proj-desc t-body">A ballpoint pen with genuine desire behind it — form drawn from the fenders of 1930s roadsters. Modeled, animated, directed.</p>
         <div class="proj-tags" role="list">
           <span class="proj-tag" role="listitem">Rhino 3D</span>
           <span class="proj-tag" role="listitem">Keyshot</span>
@@ -1481,13 +1913,13 @@ footer {
         </div>
       </div>
       <div class="proj-open" aria-label="Open project">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14L14 4M7 4h7v7"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M4 14L14 4M7 4h7v7"/></svg>
       </div>
     </a>
 
     <!-- Project 03 — Poul Henningsen Lamp -->
     <a href="project-lamp.html" class="proj"
-       aria-label="Poul Henningsen Lamp — CAD study of the iconic PH lamp, 2025"
+       aria-label="Poul Henningsen Lamp — CAD study of the iconic PH lamp, exploring light diffusion through geometry in Rhino 3D, 2025"
        style="background:#080a09;">
       <div class="proj-img" role="img" aria-label="Poul Henningsen PH lamp CAD model render"
            style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/lamphero.png');background-position:center 20%;"></div>
@@ -1496,22 +1928,22 @@ footer {
       <div class="proj-ghost" aria-hidden="true">03</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">03</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text">
-        <div class="proj-num type-micro">Apr 2025</div>
-        <h2 class="proj-title type-title">Poul Henningsen Lamp</h2>
-        <p class="proj-desc type-body">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
+        <div class="proj-num t-micro">Apr 2025</div>
+        <h2 class="proj-title t-title">Poul Henningsen Lamp</h2>
+        <p class="proj-desc t-body">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
         <div class="proj-tags" role="list">
           <span class="proj-tag" role="listitem">Rhino 3D</span>
           <span class="proj-tag" role="listitem">CAD Modeling</span>
         </div>
       </div>
       <div class="proj-open" aria-label="Open project">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14L14 4M7 4h7v7"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M4 14L14 4M7 4h7v7"/></svg>
       </div>
     </a>
 
     <!-- Project 04 — Intro to Rhino -->
     <a href="project-rhino-intro.html" class="proj"
-       aria-label="Intro to Rhino — headphones, power drill, and Minion helmet modeled across four weeks, 2025"
+       aria-label="Intro to Rhino — headphones, power drill, and Minion helmet modeled across four weeks of Rhino 3D fundamentals, 2025"
        style="background:#080909;">
       <div class="proj-img" role="img" aria-label="Power drill and headphones modeled in Rhino 3D"
            style="background-image:url('https://kieranjgreen18-cyber.github.io/KieranGreen/drillhero.jpg');background-position:center;"></div>
@@ -1520,9 +1952,9 @@ footer {
       <div class="proj-ghost" aria-hidden="true">04</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">04</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text">
-        <div class="proj-num type-micro">Jan 2025</div>
-        <h2 class="proj-title type-title">Intro to Rhino</h2>
-        <p class="proj-desc type-body">Headphones, a power drill, and a Minion helmet — what four weeks of learning Rhino 3D looks like.</p>
+        <div class="proj-num t-micro">Jan 2025</div>
+        <h2 class="proj-title t-title">Intro to Rhino</h2>
+        <p class="proj-desc t-body">Headphones, a power drill, and a Minion helmet — what four weeks of learning Rhino 3D looks like.</p>
         <div class="proj-tags" role="list">
           <span class="proj-tag" role="listitem">Rhino 3D</span>
           <span class="proj-tag" role="listitem">Keyshot</span>
@@ -1530,7 +1962,7 @@ footer {
         </div>
       </div>
       <div class="proj-open" aria-label="Open project">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14L14 4M7 4h7v7"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M4 14L14 4M7 4h7v7"/></svg>
       </div>
     </a>
 
@@ -1544,7 +1976,12 @@ footer {
 ═══════════════════════════════════════════════════════════ -->
 <div class="about-spacer" id="about" aria-hidden="true"></div>
 
-<section class="about-stage" id="about-stage" aria-label="About Kieran Green" aria-labelledby="about-h2">
+<section
+  class="about-stage"
+  id="about-stage"
+  aria-label="About Kieran Green"
+  aria-labelledby="about-h2"
+>
   <div class="stage-edge stage-edge-top" aria-hidden="true"></div>
   <div class="stage-edge stage-edge-bot" aria-hidden="true"></div>
   <div class="panels-host">
@@ -1558,13 +1995,13 @@ footer {
     </div>
 
     <!-- Panel 0 — The Engine Bay -->
-    <article class="panel" data-panel="0" aria-label="Origin — The Engine Bay">
+    <article class="panel" data-panel="0" aria-label="About: Chapter 01 — Origin, The Engine Bay">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">01</div>
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="saab.jpg" alt="Rebuilding the Saab engine bay — hands-on mechanical work" loading="eager">
+              <img src="saab.jpg" alt="Rebuilding the Saab engine bay — stripped-down, everything deliberate" loading="eager" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
               <div class="photo-placeholder"><span class="placeholder-label">Detail<br>Shot</span></div>
@@ -1572,25 +2009,25 @@ footer {
           </div>
         </div>
         <div class="col-bottom">
-          <p class="ch-index type-label">01 — Origin</p>
-          <span class="ch-label" aria-hidden="true">The<br>Engine<br>Bay</span>
+          <p class="ch-index t-label">01 — Origin</p>
+          <span class="ch-label t-chapter" aria-hidden="true">The<br>Engine<br>Bay</span>
         </div>
       </div>
       <div class="col-right">
         <span class="ch-rule" aria-hidden="true"></span>
-        <h2 class="ch-title type-heading" id="about-h2">
+        <h2 class="ch-title t-heading" id="about-h2">
           <span class="tline"><span class="tword">Rebuilt a car.</span></span>
           <span class="tline"><span class="tword"><em>Learned what</em></span></span>
           <span class="tline"><span class="tword">constraints feel like.</span></span>
         </h2>
-        <p class="ch-body type-body">
+        <p class="ch-body t-body">
           Hands deep in an engine block, nothing is arbitrary. Every surface finish, every tolerance, every fastener is a decision with a consequence you can feel. Good design is engineering made <strong>honest and inevitable.</strong>
         </p>
       </div>
     </article>
 
     <!-- Panel 1 — The Shop Floor -->
-    <article class="panel" data-panel="1" aria-label="Experience — The Shop Floor">
+    <article class="panel" data-panel="1" aria-label="About: Chapter 02 — Experience, The Shop Floor">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">02</div>
         <div class="col-top">
@@ -1604,25 +2041,25 @@ footer {
           </div>
         </div>
         <div class="col-bottom">
-          <p class="ch-index type-label">02 — Experience</p>
-          <span class="ch-label" aria-hidden="true">The<br>Shop<br>Floor</span>
+          <p class="ch-index t-label">02 — Experience</p>
+          <span class="ch-label t-chapter" aria-hidden="true">The<br>Shop<br>Floor</span>
         </div>
       </div>
       <div class="col-right">
         <span class="ch-rule" aria-hidden="true"></span>
-        <h3 class="ch-title type-heading">
+        <h3 class="ch-title t-heading">
           <span class="tline"><span class="tword">Sold bikes.</span></span>
           <span class="tline"><span class="tword"><em>Learned what</em></span></span>
           <span class="tline"><span class="tword">users actually need.</span></span>
         </h3>
-        <p class="ch-body type-body">
+        <p class="ch-body t-body">
           At Mike's Bikes I watched real people touch real components and make real decisions. A spec sheet means nothing at that moment. The gap between what a designer intends and what a user experiences — <strong>that's where I want to work.</strong>
         </p>
       </div>
     </article>
 
     <!-- Panel 2 — The Practice Room -->
-    <article class="panel" data-panel="2" aria-label="Instinct — The Practice Room">
+    <article class="panel" data-panel="2" aria-label="About: Chapter 03 — Instinct, The Practice Room">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">03</div>
         <div class="col-top">
@@ -1636,29 +2073,29 @@ footer {
           </div>
         </div>
         <div class="col-bottom">
-          <p class="ch-index type-label">03 — Instinct</p>
-          <span class="ch-label" aria-hidden="true">The<br>Practice<br>Room</span>
+          <p class="ch-index t-label">03 — Instinct</p>
+          <span class="ch-label t-chapter" aria-hidden="true">The<br>Practice<br>Room</span>
         </div>
       </div>
       <div class="col-right">
         <span class="ch-rule" aria-hidden="true"></span>
-        <h3 class="ch-title type-heading">
+        <h3 class="ch-title t-heading">
           <span class="tline"><span class="tword">Play guitar.</span></span>
           <span class="tline"><span class="tword"><em>Chase that</em></span></span>
           <span class="tline"><span class="tword">intangible rightness.</span></span>
         </h3>
-        <p class="ch-body type-body">
+        <p class="ch-body t-body">
           A great guitar has a quality you feel before you hear it — weight, balance, resonance in the body. That thing that can't be specced but is instantly felt. <strong>That's what I'm designing toward.</strong>
         </p>
       </div>
     </article>
 
     <!-- Panel 3 — Statement -->
-    <article class="panel panel-statement" data-panel="3" aria-label="About statement">
+    <article class="panel panel-statement" data-panel="3" aria-label="About: Personal Statement">
       <div class="stmt-wm" aria-hidden="true">KG</div>
       <div class="stmt-wrap">
-        <p class="stmt-kicker type-label">About</p>
-        <p class="stmt-text type-statement">
+        <p class="stmt-kicker t-label">About</p>
+        <p class="stmt-text t-statement">
           I'm an industrial design student who came to this field through living it.
           The tools that rebuilt a car engine. The bike components I put in strangers'
           hands at Mike's Bikes. The guitar that taught me what
@@ -1668,13 +2105,15 @@ footer {
       </div>
     </article>
 
-    <nav class="prog-dots" aria-label="Panel progress">
-      <div class="prog-dot" role="presentation"></div>
-      <div class="prog-dot" role="presentation"></div>
-      <div class="prog-dot" role="presentation"></div>
-      <div class="prog-dot" role="presentation"></div>
+    <!-- Progress dots -->
+    <nav class="prog-dots" aria-label="About section progress">
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
     </nav>
 
+    <!-- Scroll hint -->
     <div class="about-scroll-hint" id="about-scroll-hint" aria-hidden="true">
       <div class="hint-line"></div>
       <span>Scroll</span>
@@ -1686,14 +2125,14 @@ footer {
 <!-- ═══════════════════════════════════════════════════════════
      PERSONAL STATEMENT VIDEO
 ═══════════════════════════════════════════════════════════ -->
-<section class="personal-statement" aria-label="Personal statement video">
+<section class="personal-statement" id="statement" aria-labelledby="ps-heading-label">
   <div class="personal-statement-inner rev">
-    <div class="ps-text-col">
-      <p class="ps-eyebrow type-label">Personal Statement</p>
+    <div class="ps-text-col rev-stagger">
+      <p class="ps-eyebrow t-label" id="ps-heading-label" aria-label="Section: Personal Statement">Personal Statement</p>
       <h2 class="ps-heading">
         Design is<br>thinking<br><em>out loud.</em>
       </h2>
-      <p class="ps-body type-body">
+      <p class="ps-body t-body">
         A short film on why I design, where it comes from, and what I'm working toward —
         from the engine bay to the drawing board.
       </p>
@@ -1702,11 +2141,12 @@ footer {
       <div class="ps-video-frame">
         <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
         <iframe
-          src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1&color=white"
-          title="Kieran Green — Industrial Design Personal Statement"
+          src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1"
+          title="Kieran Green — Personal Statement"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
           loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
         ></iframe>
         <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
         <div class="ps-film-meta" aria-hidden="true">
@@ -1722,33 +2162,33 @@ footer {
      CONTACT
 ═══════════════════════════════════════════════════════════ -->
 <section class="contact" id="contact" aria-labelledby="contact-heading">
-  <div class="contact-img" role="img" aria-label="Sabretta pen product visualization"></div>
+  <div class="contact-img" role="img" aria-label="Product visualization render of the Sabretta pen design"></div>
   <div class="contact-wm" aria-hidden="true">Green</div>
-  <div class="contact-inner rev">
-    <p class="contact-kicker type-micro">Get in touch</p>
+  <div class="contact-inner rev-stagger">
+    <p class="contact-kicker t-micro">Get in touch</p>
     <h2 class="contact-h" id="contact-heading">Let's<br>build<br><em>something.</em></h2>
-    <p class="contact-sub type-body">Open to internships, collaborations, and freelance projects. Always drawn to interesting problems.</p>
+    <p class="contact-sub t-body">Open to internships, collaborations, and freelance projects. Always drawn to interesting problems.</p>
     <div class="contact-fields">
       <div class="c-field">
-        <p class="c-field-label type-micro">Contact</p>
+        <p class="c-field-label t-micro">Contact</p>
         <div class="c-row">
           <a href="https://kierangreen.myportfolio.com/contact" target="_blank" rel="noopener noreferrer" class="c-soc">Email →</a>
           <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
         </div>
       </div>
       <div class="c-field">
-        <p class="c-field-label type-micro">Projects</p>
+        <p class="c-field-label t-micro">Projects</p>
         <a href="protected.html" class="c-soc">Protected Work →</a>
       </div>
       <div class="c-field">
-        <p class="c-field-label type-micro">Resume</p>
+        <p class="c-field-label t-micro">Resume</p>
         <a href="KieranGreenRes.pdf" download class="c-dl">Download CV →</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SEO — screen reader only -->
+<!-- SEO summary — screen-reader and crawler only -->
 <aside class="sr-only" aria-label="Site summary for search engines">
   <h2>About Kieran Green</h2>
   <p>Kieran Green is an industrial designer specialising in CAD modeling, surface development, FDM prototyping, and product visualization. Seeking internships, freelance projects, and collaborations.</p>
@@ -1762,7 +2202,7 @@ footer {
   </ul>
 </aside>
 
-<footer role="contentinfo">
+<footer role="contentinfo" aria-label="Site footer">
   <div class="f-logo">Kieran <em>Green</em> — Industrial Designer</div>
   <div class="f-copy">© <span id="copy-year"></span> — All rights reserved</div>
 </footer>
@@ -1770,264 +2210,194 @@ footer {
 <script>
 'use strict';
 
-/* ══════════════════════════════════════════════════════════════
-   ORCHESTRATOR — single source of truth for which module owns input
-   States: 'scroll' | 'carousel' | 'about'
-   Only ONE state is ever active. All wheel/touch listeners check this.
-══════════════════════════════════════════════════════════════ */
-const App = (() => {
-  let _state = 'scroll';
-  const _listeners = [];
-  return {
-    get state() { return _state; },
-    set(next) {
-      if (next === _state) return;
-      const prev = _state;
-      _state = next;
-      _listeners.forEach(fn => fn(next, prev));
-    },
-    on(fn) { _listeners.push(fn); },
-  };
-})();
+/* ═══════════════════════════════════════════════════════════════
+   SMOOTH SCROLLER — shared inertia system
+═══════════════════════════════════════════════════════════════ */
+let carouselActive = false;
+let stageActive    = false;
+const isMobile = window.matchMedia('(max-width:768px)');
 
-/* Declared early so carousel/about IIFEs can reference it immediately */
-var secInd = document.getElementById('section-indicator');
-
-/* ══════════════════════════════════════════════════════════════
-   SMOOTH SCROLLER — only active when state === 'scroll'
-══════════════════════════════════════════════════════════════ */
 const smoother = (() => {
   let cur = window.scrollY, tgt = window.scrollY, running = false;
-  let suppressCbs = false;
-  const cbs = [], EASE = 0.09;
-  const isMobile = window.matchMedia('(max-width:768px)');
-
+  const cbs = [], EASE = 0.085; // Slightly more refined inertia
   function tick() {
     const d = tgt - cur;
-    if (Math.abs(d) < 0.4) {
-      cur = tgt; window.scrollTo(0, cur);
-      if (!suppressCbs) cbs.forEach(f => f(cur));
-      running = false; return;
-    }
-    cur += d * EASE; window.scrollTo(0, cur);
-    if (!suppressCbs) cbs.forEach(f => f(cur));
+    if (Math.abs(d) < 0.4) { cur = tgt; window.scrollTo(0, cur); cbs.forEach(f => f(cur)); running = false; return; }
+    cur += d * EASE; window.scrollTo(0, cur); cbs.forEach(f => f(cur));
     requestAnimationFrame(tick);
   }
   function go() { if (!running) { running = true; requestAnimationFrame(tick); } }
-
   window.addEventListener('wheel', e => {
-    if (App.state !== 'scroll') return;
+    if (carouselActive || stageActive) return;
     if (isMobile.matches) return;
     e.preventDefault();
-    const raw = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
-    const delta = raw === 0 ? 0 : Math.sign(raw) * Math.max(Math.abs(raw), 24);
+    const raw = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
+    const delta = raw===0 ? 0 : Math.sign(raw) * Math.max(Math.abs(raw), 24);
     tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, tgt + delta));
-    if (!suppressCbs) cbs.forEach(f => f(tgt));
+    cbs.forEach(f => f(tgt));
     go();
   }, { passive: false });
-
-  window.addEventListener('scroll', () => {
-    if (!running && !suppressCbs) cur = tgt = window.scrollY;
-  }, { passive: true });
-
+  window.addEventListener('scroll', () => { if (!running) cur = tgt = window.scrollY; }, { passive: true });
   return {
-    on:     fn  => cbs.push(fn),
-    // jumpTo: teleport + suppress — cbs never fire
-    jumpTo: val => {
-      suppressCbs = true;
-      cur = tgt = val; window.scrollTo(0, val);
-      suppressCbs = false;
-    },
-    // setTarget: animate toward val, cbs fire each tick
-    setTarget: val => {
-      tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val));
-      go();
-    },
-    // suppressedSetTarget: animate toward val but hold cbs suppressed until
-    // the animation completes, then fire once. Used by disengage() so zone
-    // detectors don't re-trigger mid-transition.
-    suppressedSetTarget: (val, onComplete) => {
-      tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val));
-      suppressCbs = true;
-      // Un-suppress after the inertia settles (~400ms is plenty for EASE=0.09 over ~1vh)
-      // then fire callbacks once so nav/progress bar update.
-      const unsuppress = () => {
-        suppressCbs = false;
-        cbs.forEach(f => f(val));
-        onComplete && onComplete();
-      };
-      // Use a one-shot rAF chain: run the tick but check when it stops
-      let lastY = cur;
-      let stuckFrames = 0;
-      const monitor = () => {
-        if (!suppressCbs) return; // already unsuppressed externally
-        const y = window.scrollY;
-        if (Math.abs(y - val) < 2) { unsuppress(); return; }
-        if (Math.abs(y - lastY) < 0.5) { stuckFrames++; } else { stuckFrames = 0; }
-        if (stuckFrames > 8) { unsuppress(); return; } // give up after ~8 stalled frames
-        lastY = y;
-        requestAnimationFrame(monitor);
-      };
-      go();
-      requestAnimationFrame(monitor);
-    },
-    isMobile,
+    on:        fn  => cbs.push(fn),
+    jumpTo:    val => { cur = tgt = val; window.scrollTo(0, val); cbs.forEach(f => f(val)); },
+    setTarget: val => { tgt = Math.max(0, Math.min(document.body.scrollHeight - window.innerHeight, val)); go(); },
   };
 })();
 
-/* ══════════════════════════════════════════════════════════════
-   SECTION FLASH TRANSITION
-══════════════════════════════════════════════════════════════ */
-const flashEl = document.getElementById('section-flash');
-function sectionFlash(cb, delay = 100) {
-  if (!flashEl) { cb && cb(); return; }
-  flashEl.classList.add('show');
+/* ═══════════════════════════════════════════════════════════════
+   SECTION TRANSITION FLASH
+═══════════════════════════════════════════════════════════════ */
+const sectionFlashEl = document.getElementById('section-flash');
+function sectionFlash(cb, delay = 120) {
+  if (!sectionFlashEl) { cb && cb(); return; }
+  sectionFlashEl.classList.add('show');
   setTimeout(() => {
     cb && cb();
-    requestAnimationFrame(() => requestAnimationFrame(() => flashEl.classList.remove('show')));
+    requestAnimationFrame(() => requestAnimationFrame(() => { sectionFlashEl.classList.remove('show'); }));
   }, delay);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   HERO MODULE
-══════════════════════════════════════════════════════════════ */
-const HeroModule = (() => {
-  const heroText   = document.getElementById('hero-text');
-  const heroScroll = document.getElementById('hero-scroll');
-  const heroCoords = document.getElementById('hero-coords');
-  const modelLabel = document.getElementById('model-label');
-  const modelHint  = document.getElementById('model-hint');
-  const viewer     = document.getElementById('mini-viewer');
-  const errorEl    = document.getElementById('model-error');
+/* ═══════════════════════════════════════════════════════════════
+   HERO — 3D VIEWER SETUP
+═══════════════════════════════════════════════════════════════ */
+const heroText   = document.getElementById('hero-text');
+const heroScroll = document.getElementById('hero-scroll');
+const heroCoords = document.getElementById('hero-coords');
+const modelLabel = document.getElementById('model-label');
+const modelHint  = document.getElementById('model-hint');
+const viewer     = document.getElementById('mini-viewer');
+const errorEl    = document.getElementById('model-error');
 
-  function reveal() {
-    requestAnimationFrame(() => {
-      [heroText, heroScroll, heroCoords, modelLabel, modelHint].forEach(el => {
-        el && el.classList.add('is-revealed');
-      });
-    });
+function revealHero() {
+  requestAnimationFrame(() => {
+    if (heroText)   heroText.classList.add('is-revealed');
+    if (heroScroll) heroScroll.classList.add('is-revealed');
+    if (heroCoords) heroCoords.classList.add('is-revealed');
+    if (modelLabel) modelLabel.classList.add('is-revealed');
+    if (modelHint)  modelHint.classList.add('is-revealed');
+  });
+}
+if (document.readyState === 'complete') setTimeout(revealHero, 120);
+else window.addEventListener('load', () => setTimeout(revealHero, 120));
+
+if (viewer) {
+  // Dismiss drag hint on first interaction
+  let hintDone = false;
+  function dismissHint() {
+    if (hintDone) return; hintDone = true;
+    if (modelHint) modelHint.classList.add('hidden');
   }
+  viewer.addEventListener('camera-change', dismissHint, { once: true });
+  setTimeout(dismissHint, 5000);
 
-  if (document.readyState === 'complete') setTimeout(reveal, 120);
-  else window.addEventListener('load', () => setTimeout(reveal, 120));
+  // Error fallback
+  viewer.addEventListener('error', () => { if (errorEl) errorEl.classList.add('visible'); });
 
-  if (viewer) {
-    let hintDone = false;
-    function dismissHint() {
-      if (hintDone) return; hintDone = true;
-      modelHint && modelHint.classList.add('hidden');
-    }
-    viewer.addEventListener('camera-change', dismissHint, { once: true });
-    setTimeout(dismissHint, 5000);
+  // Pause auto-rotate on interaction
+  const pauseRotate  = () => viewer.removeAttribute('auto-rotate');
+  const resumeRotate = () => setTimeout(() => viewer.setAttribute('auto-rotate', ''), 800);
+  viewer.addEventListener('mousedown',  pauseRotate);
+  viewer.addEventListener('mouseup',    resumeRotate);
+  viewer.addEventListener('mouseleave', resumeRotate);
+  viewer.addEventListener('touchstart', pauseRotate,  { passive: true });
+  viewer.addEventListener('touchend',   resumeRotate);
 
-    viewer.addEventListener('error', () => errorEl && errorEl.classList.add('visible'));
+  // Snap camera on load
+  viewer.addEventListener('load', async () => { await viewer.updateComplete; viewer.jumpCameraToGoal(); });
 
-    const pauseRotate  = () => viewer.removeAttribute('auto-rotate');
-    const resumeRotate = () => setTimeout(() => viewer.setAttribute('auto-rotate', ''), 800);
-    viewer.addEventListener('mousedown',  pauseRotate);
-    viewer.addEventListener('mouseup',    resumeRotate);
-    viewer.addEventListener('mouseleave', resumeRotate);
-    viewer.addEventListener('touchstart', pauseRotate, { passive: true });
-    viewer.addEventListener('touchend',   resumeRotate);
-
-    viewer.addEventListener('load', async () => {
-      await viewer.updateComplete;
-      viewer.jumpCameraToGoal();
-    });
-
-    viewer.addEventListener('load', async () => {
-      await viewer.updateComplete;
-      const model = viewer.model;
-      if (!model?.materials?.length) return;
-      const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
-      const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
-      let bodyFound = false;
-      model.materials.forEach((mat, i) => {
-        const name = mat.name || '';
-        if (skipRe.test(name)) return;
-        const pbr = mat.pbrMetallicRoughness;
-        if (!pbr) return;
-        if (bodyRe.test(name) || (!bodyFound && i === 0)) {
-          bodyFound = true;
-          pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
-          pbr.setMetallicFactor(0.0);
-          pbr.setRoughnessFactor(0.36);
-          if (mat.extensions?.KHR_materials_clearcoat) {
-            mat.extensions.KHR_materials_clearcoat.clearcoatFactor = 1.0;
-            mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
-          }
-        } else {
-          pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
-          pbr.setMetallicFactor(0.3);
-          pbr.setRoughnessFactor(0.55);
+  // Material override — BRG body paint
+  viewer.addEventListener('load', async () => {
+    await viewer.updateComplete;
+    const model = viewer.model;
+    if (!model?.materials?.length) return;
+    const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
+    const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
+    let bodyFound = false;
+    model.materials.forEach((mat, i) => {
+      const name = mat.name || '';
+      if (skipRe.test(name)) return;
+      const pbr = mat.pbrMetallicRoughness;
+      if (!pbr) return;
+      if (bodyRe.test(name) || (!bodyFound && i === 0)) {
+        bodyFound = true;
+        pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
+        pbr.setMetallicFactor(0.0);
+        pbr.setRoughnessFactor(0.36);
+        if (mat.extensions?.KHR_materials_clearcoat) {
+          mat.extensions.KHR_materials_clearcoat.clearcoatFactor = 1.0;
+          mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
         }
-      });
-    });
-
-    // Prevent model-viewer eating scroll
-    const heroSection = document.querySelector('.hero');
-    if (heroSection) {
-      heroSection.addEventListener('wheel', e => {
-        if (e.ctrlKey || e.metaKey) return;
-        e.preventDefault(); e.stopPropagation();
-        window.scrollBy({ top: e.deltaY, left: e.deltaX, behavior: 'auto' });
-      }, { passive: false });
-
-      let t0y = 0, t0x = 0, tScrolling = null;
-      heroSection.addEventListener('touchstart', e => {
-        if (e.touches.length === 1) { t0y = e.touches[0].clientY; t0x = e.touches[0].clientX; tScrolling = null; }
-      }, { passive: true });
-      heroSection.addEventListener('touchmove', e => {
-        if (e.touches.length !== 1) return;
-        const dy = t0y - e.touches[0].clientY, dx = t0x - e.touches[0].clientX;
-        if (tScrolling === null) {
-          if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
-          tScrolling = Math.abs(dy) > Math.abs(dx) * 1.4;
-        }
-        if (tScrolling) {
-          e.preventDefault();
-          window.scrollBy({ top: dy * 1.6, behavior: 'auto' });
-          t0y = e.touches[0].clientY; t0x = e.touches[0].clientX;
-        }
-      }, { passive: false });
-    }
-  }
-
-  // CAD coordinate scramble
-  (() => {
-    const coords = document.querySelectorAll('.hero-coord-item');
-    if (!coords.length) return;
-    const digits = '0123456789';
-    let done = false, frame = 0;
-    function scramble() {
-      if (done) return; frame++;
-      coords.forEach((el, i) => {
-        const labels = ['X','Y','Z'];
-        el.textContent = labels[i] + ':' +
-          (frame > 18 + i * 6
-            ? String(Math.floor(Math.random() * 9999)).padStart(4, '0')
-            : Array.from({ length: 4 }, () => digits[Math.floor(Math.random() * 10)]).join(''));
-      });
-      if (frame < 36) requestAnimationFrame(scramble);
-      else {
-        done = true;
-        coords[0].textContent = 'X:5312';
-        coords[1].textContent = 'Y:2048';
-        coords[2].textContent = 'Z:0000';
+      } else {
+        pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
+        pbr.setMetallicFactor(0.3);
+        pbr.setRoughnessFactor(0.55);
       }
-    }
-    setTimeout(scramble, 700);
-    window.addEventListener('scroll', () => {
-      if (!done) return;
-      const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 9999);
-      coords[2].textContent = 'Z:' + String(pct).padStart(4, '0');
+    });
+  });
+
+  // Prevent model-viewer from eating scroll events
+  const heroSection = document.querySelector('.hero');
+  if (heroSection) {
+    heroSection.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) return;
+      e.preventDefault(); e.stopPropagation();
+      window.scrollBy({ top: e.deltaY, left: e.deltaX, behavior: 'auto' });
+    }, { passive: false });
+    let t0y = 0, t0x = 0, tScrolling = null;
+    heroSection.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) { t0y = e.touches[0].clientY; t0x = e.touches[0].clientX; tScrolling = null; }
     }, { passive: true });
-  })();
+    heroSection.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 1) return;
+      const dy = t0y - e.touches[0].clientY, dx = t0x - e.touches[0].clientX;
+      if (tScrolling === null) {
+        if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+        tScrolling = Math.abs(dy) > Math.abs(dx) * 1.4;
+      }
+      if (tScrolling) {
+        e.preventDefault();
+        window.scrollBy({ top: dy * 1.6, behavior: 'auto' });
+        t0y = e.touches[0].clientY; t0x = e.touches[0].clientX;
+      }
+    }, { passive: false });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO COORDINATES SCRAMBLE
+═══════════════════════════════════════════════════════════════ */
+(function() {
+  const coords = document.querySelectorAll('.hero-coord-item');
+  if (!coords.length) return;
+  const digits = '0123456789';
+  let done = false, frame = 0;
+  function scramble() {
+    if (done) return; frame++;
+    coords.forEach((el, i) => {
+      const labels = ['X','Y','Z'];
+      if (frame > 18+i*6) el.textContent = labels[i]+':'+String(Math.floor(Math.random()*9999)).padStart(4,'0');
+      else el.textContent = labels[i]+':'+Array.from({length:4},()=>digits[Math.floor(Math.random()*10)]).join('');
+    });
+    if (frame < 36) requestAnimationFrame(scramble);
+    else {
+      done = true;
+      coords[0].textContent = 'X:5312';
+      coords[1].textContent = 'Y:2048';
+      coords[2].textContent = 'Z:0000';
+    }
+  }
+  setTimeout(scramble, 700);
+  window.addEventListener('scroll', () => {
+    if (!done) return;
+    const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 9999);
+    coords[2].textContent = 'Z:' + String(pct).padStart(4,'0');
+  }, { passive: true });
 })();
 
-/* ══════════════════════════════════════════════════════════════
-   PROJECTS CAROUSEL MODULE
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   PROJECTS CAROUSEL
+═══════════════════════════════════════════════════════════════ */
 (function initCarousel() {
   const section = document.querySelector('.projects');
   const spacer  = document.getElementById('projects-spacer');
@@ -2036,13 +2406,6 @@ const HeroModule = (() => {
   const projs = Array.from(section.querySelectorAll(':scope .proj'));
   const N = projs.length;
   if (!N) return;
-
-  /* — Wheel state (isolated) — */
-  let wVel = 0, wLastTime = -Infinity;
-  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
-
-  /* — Touch state (isolated) — */
-  let ty0 = 0, tx0 = 0, tTime0 = 0, touchActive = false;
 
   function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
   sizeSpacer();
@@ -2062,27 +2425,27 @@ const HeroModule = (() => {
     });
   });
 
-  // Carousel dot nav
-  const LABELS = ['3D Printed Car', 'Sabretta Pen', 'PH Lamp', 'Intro to Rhino'];
+  // Build carousel dot nav
+  const LABELS = ['3D Printed Car','Sabretta Pen','PH Lamp','Intro to Rhino'];
   const dotsEl = document.getElementById('c-dots');
   const dotWraps = [];
   if (dotsEl) {
     for (let i = 0; i < N; i++) {
       const wrap = document.createElement('div'); wrap.className = 'c-dot-wrap';
       const d    = document.createElement('span'); d.className = 'c-dot';
-      d.setAttribute('aria-label', LABELS[i] || '0' + (i + 1));
-      wrap.appendChild(d); dotsEl.appendChild(wrap); dotWraps.push(wrap);
+      d.setAttribute('aria-label', LABELS[i] || '0'+(i+1));
+      wrap.appendChild(d);
+      dotsEl.appendChild(wrap); dotWraps.push(wrap);
     }
   }
 
   let activeIdx = 0;
-  let zone = null;
 
   function setPositions(idx, animate) {
     projs.forEach((p, i) => {
       const delta = i - idx;
-      if      (delta < -1)   { p.dataset.pos = 'far-above'; }
-      else if (delta === -1) { p.dataset.pos = 'prev'; }
+      if      (delta < -1)  p.dataset.pos = 'far-above';
+      else if (delta === -1) p.dataset.pos = 'prev';
       else if (delta === 0) {
         p.dataset.pos = 'active';
         if (animate) {
@@ -2092,213 +2455,165 @@ const HeroModule = (() => {
           });
         }
       }
-      else if (delta === 1)  { p.dataset.pos = 'next'; }
-      else                   { p.dataset.pos = 'far-below'; }
+      else if (delta === 1) p.dataset.pos = 'next';
+      else                  p.dataset.pos = 'far-below';
       if (delta !== 0) {
         p.querySelectorAll('.proj-title .ch').forEach(s => {
           s.style.transitionDelay = '0ms'; s.classList.remove('show');
         });
-        // Clear any stuck tilt transform on non-active slides
-        const img = p.querySelector('.proj-img');
-        if (img) img.style.transform = '';
       }
     });
-    dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
+    dotWraps.forEach((w,i) => w.classList.toggle('on', i===idx));
   }
   setPositions(0, false);
 
+  let engaged = false;
+  let wVel = 0, wLastTime = 0;
+  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
   let spacerTop = 0;
   function calcSpacerTop() { spacerTop = Math.round(spacer.getBoundingClientRect().top + window.scrollY); }
   calcSpacerTop();
   window.addEventListener('resize', () => setTimeout(calcSpacerTop, 200), { passive: true });
 
-  function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
-  function hasContentBelow() { return (document.body.scrollHeight - (spacerTop + spacer.offsetHeight)) > window.innerHeight * 0.5; }
-
-  /* — engage/disengage — */
   function engage(idx) {
-    if (App.state === 'carousel') return;
-    App.set('carousel');
-    activeIdx = Math.max(0, Math.min(N - 1, idx));
+    if (engaged) return;
+    engaged = true; carouselActive = true;
+    activeIdx = Math.max(0, Math.min(N-1, idx));
     section.classList.add('carousel-active');
     if (dotsEl) dotsEl.style.opacity = '1';
-    secInd && secInd.classList.add('stage-hidden');
+    if (secInd) secInd.classList.add('stage-hidden');
+    window.scrollTo(0, spacerTop);
     smoother.jumpTo(spacerTop);
-    wVel = 0; wLastTime = -Infinity;
-    setPositions(activeIdx, false);
+    wVel = 0; wLastTime = 0;
+    projs[activeIdx].dataset.pos = 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => setPositions(activeIdx, true)));
   }
-
   function disengage(exitY) {
-    if (App.state !== 'carousel') return;
-    const maxScroll = document.body.scrollHeight - window.innerHeight;
-    const safeExit = Math.max(0, Math.min(maxScroll, exitY));
-    zone = safeExit < spacerTop ? 'above' : 'below';
+    if (!engaged) return;
     sectionFlash(() => {
-      App.set('scroll');
+      engaged = false; carouselActive = false;
       section.classList.remove('carousel-active');
       if (dotsEl) dotsEl.style.opacity = '0';
-      secInd && secInd.classList.remove('stage-hidden');
-      wVel = 0; wLastTime = -Infinity;
-      smoother.jumpTo(safeExit);
-      // suppressedSetTarget keeps zone callbacks silent while scroll settles,
-      // so the adjacent about-spacer zone doesn't immediately trigger.
-      smoother.suppressedSetTarget(safeExit);
+      if (secInd) secInd.classList.remove('stage-hidden');
+      smoother.jumpTo(exitY);
+      smoother.setTarget(exitY);
+      wVel = 0; wLastTime = 0;
     }, 80);
   }
 
-  /* — slide advance — */
   let transitioning = false, lastAdvanceAt = 0, lastAdvanceDir = 0;
   const TRANS_MS = 820;
+  function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
+  function hasContentBelow() { const sb = spacerTop + spacer.offsetHeight; return (document.body.scrollHeight - sb) > window.innerHeight * 0.5; }
 
   function advance(dir) {
     const now = performance.now();
-    if (transitioning && dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
+    if (transitioning) return;
+    if (dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
     if (next < 0) {
-      // Exit above: land just before the projects-spacer so hero/ticker are visible
-      if (hasContentAbove()) disengage(Math.max(0, spacerTop - 2));
-      else { smoother.jumpTo(spacerTop); smoother.suppressedSetTarget(spacerTop); }
+      if (hasContentAbove()) disengage(Math.max(0, spacerTop - 10));
+      else { smoother.jumpTo(spacerTop); smoother.setTarget(spacerTop); }
       return;
     }
-    if (next >= N) {
-      // Exit below: land just past the projects-spacer so About section triggers naturally
-      if (hasContentBelow()) disengage(spacerTop + spacer.offsetHeight + 2);
-      return;
-    }
+    if (next >= N) { if (hasContentBelow()) disengage(spacerTop + spacer.offsetHeight + 2); return; }
     transitioning = true; lastAdvanceAt = now; lastAdvanceDir = dir;
-    // Do NOT reset wVel — carry it so rapid scrolling works across the transition window
     activeIdx = next; setPositions(activeIdx, true);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
 
-  /* — Wheel listener — */
   window.addEventListener('wheel', e => {
-    if (App.state !== 'carousel') return;
-    e.preventDefault();
+    if (!engaged) return; e.preventDefault();
     const now = performance.now();
-    const raw = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+    const raw = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
     const gap = now - wLastTime;
-    if (gap > 600) wVel = 0;
-    else wVel *= Math.pow(W_DECAY, gap / 16);
+    if (gap > 600 || wLastTime===0) { wVel=0; } else { wVel *= Math.pow(W_DECAY, gap/16); }
     wLastTime = now;
-    const contrib = raw === 0 ? 0 : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
+    const contrib = raw===0 ? 0 : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
     wVel += contrib;
-    if (wVel >  W_THRESH) { wVel -= W_THRESH; advance(+1); }
-    if (wVel < -W_THRESH) { wVel += W_THRESH; advance(-1); }
+    if (wVel >  W_THRESH) { wVel=0; advance(+1); }
+    if (wVel < -W_THRESH) { wVel=0; advance(-1); }
   }, { passive: false });
 
-  /* — Touch listeners — */
-  window.addEventListener('touchstart', e => {
-    ty0 = e.touches[0].clientY; tx0 = e.touches[0].clientX;
-    tTime0 = performance.now(); touchActive = true;
-  }, { passive: true });
+  let ty0=0, tx0=0, tTime0=0, touchActive=false;
+  window.addEventListener('touchstart', e => { ty0=e.touches[0].clientY; tx0=e.touches[0].clientX; tTime0=performance.now(); touchActive=true; }, { passive: true });
   window.addEventListener('touchmove', e => {
-    if (App.state !== 'carousel' || !touchActive) return;
-    const dy = Math.abs(e.touches[0].clientY - ty0), dx = Math.abs(e.touches[0].clientX - tx0);
+    if (!engaged || !touchActive) return;
+    const dy=Math.abs(e.touches[0].clientY-ty0), dx=Math.abs(e.touches[0].clientX-tx0);
     if (dy > dx && dy > 10) e.preventDefault();
   }, { passive: false });
   window.addEventListener('touchend', e => {
     if (!touchActive) return; touchActive = false;
-    const dy = ty0 - e.changedTouches[0].clientY;
-    const dx = Math.abs(e.changedTouches[0].clientX - tx0);
-    const dt = Math.max(1, performance.now() - tTime0);
-    const vel = Math.abs(dy) / dt;
-    const isAxisLocked = Math.abs(dy) > dx * 1.2;
-    const isFastFlick  = vel >= 0.3 && Math.abs(dy) >= 20;
-    const isSlowDrag   = Math.abs(dy) >= 44;
+    const dy=ty0-e.changedTouches[0].clientY, dx=Math.abs(e.changedTouches[0].clientX-tx0);
+    const dt=Math.max(1, performance.now()-tTime0), vel=Math.abs(dy)/dt;
+    const isAxisLocked=Math.abs(dy)>dx*1.2, isFastFlick=vel>=0.3&&Math.abs(dy)>=20, isSlowDrag=Math.abs(dy)>=44;
     if (isAxisLocked && (isFastFlick || isSlowDrag)) {
-      if (App.state === 'carousel') {
-        advance(dy > 0 ? +1 : -1);
-      } else {
-        const y = window.scrollY;
-        if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
-          engage(Math.min(N - 1, Math.floor((y - spacerTop) / window.innerHeight)));
-          setTimeout(() => advance(dy > 0 ? +1 : -1), 50);
-        }
+      if (engaged) { advance(dy>0?+1:-1); }
+      else {
+        const y=window.scrollY;
+        if (y>=spacerTop && y<spacerTop+spacer.offsetHeight) { engage(Math.min(N-1,Math.floor((y-spacerTop)/window.innerHeight))); setTimeout(()=>advance(dy>0?+1:-1),50); }
       }
     }
   }, { passive: true });
 
-  /* — Keyboard — */
   window.addEventListener('keydown', e => {
-    if (App.state !== 'carousel') return;
-    if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
-    if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); advance(-1); }
-    if (e.key === 'Escape') disengage(Math.max(0, spacerTop - 2));
+    if (!engaged) return;
+    if (e.key==='ArrowDown'||e.key==='PageDown') { e.preventDefault(); advance(+1); }
+    if (e.key==='ArrowUp'  ||e.key==='PageUp')   { e.preventDefault(); advance(-1); }
+    if (e.key==='Home') { e.preventDefault(); if (activeIdx > 0) { activeIdx = 1; advance(-1); } }
+    if (e.key==='End')  { e.preventDefault(); if (activeIdx < N-1) { activeIdx = N-2; advance(+1); } }
+    if (e.key==='Escape') disengage(spacerTop - 10);
   });
 
-  /* — Scroll zone detection — */
-  // zone tracks last known position relative to the spacer.
-  // It is reset by disengage() before callbacks resume, so onScrollPos
-  // always sees the correct previous zone when it next fires.
   const HYSTERESIS = 20;
+  let zone = null;
   function getZone(y) {
-    if (y < spacerTop - HYSTERESIS)                       return 'above';
-    if (y > spacerTop + spacer.offsetHeight + HYSTERESIS) return 'below';
+    const sh = spacer.offsetHeight;
+    if (y < spacerTop - HYSTERESIS)      return 'above';
+    if (y > spacerTop + sh + HYSTERESIS) return 'below';
     return 'inside';
   }
-  function onScrollPos(y) {
-    if (App.state !== 'scroll') return;
+  function onScrollPositionCarousel(y) {
     calcSpacerTop();
     const newZone = getZone(y);
     if (newZone === zone) return;
-    const prevZone = zone;
-    zone = newZone;
-    // Only engage — never disengage from here (disengage is driven by advance())
+    const prevZone = zone; zone = newZone;
     if (newZone === 'inside') {
-      engage(prevZone === 'below' ? N - 1 : 0);
+      engage(prevZone === 'below' ? N-1 : 0);
+    } else if (prevZone === 'inside') {
+      if (newZone === 'above') {
+        if (hasContentAbove()) disengage(Math.max(0, spacerTop-HYSTERESIS-1));
+        else { zone='inside'; smoother.jumpTo(spacerTop); smoother.setTarget(spacerTop); }
+      } else {
+        if (hasContentBelow()) disengage(spacerTop+spacer.offsetHeight+HYSTERESIS+1);
+        else { zone='inside'; smoother.jumpTo(spacerTop+spacer.offsetHeight-window.innerHeight); smoother.setTarget(spacerTop+spacer.offsetHeight-window.innerHeight); }
+      }
     }
   }
-  smoother.on(y => { if (!smoother.isMobile.matches) onScrollPos(y); });
-
+  smoother.on(y => { if (!isMobile.matches) onScrollPositionCarousel(y); });
   requestAnimationFrame(() => {
-    calcSpacerTop();
-    const y = window.scrollY;
-    zone = getZone(y);
-    if (zone === 'inside') engage(Math.min(N - 1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
+    calcSpacerTop(); const y=window.scrollY; zone=getZone(y);
+    if (zone==='inside') engage(Math.min(N-1, Math.floor(Math.max(0,y-spacerTop)/window.innerHeight)));
   });
-
-  if (smoother.isMobile.matches) {
-    let mobileZone = null;
+  if (isMobile.matches) {
+    let mobileZone=null;
     window.addEventListener('scroll', calcSpacerTop, { passive: true });
-    const obs = new IntersectionObserver(entries => {
-      const entry = entries[0]; calcSpacerTop();
-      if (entry.isIntersecting) {
-        const prev = mobileZone; mobileZone = 'inside'; engage(prev === 'below' ? N - 1 : 0);
-      } else {
-        const up = entry.boundingClientRect.top > 0;
-        if (up) { if (hasContentAbove()) { mobileZone = 'above'; disengage(Math.max(0, spacerTop - 2)); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop); } }
-        else    { if (hasContentBelow()) { mobileZone = 'below'; disengage(spacerTop + spacer.offsetHeight + 2); } else { mobileZone = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
+    const obs=new IntersectionObserver(entries => {
+      const entry=entries[0]; calcSpacerTop();
+      if (entry.isIntersecting) { const prev=mobileZone; mobileZone='inside'; engage(prev==='below'?N-1:0); }
+      else {
+        const up=entry.boundingClientRect.top>0;
+        if (up) { if (hasContentAbove()) { mobileZone='above'; disengage(Math.max(0,spacerTop-HYSTERESIS-1)); } else { mobileZone='inside'; window.scrollTo(0,spacerTop); } }
+        else    { if (hasContentBelow()) { mobileZone='below'; disengage(spacerTop+spacer.offsetHeight+HYSTERESIS+1); } else { mobileZone='inside'; window.scrollTo(0,spacerTop+spacer.offsetHeight-window.innerHeight); } }
       }
     }, { threshold: 0.005, rootMargin: '0px' });
     obs.observe(spacer);
   }
-
-  /* — Card tilt (desktop) — */
-  if (!window.matchMedia('(pointer:coarse)').matches) {
-    projs.forEach(proj => {
-      const img = proj.querySelector('.proj-img');
-      if (!img) return;
-      proj.addEventListener('mouseenter', () => {
-        if (proj.dataset.pos !== 'active') return;
-        proj._r = proj.getBoundingClientRect();
-      });
-      proj.addEventListener('mousemove', e => {
-        if (proj.dataset.pos !== 'active') return;
-        if (!proj._r) proj._r = proj.getBoundingClientRect();
-        const nx = (e.clientX - proj._r.left) / proj._r.width  - 0.5;
-        const ny = (e.clientY - proj._r.top)  / proj._r.height - 0.5;
-        img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
-      });
-      proj.addEventListener('mouseleave', () => { img.style.transform = ''; });
-    });
-  }
 })();
 
-/* ══════════════════════════════════════════════════════════════
-   ABOUT MODULE
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ABOUT SCROLL-LOCK ENGINE
+═══════════════════════════════════════════════════════════════ */
 (function initAbout() {
   const spacer = document.querySelector('.about-spacer');
   const stage  = document.getElementById('about-stage');
@@ -2307,13 +2622,6 @@ const HeroModule = (() => {
   const hint   = document.getElementById('about-scroll-hint');
   const N      = panels.length;
   if (!spacer || !stage || !N) return;
-
-  /* — Wheel state (isolated) — */
-  let wVel = 0, wLastTime = -Infinity;
-  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
-
-  /* — Touch state (isolated) — */
-  let aty0 = 0, atx0 = 0, atTouchActive = false;
 
   function sizeSpacer() { spacer.style.height = (N * window.innerHeight) + 'px'; }
   sizeSpacer();
@@ -2325,215 +2633,242 @@ const HeroModule = (() => {
   window.addEventListener('resize', () => setTimeout(calcSpacerTop, 200), { passive: true });
 
   let activeIdx = 0;
-  let zone = null;
-
   function setPanel(idx) {
     activeIdx = idx;
     panels.forEach((el, i) => {
-      el.classList.remove('is-active', 'is-after');
+      el.classList.remove('is-active', 'is-after', 'is-below');
       if      (i < idx)  el.classList.add('is-after');
       else if (i === idx) el.classList.add('is-active');
+      else                el.classList.add('is-below');
     });
     dots.forEach((d, i) => d.classList.toggle('on', i === idx));
     if (hint) hint.classList.toggle('hide', idx > 0);
   }
 
-  function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
-  function hasContentBelow() { return (document.body.scrollHeight - (spacerTop + spacer.offsetHeight)) > window.innerHeight * 0.5; }
+  let engaged = false;
+  let wVel = 0, wLastTime = 0;
+  const W_THRESH = 160, W_DECAY = 0.94, W_CLAMP = 90, W_MIN = 20;
 
-  function engage(idx) {
-    if (App.state === 'about') return;
-    App.set('about');
-    activeIdx = Math.max(0, Math.min(N - 1, idx));
+  function engage(idx, fromBelow) {
+    if (engaged) return;
+    engaged = true; stageActive = true;
+    activeIdx = Math.max(0, Math.min(N-1, idx));
+    // Instantly place all panels in their pre-animation positions (no transition)
+    panels.forEach(el => { el.style.transition = 'none'; });
     setPanel(activeIdx);
+    // Force the active panel to start from the correct off-screen position
+    const activePanelEl = panels[activeIdx];
+    activePanelEl.classList.remove('is-active');
+    activePanelEl.classList.add(fromBelow ? 'is-below' : 'is-after');
     stage.classList.add('engaged');
-    secInd && secInd.classList.add('stage-hidden');
+    if (secInd) secInd.classList.add('stage-hidden');
+    window.scrollTo(0, spacerTop);
     smoother.jumpTo(spacerTop);
-    wVel = 0; wLastTime = -Infinity;
+    wVel = 0; wLastTime = 0;
+    // Re-enable transitions and animate the active panel in
+    requestAnimationFrame(() => {
+      panels.forEach(el => { el.style.transition = ''; });
+      requestAnimationFrame(() => {
+        activePanelEl.classList.remove('is-below', 'is-after');
+        activePanelEl.classList.add('is-active');
+      });
+    });
   }
   function disengage(exitY) {
-    if (App.state !== 'about') return;
-    const maxScroll = document.body.scrollHeight - window.innerHeight;
-    const safeExit = Math.max(0, Math.min(maxScroll, exitY));
-    zone = safeExit < spacerTop ? 'above' : 'below';
+    if (!engaged) return;
     sectionFlash(() => {
-      App.set('scroll');
+      engaged = false; stageActive = false;
       stage.classList.remove('engaged');
-      secInd && secInd.classList.remove('stage-hidden');
-      wVel = 0; wLastTime = -Infinity;
-      smoother.jumpTo(safeExit);
-      // suppressedSetTarget keeps zone callbacks silent while scroll settles,
-      // so the adjacent carousel-spacer zone doesn't immediately re-trigger.
-      smoother.suppressedSetTarget(safeExit);
+      if (secInd) secInd.classList.remove('stage-hidden');
+      smoother.jumpTo(exitY);
+      smoother.setTarget(exitY);
+      wVel = 0; wLastTime = 0;
     }, 80);
   }
 
   let transitioning = false, lastAdvanceAt = 0, lastAdvanceDir = 0;
   const TRANS_MS = 820;
+  function hasContentAbove() { return spacerTop > window.innerHeight * 0.5; }
+  function hasContentBelow() { const sb = spacerTop + spacer.offsetHeight; return (document.body.scrollHeight - sb) > window.innerHeight * 0.5; }
 
   function advance(dir) {
     const now = performance.now();
-    if (transitioning && dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
+    if (transitioning) return;
+    if (dir === lastAdvanceDir && (now - lastAdvanceAt) < TRANS_MS) return;
     const next = activeIdx + dir;
-    if (next < 0) {
-      // Exit above: land just before the about-spacer so projects carousel catches it
-      if (hasContentAbove()) disengage(Math.max(0, spacerTop - 2));
-      return;
-    }
-    if (next >= N) {
-      // Exit below: land just past the about-spacer into normal scroll
-      if (hasContentBelow()) disengage(spacerTop + spacer.offsetHeight + 2);
-      return;
-    }
+    if (next < 0)  { if (hasContentAbove()) disengage(Math.max(0, spacerTop - 10)); return; }
+    if (next >= N) { if (hasContentBelow()) disengage(spacerTop + spacer.offsetHeight + 2); return; }
     transitioning = true; lastAdvanceAt = now; lastAdvanceDir = dir;
-    // Do NOT reset wVel here — let it carry over so the velocity accumulator
-    // keeps working for rapid consecutive scrolls after the transition window.
     setPanel(next);
     setTimeout(() => { transitioning = false; }, TRANS_MS);
   }
 
-  /* — Wheel listener — */
   window.addEventListener('wheel', e => {
-    if (App.state !== 'about') return;
-    e.preventDefault();
+    if (!engaged) return; e.preventDefault();
     const now = performance.now();
-    const raw = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+    const raw = e.deltaMode===1 ? e.deltaY*32 : e.deltaMode===2 ? e.deltaY*window.innerHeight : e.deltaY;
     const gap = now - wLastTime;
-    if (gap > 600) wVel = 0;
-    else wVel *= Math.pow(W_DECAY, gap / 16);
+    if (gap > 600 || wLastTime===0) { wVel=0; } else { wVel *= Math.pow(W_DECAY, gap/16); }
     wLastTime = now;
-    const contrib = raw === 0 ? 0 : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
+    const contrib = raw===0 ? 0 : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
     wVel += contrib;
-    if (wVel >  W_THRESH) { wVel -= W_THRESH; advance(+1); }
-    if (wVel < -W_THRESH) { wVel += W_THRESH; advance(-1); }
+    if (wVel >  W_THRESH) { wVel=0; advance(+1); }
+    if (wVel < -W_THRESH) { wVel=0; advance(-1); }
   }, { passive: false });
 
-  /* — Touch listeners — */
-  window.addEventListener('touchstart', e => {
-    aty0 = e.touches[0].clientY; atx0 = e.touches[0].clientX; atTouchActive = true;
-  }, { passive: true });
+  let aty0=0, atx0=0, atTouchActive=false;
+  window.addEventListener('touchstart', e => { aty0=e.touches[0].clientY; atx0=e.touches[0].clientX; atTouchActive=true; }, { passive: true });
   window.addEventListener('touchmove', e => {
-    if (App.state !== 'about' || !atTouchActive) return;
-    const dy = Math.abs(e.touches[0].clientY - aty0), dx = Math.abs(e.touches[0].clientX - atx0);
-    if (dy > dx && dy > 10) e.preventDefault();
+    if (!engaged || !atTouchActive) return;
+    const dy=Math.abs(e.touches[0].clientY-aty0), dx=Math.abs(e.touches[0].clientX-atx0);
+    if (dy>dx && dy>10) e.preventDefault();
   }, { passive: false });
   window.addEventListener('touchend', e => {
-    if (!atTouchActive) return; atTouchActive = false;
-    const dy = aty0 - e.changedTouches[0].clientY;
-    const dx = Math.abs(e.changedTouches[0].clientX - atx0);
-    if (Math.abs(dy) > 50 && Math.abs(dy) > dx * 1.2) {
-      if (App.state === 'about') {
-        advance(dy > 0 ? +1 : -1);
-      } else {
-        const y = window.scrollY;
-        if (y >= spacerTop && y < spacerTop + spacer.offsetHeight) {
-          engage(Math.min(N - 1, Math.floor((y - spacerTop) / window.innerHeight)));
-          setTimeout(() => advance(dy > 0 ? +1 : -1), 50);
-        }
+    if (!atTouchActive) return; atTouchActive=false;
+    const dy=aty0-e.changedTouches[0].clientY, dx=Math.abs(e.changedTouches[0].clientX-atx0);
+    if (Math.abs(dy)>50 && Math.abs(dy)>dx*1.2) {
+      if (engaged) { advance(dy>0?+1:-1); }
+      else {
+        const y=window.scrollY;
+        if (y>=spacerTop && y<spacerTop+spacer.offsetHeight) { engage(Math.min(N-1,Math.floor((y-spacerTop)/window.innerHeight)), false); setTimeout(()=>advance(dy>0?+1:-1),50); }
       }
     }
   }, { passive: true });
 
-  /* — Keyboard — */
   window.addEventListener('keydown', e => {
-    if (App.state !== 'about') return;
-    if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); advance(+1); }
-    if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); advance(-1); }
-    if (e.key === 'Escape') disengage(Math.max(0, spacerTop - 2));
+    if (!engaged) return;
+    if (e.key==='ArrowDown'||e.key==='PageDown') { e.preventDefault(); advance(+1); }
+    if (e.key==='ArrowUp'  ||e.key==='PageUp')   { e.preventDefault(); advance(-1); }
+    if (e.key==='Home') { e.preventDefault(); setPanel(0); }
+    if (e.key==='End')  { e.preventDefault(); setPanel(N-1); }
+    if (e.key==='Escape') disengage(Math.max(0, spacerTop-10));
   });
 
-  /* — Scroll zone detection — */
-  // zone is reset by disengage() before callbacks resume — no disengaging flag needed.
-  const HYSTERESIS = 20;
+  const HYSTERESIS=20; let zone=null;
   function getZone(y) {
-    if (y < spacerTop - HYSTERESIS)                       return 'above';
-    if (y > spacerTop + spacer.offsetHeight + HYSTERESIS) return 'below';
+    const sh=spacer.offsetHeight;
+    if (y < spacerTop - HYSTERESIS)      return 'above';
+    if (y > spacerTop + sh + HYSTERESIS) return 'below';
     return 'inside';
   }
-  function onScrollPos(y) {
-    if (App.state !== 'scroll') return;
-    calcSpacerTop();
-    const newZone = getZone(y);
-    if (newZone === zone) return;
-    const prev = zone;
-    zone = newZone;
-    // Only engage — disengage is driven by advance()
-    if (newZone === 'inside') {
-      engage(prev === 'below' ? N - 1 : 0);
+  function onScrollPositionAbout(y) {
+    calcSpacerTop(); const newZone=getZone(y);
+    if (newZone===zone) return;
+    const prev=zone; zone=newZone;
+    if (newZone==='inside') {
+      engage(prev==='below'?N-1:0, prev==='below');
+    } else if (prev==='inside') {
+      if (newZone==='above') {
+        if (hasContentAbove()) disengage(Math.max(0,spacerTop-HYSTERESIS-1));
+        else { zone='inside'; smoother.jumpTo(spacerTop); }
+      } else {
+        if (hasContentBelow()) disengage(spacerTop+spacer.offsetHeight+HYSTERESIS+1);
+        else { zone='inside'; smoother.jumpTo(spacerTop+spacer.offsetHeight-window.innerHeight); }
+      }
     }
   }
-  smoother.on(y => { if (!smoother.isMobile.matches) onScrollPos(y); });
-
+  smoother.on(y => { if (!isMobile.matches) onScrollPositionAbout(y); });
   requestAnimationFrame(() => {
-    calcSpacerTop();
-    const y = window.scrollY; zone = getZone(y);
-    if (zone === 'inside') engage(Math.min(N - 1, Math.floor(Math.max(0, y - spacerTop) / window.innerHeight)));
+    calcSpacerTop(); const y=window.scrollY; zone=getZone(y);
+    if (zone==='inside') engage(Math.min(N-1,Math.floor(Math.max(0,y-spacerTop)/window.innerHeight)), false);
   });
-
-  if (smoother.isMobile.matches) {
-    let mz = null;
+  if (isMobile.matches) {
+    let mz=null;
     window.addEventListener('scroll', calcSpacerTop, { passive: true });
-    const obs = new IntersectionObserver(entries => {
-      const entry = entries[0]; calcSpacerTop();
-      if (entry.isIntersecting) { const prev = mz; mz = 'inside'; engage(prev === 'below' ? N - 1 : 0); }
+    const obs=new IntersectionObserver(entries => {
+      const entry=entries[0]; calcSpacerTop();
+      if (entry.isIntersecting) { const prev=mz; mz='inside'; engage(prev==='below'?N-1:0, prev==='below'); }
       else {
-        const up = entry.boundingClientRect.top > 0;
-        if (up) { if (hasContentAbove()) { mz = 'above'; disengage(Math.max(0, spacerTop - 2)); } else { mz = 'inside'; window.scrollTo(0, spacerTop); } }
-        else    { if (hasContentBelow()) { mz = 'below'; disengage(spacerTop + spacer.offsetHeight + 2); } else { mz = 'inside'; window.scrollTo(0, spacerTop + spacer.offsetHeight - window.innerHeight); } }
+        const up=entry.boundingClientRect.top>0;
+        if (up) { if (hasContentAbove()) { mz='above'; disengage(Math.max(0,spacerTop-HYSTERESIS-1)); } else { mz='inside'; window.scrollTo(0,spacerTop); } }
+        else    { if (hasContentBelow()) { mz='below'; disengage(spacerTop+spacer.offsetHeight+HYSTERESIS+1); } else { mz='inside'; window.scrollTo(0,spacerTop+spacer.offsetHeight-window.innerHeight); } }
       }
-    }, { threshold: 0.005, rootMargin: '0px' });
+    }, { threshold:0.005, rootMargin:'0px' });
     obs.observe(spacer);
   }
   setPanel(0); calcSpacerTop();
 })();
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    SCROLL PROGRESS BAR
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 const prog = document.getElementById('prog');
 function onScroll(y) {
   const max = document.body.scrollHeight - window.innerHeight;
-  if (prog) prog.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+  if (prog) prog.style.transform = `scaleX(${max > 0 ? y/max : 0})`;
 }
 smoother.on(onScroll);
-if (smoother.isMobile.matches) window.addEventListener('scroll', () => onScroll(window.scrollY), { passive: true });
+if (isMobile.matches) window.addEventListener('scroll', () => onScroll(window.scrollY), { passive: true });
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    CUSTOM CURSOR
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 const cur  = document.getElementById('cur');
 const curR = document.getElementById('cur-r');
-let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
+let mx = innerWidth/2, my = innerHeight/2;
+let rx = mx, ry = my;
+let rW = 20, rWcur = 20;
 let isDown = false, inLink = false, inProj = false;
-const CURSOR_STATES = {
-  default: { dot: 8,  ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
-  link:    { dot: 5,  ring: 64,  ringColor: 'rgba(91,160,164,.6)'  },
-  proj:    { dot: 4,  ring: 120, ringColor: 'rgba(91,160,164,.18)' },
-  click:   { dot: 14, ring: 42,  ringColor: 'rgba(91,160,164,.5)'  },
+
+// State definitions: crosshair arm length, bracket size, accent opacity
+const STATES = {
+  default: { arm: 16, bracket: 20, opacity: 1,    accentOpacity: '.55' },
+  link:    { arm: 10, bracket: 32, opacity: 0.72, accentOpacity: '.85' },
+  proj:    { arm:  8, bracket: 48, opacity: 0.5,  accentOpacity: '.28' },
+  click:   { arm: 20, bracket: 16, opacity: 1,    accentOpacity: '.90' },
 };
-let ringTgt = 42, ringCur = 42;
+
 function curState() { return isDown ? 'click' : inLink ? 'link' : inProj ? 'proj' : 'default'; }
+
 function applyCursor() {
-  const s = CURSOR_STATES[curState()];
-  if (cur) { cur.style.width = cur.style.height = s.dot + 'px'; }
-  ringTgt = s.ring;
-  if (curR) curR.style.borderColor = s.ringColor;
+  if (!cur && !curR) return;
+  const s = STATES[curState()];
+
+  // Crosshair arms
+  if (cur) {
+    cur.style.width   = s.arm + 'px';
+    cur.style.opacity = s.opacity;
+  }
+
+  // Bracket corner size
+  rW = s.bracket;
+
+  // Bracket corner accent intensity
+  const bc = `rgba(91,160,164,${s.accentOpacity})`;
+  if (curR) {
+    const pseudo = curR.querySelectorAll('*');
+    // Can't style ::before/::after via JS — use CSS custom property instead
+    curR.style.setProperty('--bc', bc);
+    curR.style.setProperty('--bs', s.bracket + 'px');
+  }
 }
+
 document.addEventListener('mousemove', e => {
   mx = e.clientX; my = e.clientY;
   if (cur) { cur.style.left = mx + 'px'; cur.style.top = my + 'px'; }
 });
+
 if (window.matchMedia('(pointer:fine)').matches) {
   (function loop() {
-    const rxN = rx + (mx - rx) * .1, ryN = ry + (my - ry) * .1, rN = ringCur + (ringTgt - ringCur) * .12;
-    if (Math.abs(rxN - rx) > .02 || Math.abs(ryN - ry) > .02 || Math.abs(rN - ringCur) > .05) {
-      rx = rxN; ry = ryN; ringCur = rN;
-      if (curR) { curR.style.left = rx + 'px'; curR.style.top = ry + 'px'; curR.style.width = curR.style.height = ringCur + 'px'; }
+    // Lazy bracket follower — slightly slower than crosshair for parallax feel
+    const rxN = rx + (mx - rx) * 0.10;
+    const ryN = ry + (my - ry) * 0.10;
+    const rWN = rWcur + (rW - rWcur) * 0.14;
+
+    if (Math.abs(rxN - rx) > 0.02 || Math.abs(ryN - ry) > 0.02 || Math.abs(rWN - rWcur) > 0.05) {
+      rx = rxN; ry = ryN; rWcur = rWN;
+      if (curR) {
+        curR.style.left   = rx + 'px';
+        curR.style.top    = ry + 'px';
+        curR.style.width  = rWcur + 'px';
+        curR.style.height = rWcur + 'px';
+      }
     }
     requestAnimationFrame(loop);
   })();
 }
-document.querySelectorAll('a,button').forEach(el => {
+
+document.querySelectorAll('a, button').forEach(el => {
   el.addEventListener('mouseenter', () => { inLink = true;  applyCursor(); });
   el.addEventListener('mouseleave', () => { inLink = false; applyCursor(); });
 });
@@ -2543,38 +2878,65 @@ document.querySelectorAll('.proj').forEach(el => {
 });
 document.addEventListener('mousedown', () => { isDown = true;  applyCursor(); });
 document.addEventListener('mouseup',   () => { isDown = false; applyCursor(); });
-document.addEventListener('mouseleave', () => { if (cur) cur.style.opacity = '0'; if (curR) curR.style.opacity = '0'; });
-document.addEventListener('mouseenter', () => { if (cur) cur.style.opacity = '1'; if (curR) curR.style.opacity = '1'; });
+document.addEventListener('mouseleave', () => {
+  if (cur)  cur.style.opacity  = '0';
+  if (curR) curR.style.opacity = '0';
+});
+document.addEventListener('mouseenter', () => {
+  if (cur)  cur.style.opacity  = '1';
+  if (curR) curR.style.opacity = '1';
+});
 applyCursor();
 
-/* ══════════════════════════════════════════════════════════════
-   SCROLL REVEAL
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   CARD TILT (desktop only)
+═══════════════════════════════════════════════════════════════ */
+if (!window.matchMedia('(pointer:coarse)').matches) {
+  document.querySelectorAll('.proj').forEach(proj => {
+    const img = proj.querySelector('.proj-img');
+    if (!img) return;
+    proj.addEventListener('mouseenter', ()=>{ proj._r = proj.getBoundingClientRect(); });
+    proj.addEventListener('mousemove', e=>{
+      if(!proj._r) proj._r = proj.getBoundingClientRect();
+      const nx=(e.clientX-proj._r.left)/proj._r.width-.5;
+      const ny=(e.clientY-proj._r.top)/proj._r.height-.5;
+      img.style.transform=`scale(1.04) rotateY(${nx*3}deg) rotateX(${-ny*1.5}deg)`;
+    });
+    proj.addEventListener('mouseleave', ()=>{ img.style.transform=''; });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL REVEAL — IntersectionObserver
+═══════════════════════════════════════════════════════════════ */
 const io = new IntersectionObserver(entries => entries.forEach(e => {
   if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
 }), { threshold: .06 });
-document.querySelectorAll('.rev').forEach(r => io.observe(r));
+document.querySelectorAll('.rev, .rev-stagger').forEach(r => io.observe(r));
 
-/* ══════════════════════════════════════════════════════════════
-   NAV + SECTION INDICATOR
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   NAV SCROLLED STATE & SECTION INDICATOR
+═══════════════════════════════════════════════════════════════ */
 const navEl  = document.getElementById('nav');
-// secInd declared early above, before carousel/about IIFEs
+const secInd = document.getElementById('section-indicator');
 const SECTIONS = [
   { id: 'top',     label: 'Hero' },
-  { id: 'work',    label: 'Projects',  fallback: 'projects-spacer' },
-  { id: 'about',   label: 'About',     fallback: 'about-stage' },
+  { id: 'work',    label: 'Projects' },
+  { id: 'about',   label: 'About' },
   { id: 'contact', label: 'Contact' },
 ];
 let sectionOffsets = [];
 function buildSectionOffsets() {
   sectionOffsets = SECTIONS.map(s => {
-    const el = document.getElementById(s.id) || (s.fallback ? document.getElementById(s.fallback) : null);
+    const el = document.getElementById(s.id) || document.getElementById('projects-spacer');
     return { label: s.label, top: el ? el.getBoundingClientRect().top + window.scrollY : 0 };
   });
 }
 function onScrollNav(y) {
   if (navEl) navEl.classList.toggle('scrolled', y > 40);
+  // Fade scroll hint after user starts scrolling
+  const heroScrollEl = document.getElementById('hero-scroll');
+  if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
   if (secInd) {
     let active = SECTIONS[0].label;
     for (let i = sectionOffsets.length - 1; i >= 0; i--) {
@@ -2585,22 +2947,23 @@ function onScrollNav(y) {
   }
 }
 smoother.on(onScrollNav);
-if (smoother.isMobile.matches) window.addEventListener('scroll', () => onScrollNav(window.scrollY), { passive: true });
+if (isMobile.matches) window.addEventListener('scroll', () => onScrollNav(window.scrollY), { passive: true });
 setTimeout(buildSectionOffsets, 300);
 
-/* ══════════════════════════════════════════════════════════════
-   PAGE VEIL + READY
-══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   PAGE VEIL + READY STATE
+═══════════════════════════════════════════════════════════════ */
 const veil = document.getElementById('veil');
 function onReady(fn) {
   if (document.readyState !== 'loading') fn();
   else document.addEventListener('DOMContentLoaded', fn);
 }
 onReady(() => {
-  requestAnimationFrame(() => {
+  // Double rAF for reliable first paint
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     document.body.classList.add('ready');
     if (veil) veil.classList.add('gone');
-  });
+  }));
 });
 window.addEventListener('pageshow', e => {
   if (e.persisted && veil) {
@@ -2612,9 +2975,9 @@ window.addEventListener('pageshow', e => {
   }
 });
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    SMOOTH ANCHOR NAV
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href]');
   if (!a) return;
@@ -2630,9 +2993,9 @@ document.addEventListener('click', e => {
   if (href.startsWith('http') || href.startsWith('mailto') || href.endsWith('.pdf')) return;
 });
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    THEME TOGGLE
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 const SVG_SUN  = '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
 const SVG_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 let currentTheme = 'dark';
@@ -2641,18 +3004,18 @@ function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   const btn  = document.getElementById('theme-btn');
   const icon = btn && btn.querySelector('svg');
-  if (icon) icon.innerHTML = t === 'dark' ? SVG_SUN : SVG_MOON;
-  if (btn) btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+  if (icon) icon.innerHTML = t==='dark' ? SVG_SUN : SVG_MOON;
+  if (btn)  btn.setAttribute('aria-label', t==='dark' ? 'Switch to light theme' : 'Switch to dark theme');
   try { localStorage.setItem('theme', t); } catch(e) {}
 }
 const savedTheme = (() => { try { return localStorage.getItem('theme'); } catch(e) { return null; } })();
 const themeBtn = document.getElementById('theme-btn');
-if (themeBtn) themeBtn.onclick = () => setTheme(currentTheme === 'dark' ? 'light' : 'dark');
-setTheme(savedTheme === 'light' ? 'light' : 'dark');
+if (themeBtn) themeBtn.onclick = () => setTheme(currentTheme==='dark'?'light':'dark');
+setTheme(savedTheme==='light' ? 'light' : 'dark');
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    HAMBURGER MENU
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 const hamburger = document.getElementById('hamburger');
 const navDrawer = document.getElementById('nav-drawer');
 if (hamburger && navDrawer) {
@@ -2674,9 +3037,9 @@ if (hamburger && navDrawer) {
   });
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    LOGO SCRAMBLE
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 const logo     = document.querySelector('.n-logo');
 const logoLast = logo && logo.querySelector('.logo-last');
 const CHARS    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
@@ -2684,21 +3047,30 @@ let scrambling = false;
 if (logo && logoLast) {
   logo.addEventListener('mouseenter', () => {
     if (scrambling) return; scrambling = true;
-    let iter = 0;
-    const TARGET = 'GREEN';
+    let iter = 0; const TARGET = 'GREEN';
     const iv = setInterval(() => {
-      logoLast.textContent = TARGET.split('').map((c, i) =>
+      const chars = TARGET.split('').map((c, i) =>
         i < iter ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
       ).join('');
-      if (iter >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
-      iter += 0.4;
-    }, 28);
+      logoLast.textContent = chars;
+      if (iter >= TARGET.length) {
+        clearInterval(iv);
+        logoLast.textContent = 'Green';
+        scrambling = false;
+      }
+      iter += 0.38;
+    }, 26);
+  });
+  // Also scramble on focus for keyboard users
+  logo.addEventListener('focus', () => {
+    if (scrambling) return;
+    logo.dispatchEvent(new MouseEvent('mouseenter'));
   });
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    RESIZE HANDLER
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
@@ -2706,15 +3078,18 @@ window.addEventListener('resize', () => {
     buildSectionOffsets();
     if (window.innerWidth > 768) {
       document.body.classList.remove('menu-open');
-      if (hamburger) { hamburger.setAttribute('aria-expanded', 'false'); hamburger.setAttribute('aria-label', 'Open menu'); }
-      if (navDrawer)  navDrawer.setAttribute('aria-hidden', 'true');
+      if (hamburger) { hamburger.setAttribute('aria-expanded','false'); hamburger.setAttribute('aria-label','Open menu'); }
+      if (navDrawer)  navDrawer.setAttribute('aria-hidden','true');
     }
   }, 150);
 }, { passive: true });
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { buildSectionOffsets(); }, 300);
+}, { passive: true });
 
-/* ══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    COPYRIGHT YEAR
-══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 const copyYear = document.getElementById('copy-year');
 if (copyYear) copyYear.textContent = new Date().getFullYear();
 </script>
