@@ -1,33 +1,24 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- *  ISOLATED CONTAINER ARCHITECTURE  —  FULL INTEGRATION
+ *  ISOLATED CONTAINER ARCHITECTURE  —  FULL SITE
  *  ─────────────────────────────────────────────────────────────────────────
- *  FILE SECTIONS
- *  ─────────────────────────────────────────────────────────────────────────
- *   §1  AppController       — owns all global input, routes to containers
- *   §2  PageChrome          — progress bar, custom cursor, body.ready
- *   §3  Hero3DContainer     — model-viewer hero section
- *   §4  CarouselContainer   — projects / carousel section
- *   §5  AboutContainer      — about panel stack section
- *   §6  Bootstrap           — instantiates + wires everything
- *
- *  SECTION ORDER  (defined by hand-offs in onScroll(), not by controller)
- *  ─────────────────────────────────────────────────────────────────────────
- *   hero  →  carousel  →  about
- *         ←           ←
+ *  §1  AppController       — owns ALL global input, routes to containers
+ *  §2  PageChrome          — progress bar, custom cursor, body.ready, veil,
+ *                            nav scrolled state, section indicator,
+ *                            scroll reveal, anchor nav, theme, hamburger,
+ *                            logo scramble, copyright year
+ *  §3  Hero3DContainer     — model-viewer hero section
+ *  §4  CarouselContainer   — projects / carousel section
+ *  §5  AboutContainer      — about scroll-lock panel stack
+ *  §6  Bootstrap           — instantiates + wires everything
  *
  *  BOUNDARY RULES
  *  ─────────────────────────────────────────────────────────────────────────
- *   AppController  — SOLE interpreter of raw input; attaches wheel / keyboard
- *                    / touch on window only; emits only +1 / -1 to containers
- *   PageChrome     — may attach mousemove / mousedown / mouseup /
- *                    mouseleave / mouseenter on document only
- *   Containers     — fully input-agnostic; receive only onScroll(+1|-1)
- *                  — all DOM queries scoped to their own root element
- *                  — no-ops when inactive (guard at top of every handler)
- *                  — communicate upward only via this._app.setSection()
- *                  — element-level mouse/touch on their own child nodes
- *                    permitted only for non-scroll UX (tilt, rotate, etc.)
+ *  AppController  — SOLE interpreter of raw wheel/keyboard/touch on window
+ *  PageChrome     — document-level mouse listeners + page chrome only
+ *  Containers     — fully input-agnostic; receive only onScroll(+1|-1)
+ *                   all DOM queries scoped to their own root element
+ *                   communicate upward only via this._app.setSection()
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
@@ -44,22 +35,14 @@
    ───────────────────────────────────────────────────────────────────────── */
 class AppController {
 
-  /**
-   * @param {PageChrome} chrome  — receives onScroll(y) calls for progress bar.
-   *   Pass null if not using PageChrome.
-   */
   constructor(chrome = null) {
     this._chrome     = chrome;
     this._containers = new Map();
     this._activeKey  = null;
     this._locked     = false;
+    this._LOCK_MS    = 850; // >= longest container _TRANS_MS + buffer
 
-    // Lock duration must be >= the longest container _TRANS_MS (820ms) + buffer.
-    this._LOCK_MS = 850;
-
-    // ── Wheel velocity model ───────────────────────────────────────────────
-    // Identical to the original portfolio smoother — decay + threshold.
-    // Containers never see raw wheel events; they receive only +1 / -1.
+    // ── Wheel velocity model ───────────────────────────────────────────
     this._wVel      = 0;
     this._wLastTime = 0;
     const W_THRESH  = 160;
@@ -67,41 +50,27 @@ class AppController {
     const W_CLAMP   = 90;
     const W_MIN     = 20;
 
-    // ── Global listeners — ONLY place in the codebase ─────────────────────
-
+    // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
       e.preventDefault();
-
       const raw = e.deltaMode === 1 ? e.deltaY * 32
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
-
       const now = performance.now();
       const gap = now - this._wLastTime;
-
-      if (gap > 600 || this._wLastTime === 0) {
-        this._wVel = 0;
-      } else {
-        this._wVel *= Math.pow(W_DECAY, gap / 16);
-      }
+      if (gap > 600 || this._wLastTime === 0) { this._wVel = 0; }
+      else { this._wVel *= Math.pow(W_DECAY, gap / 16); }
       this._wLastTime = now;
-
       const contrib = raw === 0 ? 0
         : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
       this._wVel += contrib;
-
       if (this._wVel >  W_THRESH) { this._wVel = 0; this._dispatchScroll(+1); }
       if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
     }, { passive: false });
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        e.preventDefault(); this._dispatchScroll(+1);
-      }
-      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        e.preventDefault(); this._dispatchScroll(-1);
-      }
-      // Escape — let the active container handle it if it wants
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); this._dispatchScroll(+1); }
+      if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); this._dispatchScroll(-1); }
       if (e.key === 'Escape') {
         const active = this._containers.get(this._activeKey);
         if (active?.onEscape) active.onEscape();
@@ -110,17 +79,13 @@ class AppController {
 
     let _ty0 = 0, _tx0 = 0, _tTime0 = 0;
     window.addEventListener('touchstart', (e) => {
-      _ty0    = e.touches[0].clientY;
-      _tx0    = e.touches[0].clientX;
-      _tTime0 = performance.now();
+      _ty0 = e.touches[0].clientY; _tx0 = e.touches[0].clientX; _tTime0 = performance.now();
     }, { passive: true });
-
     window.addEventListener('touchmove', (e) => {
       const dy = Math.abs(e.touches[0].clientY - _ty0);
       const dx = Math.abs(e.touches[0].clientX - _tx0);
       if (dy > dx && dy > 10) e.preventDefault();
     }, { passive: false });
-
     window.addEventListener('touchend', (e) => {
       const dy     = _ty0 - e.changedTouches[0].clientY;
       const dx     = Math.abs(e.changedTouches[0].clientX - _tx0);
@@ -132,73 +97,39 @@ class AppController {
     }, { passive: true });
   }
 
-  // ── Public API ─────────────────────────────────────────────────────────
-
-  /**
-   * Register a container. Must be called before init().
-   * @param {string} name
-   * @param {object} container — implements { init, enter, exit, onScroll }
-   */
   register(name, container) {
-    if (this._containers.has(name)) {
-      console.warn(`[AppController] "${name}" already registered — overwriting.`);
-    }
+    if (this._containers.has(name)) console.warn(`[AppController] "${name}" already registered — overwriting.`);
     this._containers.set(name, container);
   }
 
-  /**
-   * Call init(root) on every registered container, then activate startSection.
-   * @param {object} rootMap      — { [name]: HTMLElement }
-   * @param {string} startSection — name of section active on load
-   */
   init(rootMap, startSection) {
     for (const [name, container] of this._containers) {
       const root = rootMap[name];
-      if (!root) {
-        console.error(`[AppController] No root element for container "${name}".`);
-        continue;
-      }
+      if (!root) { console.error(`[AppController] No root element for "${name}".`); continue; }
       container.init(root);
     }
     this._activateDirect(startSection);
   }
 
-  /**
-   * Switch the active container. Called by containers via this._app.setSection().
-   * Applies a transition lock to prevent cascading switches mid-animation.
-   * @param {string} name
-   */
   setSection(name, fromDirection = 0) {
-    if (this._locked)                      return; // mid-transition
-    if (name === this._activeKey)          return; // already active
-    if (!this._containers.has(name)) {
-      console.warn(`[AppController] setSection("${name}") — not registered.`);
-      return;
-    }
-
+    if (this._locked)               return;
+    if (name === this._activeKey)   return;
+    if (!this._containers.has(name)) { console.warn(`[AppController] setSection("${name}") — not registered.`); return; }
     this._locked = true;
     this._activateDirect(name, fromDirection);
     setTimeout(() => { this._locked = false; }, this._LOCK_MS);
   }
 
-  // ── Private ────────────────────────────────────────────────────────────
-
   _activateDirect(name, fromDirection = 0) {
     const next = this._containers.get(name);
     if (!next) return;
-
-    if (this._activeKey) {
-      this._containers.get(this._activeKey)?.exit();
-    }
-
+    if (this._activeKey) this._containers.get(this._activeKey)?.exit();
     this._activeKey = name;
     next.enter(fromDirection);
   }
 
   _dispatchScroll(direction) {
-    // Update progress bar before forwarding to container
     if (this._chrome) this._chrome.onScroll(window.scrollY);
-
     if (!this._activeKey) return;
     const active = this._containers.get(this._activeKey);
     if (active?.onScroll) active.onScroll(direction);
@@ -209,20 +140,25 @@ class AppController {
 /* ─────────────────────────────────────────────────────────────────────────
    §2  PAGE CHROME
    ─────────────────────────────────────────────────────────────────────────
-   Page-level ambient UI that survives section transitions:
-     • Progress bar  (#prog)
-     • Custom cursor (#cur / #cur-r)
-     • body.ready
+   Owns ALL page-level ambient UI that belongs to no single section:
+     • Progress bar, custom cursor, body.ready, page veil
+     • Nav scrolled state + section indicator
+     • IntersectionObserver scroll reveal (.rev / .rev-stagger)
+     • Smooth anchor nav (click delegation)
+     • Theme toggle
+     • Hamburger / mobile drawer
+     • Logo scramble
+     • Hero coordinates scramble
+     • Copyright year
 
-   ONLY object besides AppController that may attach document-level
-   listeners. Attaches: mousemove, mousedown, mouseup, mouseleave,
-   mouseenter on document. Nothing else.
-
-   Cursor proj-hover state is received via custom events dispatched by
-   CarouselContainer — no direct coupling between the two.
+   ONLY object besides AppController that may attach document-level listeners.
+   Attaches: mousemove, mousedown, mouseup, mouseleave, mouseenter, click.
+   Does NOT attach wheel, scroll, keydown, or touch — AppController owns those.
    ───────────────────────────────────────────────────────────────────────── */
 class PageChrome {
+
   constructor() {
+    // Cursor
     this._cur     = null;
     this._curR    = null;
     this._prog    = null;
@@ -242,22 +178,58 @@ class PageChrome {
       proj:    { dot: 4,  ring: 120, ringColor: 'rgba(91,160,164,.18)' },
       click:   { dot: 14, ring: 42,  ringColor: 'rgba(91,160,164,.5)'  },
     };
+
+    // Section indicator
+    this._secInd  = null;
+    this._navEl   = null;
+    this._SECTIONS = [
+      { id: 'top',           label: 'Hero'     },
+      { id: 'projects-spacer', label: 'Projects' },
+      { id: 'about',         label: 'About'    },
+      { id: 'contact',       label: 'Contact'  },
+    ];
+    this._sectionOffsets = [];
+
+    // Theme
+    this._currentTheme = 'dark';
+    this._SVG_SUN  = '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    this._SVG_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
   }
 
   init() {
-    this._cur  = document.getElementById('cur');
-    this._curR = document.getElementById('cur-r');
-    this._prog = document.getElementById('prog');
+    // ── Cursor + progress bar ──────────────────────────────────────────
+    this._cur   = document.getElementById('cur');
+    this._curR  = document.getElementById('cur-r');
+    this._prog  = document.getElementById('prog');
+    this._navEl = document.getElementById('nav');
+    this._secInd= document.getElementById('section-indicator');
 
-    requestAnimationFrame(() => document.body.classList.add('ready'));
+    // ── Veil + body ready ──────────────────────────────────────────────
+    const veil = document.getElementById('veil');
+    const onReady = (fn) => {
+      if (document.readyState !== 'loading') fn();
+      else document.addEventListener('DOMContentLoaded', fn);
+    };
+    onReady(() => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.body.classList.add('ready');
+        if (veil) veil.classList.add('gone');
+      }));
+    });
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted && veil) {
+        veil.style.transition = 'none';
+        veil.style.clipPath = 'inset(0 100% 0 0)';
+        veil.style.pointerEvents = 'none';
+        void veil.offsetWidth;
+        requestAnimationFrame(() => { if (veil) { veil.style.transition = ''; veil.style.clipPath = ''; } });
+      }
+    });
 
-    // ── Cursor — document-level (justified: owns full-page cursor state) ──
+    // ── Document-level mouse ───────────────────────────────────────────
     document.addEventListener('mousemove', e => {
       this._mx = e.clientX; this._my = e.clientY;
-      if (this._cur) {
-        this._cur.style.left = `${e.clientX}px`;
-        this._cur.style.top  = `${e.clientY}px`;
-      }
+      if (this._cur) { this._cur.style.left = `${e.clientX}px`; this._cur.style.top = `${e.clientY}px`; }
     });
     document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
     document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
@@ -274,20 +246,18 @@ class PageChrome {
       el.addEventListener('mouseenter', () => { this._inLink = true;  this._apply(); });
       el.addEventListener('mouseleave', () => { this._inLink = false; this._apply(); });
     });
+    document.querySelectorAll('.proj').forEach(el => {
+      el.addEventListener('mouseenter', () => { this._inProj = true;  this._apply(); });
+      el.addEventListener('mouseleave', () => { this._inProj = false; this._apply(); });
+    });
 
-    // Proj hover — custom events from CarouselContainer, no direct coupling
-    document.addEventListener('carousel:proj-enter', () => { this._inProj = true;  this._apply(); });
-    document.addEventListener('carousel:proj-leave', () => { this._inProj = false; this._apply(); });
-
-    // ── Cursor ring RAF loop ───────────────────────────────────────────────
+    // Cursor ring RAF loop
     if (window.matchMedia('(pointer:fine)').matches) {
       const loop = () => {
         const rxN = this._rx + (this._mx - this._rx) * 0.1;
         const ryN = this._ry + (this._my - this._ry) * 0.1;
         const rN  = this._ringCur + (this._ringTgt - this._ringCur) * 0.12;
-        if (Math.abs(rxN - this._rx) > 0.02 ||
-            Math.abs(ryN - this._ry) > 0.02 ||
-            Math.abs(rN  - this._ringCur) > 0.05) {
+        if (Math.abs(rxN - this._rx) > 0.02 || Math.abs(ryN - this._ry) > 0.02 || Math.abs(rN - this._ringCur) > 0.05) {
           this._rx = rxN; this._ry = ryN; this._ringCur = rN;
           if (this._curR) {
             this._curR.style.left   = `${this._rx}px`;
@@ -300,23 +270,171 @@ class PageChrome {
       };
       requestAnimationFrame(loop);
     }
-
     this._apply();
+
+    // ── Scroll reveal ──────────────────────────────────────────────────
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { threshold: 0.06 });
+    document.querySelectorAll('.rev, .rev-stagger').forEach(r => io.observe(r));
+
+    // ── Smooth anchor nav ──────────────────────────────────────────────
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (!href) return;
+      if (href.startsWith('#')) {
+        e.preventDefault();
+        const targetId = href === '#work' ? 'projects-spacer' : href.slice(1);
+        const t = document.getElementById(targetId) || document.querySelector(href);
+        if (t) window.scrollTo({ top: Math.round(t.getBoundingClientRect().top + window.scrollY), behavior: 'smooth' });
+        return;
+      }
+      if (href.startsWith('http') || href.startsWith('mailto') || href.endsWith('.pdf')) return;
+    });
+
+    // ── Theme toggle ───────────────────────────────────────────────────
+    const savedTheme = (() => { try { return localStorage.getItem('theme'); } catch(e) { return null; } })();
+    this._setTheme(savedTheme === 'light' ? 'light' : 'dark');
+    const themeBtn = document.getElementById('theme-btn');
+    if (themeBtn) themeBtn.onclick = () => this._setTheme(this._currentTheme === 'dark' ? 'light' : 'dark');
+
+    // ── Hamburger / drawer ─────────────────────────────────────────────
+    const hamburger = document.getElementById('hamburger');
+    const navDrawer = document.getElementById('nav-drawer');
+    if (hamburger && navDrawer) {
+      hamburger.addEventListener('click', () => {
+        const isOpen = document.body.classList.toggle('menu-open');
+        hamburger.setAttribute('aria-expanded', isOpen);
+        hamburger.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+        navDrawer.setAttribute('aria-hidden', !isOpen);
+      });
+      ['dw-top','dw-work','dw-about','dw-contact'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', () => {
+          document.body.classList.remove('menu-open');
+          hamburger.setAttribute('aria-expanded', 'false');
+          hamburger.setAttribute('aria-label', 'Open menu');
+          navDrawer.setAttribute('aria-hidden', 'true');
+        });
+      });
+    }
+
+    // ── Logo scramble ──────────────────────────────────────────────────
+    const logo     = document.querySelector('.n-logo');
+    const logoLast = logo && logo.querySelector('.logo-last');
+    const CHARS    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
+    let scrambling = false;
+    if (logo && logoLast) {
+      const scramble = () => {
+        if (scrambling) return; scrambling = true;
+        let iter = 0; const TARGET = 'GREEN';
+        const iv = setInterval(() => {
+          logoLast.textContent = TARGET.split('').map((c, i) =>
+            i < iter ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
+          ).join('');
+          if (iter >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
+          iter += 0.38;
+        }, 26);
+      };
+      logo.addEventListener('mouseenter', scramble);
+      logo.addEventListener('focus', () => { if (!scrambling) logo.dispatchEvent(new MouseEvent('mouseenter')); });
+    }
+
+    // ── Hero coordinates scramble ──────────────────────────────────────
+    (function() {
+      const coords = document.querySelectorAll('.hero-coord-item');
+      if (!coords.length) return;
+      const digits = '0123456789';
+      let done = false, frame = 0;
+      function scrambleCoords() {
+        if (done) return; frame++;
+        coords.forEach((el, i) => {
+          const labels = ['X','Y','Z'];
+          el.textContent = frame > 18 + i * 6
+            ? labels[i] + ':' + String(Math.floor(Math.random() * 9999)).padStart(4, '0')
+            : labels[i] + ':' + Array.from({ length: 4 }, () => digits[Math.floor(Math.random() * 10)]).join('');
+        });
+        if (frame < 36) requestAnimationFrame(scrambleCoords);
+        else { done = true; coords[0].textContent = 'X:5312'; coords[1].textContent = 'Y:2048'; coords[2].textContent = 'Z:0000'; }
+      }
+      setTimeout(scrambleCoords, 700);
+      window.addEventListener('scroll', () => {
+        if (!done) return;
+        const pct = Math.round((window.scrollY / Math.max(1, document.body.scrollHeight - window.innerHeight)) * 9999);
+        coords[2].textContent = 'Z:' + String(pct).padStart(4, '0');
+      }, { passive: true });
+    })();
+
+    // ── Nav scrolled + section indicator ──────────────────────────────
+    const heroScrollEl = document.getElementById('hero-scroll');
+    const buildOffsets = () => {
+      this._sectionOffsets = this._SECTIONS.map(s => {
+        const el = document.getElementById(s.id);
+        return { label: s.label, top: el ? el.getBoundingClientRect().top + window.scrollY : 0 };
+      });
+    };
+    setTimeout(buildOffsets, 300);
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
+      if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
+      if (this._secInd && this._sectionOffsets.length) {
+        let active = this._SECTIONS[0].label;
+        for (let i = this._sectionOffsets.length - 1; i >= 0; i--) {
+          if (y >= this._sectionOffsets[i].top - 100) { active = this._sectionOffsets[i].label; break; }
+        }
+        this._secInd.textContent = active;
+        this._secInd.classList.toggle('visible', y > window.innerHeight * 0.5);
+      }
+    }, { passive: true });
+
+    // ── Resize ─────────────────────────────────────────────────────────
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        buildOffsets();
+        if (window.innerWidth > 768) {
+          document.body.classList.remove('menu-open');
+          const h = document.getElementById('hamburger');
+          const d = document.getElementById('nav-drawer');
+          if (h) { h.setAttribute('aria-expanded', 'false'); h.setAttribute('aria-label', 'Open menu'); }
+          if (d) d.setAttribute('aria-hidden', 'true');
+        }
+      }, 150);
+    }, { passive: true });
+
+    // ── Copyright year ─────────────────────────────────────────────────
+    const copyYear = document.getElementById('copy-year');
+    if (copyYear) copyYear.textContent = new Date().getFullYear();
   }
 
-  /** Called by AppController._dispatchScroll on every scroll event. */
+  /** Called by AppController on every dispatched scroll — updates progress bar */
   onScroll(y) {
     if (!this._prog) return;
     const max = document.body.scrollHeight - window.innerHeight;
     this._prog.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
   }
 
-  _state()  { return this._isDown ? 'click' : this._inLink ? 'link' : this._inProj ? 'proj' : 'default'; }
-  _apply()  {
+  _state() { return this._isDown ? 'click' : this._inLink ? 'link' : this._inProj ? 'proj' : 'default'; }
+  _apply() {
     const s = this._STATES[this._state()];
     if (this._cur) { this._cur.style.width = `${s.dot}px`; this._cur.style.height = `${s.dot}px`; }
     this._ringTgt = s.ring;
     if (this._curR) this._curR.style.borderColor = s.ringColor;
+  }
+
+  _setTheme(t) {
+    this._currentTheme = t;
+    document.documentElement.setAttribute('data-theme', t);
+    const btn  = document.getElementById('theme-btn');
+    const icon = btn && btn.querySelector('svg');
+    if (icon) icon.innerHTML = t === 'dark' ? this._SVG_SUN : this._SVG_MOON;
+    if (btn)  btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+    try { localStorage.setItem('theme', t); } catch(e) {}
   }
 }
 
@@ -324,48 +442,39 @@ class PageChrome {
 /* ─────────────────────────────────────────────────────────────────────────
    §3  HERO 3D CONTAINER
    ─────────────────────────────────────────────────────────────────────────
-   Manages: model-viewer, text reveal, auto-rotate, material override.
-
    Root element: <section class="hero">
-
-   ISOLATION NOTES
-   • All DOM queries scoped to this._root
-   • model-viewer listeners on this._viewer (element, not window/document)
-     — mousedown/up/leave and touchstart/end manage auto-rotate only;
-       they are NOT scroll/gesture interpreters
-   • All scroll intent arrives via onScroll(direction) from AppController
-   • _nav is a documented exception — sibling/ancestor element, class toggle only
    ───────────────────────────────────────────────────────────────────────── */
 class Hero3DContainer {
 
-  /**
-   * @param {AppController} app
-   * @param {string} nextSection — section to activate on scroll-down
-   */
   constructor(app, nextSection = 'carousel') {
-    this._app      = app;
-    this._nextKey  = nextSection;
-    this._root     = null;
-    this._viewer   = null;
-    this._heroText = null;
-    this._heroScroll = null;
-    this._modelLabel = null;
-    this._modelHint  = null;
-    this._errorEl    = null;
-    this._nav        = null;
-    this._active     = false;
-    this._hintDone   = false;
+    this._app         = app;
+    this._nextKey     = nextSection;
+    this._root        = null;
+    this._viewer      = null;
+    this._heroText    = null;
+    this._heroScroll  = null;
+    this._modelLabel  = null;
+    this._modelHint   = null;
+    this._errorEl     = null;
+    this._nav         = null;
+    this._active      = false;
+    this._hintDone    = false;
     this._rotateTimer = null;
+    this._t0y         = 0;
+    this._t0x         = 0;
+    this._tScrolling  = null;
 
-    // Bound handlers — viewer-element interactions only (not scroll/gesture)
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
     this._onViewerLoad         = this._onViewerLoad.bind(this);
     this._onMouseDown          = this._onMouseDown.bind(this);
     this._onMouseUp            = this._onMouseUp.bind(this);
     this._onMouseLeave         = this._onMouseLeave.bind(this);
-    this._onTouchStartViewer   = this._onTouchStartViewer.bind(this);
-    this._onTouchEndViewer     = this._onTouchEndViewer.bind(this);
+    this._onTouchStart         = this._onTouchStart.bind(this);
+    this._onTouchEnd           = this._onTouchEnd.bind(this);
+    this._onRootWheel          = this._onRootWheel.bind(this);
+    this._onRootTouchStart     = this._onRootTouchStart.bind(this);
+    this._onRootTouchMove      = this._onRootTouchMove.bind(this);
   }
 
   init(root) {
@@ -385,9 +494,14 @@ class Hero3DContainer {
       this._viewer.addEventListener('mousedown',     this._onMouseDown);
       this._viewer.addEventListener('mouseup',       this._onMouseUp);
       this._viewer.addEventListener('mouseleave',    this._onMouseLeave);
-      this._viewer.addEventListener('touchstart',    this._onTouchStartViewer, { passive: true });
-      this._viewer.addEventListener('touchend',      this._onTouchEndViewer);
+      this._viewer.addEventListener('touchstart',    this._onTouchStart,  { passive: true });
+      this._viewer.addEventListener('touchend',      this._onTouchEnd);
     }
+
+    // Intercept wheel/touch on root so model-viewer doesn't eat them
+    this._root.addEventListener('wheel',      this._onRootWheel,      { passive: false });
+    this._root.addEventListener('touchstart', this._onRootTouchStart, { passive: true  });
+    this._root.addEventListener('touchmove',  this._onRootTouchMove,  { passive: false });
 
     this._root.style.visibility = 'hidden';
     this._root.style.opacity    = '0';
@@ -400,7 +514,7 @@ class Hero3DContainer {
     this._root.style.visibility = 'visible';
     this._root.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1)';
     this._root.style.opacity    = '1';
-    requestAnimationFrame(() => this._reveal());
+    requestAnimationFrame(() => this._revealHero());
   }
 
   exit() {
@@ -414,21 +528,18 @@ class Hero3DContainer {
   onScroll(direction) {
     if (!this._active) return;
     if (direction === +1) this._app.setSection(this._nextKey, +1);
-    // -1 at the top of the page: no-op
   }
 
-  // ── Private ─────────────────────────────────────────────────────────────
-
-  _reveal() {
+  _revealHero() {
     if (!this._active) return;
     [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.add('is-revealed'));
   }
 
   _onViewerCameraChange() { this._dismissHint(); }
-  _onViewerError()        {
-    this._errorEl?.classList.add('visible');
-    console.warn('[Hero3DContainer] model-viewer load error:', this._viewer?.src);
+  _onViewerError() {
+    if (this._errorEl) this._errorEl.classList.add('visible');
+    console.warn('[Hero3DContainer] model-viewer error:', this._viewer?.src);
   }
 
   async _onViewerLoad() {
@@ -436,7 +547,6 @@ class Hero3DContainer {
     this._viewer.jumpCameraToGoal();
     setTimeout(() => this._dismissHint(), 5000);
 
-    // Automotive paint material override — verbatim from prototype
     const model = this._viewer.model;
     if (!model?.materials?.length) return;
     const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
@@ -464,11 +574,11 @@ class Hero3DContainer {
     });
   }
 
-  _onMouseDown()        { this._viewer?.removeAttribute('auto-rotate'); }
-  _onMouseUp()          { this._scheduleRotateResume(); }
-  _onMouseLeave()       { this._scheduleRotateResume(); }
-  _onTouchStartViewer() { this._viewer?.removeAttribute('auto-rotate'); }
-  _onTouchEndViewer()   { this._scheduleRotateResume(); }
+  _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
+  _onMouseUp()     { this._scheduleRotateResume(); }
+  _onMouseLeave()  { this._scheduleRotateResume(); }
+  _onTouchStart()  { this._viewer?.removeAttribute('auto-rotate'); }
+  _onTouchEnd()    { this._scheduleRotateResume(); }
 
   _scheduleRotateResume() {
     if (this._rotateTimer) clearTimeout(this._rotateTimer);
@@ -480,32 +590,44 @@ class Hero3DContainer {
     this._hintDone = true;
     this._modelHint?.classList.add('hidden');
   }
+
+  _onRootWheel(e) {
+    if (!this._active) return;
+    if (e.ctrlKey || e.metaKey) return;
+    e.preventDefault(); e.stopPropagation();
+    this.onScroll(e.deltaY > 0 ? +1 : -1);
+  }
+
+  _onRootTouchStart(e) {
+    if (e.touches.length === 1) {
+      this._t0y = e.touches[0].clientY; this._t0x = e.touches[0].clientX; this._tScrolling = null;
+    }
+  }
+
+  _onRootTouchMove(e) {
+    if (!this._active || e.touches.length !== 1) return;
+    const dy = this._t0y - e.touches[0].clientY;
+    const dx = this._t0x - e.touches[0].clientX;
+    if (this._tScrolling === null) {
+      if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+      this._tScrolling = Math.abs(dy) > Math.abs(dx) * 1.4;
+    }
+    if (this._tScrolling) {
+      e.preventDefault();
+      this._t0y = e.touches[0].clientY; this._t0x = e.touches[0].clientX;
+      this.onScroll(dy > 0 ? +1 : -1);
+    }
+  }
 }
 
 
 /* ─────────────────────────────────────────────────────────────────────────
    §4  CAROUSEL CONTAINER
    ─────────────────────────────────────────────────────────────────────────
-   Manages: project cards, char animation, dot nav, card tilt.
-
    Root element: <section class="projects">
-
-   ISOLATION NOTES
-   • _spacer (#projects-spacer) — sibling element, documented exception,
-     height sizing + top-cache only
-   • _dotsEl — appended to document.body for z-index stacking,
-     documented exception
-   • Card tilt — element-level listeners on individual .proj cards (not window)
-   • Cursor proj-hover — dispatches custom events on this._root (bubbles up
-     to document where PageChrome listens); no direct coupling
    ───────────────────────────────────────────────────────────────────────── */
 class CarouselContainer {
 
-  /**
-   * @param {AppController} app
-   * @param {string} nextSection — section after last card  (default 'about')
-   * @param {string} prevSection — section before first card (default 'hero')
-   */
   constructor(app, nextSection = 'about', prevSection = 'hero') {
     this._app      = app;
     this._nextKey  = nextSection;
@@ -517,17 +639,14 @@ class CarouselContainer {
     this._dotWraps = [];
     this._projs    = [];
     this._N        = 0;
-    this._active   = false;
+    this._active        = false;
     this._activeIdx     = 0;
     this._transitioning = false;
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 820;
 
-    this._onResize = () => {
-      this._sizeSpacer();
-      setTimeout(() => this._calcSpacerTop(), 200);
-    };
+    this._onResize = () => { this._sizeSpacer(); setTimeout(() => this._calcSpacerTop(), 200); };
   }
 
   init(root) {
@@ -538,7 +657,7 @@ class CarouselContainer {
     this._N     = this._projs.length;
     if (!this._N) return;
 
-    // ── Character title animation prep ────────────────────────────────────
+    // Character-by-character title animation prep
     this._projs.forEach(p => {
       const title = p.querySelector('.proj-title');
       if (!title) return;
@@ -546,45 +665,38 @@ class CarouselContainer {
       title.innerHTML = '';
       [...text].forEach(ch => {
         const s = document.createElement('span');
-        s.className = 'ch';
-        s.textContent = ch === ' ' ? '\u00a0' : ch;
+        s.className = 'ch'; s.textContent = ch === ' ' ? '\u00a0' : ch;
         title.appendChild(s);
       });
     });
 
-    // ── Dot nav ────────────────────────────────────────────────────────────
+    // Dot nav — appended to body for z-index stacking (documented exception)
     this._dotsEl = document.createElement('nav');
     this._dotsEl.id = 'c-dots';
     this._dotsEl.setAttribute('aria-label', 'Project navigation');
     this._dotsEl.style.opacity = '0';
-
     this._projs.forEach((p, i) => {
       const label = p.querySelector('h2')?.textContent.trim() ?? `0${i + 1}`;
-      const wrap  = document.createElement('div');
-      wrap.className = 'c-dot-wrap';
-      const lbl  = document.createElement('span');
-      lbl.className = 'c-dot-label sr-only';
-      lbl.textContent = label;
-      const dot  = document.createElement('span');
-      dot.className = 'c-dot';
+      const wrap  = document.createElement('div'); wrap.className = 'c-dot-wrap';
+      const lbl   = document.createElement('span'); lbl.className = 'c-dot-label sr-only'; lbl.textContent = label;
+      const dot   = document.createElement('span'); dot.className = 'c-dot';
       wrap.appendChild(lbl); wrap.appendChild(dot);
       this._dotsEl.appendChild(wrap);
       this._dotWraps.push(wrap);
     });
-    document.body.appendChild(this._dotsEl); // documented exception
+    document.body.appendChild(this._dotsEl);
 
-    // ── Spacer ────────────────────────────────────────────────────────────
     this._sizeSpacer();
     this._calcSpacerTop();
     window.addEventListener('resize', this._onResize, { passive: true });
 
-    // ── Card tilt (element-level, scoped to this._projs) ─────────────────
+    // Card tilt (element-level, not window)
     if (!window.matchMedia('(pointer:coarse)').matches) {
       this._projs.forEach(proj => {
         const img = proj.querySelector('.proj-img');
         if (!img) return;
         proj.addEventListener('mouseenter', () => { proj._r = proj.getBoundingClientRect(); });
-        proj.addEventListener('mousemove',  e  => {
+        proj.addEventListener('mousemove',  e => {
           if (!proj._r) proj._r = proj.getBoundingClientRect();
           const nx = (e.clientX - proj._r.left) / proj._r.width  - 0.5;
           const ny = (e.clientY - proj._r.top)  / proj._r.height - 0.5;
@@ -594,32 +706,23 @@ class CarouselContainer {
       });
     }
 
-    // ── Cursor hover signals → PageChrome via custom events ──────────────
-    this._projs.forEach(proj => {
-      proj.addEventListener('mouseenter', () =>
-        this._root.dispatchEvent(new CustomEvent('carousel:proj-enter', { bubbles: true }))
-      );
-      proj.addEventListener('mouseleave', () =>
-        this._root.dispatchEvent(new CustomEvent('carousel:proj-leave', { bubbles: true }))
-      );
-    });
-
     this._setPositions(0, false);
     this._root.style.visibility = 'hidden';
     this._root.classList.remove('carousel-active');
   }
 
-  enter() {
+  enter(fromDirection = 0) {
     if (!this._root || !this._N) return;
     this._active = true;
+    // If arriving from below (scrolling up), land on the last card
+    if (fromDirection === -1) this._activeIdx = this._N - 1;
+    else if (fromDirection === +1) this._activeIdx = 0;
     this._calcSpacerTop();
     this._root.style.visibility = 'visible';
     this._root.classList.add('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
-    this._projs[this._activeIdx].dataset.pos = 'next';
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => this._setPositions(this._activeIdx, true));
-    });
+    this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
+    requestAnimationFrame(() => requestAnimationFrame(() => this._setPositions(this._activeIdx, true)));
   }
 
   exit() {
@@ -635,16 +738,12 @@ class CarouselContainer {
     this._advance(direction);
   }
 
-  // ── Private ─────────────────────────────────────────────────────────────
-
   _sizeSpacer() {
     if (this._spacer) this._spacer.style.height = `${this._N * window.innerHeight}px`;
   }
 
   _calcSpacerTop() {
-    if (this._spacer) {
-      this._spacerTop = Math.round(this._spacer.getBoundingClientRect().top + window.scrollY);
-    }
+    if (this._spacer) this._spacerTop = Math.round(this._spacer.getBoundingClientRect().top + window.scrollY);
   }
 
   _setPositions(idx, animate) {
@@ -656,19 +755,14 @@ class CarouselContainer {
         p.dataset.pos = 'active';
         if (animate) {
           p.querySelectorAll('.proj-title .ch').forEach((s, ci) => {
-            s.style.transitionDelay = `${420 + ci * 20}ms`;
-            s.classList.add('show');
+            s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
           });
         }
       }
-      else if (delta === 1)  p.dataset.pos = 'next';
-      else                   p.dataset.pos = 'far-below';
-
+      else if (delta === 1) p.dataset.pos = 'next';
+      else                  p.dataset.pos = 'far-below';
       if (delta !== 0) {
-        p.querySelectorAll('.proj-title .ch').forEach(s => {
-          s.style.transitionDelay = '0ms';
-          s.classList.remove('show');
-        });
+        p.querySelectorAll('.proj-title .ch').forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
@@ -676,14 +770,11 @@ class CarouselContainer {
 
   _advance(dir) {
     if (this._transitioning) return;
-    const now  = performance.now();
+    const now = performance.now();
     if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
-
     const next = this._activeIdx + dir;
-
-    if (next < 0)         { this._app.setSection(this._prevKey, -1); return; }
-    if (next >= this._N)  { this._app.setSection(this._nextKey, +1); return; }
-
+    if (next < 0)        { this._app.setSection(this._prevKey, -1); return; }
+    if (next >= this._N) { this._app.setSection(this._nextKey, +1); return; }
     this._transitioning = true;
     this._lastAdvanceAt = now;
     this._lastAdvDir    = dir;
@@ -697,24 +788,15 @@ class CarouselContainer {
 /* ─────────────────────────────────────────────────────────────────────────
    §5  ABOUT CONTAINER
    ─────────────────────────────────────────────────────────────────────────
-   Manages: panel stack, dot progress indicators, scroll hint.
-
-   Root element: #about-stage  (the fixed fullscreen overlay)
+   Root element: #about-stage (fixed fullscreen overlay)
 
    ISOLATION NOTES
-   • _spacer (.about-spacer) — sibling of the stage, not a descendant.
-     Located via document.querySelector — one permitted exception,
-     documented. Height sizing + top-cache only.
-   • Panels and dots live inside #about-stage, so all other queries
-     are fully scoped to this._root.
+   • _spacer (.about-spacer) — sibling of the stage. Located via
+     document.querySelector — the one permitted exception, documented.
+   • All other queries scoped to this._root.
    ───────────────────────────────────────────────────────────────────────── */
 class AboutContainer {
 
-  /**
-   * @param {AppController} app
-   * @param {string} nextSection — section after last panel  (default null = no-op)
-   * @param {string} prevSection — section before first panel (default 'carousel')
-   */
   constructor(app, nextSection = null, prevSection = 'carousel') {
     this._app     = app;
     this._nextKey = nextSection;
@@ -733,16 +815,12 @@ class AboutContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 820;
 
-    this._onResize = () => {
-      this._sizeSpacer();
-      setTimeout(() => this._calcSpacerTop(), 200);
-    };
+    this._onResize = () => { this._sizeSpacer(); setTimeout(() => this._calcSpacerTop(), 200); };
   }
 
   init(root) {
     this._root   = root;
-    // .about-spacer is a sibling of #about-stage — documented exception.
-    this._spacer = document.querySelector('.about-spacer');
+    this._spacer = document.querySelector('.about-spacer'); // documented exception
 
     this._panels = Array.from(root.querySelectorAll('[data-panel]'));
     this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
@@ -766,14 +844,9 @@ class AboutContainer {
     if (!this._root || !this._N) return;
     this._active = true;
     this._calcSpacerTop();
-    // When arriving from the section *below* (scrolling up), land on the
-    // last panel. When arriving from above (scrolling down) or on initial
-    // load (direction 0), land on the first panel.
-    if (fromDirection === -1) {
-      this._activeIdx = this._N - 1;
-    } else if (fromDirection === +1) {
-      this._activeIdx = 0;
-    }
+    // Arrive on last panel when scrolling back up from below
+    if (fromDirection === -1) this._activeIdx = this._N - 1;
+    else if (fromDirection === +1) this._activeIdx = 0;
     this._setPanel(this._activeIdx);
     this._root.classList.add('engaged');
   }
@@ -789,24 +862,21 @@ class AboutContainer {
     this._advance(direction);
   }
 
-  // ── Private ─────────────────────────────────────────────────────────────
-
   _sizeSpacer() {
     if (this._spacer) this._spacer.style.height = `${this._N * window.innerHeight}px`;
   }
 
   _calcSpacerTop() {
-    if (this._spacer) {
-      this._spacerTop = Math.round(this._spacer.getBoundingClientRect().top + window.scrollY);
-    }
+    if (this._spacer) this._spacerTop = Math.round(this._spacer.getBoundingClientRect().top + window.scrollY);
   }
 
   _setPanel(idx) {
     this._activeIdx = idx;
     this._panels.forEach((el, i) => {
-      el.classList.remove('is-active', 'is-after');
-      if      (i < idx)   el.classList.add('is-after');
-      else if (i === idx)  el.classList.add('is-active');
+      el.classList.remove('is-active', 'is-after', 'is-below');
+      if      (i < idx)  el.classList.add('is-after');
+      else if (i === idx) el.classList.add('is-active');
+      else               el.classList.add('is-below');
     });
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
     if (this._hint) this._hint.classList.toggle('hide', idx > 0);
@@ -816,9 +886,7 @@ class AboutContainer {
     if (this._transitioning) return;
     const now = performance.now();
     if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
-
     const next = this._activeIdx + dir;
-
     if (next < 0) {
       if (this._prevKey) this._app.setSection(this._prevKey, -1);
       return;
@@ -827,7 +895,6 @@ class AboutContainer {
       if (this._nextKey) this._app.setSection(this._nextKey, +1);
       return;
     }
-
     this._transitioning = true;
     this._lastAdvanceAt = now;
     this._lastAdvDir    = dir;
@@ -842,32 +909,21 @@ class AboutContainer {
    ─────────────────────────────────────────────────────────────────────────
    The ONLY block that:
      • instantiates all classes
-     • defines the section order (via constructor args)
+     • encodes section order (via constructor args)
      • maps section names to DOM elements
-
-   Section order:  hero → carousel → about
-   To change order: adjust nextSection/prevSection constructor args only.
-   AppController, containers, and CSS never need to change.
    ───────────────────────────────────────────────────────────────────────── */
 (function bootstrap() {
-  // 1. Page chrome — init before app so body.ready fires correctly
-  const chrome = new PageChrome();
+  const chrome   = new PageChrome();
+  const app      = new AppController(chrome);
 
-  // 2. App controller — receives chrome for progress bar updates
-  const app = new AppController(chrome);
+  const hero     = new Hero3DContainer(app,     /* next */ 'carousel');
+  const carousel = new CarouselContainer(app,   /* next */ 'about',    /* prev */ 'hero');
+  const about    = new AboutContainer(app,      /* next */ null,        /* prev */ 'carousel');
 
-  // 3. Containers — section order encoded in constructor args
-  //    hero → carousel → about (about has no next section yet)
-  const hero     = new Hero3DContainer(app,  /* next */ 'carousel');
-  const carousel = new CarouselContainer(app, /* next */ 'about',    /* prev */ 'hero');
-  const about    = new AboutContainer(app,    /* next */ null,        /* prev */ 'carousel');
-
-  // 4. Register
   app.register('hero',     hero);
   app.register('carousel', carousel);
   app.register('about',    about);
 
-  // 5. Init — maps names to root DOM elements, then activates 'hero'
   app.init(
     {
       hero:     document.querySelector('.hero'),
@@ -877,6 +933,5 @@ class AboutContainer {
     'hero'
   );
 
-  // 6. Chrome — called after app.init() so all elements exist
   chrome.init();
 })();
