@@ -18,13 +18,16 @@
  *
  *  BOUNDARY RULES
  *  ─────────────────────────────────────────────────────────────────────────
- *   AppController  — may attach wheel / keyboard / touch on window only
+ *   AppController  — SOLE interpreter of raw input; attaches wheel / keyboard
+ *                    / touch on window only; emits only +1 / -1 to containers
  *   PageChrome     — may attach mousemove / mousedown / mouseup /
  *                    mouseleave / mouseenter on document only
- *   Containers     — no window or document listeners
+ *   Containers     — fully input-agnostic; receive only onScroll(+1|-1)
  *                  — all DOM queries scoped to their own root element
  *                  — no-ops when inactive (guard at top of every handler)
  *                  — communicate upward only via this._app.setSection()
+ *                  — element-level mouse/touch on their own child nodes
+ *                    permitted only for non-scroll UX (tilt, rotate, etc.)
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
@@ -327,9 +330,10 @@ class PageChrome {
 
    ISOLATION NOTES
    • All DOM queries scoped to this._root
-   • model-viewer listeners on this._viewer (element, not window)
-   • Wheel + touch conflict intercepted on this._root (element, not window)
-     → forwards scroll intent via this.onScroll() rather than window.scrollBy
+   • model-viewer listeners on this._viewer (element, not window/document)
+     — mousedown/up/leave and touchstart/end manage auto-rotate only;
+       they are NOT scroll/gesture interpreters
+   • All scroll intent arrives via onScroll(direction) from AppController
    • _nav is a documented exception — sibling/ancestor element, class toggle only
    ───────────────────────────────────────────────────────────────────────── */
 class Hero3DContainer {
@@ -352,9 +356,8 @@ class Hero3DContainer {
     this._active     = false;
     this._hintDone   = false;
     this._rotateTimer = null;
-    this._t0y = 0; this._t0x = 0; this._tScrolling = null;
 
-    // Bound handlers
+    // Bound handlers — viewer-element interactions only (not scroll/gesture)
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
     this._onViewerLoad         = this._onViewerLoad.bind(this);
@@ -363,9 +366,6 @@ class Hero3DContainer {
     this._onMouseLeave         = this._onMouseLeave.bind(this);
     this._onTouchStartViewer   = this._onTouchStartViewer.bind(this);
     this._onTouchEndViewer     = this._onTouchEndViewer.bind(this);
-    this._onRootWheel          = this._onRootWheel.bind(this);
-    this._onRootTouchStart     = this._onRootTouchStart.bind(this);
-    this._onRootTouchMove      = this._onRootTouchMove.bind(this);
   }
 
   init(root) {
@@ -388,11 +388,6 @@ class Hero3DContainer {
       this._viewer.addEventListener('touchstart',    this._onTouchStartViewer, { passive: true });
       this._viewer.addEventListener('touchend',      this._onTouchEndViewer);
     }
-
-    // Intercept wheel/touch on root so model-viewer doesn't capture them
-    this._root.addEventListener('wheel',      this._onRootWheel,      { passive: false });
-    this._root.addEventListener('touchstart', this._onRootTouchStart, { passive: true  });
-    this._root.addEventListener('touchmove',  this._onRootTouchMove,  { passive: false });
 
     this._root.style.visibility = 'hidden';
     this._root.style.opacity    = '0';
@@ -484,38 +479,6 @@ class Hero3DContainer {
     if (this._hintDone) return;
     this._hintDone = true;
     this._modelHint?.classList.add('hidden');
-  }
-
-  _onRootWheel(e) {
-    if (!this._active) return;
-    if (e.ctrlKey || e.metaKey) return;
-    e.preventDefault();
-    e.stopPropagation();
-    this.onScroll(e.deltaY > 0 ? +1 : -1);
-  }
-
-  _onRootTouchStart(e) {
-    if (e.touches.length === 1) {
-      this._t0y = e.touches[0].clientY;
-      this._t0x = e.touches[0].clientX;
-      this._tScrolling = null;
-    }
-  }
-
-  _onRootTouchMove(e) {
-    if (!this._active || e.touches.length !== 1) return;
-    const dy = this._t0y - e.touches[0].clientY;
-    const dx = this._t0x - e.touches[0].clientX;
-    if (this._tScrolling === null) {
-      if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
-      this._tScrolling = Math.abs(dy) > Math.abs(dx) * 1.4;
-    }
-    if (this._tScrolling) {
-      e.preventDefault();
-      this._t0y = e.touches[0].clientY;
-      this._t0x = e.touches[0].clientX;
-      this.onScroll(dy > 0 ? +1 : -1);
-    }
   }
 }
 
