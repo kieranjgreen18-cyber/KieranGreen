@@ -126,11 +126,19 @@ class AboutContainer {
     this._root.classList.remove('engaged');
   }
 
-  enter() {
+  enter(fromDirection = 0) {
     if (!this._root || !this._N) return;
     this._active = true;
 
     this._calcSpacerTop();
+    // When arriving from the section *below* (scrolling up), land on the
+    // last panel. When arriving from above (scrolling down) or on initial
+    // load (direction 0), land on the first panel.
+    if (fromDirection === -1) {
+      this._activeIdx = this._N - 1;
+    } else if (fromDirection === +1) {
+      this._activeIdx = 0;
+    }
     this._setPanel(this._activeIdx);
     this._root.classList.add('engaged');
   }
@@ -198,13 +206,13 @@ class AboutContainer {
 
     // ── Boundary: before first panel → hand off to previous section ───
     if (next < 0) {
-      this._app.setSection(this._prevKey);
+      this._app.setSection(this._prevKey, -1);
       return;
     }
 
     // ── Boundary: after last panel → hand off to next section ─────────
     if (next >= this._N) {
-      this._app.setSection(this._nextKey);
+      this._app.setSection(this._nextKey, +1);
       return;
     }
 

@@ -168,7 +168,7 @@ class AppController {
    * Applies a transition lock to prevent cascading switches mid-animation.
    * @param {string} name
    */
-  setSection(name) {
+  setSection(name, fromDirection = 0) {
     if (this._locked)                      return; // mid-transition
     if (name === this._activeKey)          return; // already active
     if (!this._containers.has(name)) {
@@ -177,13 +177,13 @@ class AppController {
     }
 
     this._locked = true;
-    this._activateDirect(name);
+    this._activateDirect(name, fromDirection);
     setTimeout(() => { this._locked = false; }, this._LOCK_MS);
   }
 
   // ── Private ────────────────────────────────────────────────────────────
 
-  _activateDirect(name) {
+  _activateDirect(name, fromDirection = 0) {
     const next = this._containers.get(name);
     if (!next) return;
 
@@ -192,7 +192,7 @@ class AppController {
     }
 
     this._activeKey = name;
-    next.enter();
+    next.enter(fromDirection);
   }
 
   _dispatchScroll(direction) {
@@ -413,7 +413,7 @@ class Hero3DContainer {
 
   onScroll(direction) {
     if (!this._active) return;
-    if (direction === +1) this._app.setSection(this._nextKey);
+    if (direction === +1) this._app.setSection(this._nextKey, +1);
     // -1 at the top of the page: no-op
   }
 
@@ -681,8 +681,8 @@ class CarouselContainer {
 
     const next = this._activeIdx + dir;
 
-    if (next < 0)         { this._app.setSection(this._prevKey); return; }
-    if (next >= this._N)  { this._app.setSection(this._nextKey); return; }
+    if (next < 0)         { this._app.setSection(this._prevKey, -1); return; }
+    if (next >= this._N)  { this._app.setSection(this._nextKey, +1); return; }
 
     this._transitioning = true;
     this._lastAdvanceAt = now;
@@ -762,10 +762,18 @@ class AboutContainer {
     this._root.classList.remove('engaged');
   }
 
-  enter() {
+  enter(fromDirection = 0) {
     if (!this._root || !this._N) return;
     this._active = true;
     this._calcSpacerTop();
+    // When arriving from the section *below* (scrolling up), land on the
+    // last panel. When arriving from above (scrolling down) or on initial
+    // load (direction 0), land on the first panel.
+    if (fromDirection === -1) {
+      this._activeIdx = this._N - 1;
+    } else if (fromDirection === +1) {
+      this._activeIdx = 0;
+    }
     this._setPanel(this._activeIdx);
     this._root.classList.add('engaged');
   }
@@ -812,11 +820,11 @@ class AboutContainer {
     const next = this._activeIdx + dir;
 
     if (next < 0) {
-      if (this._prevKey) this._app.setSection(this._prevKey);
+      if (this._prevKey) this._app.setSection(this._prevKey, -1);
       return;
     }
     if (next >= this._N) {
-      if (this._nextKey) this._app.setSection(this._nextKey);
+      if (this._nextKey) this._app.setSection(this._nextKey, +1);
       return;
     }
 
