@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  *  AboutContainer
  *  ─────────────────────────────────────────────────────────────────────
- *  Wraps the about section from about.html.
+ *  Wraps the about section from html/sections/about.html.
  *
  *  ISOLATION CONTRACT
  *  ──────────────────

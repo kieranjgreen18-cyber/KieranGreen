@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  *  CarouselContainer
  *  ─────────────────────────────────────────────────────────────────────
- *  Wraps the projects/carousel section from portfolio-section.html.
+ *  Wraps the projects/carousel section from html/sections/portfolio-section.html.
  *
  *  ISOLATION CONTRACT
  *  ──────────────────

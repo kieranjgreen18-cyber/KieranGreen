@@ -9,7 +9,7 @@
  *
  *  WHY THIS EXISTS
  *  ────────────────
- *  The original portfolio-section.html mixed these into the carousel
+ *  The original html/sections/portfolio-section.html mixed these into the carousel
  *  script block because it was a standalone page. In the container
  *  architecture they must live somewhere that is:
  *    — not inside any section container (they survive section changes)
