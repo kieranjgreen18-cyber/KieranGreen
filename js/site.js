@@ -803,6 +803,12 @@ class CarouselContainer {
     // Any other direction (including direct nav jump = 0) resets to first card.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
     else                      this._activeIdx = 0;
+    // Reset transition state so stale cooldown/lock values from a previous visit
+    // (e.g. scrolling up from the bottom of the page) don't block the first
+    // boundary handoff on re-entry.
+    this._transitioning  = false;
+    this._lastAdvanceAt  = 0;
+    this._lastAdvDir     = 0;
     this._calcSpacerTop();
     this._root.style.visibility = 'visible';
     this._root.classList.add('carousel-active');
@@ -859,8 +865,8 @@ class CarouselContainer {
     const now = performance.now();
     if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
     const next = this._activeIdx + dir;
-    if (next < 0)        { this._app.setSection(this._prevKey, -1); return; }
-    if (next >= this._N) { this._app.setSection(this._nextKey, +1); return; }
+    if (next < 0)        { this._transitioning = false; this._app.setSection(this._prevKey, -1); return; }
+    if (next >= this._N) { this._transitioning = false; this._app.setSection(this._nextKey, +1); return; }
     this._transitioning = true;
     this._lastAdvanceAt = now;
     this._lastAdvDir    = dir;
