@@ -1456,12 +1456,20 @@ footer {
 
   /* About panels */
   .panel { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .col-left { border-right: none; border-bottom: 1px solid var(--c-rule); max-height: 45vh; }
-  .col-top { min-height: 120px; }
+  .col-left { border-right: none; border-bottom: 1px solid var(--c-rule); max-height: 45vh; overflow: hidden; }
+  .col-top { min-height: 120px; overflow: hidden; flex: 1 1 0; min-height: 0; }
   .col-bottom { padding: var(--s-3) var(--pad) var(--s-4); }
   .col-right  { padding: var(--s-4) var(--pad) var(--s-8); }
   .ghost-num, .stmt-wm, .prog-dots { display: none; }
   .panel-statement { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+
+  /* Rein in photo gallery frames on mobile so they stay inside col-top */
+  .panel[data-panel="0"] .pf-main   { width: 58%; top: 48%; left: 48%; }
+  .panel[data-panel="0"] .pf-accent { width: 28%; bottom: 4%; right: 4%; }
+  .panel[data-panel="1"] .pf-main   { width: 46%; top: 6%; left: 5%; }
+  .panel[data-panel="1"] .pf-accent { width: 42%; bottom: 4%; right: 4%; }
+  .panel[data-panel="2"] .pf-main   { width: 64%; top: 8%; left: 4%; }
+  .panel[data-panel="2"] .pf-accent { width: 30%; bottom: 4%; right: 3%; }
 
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
@@ -1929,23 +1937,24 @@ button:focus-visible {
       </div>
     </a>
 
-    <!-- Project 03 — Poul Henningsen Lamp -->
-    <a href="html/project-lamp.html" class="proj"
-       aria-label="Poul Henningsen Lamp — CAD study of the iconic PH lamp, exploring light diffusion through geometry in Rhino 3D, 2025"
-       style="background:#080a09;">
-      <div class="proj-img" role="img" aria-label="Poul Henningsen PH lamp CAD model render"
-           style="background-image:url('assets/images/lamphero.png');background-position:center 20%;"></div>
+    <!-- Project 03 — Myth In Motion -->
+    <a href="html/project-myth.html" class="proj"
+       aria-label="Myth In Motion — electric motorcycle concept, visual drama and beating hearts, 2025"
+       style="background:#080909;">
+      <div class="proj-img" role="img" aria-label="Myth In Motion electric motorcycle concept render"
+           style="background-image:url('assets/images/MotorcycleHero.png');background-position:center;"></div>
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">03</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">03</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text">
-        <div class="proj-num t-micro">Apr 2025</div>
-        <h2 class="proj-title t-title">Poul Henningsen Lamp</h2>
-        <p class="proj-desc t-body">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
+        <div class="proj-num t-micro">2025</div>
+        <h2 class="proj-title t-title">Myth In Motion</h2>
+        <p class="proj-desc t-body">Developing the electric motorcycle of the future: visual drama and beating hearts.</p>
         <div class="proj-tags" role="list">
           <span class="proj-tag" role="listitem">Rhino 3D</span>
-          <span class="proj-tag" role="listitem">CAD Modeling</span>
+          <span class="proj-tag" role="listitem">Keyshot</span>
+          <span class="proj-tag" role="listitem">Surface Modeling</span>
         </div>
       </div>
       <div class="proj-open" aria-label="Open project">
@@ -1953,24 +1962,23 @@ button:focus-visible {
       </div>
     </a>
 
-    <!-- Project 04 — Intro to Rhino -->
-    <a href="html/project-rhino-intro.html" class="proj"
-       aria-label="Intro to Rhino — headphones, power drill, and Minion helmet modeled across four weeks of Rhino 3D fundamentals, 2025"
-       style="background:#080909;">
-      <div class="proj-img" role="img" aria-label="Power drill and headphones modeled in Rhino 3D"
-           style="background-image:url('assets/images/drillhero.jpg');background-position:center;"></div>
+    <!-- Project 04 — Poul Henningsen Lamp -->
+    <a href="html/project-lamp.html" class="proj"
+       aria-label="Poul Henningsen Lamp — CAD study of the iconic PH lamp, exploring light diffusion through geometry in Rhino 3D, 2025"
+       style="background:#080a09;">
+      <div class="proj-img" role="img" aria-label="Poul Henningsen PH lamp CAD model render"
+           style="background-image:url('assets/images/lamphero.png');background-position:center 20%;"></div>
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">04</div>
       <div class="proj-counter" aria-hidden="true"><span class="sc-cur">04</span><span class="sc-sep">/</span><span>04</span></div>
       <div class="proj-text">
-        <div class="proj-num t-micro">Jan 2025</div>
-        <h2 class="proj-title t-title">Intro to Rhino</h2>
-        <p class="proj-desc t-body">Headphones, a power drill, and a Minion helmet — what four weeks of learning Rhino 3D looks like.</p>
+        <div class="proj-num t-micro">Apr 2025</div>
+        <h2 class="proj-title t-title">Poul Henningsen Lamp</h2>
+        <p class="proj-desc t-body">Modeling the iconic PH lamp — studying how Henningsen engineered light diffusion through geometry alone.</p>
         <div class="proj-tags" role="list">
           <span class="proj-tag" role="listitem">Rhino 3D</span>
-          <span class="proj-tag" role="listitem">Keyshot</span>
-          <span class="proj-tag" role="listitem">SubD</span>
+          <span class="proj-tag" role="listitem">CAD Modeling</span>
         </div>
       </div>
       <div class="proj-open" aria-label="Open project">
@@ -2153,7 +2161,7 @@ button:focus-visible {
       <div class="ps-video-frame">
         <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
         <iframe
-          src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1"
+          src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1"
           title="Kieran Green — Personal Statement"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
@@ -2161,10 +2169,6 @@ button:focus-visible {
         referrerpolicy="strict-origin-when-cross-origin"
         ></iframe>
         <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
-        <div class="ps-film-meta" aria-hidden="true">
-          <span>Personal Statement · 2025</span>
-          <span>Kieran Green — Industrial Design</span>
-        </div>
       </div>
     </div>
   </div>
