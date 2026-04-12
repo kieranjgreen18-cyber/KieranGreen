@@ -52,7 +52,14 @@ class AppController {
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
-      e.preventDefault();
+      // Allow native scroll if the active container opts in for this direction.
+      // This lets terminal sections (e.g. Contact) scroll the page naturally
+      // downward while still intercepting upward wheel to hand back to About.
+      const rawDir = e.deltaY > 0 ? +1 : e.deltaY < 0 ? -1 : 0;
+      const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
+      const nativeAllowed = activeContainer?.nativeScrollDirection?.(rawDir) === true;
+      if (!nativeAllowed) e.preventDefault();
+
       const raw = e.deltaMode === 1 ? e.deltaY * 32
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
@@ -64,8 +71,13 @@ class AppController {
       const contrib = raw === 0 ? 0
         : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
       this._wVel += contrib;
-      if (this._wVel >  W_THRESH) { this._wVel = 0; this._dispatchScroll(+1); }
-      if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
+      if (!nativeAllowed) {
+        if (this._wVel >  W_THRESH) { this._wVel = 0; this._dispatchScroll(+1); }
+        if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
+      } else {
+        // Still watch for upward flick past threshold so we can hand back
+        if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
+      }
     }, { passive: false });
 
     window.addEventListener('keydown', (e) => {
@@ -84,7 +96,13 @@ class AppController {
     window.addEventListener('touchmove', (e) => {
       const dy = Math.abs(e.touches[0].clientY - _ty0);
       const dx = Math.abs(e.touches[0].clientX - _tx0);
-      if (dy > dx && dy > 10) e.preventDefault();
+      if (dy > dx && dy > 10) {
+        // Check if active container allows native scroll in this direction
+        const touchDir = (e.touches[0].clientY - _ty0) > 0 ? -1 : +1; // finger up = scroll down
+        const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
+        const nativeAllowed = activeContainer?.nativeScrollDirection?.(touchDir) === true;
+        if (!nativeAllowed) e.preventDefault();
+      }
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
       const dy     = _ty0 - e.changedTouches[0].clientY;
@@ -125,6 +143,9 @@ class AppController {
     if (!next) return;
     if (this._activeKey) this._containers.get(this._activeKey)?.exit();
     this._activeKey = name;
+    // Flush velocity accumulator so inertia from the previous section
+    // doesn't immediately trigger a scroll in the newly entered one.
+    this._wVel = 0;
     next.enter(fromDirection);
   }
 
@@ -958,22 +979,33 @@ class ContactContainer {
     this._prevKey = prevSection;
     this._root    = null;
     this._active  = false;
+    // Track how far the user has scrolled past the contact top, so we know
+    // when an upward scroll should hand back to About vs just scroll up in page.
+    this._contactTop = 0;
   }
 
   init(root) {
     this._root = root;
-    // Nothing to wire up — this section uses normal document flow.
+    // Cache contact top on resize
+    window.addEventListener('resize', () => { this._cacheTop(); }, { passive: true });
+  }
+
+  _cacheTop() {
+    if (this._root) {
+      this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+    }
   }
 
   enter(fromDirection = 0) {
     if (!this._root) return;
     this._active = true;
-    // Scroll the contact section into view. Because AppController's wheel
-    // listener calls preventDefault() globally, we must use scrollTo here —
-    // the AppController itself calls this after releasing the active container,
-    // so the scroll happens without fighting the lock.
-    const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-    window.scrollTo({ top, behavior: fromDirection === -1 ? 'auto' : 'smooth' });
+    this._cacheTop();
+    // Scroll to the top of the contact section (includes personal-statement above it).
+    // Find the personal-statement section which sits just above contact — that's
+    // the natural entry point when arriving from About.
+    const psEl = document.getElementById('statement') || this._root;
+    const top  = Math.round(psEl.getBoundingClientRect().top + window.scrollY);
+    window.scrollTo({ top, behavior: 'smooth' });
   }
 
   exit() {
@@ -982,12 +1014,33 @@ class ContactContainer {
   }
 
   /**
-   * Only upward scroll matters here — hand back to the previous section.
-   * Downward scroll does nothing (natural page scroll takes over for
-   * any content below contact, e.g. footer).
+   * nativeScrollDirection — called by AppController's wheel handler.
+   * Returns true for downward scroll (+1) so the browser can scroll the
+   * contact/statement/footer area naturally. Returns false for upward (-1)
+   * so we can intercept it and hand back to About when the user scrolls
+   * back up to the top of the contact region.
+   *
+   * @param {number} dir  +1 (down) | -1 (up)
+   * @returns {boolean}
    */
+  nativeScrollDirection(dir) {
+    if (!this._active) return false;
+    // Always allow downward native scroll so footer is reachable.
+    if (dir === +1) return true;
+    // For upward: allow native scroll if we're not yet back at the top of
+    // the contact entry point. Once the user has scrolled back up to the
+    // top of the region, the next upward wheel is intercepted to hand back.
+    if (dir === -1) {
+      const atTop = window.scrollY <= this._contactTop + 10;
+      return !atTop; // native scroll while not at top; intercept when at top
+    }
+    return false;
+  }
+
   onScroll(direction) {
     if (!this._active) return;
+    // This is only reached when nativeScrollDirection returned false,
+    // i.e. the user scrolled up while already at the contact top.
     if (direction === -1) {
       this._app.setSection(this._prevKey, -1);
     }
