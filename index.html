@@ -580,14 +580,21 @@ model-viewer#mini-viewer {
     linear-gradient(to bottom,  rgba(8,9,9,0.55) 0%, transparent 16%);
 }
 
+/* Hero — ensure the text block never overlaps the fixed nav.
+   On very short viewports the large H1 can stack up into the navbar.
+   A max-height capped to the usable area (below nav, above bottom margin)
+   with overflow:hidden clips it cleanly without restructuring layout. */
+.hero {
+  padding-top: 0; /* nav is fixed, so hero fills full viewport */
+}
+
 /* Hero text — bottom left, revealed on load */
 .hero-text {
   position: absolute; bottom: var(--s-8); left: var(--pad);
-  /* Top guard: never overlap the fixed nav (approx 72px) + breathing room */
-  top: calc(72px + var(--s-5));
   z-index: 20; max-width: 62vw;
-  /* Let content sit at the bottom of the available space */
-  display: flex; flex-direction: column; justify-content: flex-end;
+  /* Prevent bleeding into the fixed nav on short viewports.
+     nav ≈ 72px + bottom offset 80px = 152px reserved. */
+  max-height: calc(100svh - 152px);
   overflow: hidden;
   opacity: 0; transform: translateY(20px);
   transition: opacity var(--dur-slow) var(--ease) 0.3s,
