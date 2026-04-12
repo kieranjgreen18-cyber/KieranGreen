@@ -43,8 +43,12 @@ class AppController {
     this._LOCK_MS    = 850; // >= longest container _TRANS_MS + buffer
 
     // ── Wheel velocity model ───────────────────────────────────────────
-    this._wVel      = 0;
-    this._wLastTime = 0;
+    this._wVel        = 0;
+    this._wLastTime   = 0;
+    // After every section change, ignore wheel input for SETTLE_MS so that
+    // trackpad inertia from the previous section cannot chain into the next.
+    this._settleUntil = 0;
+    this._SETTLE_MS   = 520;
     const W_THRESH  = 160;
     const W_DECAY   = 0.94;
     const W_CLAMP   = 90;
@@ -64,6 +68,9 @@ class AppController {
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
       const now = performance.now();
+      // During the post-transition settle window, eat the event but don't act.
+      // This absorbs trackpad inertia that would otherwise chain into the new section.
+      if (now < this._settleUntil) { this._wVel = 0; this._wLastTime = now; return; }
       const gap = now - this._wLastTime;
       if (gap > 600 || this._wLastTime === 0) { this._wVel = 0; }
       else { this._wVel *= Math.pow(W_DECAY, gap / 16); }
@@ -143,9 +150,11 @@ class AppController {
     if (!next) return;
     if (this._activeKey) this._containers.get(this._activeKey)?.exit();
     this._activeKey = name;
-    // Flush velocity accumulator so inertia from the previous section
-    // doesn't immediately trigger a scroll in the newly entered one.
-    this._wVel = 0;
+    // Flush velocity and start settle window so inertia from the departing
+    // section cannot chain into the newly entered one.
+    this._wVel        = 0;
+    this._wLastTime   = 0;
+    this._settleUntil = performance.now() + this._SETTLE_MS;
     next.enter(fromDirection);
     // Notify PageChrome so the section indicator updates immediately,
     // rather than relying on scroll position (unreliable in scroll-lock mode).
@@ -660,7 +669,12 @@ class Hero3DContainer {
     if (!this._active) return;
     if (e.ctrlKey || e.metaKey) return;
     e.preventDefault(); e.stopPropagation();
-    this.onScroll(e.deltaY > 0 ? +1 : -1);
+    // Do NOT call this.onScroll() directly here — that would bypass
+    // AppController's velocity threshold and fire setSection on every tick.
+    // Instead let AppController's window wheel listener handle it.
+    // stopPropagation() is removed so the event bubbles to AppController.
+    // Note: we still call preventDefault() to stop browser scroll.
+    // AppController's listener will dispatch the scroll when threshold is met.
   }
 
   _onRootTouchStart(e) {
@@ -679,8 +693,9 @@ class Hero3DContainer {
     }
     if (this._tScrolling) {
       e.preventDefault();
+      // Don't call this.onScroll() directly — AppController's touchend
+      // handler owns the dispatch for touch events.
       this._t0y = e.touches[0].clientY; this._t0x = e.touches[0].clientX;
-      this.onScroll(dy > 0 ? +1 : -1);
     }
   }
 }
@@ -1067,22 +1082,21 @@ class ContactContainer {
     if (!this._active) return false;
     // Always allow downward native scroll so footer is reachable.
     if (dir === +1) return true;
-    // For upward: allow native scroll if we're not yet back at the top of
-    // the contact entry point. Once the user has scrolled back up to the
-    // top of the region, the next upward wheel is intercepted to hand back.
+    // For upward: allow native scroll while the user is still scrolled
+    // below the entry point of the contact region. Once they've scrolled
+    // back up to within 80px of the top, intercept and hand back to About.
     if (dir === -1) {
-      // Use a generous threshold (half a viewport) so the user doesn't need to
-      // scroll pixel-perfectly back to the boundary before the handoff fires.
-      const atTop = window.scrollY <= this._contactTop + (window.innerHeight * 0.5);
-      return !atTop; // native scroll while not at top; intercept when at top
+      const atTop = window.scrollY <= this._contactTop + 80;
+      return !atTop;
     }
     return false;
   }
 
   onScroll(direction) {
     if (!this._active) return;
-    // This is only reached when nativeScrollDirection returned false,
-    // i.e. the user scrolled up while already at the contact top.
+    // Reached only when nativeScrollDirection returned false —
+    // user is at the contact top and scrolled up.
+    // AppController's settle window will absorb inertia after the handoff.
     if (direction === -1) {
       this._app.setSection(this._prevKey, -1);
     }
