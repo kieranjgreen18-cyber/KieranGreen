@@ -129,8 +129,8 @@ class AppController {
     this._activateDirect(startSection);
   }
 
-  setSection(name, fromDirection = 0) {
-    if (this._locked)               return;
+  setSection(name, fromDirection = 0, force = false) {
+    if (this._locked && !force)     return;
     if (name === this._activeKey)   return;
     if (!this._containers.has(name)) { console.warn(`[AppController] setSection("${name}") — not registered.`); return; }
     this._locked = true;
@@ -147,6 +147,9 @@ class AppController {
     // doesn't immediately trigger a scroll in the newly entered one.
     this._wVel = 0;
     next.enter(fromDirection);
+    // Notify PageChrome so the section indicator updates immediately,
+    // rather than relying on scroll position (unreliable in scroll-lock mode).
+    this._chrome?.notifySection?.(name);
   }
 
   _dispatchScroll(direction) {
@@ -325,7 +328,7 @@ class PageChrome {
         e.preventDefault();
         const sectionKey = ANCHOR_SECTION_MAP[href];
         if (sectionKey && this._app) {
-          this._app.setSection(sectionKey);
+          this._app.setSection(sectionKey, 0, true); // force=true: nav clicks bypass transition lock
         } else {
           // Fallback for anchors outside the container system
           const targetId = href.slice(1);
@@ -462,6 +465,22 @@ class PageChrome {
     this._prog.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
   }
 
+  /**
+   * Called by AppController._activateDirect whenever the active section changes.
+   * Updates the section indicator label directly from the container key, bypassing
+   * the scroll-position heuristic which is unreliable in a scroll-locked layout.
+   * @param {string} sectionKey  e.g. 'hero' | 'carousel' | 'about' | 'contact'
+   */
+  notifySection(key) {
+    if (!this._secInd) return;
+    const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About', contact: 'Contact' };
+    const label = labelMap[key];
+    if (label) {
+      this._secInd.textContent = label;
+      this._secInd.classList.toggle('visible', key !== 'hero');
+    }
+  }
+
   _state() { return this._isDown ? 'click' : this._inLink ? 'link' : this._inProj ? 'proj' : 'default'; }
   _apply() {
     const s = this._STATES[this._state()];
@@ -565,6 +584,9 @@ class Hero3DContainer {
     this._active = false;
     this._root.style.transition = 'opacity 0.4s ease';
     this._root.style.opacity    = '0';
+    // Strip reveal classes so re-entering Hero re-plays the entrance animation.
+    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
+      .forEach(el => el?.classList.remove('is-revealed'));
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
   }
 
@@ -713,11 +735,19 @@ class CarouselContainer {
       });
     });
 
-    // Dot nav — appended to body for z-index stacking (documented exception)
-    this._dotsEl = document.createElement('nav');
-    this._dotsEl.id = 'c-dots';
-    this._dotsEl.setAttribute('aria-label', 'Project navigation');
+    // Dot nav — reuse the static #c-dots already in the HTML (documented exception).
+    // The HTML has a placeholder <nav id="c-dots"> for z-index stacking; we
+    // populate it here rather than creating a duplicate element.
+    this._dotsEl = document.getElementById('c-dots');
+    if (!this._dotsEl) {
+      this._dotsEl = document.createElement('nav');
+      this._dotsEl.id = 'c-dots';
+      this._dotsEl.setAttribute('aria-label', 'Project navigation');
+      document.body.appendChild(this._dotsEl);
+    }
+    this._dotsEl.innerHTML = ''; // clear any existing dots
     this._dotsEl.style.opacity = '0';
+    this._dotWraps = [];
     this._projs.forEach((p, i) => {
       const label = p.querySelector('h2')?.textContent.trim() ?? `0${i + 1}`;
       const wrap  = document.createElement('div'); wrap.className = 'c-dot-wrap';
@@ -727,7 +757,6 @@ class CarouselContainer {
       this._dotsEl.appendChild(wrap);
       this._dotWraps.push(wrap);
     });
-    document.body.appendChild(this._dotsEl);
 
     this._sizeSpacer();
     this._calcSpacerTop();
@@ -757,9 +786,10 @@ class CarouselContainer {
   enter(fromDirection = 0) {
     if (!this._root || !this._N) return;
     this._active = true;
-    // If arriving from below (scrolling up), land on the last card
+    // If arriving from below (scrolling up), land on the last card.
+    // Any other direction (including direct nav jump = 0) resets to first card.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
-    else if (fromDirection === +1) this._activeIdx = 0;
+    else                      this._activeIdx = 0;
     this._calcSpacerTop();
     this._root.style.visibility = 'visible';
     this._root.classList.add('carousel-active');
@@ -887,9 +917,14 @@ class AboutContainer {
     if (!this._root || !this._N) return;
     this._active = true;
     this._calcSpacerTop();
-    // Arrive on last panel when scrolling back up from below
+    // Arrive on last panel when scrolling back up from below.
+    // Any other direction (including direct nav = 0) resets to first panel.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
-    else if (fromDirection === +1) this._activeIdx = 0;
+    else                      this._activeIdx = 0;
+    // Reset debounce state so the first scroll in any direction is never blocked.
+    this._lastAdvDir    = 0;
+    this._lastAdvanceAt = 0;
+    this._transitioning = false;
     this._setPanel(this._activeIdx);
     this._root.classList.add('engaged');
   }
@@ -1005,7 +1040,12 @@ class ContactContainer {
     // the natural entry point when arriving from About.
     const psEl = document.getElementById('statement') || this._root;
     const top  = Math.round(psEl.getBoundingClientRect().top + window.scrollY);
-    window.scrollTo({ top, behavior: 'smooth' });
+    // Use instant scroll if we're jumping from a far section (hero/carousel)
+    // to avoid a long slow scroll across the whole page.
+    const dist = Math.abs(window.scrollY - top);
+    window.scrollTo({ top, behavior: dist > window.innerHeight * 2 ? 'instant' : 'smooth' });
+    // Re-cache after scroll settles (smooth scroll moves scrollY asynchronously)
+    setTimeout(() => this._cacheTop(), 600);
   }
 
   exit() {
@@ -1031,7 +1071,9 @@ class ContactContainer {
     // the contact entry point. Once the user has scrolled back up to the
     // top of the region, the next upward wheel is intercepted to hand back.
     if (dir === -1) {
-      const atTop = window.scrollY <= this._contactTop + 10;
+      // Use a generous threshold (half a viewport) so the user doesn't need to
+      // scroll pixel-perfectly back to the boundary before the handoff fires.
+      const atTop = window.scrollY <= this._contactTop + (window.innerHeight * 0.5);
       return !atTop; // native scroll while not at top; intercept when at top
     }
     return false;
