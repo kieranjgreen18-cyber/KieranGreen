@@ -158,6 +158,9 @@ class AppController {
 class PageChrome {
 
   constructor() {
+    // AppController reference — set via setApp() after bootstrap wires everything
+    this._app     = null;
+
     // Cursor
     this._cur     = null;
     this._curR    = null;
@@ -195,6 +198,9 @@ class PageChrome {
     this._SVG_SUN  = '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
     this._SVG_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
   }
+
+  /** Called by bootstrap after AppController is created */
+  setApp(app) { this._app = app; }
 
   init() {
     // ── Cursor + progress bar ──────────────────────────────────────────
@@ -278,7 +284,17 @@ class PageChrome {
     }), { threshold: 0.06 });
     document.querySelectorAll('.rev, .rev-stagger').forEach(r => io.observe(r));
 
-    // ── Smooth anchor nav ──────────────────────────────────────────────
+    // ── Anchor nav — routes through AppController so the scroll-lock
+    //    container system stays in sync instead of fighting window.scrollTo.
+    //    Mapping: anchor hash → registered section key.
+    //    Falls back to window.scrollTo for any hash not in the map
+    //    (e.g. in-page sub-anchors the container system doesn't own).
+    const ANCHOR_SECTION_MAP = {
+      '#top':     'hero',
+      '#work':    'carousel',
+      '#about':   'about',
+      '#contact': 'contact',
+    };
     document.addEventListener('click', e => {
       const a = e.target.closest('a[href]');
       if (!a) return;
@@ -286,9 +302,15 @@ class PageChrome {
       if (!href) return;
       if (href.startsWith('#')) {
         e.preventDefault();
-        const targetId = href === '#work' ? 'projects-spacer' : href.slice(1);
-        const t = document.getElementById(targetId) || document.querySelector(href);
-        if (t) window.scrollTo({ top: Math.round(t.getBoundingClientRect().top + window.scrollY), behavior: 'smooth' });
+        const sectionKey = ANCHOR_SECTION_MAP[href];
+        if (sectionKey && this._app) {
+          this._app.setSection(sectionKey);
+        } else {
+          // Fallback for anchors outside the container system
+          const targetId = href.slice(1);
+          const t = document.getElementById(targetId) || document.querySelector(href);
+          if (t) window.scrollTo({ top: Math.round(t.getBoundingClientRect().top + window.scrollY), behavior: 'smooth' });
+        }
         return;
       }
       if (href.startsWith('http') || href.startsWith('mailto') || href.endsWith('.pdf')) return;
@@ -905,7 +927,76 @@ class AboutContainer {
 
 
 /* ─────────────────────────────────────────────────────────────────────────
-   §6  BOOTSTRAP
+   §6  CONTACT CONTAINER
+   ─────────────────────────────────────────────────────────────────────────
+   Root element: <section class="contact"> (plus the preceding personal-
+   statement section, which is part of the same scrollable region).
+
+   The contact section is a normal, scrollable section that lives below the
+   About scroll-lock stage. It is NOT a scroll-lock container itself — it
+   has no internal panels to advance through. Its sole jobs are:
+
+     enter()    — make the section visible / scroll it into view
+     exit()     — called when the user scrolls back up into About
+     onScroll() — only cares about upward scroll (hands back to About)
+
+   The contact + personal-statement area is rendered in normal document
+   flow. enter() uses window.scrollTo to reveal it; this is intentional
+   because the container system releases scroll-lock when ContactContainer
+   is active, allowing natural page scroll within this region.
+
+   ISOLATION CONTRACT
+   ──────────────────
+   ✓  Root query scoped to this._root (contact section)
+   ✓  No wheel / keydown / touch listeners (AppController owns those)
+   ✓  Communicates upward only via this._app.setSection()
+   ─────────────────────────────────────────────────────────────────────── */
+class ContactContainer {
+
+  constructor(app, prevSection = 'about') {
+    this._app     = app;
+    this._prevKey = prevSection;
+    this._root    = null;
+    this._active  = false;
+  }
+
+  init(root) {
+    this._root = root;
+    // Nothing to wire up — this section uses normal document flow.
+  }
+
+  enter(fromDirection = 0) {
+    if (!this._root) return;
+    this._active = true;
+    // Scroll the contact section into view. Because AppController's wheel
+    // listener calls preventDefault() globally, we must use scrollTo here —
+    // the AppController itself calls this after releasing the active container,
+    // so the scroll happens without fighting the lock.
+    const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+    window.scrollTo({ top, behavior: fromDirection === -1 ? 'auto' : 'smooth' });
+  }
+
+  exit() {
+    if (!this._root) return;
+    this._active = false;
+  }
+
+  /**
+   * Only upward scroll matters here — hand back to the previous section.
+   * Downward scroll does nothing (natural page scroll takes over for
+   * any content below contact, e.g. footer).
+   */
+  onScroll(direction) {
+    if (!this._active) return;
+    if (direction === -1) {
+      this._app.setSection(this._prevKey, -1);
+    }
+  }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   §7  BOOTSTRAP
    ─────────────────────────────────────────────────────────────────────────
    The ONLY block that:
      • instantiates all classes
@@ -916,19 +1007,28 @@ class AboutContainer {
   const chrome   = new PageChrome();
   const app      = new AppController(chrome);
 
-  const hero     = new Hero3DContainer(app,     /* next */ 'carousel');
-  const carousel = new CarouselContainer(app,   /* next */ 'about',    /* prev */ 'hero');
-  const about    = new AboutContainer(app,      /* next */ null,        /* prev */ 'carousel');
+  // Give PageChrome a reference to app so nav anchor clicks can call
+  // app.setSection() instead of window.scrollTo (which fights the scroll lock).
+  chrome.setApp(app);
+
+  const hero     = new Hero3DContainer(app,   /* next */ 'carousel');
+  const carousel = new CarouselContainer(app, /* next */ 'about',    /* prev */ 'hero');
+  // FIX: was null — AboutContainer never handed off to contact
+  const about    = new AboutContainer(app,    /* next */ 'contact',  /* prev */ 'carousel');
+  const contact  = new ContactContainer(app,  /* prev */ 'about');
 
   app.register('hero',     hero);
   app.register('carousel', carousel);
   app.register('about',    about);
+  app.register('contact',  contact);
 
   app.init(
     {
       hero:     document.querySelector('.hero'),
       carousel: document.querySelector('.projects'),
       about:    document.getElementById('about-stage'),
+      // Contact root is the <section class="contact"> element.
+      contact:  document.getElementById('contact'),
     },
     'hero'
   );
