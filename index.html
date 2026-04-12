@@ -583,7 +583,12 @@ model-viewer#mini-viewer {
 /* Hero text — bottom left, revealed on load */
 .hero-text {
   position: absolute; bottom: var(--s-8); left: var(--pad);
+  /* Top guard: never overlap the fixed nav (approx 72px) + breathing room */
+  top: calc(72px + var(--s-5));
   z-index: 20; max-width: 62vw;
+  /* Let content sit at the bottom of the available space */
+  display: flex; flex-direction: column; justify-content: flex-end;
+  overflow: hidden;
   opacity: 0; transform: translateY(20px);
   transition: opacity var(--dur-slow) var(--ease) 0.3s,
               transform var(--dur-xl) var(--ease) 0.3s;
