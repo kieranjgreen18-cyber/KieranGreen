@@ -668,13 +668,11 @@ class Hero3DContainer {
   _onRootWheel(e) {
     if (!this._active) return;
     if (e.ctrlKey || e.metaKey) return;
-    e.preventDefault(); e.stopPropagation();
-    // Do NOT call this.onScroll() directly here — that would bypass
-    // AppController's velocity threshold and fire setSection on every tick.
-    // Instead let AppController's window wheel listener handle it.
-    // stopPropagation() is removed so the event bubbles to AppController.
-    // Note: we still call preventDefault() to stop browser scroll.
-    // AppController's listener will dispatch the scroll when threshold is met.
+    // preventDefault stops the browser from scrolling the page.
+    // stopPropagation is intentionally NOT called — the window-level
+    // wheel listener in AppController must receive this event to
+    // accumulate velocity and dispatch scroll when threshold is met.
+    e.preventDefault();
   }
 
   _onRootTouchStart(e) {
