@@ -463,19 +463,68 @@ strong { color: var(--c-primary); font-weight: 700; }
 @keyframes fadeDown { from { opacity:0; transform:translateY(-8px);  } to { opacity:1; transform:translateY(0); } }
 
 /* ═══════════════════════════════════════════════════════════════
-   § CASE STUDY BODY
+   § ARTICLE LAYOUT — one persistent two-column grid
+   Sidebar runs full height; all content lives in the right column
 ═══════════════════════════════════════════════════════════════ */
-.case-body {
-  display: grid; grid-template-columns: 220px 1fr;
+.article-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
   border-top: 1px solid var(--c-rule);
   border-bottom: 1px solid var(--c-rule);
+  align-items: start;
+  position: relative;
+}
+/* Full-height column divider — drawn as a fixed-position line on the container */
+.article-layout::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 220px;
+  width: 1px;
+  background: var(--c-rule);
+  pointer-events: none;
 }
 
+/* ── Sidebar ── */
 .case-meta {
+  position: sticky;
+  top: 0;
+  align-self: start;
   padding: var(--s-8) var(--s-5) var(--s-8) var(--pad);
-  border-right: 1px solid var(--c-rule);
   display: flex; flex-direction: column; gap: var(--s-5);
 }
+
+/* The decorative fill — a vertical ticking rule like a technical drawing margin */
+.case-meta::after {
+  content: '';
+  display: block;
+  flex: 1;
+  min-height: var(--s-9);
+  margin-top: var(--s-6);
+  /* repeating tick pattern: a 1px center line with 4px ticks every 32px */
+  background-image:
+    /* center spine */
+    linear-gradient(to bottom, var(--c-rule) 0%, var(--c-rule) 100%),
+    /* tick marks */
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 30px,
+      var(--c-rule-hi) 30px,
+      var(--c-rule-hi) 31px
+    );
+  background-size:
+    1px 100%,
+    8px 31px;
+  background-position:
+    center 0,
+    center 0;
+  background-repeat:
+    no-repeat,
+    repeat-y;
+  opacity: 0.6;
+}
+
 .meta-label {
   font-family: var(--f-heading); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
@@ -488,6 +537,11 @@ strong { color: var(--c-primary); font-weight: 700; }
   font-family: var(--f-heading); font-size: 13px;
   font-weight: 400; letter-spacing: 0.04em;
   color: var(--c-secondary); line-height: 1.62;
+}
+
+/* ── Right column: all article content ── */
+.article-main {
+  display: flex; flex-direction: column;
 }
 
 .case-copy {
@@ -523,10 +577,11 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   § PULL QUOTE
+   § PULL QUOTE — inside the right column
 ═══════════════════════════════════════════════════════════════ */
 .pull-quote {
-  padding: var(--s-8) var(--pad);
+  padding: var(--s-8) var(--pad) var(--s-8) var(--s-7);
+  border-top: 1px solid var(--c-rule);
   border-bottom: 1px solid var(--c-rule);
   display: flex; align-items: flex-start; gap: var(--s-4);
   background: var(--c-surface);
@@ -546,10 +601,10 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   § ARTICLE IMAGES — full-width, text flows above and below
+   § ARTICLE IMAGES
 ═══════════════════════════════════════════════════════════════ */
 .article-img {
-  padding: 0 var(--pad);
+  padding: var(--s-7) var(--pad) 0 var(--s-7);
 }
 .article-img + .copy-section,
 .copy-section + .article-img { margin-top: 0; }
@@ -612,18 +667,39 @@ strong { color: var(--c-primary); font-weight: 700; }
 @media (max-width: 768px) {
   :root { --pad: 24px; }
 
-  .case-body { grid-template-columns: 1fr; }
+  /* Collapse two-column grid to single column */
+  .article-layout { grid-template-columns: 1fr; }
+  .article-layout::before { display: none; }
+  .case-meta { position: static; }
+
+  /* Sidebar: compact horizontal wrap at top */
   .case-meta {
-    border-right: none; border-bottom: 1px solid var(--c-rule);
+    border-right: none;
+    border-bottom: 1px solid var(--c-rule);
     padding: var(--s-5) var(--pad);
-    flex-direction: row; flex-wrap: wrap; gap: var(--s-4);
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--s-3) var(--s-6);
   }
-  .meta-group { min-width: 110px; }
+  /* Hide the decorative fill on mobile */
+  .case-meta::after { display: none; }
+
+  .meta-group {
+    min-width: 120px;
+    flex: 1 1 120px;
+  }
+  .meta-label { font-size: var(--t-nano); margin-bottom: 4px; }
+  .meta-value  { font-size: 13px; }
+
   .case-copy { padding: var(--s-6) var(--pad); }
 
-  .article-img { padding: 0 var(--pad); }
+  .article-img { padding: var(--s-6) var(--pad) 0; }
 
-  .pull-quote { flex-direction: column; gap: var(--s-2); }
+  .pull-quote {
+    padding: var(--s-7) var(--pad);
+    flex-direction: column;
+    gap: var(--s-2);
+  }
   .pull-quote::before { font-size: 56px; }
 
   .proj-nav { grid-template-columns: 1fr; }
@@ -706,8 +782,10 @@ strong { color: var(--c-primary); font-weight: 700; }
     </div>
   </header>
 
-  <!-- CASE STUDY BODY -->
-  <div class="case-body">
+  <!-- ARTICLE LAYOUT — persistent sidebar + all content in one grid -->
+  <div class="article-layout">
+
+    <!-- SIDEBAR — sticky, runs full height of article -->
     <aside class="case-meta rev" aria-label="Project details">
       <div class="meta-group">
         <p class="meta-label">Year</p>
@@ -731,83 +809,86 @@ strong { color: var(--c-primary); font-weight: 700; }
       </div>
     </aside>
 
-    <div class="case-copy">
-      <div class="copy-section rev d1">
-        <p class="t-intro">
-          What if a ballpoint pen could be <em>sexy?</em> That was the question I set out to answer with the Sabretta — direct modeled in Rhino 3D, animated in Keyshot, then taken into Premiere Pro.
-        </p>
-        <p class="t-copy">
-          Using my experience producing documentaries, I created an ad inspired by how perfume advertisements sell on emotion rather than function. The result treats an everyday object with the seriousness it deserves.
-        </p>
-      </div>
+    <!-- RIGHT COLUMN — all article content -->
+    <div class="article-main">
 
-      <div class="copy-section rev d2">
-        <div class="section-rule">
-          <h2 class="t-label">The Film</h2>
+      <!-- Opening copy -->
+      <div class="case-copy">
+        <div class="copy-section rev d1">
+          <p class="t-intro">
+            What if a ballpoint pen could be <em>sexy?</em> That was the question I set out to answer with the Sabretta — direct modeled in Rhino 3D, animated in Keyshot, then taken into Premiere Pro.
+          </p>
+          <p class="t-copy">
+            Using my experience producing documentaries, I created an ad inspired by how perfume advertisements sell on emotion rather than function. The result treats an everyday object with the seriousness it deserves.
+          </p>
         </div>
-        <p class="t-copy">
-          This was my first time animating in Keyshot, and I ran into significant challenges — the program was crashing repeatedly during render. Fortunately, I was able to take the individual animated frames directly into Premiere Pro, speed them up by a factor of <strong>10,000</strong>, and still achieve a smooth, composed viewing experience.
-        </p>
-        <p class="t-copy">
-          The stock footage is from Pexels and is free use. Every other element — modeling, lighting, rendering, directing, editing — is entirely my own work.
-        </p>
-      </div>
-    </div>
-  </div>
 
-  <!-- IMAGE 01 — studio render, after opening copy -->
-  <div class="article-img rev">
-    <div class="img-frame r-wide">
-      <img
-        src="../assets/images/sabrettahero.png"
-        alt="Sabretta Pen — primary studio render in Keyshot, full pen from above"
-        loading="lazy"
-      >
-    </div>
-    <div class="img-cap">
-      <span class="t-label">01 / Sabretta Pen — Studio Render</span>
-      <span class="t-label" style="color:var(--c-muted)">Rhino 3D → Keyshot</span>
-    </div>
-  </div>
-
-  <!-- PULL QUOTE -->
-  <blockquote class="pull-quote rev" aria-label="Project quote">
-    <p class="pull-quote-text">Not designed for productivity.<br><em>Designed to be held.</em></p>
-  </blockquote>
-
-  <!-- FORM COPY — sits between pull quote and second image -->
-  <div class="case-body">
-    <aside class="case-meta" aria-hidden="true"></aside>
-    <div class="case-copy">
-      <div class="copy-section rev d3">
-        <div class="section-rule">
-          <h2 class="t-label">The Form</h2>
+        <div class="copy-section rev d2">
+          <div class="section-rule">
+            <h2 class="t-label">The Film</h2>
+          </div>
+          <p class="t-copy">
+            This was my first time animating in Keyshot, and I ran into significant challenges — the program was crashing repeatedly during render. Fortunately, I was able to take the individual animated frames directly into Premiere Pro, speed them up by a factor of <strong>10,000</strong>, and still achieve a smooth, composed viewing experience.
+          </p>
+          <p class="t-copy">
+            The stock footage is from Pexels and is free use. Every other element — modeling, lighting, rendering, directing, editing — is entirely my own work.
+          </p>
         </div>
-        <p class="t-copy">
-          The form of this pen was inspired by the pointed, flowing fenders of <strong>1930s roadsters</strong>, in particular the Delahaye 165. The internals are fully modeled — if adjusted to accommodate an off-the-shelf ink cartridge, it could be 3D printed and would function as a working pen.
-        </p>
-        <p class="t-copy">
-          This wasn't a pen designed for productivity. It was designed to be held.
-        </p>
       </div>
-    </div>
-  </div>
 
-  <!-- IMAGE 02 — cinematic crop, closes the article -->
-  <div class="article-img rev">
-    <div class="img-frame r-cin">
-      <img
-        src="../assets/images/sabrettahero.png"
-        alt="Sabretta Pen — cinematic crop showing the flowing body and tapered tip"
-        loading="lazy"
-        style="object-position: center 30%;"
-      >
-    </div>
-    <div class="img-cap">
-      <span class="t-label">02 / Sabretta Pen — Form Detail</span>
-      <span class="t-label" style="color:var(--c-muted)">Rhino 3D → Keyshot</span>
-    </div>
-  </div>
+      <!-- IMAGE 01 — studio render -->
+      <div class="article-img rev">
+        <div class="img-frame r-wide">
+          <img
+            src="../assets/images/sabrettahero.png"
+            alt="Sabretta Pen — primary studio render in Keyshot, full pen from above"
+            loading="lazy"
+          >
+        </div>
+        <div class="img-cap">
+          <span class="t-label">01 / Sabretta Pen — Studio Render</span>
+          <span class="t-label" style="color:var(--c-muted)">Rhino 3D → Keyshot</span>
+        </div>
+      </div>
+
+      <!-- PULL QUOTE -->
+      <blockquote class="pull-quote rev" aria-label="Project quote">
+        <p class="pull-quote-text">Not designed for productivity.<br><em>Designed to be held.</em></p>
+      </blockquote>
+
+      <!-- Form copy -->
+      <div class="case-copy">
+        <div class="copy-section rev d3">
+          <div class="section-rule">
+            <h2 class="t-label">The Form</h2>
+          </div>
+          <p class="t-copy">
+            The form of this pen was inspired by the pointed, flowing fenders of <strong>1930s roadsters</strong>, in particular the Delahaye 165. The internals are fully modeled — if adjusted to accommodate an off-the-shelf ink cartridge, it could be 3D printed and would function as a working pen.
+          </p>
+          <p class="t-copy">
+            This wasn't a pen designed for productivity. It was designed to be held.
+          </p>
+        </div>
+      </div>
+
+      <!-- IMAGE 02 — cinematic crop -->
+      <div class="article-img rev">
+        <div class="img-frame r-cin">
+          <img
+            src="../assets/images/sabrettahero.png"
+            alt="Sabretta Pen — cinematic crop showing the flowing body and tapered tip"
+            loading="lazy"
+            style="object-position: center 30%;"
+          >
+        </div>
+        <div class="img-cap">
+          <span class="t-label">02 / Sabretta Pen — Form Detail</span>
+          <span class="t-label" style="color:var(--c-muted)">Rhino 3D → Keyshot</span>
+        </div>
+      </div>
+
+    </div><!-- /article-main -->
+  </div><!-- /article-layout -->
 
   <!-- PROJ-NAV — static, just above footer -->
   <nav class="proj-nav" aria-label="Project navigation">
