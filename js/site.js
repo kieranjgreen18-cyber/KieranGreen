@@ -582,6 +582,12 @@ class Hero3DContainer {
     if (!this._root) return;
     this._active = true;
     if (this._nav) this._nav.classList.remove('scrolled');
+    // Snap the page scroll back to the top. The hero is always at scrollY=0;
+    // leaving scrollY non-zero while the hero is visible would allow native
+    // scroll events to fire and could chain into the ContactContainer's
+    // nativeScrollDirection logic, or cause the section indicator / nav
+    // scrolled state to reflect a stale position.
+    window.scrollTo({ top: 0, behavior: 'instant' });
     this._root.style.visibility = 'visible';
     this._root.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1)';
     this._root.style.opacity    = '1';
@@ -803,9 +809,10 @@ class CarouselContainer {
     // Any other direction (including direct nav jump = 0) resets to first card.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
     else                      this._activeIdx = 0;
-    // Reset transition state so stale cooldown/lock values from a previous visit
-    // (e.g. scrolling up from the bottom of the page) don't block the first
-    // boundary handoff on re-entry.
+    // Reset all transition-debounce state on every entry. Stale values from a
+    // previous visit (particularly _transitioning=true or a recent _lastAdvDir)
+    // are the root cause of the carousel silently swallowing the boundary scroll
+    // that should hand off to the hero section.
     this._transitioning  = false;
     this._lastAdvanceAt  = 0;
     this._lastAdvDir     = 0;
@@ -985,10 +992,12 @@ class AboutContainer {
     if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
     const next = this._activeIdx + dir;
     if (next < 0) {
+      this._transitioning = false;
       if (this._prevKey) this._app.setSection(this._prevKey, -1);
       return;
     }
     if (next >= this._N) {
+      this._transitioning = false;
       if (this._nextKey) this._app.setSection(this._nextKey, +1);
       return;
     }
