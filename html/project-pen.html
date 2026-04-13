@@ -301,15 +301,16 @@ strong { color: var(--c-primary); font-weight: 700; }
 ═══════════════════════════════════════════════════════════════ */
 .top-nav {
   position: fixed; top: 0; left: 0; right: 0;
-  height: var(--nav-h); z-index: 500;
+  z-index: 500;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 var(--pad);
-  background: linear-gradient(to bottom, rgba(8,9,9,.85) 0%, transparent 100%);
-  transition: background var(--dur-mid), backdrop-filter var(--dur-mid), border-color var(--dur-mid);
+  padding: var(--s-3) var(--pad);
+  background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
+  transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), backdrop-filter var(--dur-mid), border-color var(--dur-mid);
 }
 .top-nav.scrolled {
+  padding: var(--s-2) var(--pad);
   background: rgba(8,9,9,.90);
-  backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: blur(32px) saturate(1.6);
   border-bottom: 1px solid var(--c-rule);
 }
 [data-theme="light"] .top-nav {
@@ -320,25 +321,15 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 .n-logo {
-  font-family: var(--f-heading); font-size: var(--t-micro);
+  font-family: var(--f-heading); font-size: clamp(12px, 1.2vw, 15px);
   font-weight: 700; letter-spacing: var(--ls-wide); text-transform: uppercase;
-  color: var(--c-primary); text-decoration: none; cursor: none;
+  color: var(--c-secondary); text-decoration: none; cursor: none;
   transition: color var(--dur-fast);
 }
-.n-logo:hover { color: var(--c-accent); }
-.n-logo em { font-style: normal; color: var(--c-accent); }
+.n-logo:hover { color: var(--c-primary); }
+.n-logo em { font-style: italic; color: var(--c-accent); }
 
 .n-right { display: flex; align-items: center; gap: var(--s-2); }
-
-.n-back {
-  font-family: var(--f-heading); font-size: var(--t-micro);
-  font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-secondary); text-decoration: none; cursor: none;
-  display: flex; align-items: center; gap: var(--s-1);
-  transition: color var(--dur-fast);
-}
-.n-back svg { width: 13px; height: 13px; flex-shrink: 0; }
-.n-back:hover { color: var(--c-accent); }
 
 .n-theme {
   width: 32px; height: 32px; border-radius: 50%;
@@ -358,14 +349,13 @@ strong { color: var(--c-primary); font-weight: 700; }
 ═══════════════════════════════════════════════════════════════ */
 .proj-nav {
   display: grid; grid-template-columns: 1fr 1fr;
-  height: var(--pnav-h);
   background: var(--c-bg2);
   border-top: 1px solid var(--c-rule);
 }
 
 .pn-item {
-  display: flex; flex-direction: column; justify-content: center; gap: 3px;
-  padding: 0 var(--pad);
+  display: flex; flex-direction: column; justify-content: center; gap: var(--s-1);
+  padding: var(--s-7) var(--pad);
   text-decoration: none; cursor: none;
   position: relative; overflow: hidden;
   transition: background var(--dur-fast);
@@ -390,13 +380,9 @@ strong { color: var(--c-primary); font-weight: 700; }
   display: flex; align-items: center; gap: 6px;
 }
 .pn-title {
-  font-family: var(--f-heading); font-size: clamp(14px, 1.6vw, 20px);
+  font-family: var(--f-heading); font-size: clamp(18px, 2.2vw, 28px);
   font-weight: 100; letter-spacing: var(--ls-tight);
   color: var(--c-primary); line-height: 1.1; text-transform: uppercase;
-}
-.pn-hint {
-  font-family: var(--f-body); font-size: var(--t-micro);
-  color: var(--c-secondary); font-weight: 400;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -463,9 +449,15 @@ strong { color: var(--c-primary); font-weight: 700; }
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-secondary); border: 1px solid var(--c-rule);
   padding: 6px var(--s-2);
-  transition: border-color var(--dur-fast), color var(--dur-fast);
+  background: rgba(255,255,255,.04);
+  transition: border-color var(--dur-fast), color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast);
 }
-.hero-chip:hover { border-color: var(--c-accent); color: var(--c-accent); }
+.hero-chip:hover {
+  border-color: rgba(91,160,164,.5);
+  color: var(--c-accent);
+  background: var(--c-accent-lo);
+  box-shadow: 0 0 12px rgba(91,160,164,.18), inset 0 0 8px rgba(91,160,164,.06);
+}
 
 @keyframes fadeUp   { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
 @keyframes fadeDown { from { opacity:0; transform:translateY(-8px);  } to { opacity:1; transform:translateY(0); } }
@@ -554,31 +546,29 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   § INLINE IMAGE SLOTS — scattered through content
+   § ARTICLE IMAGES — full-width, text flows above and below
 ═══════════════════════════════════════════════════════════════ */
-.inline-img {
-  padding: var(--s-7) var(--pad) var(--s-3);
+.article-img {
+  padding: 0 var(--pad);
 }
+.article-img + .copy-section,
+.copy-section + .article-img { margin-top: 0; }
 
-.gallery-item { position: relative; overflow: hidden; background: var(--c-bg2); }
-.gallery-item::after {
-  content: ''; position: absolute; inset: 0;
-  background: rgba(91,160,164,0); pointer-events: none;
-  transition: background var(--dur-mid) var(--ease);
+.img-frame {
+  position: relative; overflow: hidden; background: var(--c-bg2);
 }
-.gallery-item:hover::after { background: rgba(91,160,164,.04); }
-.gallery-item img {
+.img-frame img {
   width: 100%; height: 100%; object-fit: cover; display: block;
   filter: saturate(.85);
   transition: transform .9s var(--ease), filter .7s ease;
 }
-.gallery-item:hover img { transform: scale(1.025); filter: saturate(1.05); }
+.img-frame:hover img { transform: scale(1.018); filter: saturate(1.05); }
 
 .r-wide { aspect-ratio: 16 / 9; }
 .r-cin  { aspect-ratio: 2.35 / 1; }
 
-.gallery-cap {
-  padding: var(--s-2) 0;
+.img-cap {
+  padding: var(--s-2) 0 var(--s-7);
   display: flex; align-items: center; justify-content: space-between;
   border-top: 1px solid var(--c-rule);
 }
@@ -631,13 +621,13 @@ strong { color: var(--c-primary); font-weight: 700; }
   .meta-group { min-width: 110px; }
   .case-copy { padding: var(--s-6) var(--pad); }
 
-  .inline-img { padding: var(--s-5) var(--pad) var(--s-3); }
+  .article-img { padding: 0 var(--pad); }
 
   .pull-quote { flex-direction: column; gap: var(--s-2); }
   .pull-quote::before { font-size: 56px; }
 
-  .proj-nav { grid-template-columns: 1fr; height: auto; min-height: var(--pnav-h); }
-  .pn-item { padding: var(--s-3) var(--pad); }
+  .proj-nav { grid-template-columns: 1fr; }
+  .pn-item { padding: var(--s-5) var(--pad); }
   .pn-item + .pn-item { border-left: none; border-top: 1px solid var(--c-rule); }
   .pn-item.right { align-items: flex-start; }
 
@@ -673,7 +663,6 @@ strong { color: var(--c-primary); font-weight: 700; }
 <nav class="top-nav" id="top-nav" aria-label="Site navigation">
   <a href="../index.html" class="n-logo">Kieran <em>Green</em></a>
   <div class="n-right">
-    <a href="../index.html" class="n-back"><svg viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="12" y1="6.5" x2="1" y2="6.5" stroke="currentColor" stroke-width="1.2"/><polyline points="5.5,2 1,6.5 5.5,11" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>All work</a>
     <button class="n-theme" id="theme-btn" aria-label="Toggle light/dark theme">
       <!-- sun icon (shown in dark mode) -->
       <svg class="icon-sun" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="14" height="14">
@@ -763,7 +752,33 @@ strong { color: var(--c-primary); font-weight: 700; }
           The stock footage is from Pexels and is free use. Every other element — modeling, lighting, rendering, directing, editing — is entirely my own work.
         </p>
       </div>
+    </div>
+  </div>
 
+  <!-- IMAGE 01 — studio render, after opening copy -->
+  <div class="article-img rev">
+    <div class="img-frame r-wide">
+      <img
+        src="../assets/images/sabrettahero.png"
+        alt="Sabretta Pen — primary studio render in Keyshot, full pen from above"
+        loading="lazy"
+      >
+    </div>
+    <div class="img-cap">
+      <span class="t-label">01 / Sabretta Pen — Studio Render</span>
+      <span class="t-label" style="color:var(--c-muted)">Rhino 3D → Keyshot</span>
+    </div>
+  </div>
+
+  <!-- PULL QUOTE -->
+  <blockquote class="pull-quote rev" aria-label="Project quote">
+    <p class="pull-quote-text">Not designed for productivity.<br><em>Designed to be held.</em></p>
+  </blockquote>
+
+  <!-- FORM COPY — sits between pull quote and second image -->
+  <div class="case-body">
+    <aside class="case-meta" aria-hidden="true"></aside>
+    <div class="case-copy">
       <div class="copy-section rev d3">
         <div class="section-rule">
           <h2 class="t-label">The Form</h2>
@@ -778,29 +793,9 @@ strong { color: var(--c-primary); font-weight: 700; }
     </div>
   </div>
 
-  <!-- IMAGE 01 — between copy and pull quote -->
-  <div class="inline-img rev">
-    <div class="gallery-item r-wide">
-      <img
-        src="../assets/images/sabrettahero.png"
-        alt="Sabretta Pen — primary studio render in Keyshot, full pen from above"
-        loading="lazy"
-      >
-    </div>
-    <div class="gallery-cap">
-      <span class="t-label">01 / Sabretta Pen — Studio Render</span>
-      <span class="t-label" style="color:var(--c-muted)">Rhino 3D → Keyshot</span>
-    </div>
-  </div>
-
-  <!-- PULL QUOTE -->
-  <blockquote class="pull-quote rev" aria-label="Project quote">
-    <p class="pull-quote-text">Not designed for productivity.<br><em>Designed to be held.</em></p>
-  </blockquote>
-
-  <!-- IMAGE 02 — cinematic crop after pull quote -->
-  <div class="inline-img rev">
-    <div class="gallery-item r-cin">
+  <!-- IMAGE 02 — cinematic crop, closes the article -->
+  <div class="article-img rev">
+    <div class="img-frame r-cin">
       <img
         src="../assets/images/sabrettahero.png"
         alt="Sabretta Pen — cinematic crop showing the flowing body and tapered tip"
@@ -808,7 +803,7 @@ strong { color: var(--c-primary); font-weight: 700; }
         style="object-position: center 30%;"
       >
     </div>
-    <div class="gallery-cap">
+    <div class="img-cap">
       <span class="t-label">02 / Sabretta Pen — Form Detail</span>
       <span class="t-label" style="color:var(--c-muted)">Rhino 3D → Keyshot</span>
     </div>
@@ -819,12 +814,10 @@ strong { color: var(--c-primary); font-weight: 700; }
     <a href="project-car.html" class="pn-item">
       <span class="pn-dir"><svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="12" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="5,1 1,5 5,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Previous</span>
       <span class="pn-title">3D Printed Car</span>
-      <span class="pn-hint">View project</span>
     </a>
     <a href="project-lamp.html" class="pn-item right">
       <span class="pn-dir">Next <svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="1" y1="5" x2="12" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="8,1 12,5 8,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
       <span class="pn-title">Poul Henningsen Lamp</span>
-      <span class="pn-hint">View project</span>
     </a>
   </nav>
 
