@@ -86,7 +86,8 @@
   --t-section:   clamp(46px, 7vw, 100px);
   --t-heading:   clamp(38px, 5.5vw, 72px);
   --t-subhead:   clamp(20px, 2.4vw, 30px);
-  --t-body:      17px;
+  --t-body:      20px;
+  --t-body-sm:   17px;
   --t-ui:        15px;
   --t-meta:      13px;
   --t-micro:     11px;
@@ -325,9 +326,14 @@ strong { color: var(--c-primary); font-weight: 700; }
   font-weight: 700; letter-spacing: var(--ls-wide); text-transform: uppercase;
   color: var(--c-secondary); text-decoration: none; cursor: none;
   transition: color var(--dur-fast);
+  display: inline-flex; align-items: baseline; gap: .35em;
 }
 .n-logo:hover { color: var(--c-primary); }
-.n-logo em { font-style: italic; color: var(--c-accent); }
+.logo-first { transition: color .25s; }
+.logo-sep   { font-weight: 700; letter-spacing: 0; color: rgba(91,160,164,.4); margin: 0 -.15em; }
+.logo-last  { font-style: italic; color: var(--c-accent); transition: color .25s; }
+.n-logo:hover .logo-first,
+.n-logo:hover .logo-last { color: var(--c-primary); }
 
 .n-right { display: flex; align-items: center; gap: var(--s-2); }
 
@@ -490,7 +496,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   position: sticky;
   top: 0;
   align-self: start;
-  padding: var(--s-8) var(--s-5) var(--s-8) var(--pad);
+  padding: var(--s-6) var(--s-5) var(--s-6) var(--pad);
   display: flex; flex-direction: column; gap: var(--s-5);
 }
 
@@ -534,7 +540,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 .meta-label::before { content: ''; width: var(--s-1); height: 1px; background: var(--c-accent); flex-shrink: 0; }
 .meta-value {
-  font-family: var(--f-heading); font-size: 13px;
+  font-family: var(--f-heading); font-size: var(--t-body-sm);
   font-weight: 400; letter-spacing: 0.04em;
   color: var(--c-secondary); line-height: 1.62;
 }
@@ -545,7 +551,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 .case-copy {
-  padding: var(--s-8) var(--pad) var(--s-8) var(--s-7);
+  padding: var(--s-6) var(--pad) var(--s-6) var(--s-7);
   display: flex; flex-direction: column; gap: var(--s-6);
 }
 .copy-section { display: flex; flex-direction: column; gap: var(--s-4); }
@@ -580,7 +586,7 @@ strong { color: var(--c-primary); font-weight: 700; }
    § PULL QUOTE — inside the right column
 ═══════════════════════════════════════════════════════════════ */
 .pull-quote {
-  padding: var(--s-8) var(--pad) var(--s-8) var(--s-7);
+  padding: var(--s-6) var(--pad) var(--s-6) var(--s-7);
   border-top: 1px solid var(--c-rule);
   border-bottom: 1px solid var(--c-rule);
   display: flex; align-items: flex-start; gap: var(--s-4);
@@ -604,7 +610,7 @@ strong { color: var(--c-primary); font-weight: 700; }
    § ARTICLE IMAGES
 ═══════════════════════════════════════════════════════════════ */
 .article-img {
-  padding: var(--s-7) var(--pad) 0 var(--s-7);
+  padding: var(--s-5) var(--pad) 0 var(--s-7);
 }
 .article-img + .copy-section,
 .copy-section + .article-img { margin-top: 0; }
@@ -626,6 +632,22 @@ strong { color: var(--c-primary); font-weight: 700; }
   padding: var(--s-2) 0 var(--s-7);
   display: flex; align-items: center; justify-content: space-between;
   border-top: 1px solid var(--c-rule);
+}
+
+/* ── Video embed ── */
+.video-embed {
+  padding: 0 var(--pad) 0 var(--s-7);
+}
+.video-frame {
+  position: relative; overflow: hidden; background: var(--c-bg2);
+  aspect-ratio: 16 / 9;
+}
+.video-frame iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: none; display: block;
+}
+.video-embed .img-cap {
+  padding: var(--s-2) 0 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -676,7 +698,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   .case-meta {
     border-right: none;
     border-bottom: 1px solid var(--c-rule);
-    padding: var(--s-5) var(--pad);
+    padding: var(--s-4) var(--pad);
     flex-direction: row;
     flex-wrap: wrap;
     gap: var(--s-3) var(--s-6);
@@ -689,11 +711,11 @@ strong { color: var(--c-primary); font-weight: 700; }
     flex: 1 1 120px;
   }
   .meta-label { font-size: var(--t-nano); margin-bottom: 4px; }
-  .meta-value  { font-size: 13px; }
+  .meta-value  { font-size: 15px; }
 
-  .case-copy { padding: var(--s-6) var(--pad); }
+  .case-copy { padding: var(--s-5) var(--pad); }
 
-  .article-img { padding: var(--s-6) var(--pad) 0; }
+  .article-img { padding: var(--s-5) var(--pad) 0; }
 
   .pull-quote {
     padding: var(--s-7) var(--pad);
@@ -737,7 +759,7 @@ strong { color: var(--c-primary); font-weight: 700; }
      TOP NAV — fixed chrome
 ═══════════════════════════════════════════════════════════ -->
 <nav class="top-nav" id="top-nav" aria-label="Site navigation">
-  <a href="../index.html" class="n-logo">Kieran <em>Green</em></a>
+  <a href="../index.html" class="n-logo"><span class="logo-first">Kieran</span><span class="logo-sep" aria-hidden="true">/</span><span class="logo-last">Green</span></a>
   <div class="n-right">
     <button class="n-theme" id="theme-btn" aria-label="Toggle light/dark theme">
       <!-- sun icon (shown in dark mode) -->
@@ -824,6 +846,23 @@ strong { color: var(--c-primary); font-weight: 700; }
         </div>
 
          <!-- Claude- pls put the video embed here -->
+
+        <div class="video-embed rev d2">
+          <div class="video-frame">
+            <iframe
+              src="https://www.youtube.com/embed/QhewEhvxjoQ?rel=0&modestbranding=1"
+              title="Sabretta Pen — Product Film"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+            ></iframe>
+          </div>
+          <div class="img-cap">
+            <span class="t-label">Sabretta Pen — Product Film</span>
+            <span class="t-label" style="color:var(--c-muted)">Keyshot → Premiere Pro</span>
+          </div>
+        </div>
 
         <div class="copy-section rev d2">
           <div class="section-rule">
