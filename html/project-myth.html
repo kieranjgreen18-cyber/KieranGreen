@@ -3,16 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Poul Henningsen Lamp — Kieran Green</title>
-<meta name="description" content="A precision modeling study of the iconic PH lamp — reverse-engineering one of the most carefully engineered lighting objects ever designed.">
+<title>Myth in Motion — Kieran Green</title>
+<meta name="description" content="An electric sportbike that evokes speed while standing still. Featuring a Beating Heart LED matrix, digital sketching in Photoshop, and Vizcom hero renders.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Poul Henningsen Lamp — Kieran Green">
-<meta property="og:description" content="Reverse-engineering one of the most carefully engineered lighting objects ever designed.">
-<meta property="og:image" content="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d674bd55-ac5f-465a-b2de-d8afe9c732a0_rwc_383x242x1005x1339x32.png?h=ff2f4c332ac075fa1aacce5aa24c7e38">
+<meta property="og:title" content="Myth in Motion — Kieran Green">
+<meta property="og:description" content="An electric sportbike that evokes the feeling of motion while standing still. The Beating Heart concept from Prof. Rafael Corazza's cross-disciplinary design studio.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Poul Henningsen Lamp — Kieran Green">
-<meta name="twitter:description" content="Reverse-engineering one of the most carefully engineered lighting objects ever designed.">
-<meta name="twitter:image" content="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d674bd55-ac5f-465a-b2de-d8afe9c732a0_rwc_383x242x1005x1339x32.png?h=ff2f4c332ac075fa1aacce5aa24c7e38">
+<meta name="twitter:title" content="Myth in Motion — Kieran Green">
+<meta name="twitter:description" content="An electric sportbike that evokes the feeling of motion while standing still.">
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 
@@ -79,25 +77,15 @@
   --t-meta:      13px;
   --t-micro:     11px;
   --t-nano:      10px;
-  --lh-display:  0.86;
-  --lh-heading:  0.90;
-  --lh-snug:     1.20;
-  --lh-text:     1.62;
-  --lh-body:     1.88;
-  --ls-tight:   -0.04em;
-  --ls-zero:    -0.02em;
-  --ls-base:     0.00em;
-  --ls-open:     0.01em;
-  --ls-stencil:  0.20em;
-  --ls-wide:     0.26em;
-  --ls-xwide:    0.32em;
+  --lh-display:  0.86; --lh-heading: 0.90; --lh-snug: 1.20; --lh-text: 1.62; --lh-body: 1.88;
+  --ls-tight:   -0.04em; --ls-zero: -0.02em; --ls-base: 0.00em; --ls-open: 0.01em;
+  --ls-stencil:  0.20em; --ls-wide: 0.26em; --ls-xwide: 0.32em;
   --s-1:    8px; --s-2:   16px; --s-3:   24px; --s-4:   32px;
   --s-5:   40px; --s-6:   48px; --s-7:   64px; --s-8:   80px;
   --s-9:   96px; --s-10: 120px; --s-11: 160px; --s-12: 200px;
   --pad:         clamp(24px, 4.5vw, 56px);
   --pad-sm:      clamp(16px, 3vw, 32px);
-  --max-w:       1500px;
-  --max-w-text:  680px;
+  --max-w:       1500px; --max-w-text: 680px;
   --ease:        cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in:     cubic-bezier(0.4, 0, 1, 1);
   --snap:        cubic-bezier(0.77, 0, 0.18, 1);
@@ -110,8 +98,7 @@
   --shadow-md:   0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);
   --shadow-lg:   0 20px 60px rgba(0,0,0,0.65), 0 4px 16px rgba(0,0,0,0.40);
   --shadow-glow: 0 0 40px rgba(91,160,164,0.08);
-  --nav-h:   56px;
-  --pnav-h:  72px;
+  --nav-h:   56px; --pnav-h: 72px;
 }
 
 [data-theme="light"] {
@@ -134,10 +121,7 @@ body {
   opacity: 0; transition: opacity var(--dur-slow) var(--ease);
 }
 body.ready { opacity: 1; }
-.page-scroll {
-  position: fixed; top: var(--nav-h); bottom: 0; left: 0; right: 0;
-  overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
-}
+.page-scroll { position: fixed; top: var(--nav-h); bottom: 0; left: 0; right: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 :focus { outline: none; }
 :focus-visible { outline: 1.5px solid var(--c-accent); outline-offset: 4px; border-radius: 2px; }
 img { display: block; max-width: 100%; height: auto; }
@@ -145,20 +129,11 @@ em { font-style: italic; color: var(--c-accent); }
 strong { color: var(--c-primary); font-weight: 700; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
-#grain {
-  position: fixed; inset: -25%; width: 150%; height: 150%;
-  pointer-events: none; z-index: 9000; opacity: 0.026;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain .9s steps(2) infinite; contain: strict; will-change: transform;
-}
+#grain { position: fixed; inset: -25%; width: 150%; height: 150%; pointer-events: none; z-index: 9000; opacity: 0.026; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain .9s steps(2) infinite; contain: strict; will-change: transform; }
 @keyframes grain { 0%,100% { transform: translate3d(0,0,0); } 33% { transform: translate3d(-1%,-2%,0); } 66% { transform: translate3d(1%,1%,0); } }
 [data-theme="light"] #grain { opacity: .018; }
 
-#veil {
-  position: fixed; inset: 0; z-index: 10000;
-  background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-hi) 100%);
-  clip-path: inset(0 0% 0 0); pointer-events: all; will-change: clip-path;
-}
+#veil { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-hi) 100%); clip-path: inset(0 0% 0 0); pointer-events: all; will-change: clip-path; }
 #veil.gone { clip-path: inset(0 100% 0 0); pointer-events: none; transition: clip-path var(--dur-slow) var(--snap); }
 #prog { position: fixed; top: 0; left: 0; height: 2px; z-index: 9500; background: var(--c-accent); width: 0%; box-shadow: 0 0 8px rgba(91,160,164,.6); transition: width .06s linear; pointer-events: none; }
 
@@ -170,13 +145,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 #cur-r::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
 #cur-r::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
 
-.top-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: var(--s-3) var(--pad);
-  background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
-  transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), backdrop-filter var(--dur-mid), border-color var(--dur-mid);
-}
+.top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 500; display: flex; align-items: center; justify-content: space-between; padding: var(--s-3) var(--pad); background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%); transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), backdrop-filter var(--dur-mid), border-color var(--dur-mid); }
 .top-nav.scrolled { padding: var(--s-2) var(--pad); background: rgba(8,9,9,.90); backdrop-filter: blur(32px) saturate(1.6); border-bottom: 1px solid var(--c-rule); }
 [data-theme="light"] .top-nav { background: linear-gradient(to bottom, rgba(237,238,237,.9) 0%, transparent 100%); }
 [data-theme="light"] .top-nav.scrolled { background: rgba(237,238,237,.94); }
@@ -203,14 +172,38 @@ strong { color: var(--c-primary); font-weight: 700; }
 .pn-dir { font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent); display: flex; align-items: center; gap: 6px; }
 .pn-title { font-family: var(--f-heading); font-size: clamp(18px, 2.2vw, 28px); font-weight: 100; letter-spacing: var(--ls-tight); color: var(--c-primary); line-height: 1.1; text-transform: uppercase; }
 
+/* ── Hero — uses a generated gradient since no image is available yet ── */
 .hero { position: relative; height: calc(100svh - var(--nav-h)); min-height: 480px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--pad) var(--s-8); }
 .hero-bg {
   position: absolute; inset: 0;
-  background-image: url('https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d674bd55-ac5f-465a-b2de-d8afe9c732a0_rwc_383x242x1005x1339x32.png?h=ff2f4c332ac075fa1aacce5aa24c7e38');
-  background-size: cover; background-position: center 20%;
+  background: radial-gradient(ellipse at 60% 40%, rgba(91,160,164,0.18) 0%, transparent 55%),
+              radial-gradient(ellipse at 20% 70%, rgba(126,200,204,0.10) 0%, transparent 50%),
+              linear-gradient(160deg, #050707 0%, #0a1213 40%, #060909 100%);
   transform: scale(1.06); will-change: transform; transition: transform 8s ease;
 }
 .hero.loaded .hero-bg { transform: scale(1.01); }
+
+/* Animated pulse lines — evoke the "Beating Heart" concept */
+.hero-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 79px,
+      rgba(91,160,164,0.04) 79px,
+      rgba(91,160,164,0.04) 80px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 79px,
+      rgba(91,160,164,0.04) 79px,
+      rgba(91,160,164,0.04) 80px
+    );
+}
+
 .hero-veil { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,9,9,.97) 0%, rgba(8,9,9,.55) 28%, rgba(8,9,9,.05) 60%, transparent 100%), linear-gradient(to bottom, rgba(8,9,9,.5) 0%, transparent 18%); }
 [data-theme="light"] .hero-veil { background: linear-gradient(to top, rgba(237,238,237,.98) 0%, rgba(237,238,237,.6) 28%, transparent 60%), linear-gradient(to bottom, rgba(237,238,237,.5) 0%, transparent 18%); }
 .hero-content { position: relative; z-index: 2; }
@@ -251,6 +244,31 @@ strong { color: var(--c-primary); font-weight: 700; }
 .r-cin  { aspect-ratio: 2.35 / 1; }
 .img-cap { padding: var(--s-2) 0 var(--s-7); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--c-rule); }
 
+/* ── Beating Heart accent box ── */
+.heart-callout {
+  margin: 0 var(--pad) 0 var(--s-7);
+  padding: var(--s-5) var(--s-6);
+  border: 1px solid rgba(91,160,164,.25);
+  background: var(--c-accent-lo);
+  display: flex; flex-direction: column; gap: var(--s-2);
+  position: relative; overflow: hidden;
+}
+.heart-callout::before {
+  content: '';
+  position: absolute; top: 0; left: 0; bottom: 0; width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--c-accent), transparent);
+}
+.heart-callout-label {
+  font-family: var(--f-heading); font-size: var(--t-micro);
+  font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent);
+}
+.heart-callout-text {
+  font-family: var(--f-body); font-size: var(--t-body-sm);
+  font-weight: 400; letter-spacing: var(--ls-open);
+  line-height: 1.75; color: var(--c-secondary);
+}
+
 .site-footer { padding: var(--s-3) var(--pad); border-top: 1px solid var(--c-rule); display: flex; align-items: center; justify-content: space-between; background: var(--c-bg2); }
 .f-logo { font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-secondary); }
 .f-logo em { font-style: normal; color: var(--c-accent); }
@@ -271,6 +289,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   .meta-value  { font-size: 15px; }
   .case-copy { padding: var(--s-5) var(--pad); }
   .article-img { padding: var(--s-5) var(--pad) 0; }
+  .heart-callout { margin: 0 var(--pad); }
   .pull-quote { padding: var(--s-7) var(--pad); flex-direction: column; gap: var(--s-2); }
   .pull-quote::before { font-size: 56px; }
   .proj-nav { grid-template-columns: 1fr; }
@@ -304,15 +323,17 @@ strong { color: var(--c-primary); font-weight: 700; }
 <div class="page-scroll" id="page-scroll">
 
   <!-- HERO -->
-  <header class="hero" id="hero" aria-label="Project: Poul Henningsen Lamp">
-    <div class="hero-bg" role="img" aria-label="Poul Henningsen PH Lamp — Rhino 3D model render"></div>
+  <header class="hero" id="hero" aria-label="Project: Myth in Motion">
+    <div class="hero-bg" role="img" aria-label="Myth in Motion — electric sportbike concept hero visual"></div>
     <div class="hero-veil" aria-hidden="true"></div>
     <div class="hero-content">
-      <p class="hero-eyebrow t-label">03 — 2025</p>
-      <h1 class="hero-h1">Poul Henningsen<br>Lamp</h1>
+      <p class="hero-eyebrow t-label">04 — 2025</p>
+      <h1 class="hero-h1">Myth in<br>Motion</h1>
       <div class="hero-chips" role="list" aria-label="Tools used">
-        <span class="hero-chip" role="listitem">Rhino 3D</span>
-        <span class="hero-chip" role="listitem">CAD Modeling</span>
+        <span class="hero-chip" role="listitem">Adobe Photoshop</span>
+        <span class="hero-chip" role="listitem">Wacom</span>
+        <span class="hero-chip" role="listitem">Vizcom</span>
+        <span class="hero-chip" role="listitem">Digital Sketching</span>
       </div>
     </div>
   </header>
@@ -326,60 +347,74 @@ strong { color: var(--c-primary); font-weight: 700; }
         <p class="meta-value">2025</p>
       </div>
       <div class="meta-group">
+        <p class="meta-label">Studio</p>
+        <p class="meta-value">Myth in Motion<br>Prof. Rafael Corazza</p>
+      </div>
+      <div class="meta-group">
         <p class="meta-label">Tools</p>
-        <p class="meta-value">Rhino 3D</p>
+        <p class="meta-value">Adobe Photoshop<br>Wacom Pen<br>Vizcom</p>
+      </div>
+      <div class="meta-group">
+        <p class="meta-label">Output</p>
+        <p class="meta-value">Digital sketches<br>Hero poster render</p>
       </div>
       <div class="meta-group">
         <p class="meta-label">Type</p>
-        <p class="meta-value">Modeling Study</p>
-      </div>
-      <div class="meta-group">
-        <p class="meta-label">Reference</p>
-        <p class="meta-value">PH Lamp<br>Poul Henningsen</p>
+        <p class="meta-value">Cross-disciplinary<br>Vehicle Concept</p>
       </div>
     </aside>
 
     <div class="article-main">
 
+      <!-- Opening copy -->
       <div class="case-copy">
         <div class="copy-section rev d1">
           <p class="t-intro">
-            A precision modeling study of the iconic PH lamp — one of the most <em>engineered lighting objects</em> ever designed.
+            Motion has a way of making everything beautiful — speed blurs and streaks until the world looks <em>almost like a painting.</em>
           </p>
           <p class="t-copy">
-            Poul Henningsen spent years perfecting the geometry of layered shades so that the bulb is never visible from any angle, and light diffuses evenly without glare. Modeling it meant understanding exactly how he achieved that — every curve is intentional.
+            Great vehicle design evokes that same feeling even while standing still. Within Prof. Rafael Corazza's Myth in Motion class — a cross-disciplinary collaborative project designing the bike of the not-too-distant future — I set out to design an electric sportbike that embodies this idea.
           </p>
         </div>
 
         <div class="copy-section rev d2">
           <div class="section-rule">
-            <h2 class="t-label">What I Learned</h2>
+            <h2 class="t-label">The Concept</h2>
           </div>
           <p class="t-copy">
-            Reverse engineering a designed object is one of the best ways to understand it. Working through the PH lamp's shade geometry gave me a deep appreciation for how <strong>light, surface, and form can be co-designed from first principles</strong> rather than treated separately.
+            What makes motorcycles so compelling is how they <strong>wear their heart on display</strong> — exposed frames, visible structure, and mechanical honesty. That led me to question how an electric bike could recapture the feeling of rider wrapped around a living machine.
+          </p>
+          <p class="t-copy">
+            The electric powertrain strips away the traditional visual drama of an engine. Without exhaust, pistons, or a fuel tank, the bike risks feeling anonymous. The design challenge was to create a new kind of presence — one that is unmistakably alive.
           </p>
         </div>
       </div>
 
-      <!-- IMAGE 01 -->
-      <div class="article-img rev">
-        <div class="img-frame r-wide">
-          <img
-            src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d674bd55-ac5f-465a-b2de-d8afe9c732a0_rwc_383x242x1005x1339x32.png?h=ff2f4c332ac075fa1aacce5aa24c7e38"
-            alt="PH Lamp — Rhino 3D model render"
-            loading="lazy"
-            style="object-position: center 20%;"
-          >
-        </div>
-        <div class="img-cap">
-          <span class="t-label">01 / PH Lamp — CAD Model</span>
-          <span class="t-label" style="color:var(--c-muted)">Rhino 3D</span>
+      <!-- Beating Heart callout -->
+      <div class="heart-callout rev d3" aria-label="The Beating Heart concept">
+        <span class="heart-callout-label">The Beating Heart</span>
+        <p class="heart-callout-text">
+          A central LED matrix acts as a modern pulse, displaying the bike's status, riding mode, or custom graphics. The rider doesn't just sit on the machine — they communicate with it. The Heart gives the electric bike a soul visible from the outside.
+        </p>
+      </div>
+
+      <div class="case-copy">
+        <div class="copy-section rev d1">
+          <div class="section-rule">
+            <h2 class="t-label">Process</h2>
+          </div>
+          <p class="t-copy">
+            This was my first time using <strong>digital sketching in Adobe Photoshop with a Wacom pen</strong>, and I really enjoyed the iterative process it enabled. Working digitally let me explore forms rapidly — a sketch could be revised in seconds rather than redrawn from scratch.
+          </p>
+          <p class="t-copy">
+            The hero render in the final poster, as well as the wheels on the final digital sketches, were created using <strong>Vizcom</strong>. The AI-assisted rendering allowed me to quickly visualise lighting and material in ways that would have taken hours conventionally, keeping the focus on form decisions rather than production time.
+          </p>
         </div>
       </div>
 
       <!-- PULL QUOTE -->
       <blockquote class="pull-quote rev" aria-label="Project quote">
-        <p class="pull-quote-text">Reverse engineering a design <br>is how you truly <em>understand it.</em></p>
+        <p class="pull-quote-text">How can an electric bike feel like <br>a <em>living machine?</em></p>
       </blockquote>
 
     </div>
@@ -387,13 +422,13 @@ strong { color: var(--c-primary); font-weight: 700; }
 
   <!-- PROJ-NAV -->
   <nav class="proj-nav" aria-label="Project navigation">
-    <a href="project-pen.html" class="pn-item">
+    <a href="project-lamp.html" class="pn-item">
       <span class="pn-dir"><svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="12" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="5,1 1,5 5,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Previous</span>
-      <span class="pn-title">Sabretta Pen</span>
+      <span class="pn-title">Poul Henningsen Lamp</span>
     </a>
-    <a href="project-myth.html" class="pn-item right">
+    <a href="project-car.html" class="pn-item right">
       <span class="pn-dir">Next <svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="1" y1="5" x2="12" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="8,1 12,5 8,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
-      <span class="pn-title">Myth in Motion</span>
+      <span class="pn-title">3D Printed Car</span>
     </a>
   </nav>
 
