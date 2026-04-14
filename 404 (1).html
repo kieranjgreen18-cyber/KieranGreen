@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Page Not Found | Kieran Green</title>
+<meta name="description" content="This page doesn't exist. Return to Kieran Green's industrial design portfolio.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://kieranjgreen18-cyber.github.io/KieranGreen/">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
+<meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
+
+<!-- Font preloads — match index.html -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/AnyConv.com__D-DINCondensed.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/AnyConv.com__D-DIN.woff2" crossorigin>
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   FONT FACES — mirror index.html exactly
+═══════════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'D-DIN';
+  src: url('assets/fonts/AnyConv.com__D-DIN.woff2') format('woff2'),
+       url('assets/fonts/D-DIN.otf') format('opentype');
+  font-weight: 300 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('assets/fonts/AnyConv.com__D-DIN-Italic.woff2') format('woff2'),
+       url('assets/fonts/D-DIN-Italic.otf') format('opentype');
+  font-weight: 300 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('assets/fonts/AnyConv.com__D-DINCondensed.woff2') format('woff2'),
+       url('assets/fonts/D-DINCondensed.otf') format('opentype');
+  font-weight: 100 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS — identical to index
+═══════════════════════════════════════════════════════ */
+:root {
+  --c-bg:        #080909;
+  --c-bg2:       #0d0e0e;
+  --c-surface:   rgba(255,255,255,0.032);
+  --c-surface2:  rgba(255,255,255,0.055);
+  --c-primary:   #edeeed;
+  --c-secondary: #96a8aa;
+  --c-tertiary:  #5e7172;
+  --c-accent:    #5ba0a4;
+  --c-accent-hi: #7ec8cc;
+  --c-rule:      rgba(255,255,255,0.055);
+  --c-rule-hi:   rgba(255,255,255,0.10);
+  --c-muted:     rgba(150,168,170,0.35);
+
+  --f-heading: 'D-DIN Condensed', sans-serif;
+  --f-body:    'D-DIN', sans-serif;
+
+  --t-display: clamp(120px, 20vw, 260px);
+  --t-micro:   11px;
+
+  --ls-tight:   -0.04em;
+  --ls-stencil:  0.20em;
+  --ls-wide:     0.26em;
+
+  --pad:   clamp(24px, 4.5vw, 56px);
+  --ease:  cubic-bezier(0.16, 1, 0.3, 1);
+  --snap:  cubic-bezier(0.77, 0, 0.18, 1);
+
+  --z-veil:   10000;
+  --z-cursor: 9998;
+  --z-nav:    500;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { overflow-x: hidden; }
+body {
+  background: var(--c-bg);
+  color: var(--c-primary);
+  font-family: var(--f-body);
+  font-weight: 400;
+  cursor: none;
+  -webkit-font-smoothing: antialiased;
+  opacity: 0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+body.ready { opacity: 1; transition: opacity .75s var(--ease); }
+:focus { outline: none; }
+:focus-visible { outline: 1.5px solid var(--c-accent); outline-offset: 4px; }
+em { font-style: italic; color: var(--c-accent); }
+
+/* ═══════════════════════════════════════════════════════
+   GRAIN
+═══════════════════════════════════════════════════════ */
+#grain {
+  position: fixed; inset: -25%; width: 150%; height: 150%;
+  pointer-events: none; z-index: calc(var(--z-cursor) - 1); opacity: 0.024;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain .9s steps(2) infinite;
+  contain: strict; will-change: transform;
+}
+@keyframes grain {
+  0%, 100% { transform: translate3d(0,0,0); }
+  33%       { transform: translate3d(-1%,-2%,0); }
+  66%       { transform: translate3d(1%,1%,0); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   VEIL
+═══════════════════════════════════════════════════════ */
+#veil {
+  position: fixed; inset: 0; z-index: var(--z-veil);
+  background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-hi) 100%);
+  clip-path: inset(0 0% 0 0);
+  pointer-events: all; will-change: clip-path;
+}
+#veil.gone    { clip-path: inset(0 100% 0 0); pointer-events: none; transition: clip-path .75s var(--snap); }
+#veil.instant { transition: none !important; clip-path: inset(0 100% 0 0) !important; pointer-events: none; }
+
+/* ═══════════════════════════════════════════════════════
+   CURSOR — CAD crosshair, exact match from index
+═══════════════════════════════════════════════════════ */
+#cur {
+  position: fixed; z-index: var(--z-veil); pointer-events: none;
+  width: 16px; height: 1px;
+  background: var(--c-accent);
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  transition: width .28s var(--ease), opacity .28s var(--ease), background .28s;
+}
+#cur::before {
+  content: '';
+  position: absolute; top: 0; left: 50%;
+  width: 4px; height: 1px;
+  background: var(--c-bg);
+  transform: translateX(-50%);
+  transition: width .28s var(--ease);
+}
+#cur::after {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: 1px; height: 16px;
+  background: var(--c-accent);
+  transform: translate(-50%, -50%);
+  transition: height .28s var(--ease), background .28s;
+}
+#cur-r {
+  position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
+  width: 20px; height: 20px;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  transition: width .52s var(--ease), height .52s var(--ease), opacity .28s;
+  --bc: rgba(91,160,164,.55);
+}
+#cur-r::before, #cur-r::after {
+  content: '';
+  position: absolute;
+  width: 6px; height: 6px;
+  border-color: var(--bc);
+  border-style: solid;
+  transition: border-color .28s, width .52s var(--ease), height .52s var(--ease);
+}
+#cur-r::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+#cur-r::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+/* Hover state */
+body.hl #cur   { width: 6px; background: var(--c-accent-hi); }
+body.hl #cur::after { height: 6px; background: var(--c-accent-hi); }
+body.hl #cur-r { width: 32px; height: 32px; --bc: rgba(126,200,204,.7); }
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION — identical structure to index
+═══════════════════════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px var(--pad);
+  background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
+}
+.n-logo {
+  font-family: var(--f-heading); font-size: clamp(12px,1.2vw,15px);
+  font-weight: 700; letter-spacing: var(--ls-wide); text-transform: uppercase;
+  color: var(--c-secondary); text-decoration: none; cursor: none;
+  display: inline-flex; align-items: baseline; gap: .35em;
+  transition: color .28s var(--ease);
+  opacity: 0; animation: fd .6s var(--ease) .05s forwards;
+}
+.logo-first { transition: color .25s; }
+.logo-sep   { font-weight: 700; letter-spacing: 0; color: rgba(91,160,164,.4); margin: 0 -.15em; }
+.logo-last  { font-style: italic; color: var(--c-accent); transition: color .25s; }
+.n-logo:hover .logo-first,
+.n-logo:hover .logo-last { color: var(--c-primary); }
+
+@keyframes fd { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fu { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+/* ═══════════════════════════════════════════════════════
+   404 CONTENT
+═══════════════════════════════════════════════════════ */
+.not-found {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--pad);
+  padding-top: 120px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ghost 404 watermark */
+.nf-ghost {
+  position: absolute;
+  font-family: var(--f-heading);
+  font-size: var(--t-display);
+  font-weight: 100;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(91,160,164,.045);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  right: -0.05em;
+  top: 50%;
+  transform: translateY(-50%);
+  letter-spacing: var(--ls-tight);
+}
+
+/* Crosshair accent lines */
+.nf-crosshair {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.06;
+}
+.nf-crosshair-h {
+  top: 50%; left: 0; right: 0; height: 1px;
+  background: var(--c-accent);
+}
+.nf-crosshair-v {
+  left: calc(var(--pad) + 200px); top: 0; bottom: 0; width: 1px;
+  background: var(--c-accent);
+}
+
+.nf-eyebrow {
+  font-family: var(--f-heading);
+  font-size: var(--t-micro); font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent);
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 24px;
+  opacity: 0; animation: fu .7s var(--ease) .2s forwards;
+}
+.nf-eyebrow-line { width: 24px; height: 1px; background: var(--c-accent); flex-shrink: 0; }
+
+.nf-heading {
+  font-family: var(--f-heading);
+  font-size: clamp(72px, 13vw, 180px);
+  font-weight: 100; line-height: 0.88; letter-spacing: var(--ls-tight); text-transform: uppercase;
+  margin-bottom: 36px;
+  opacity: 0; animation: fu .9s var(--ease) .3s forwards;
+}
+.nf-heading em { font-style: italic; color: var(--c-accent); }
+
+.nf-sub {
+  font-family: var(--f-body);
+  font-size: 15px; line-height: 1.65;
+  color: var(--c-secondary);
+  max-width: 380px;
+  margin-bottom: 52px;
+  opacity: 0; animation: fu .8s var(--ease) .45s forwards;
+}
+
+.nf-back {
+  font-family: var(--f-heading);
+  font-size: var(--t-micro); font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-primary); text-decoration: none; cursor: none;
+  display: inline-flex; align-items: center; gap: 14px;
+  border: 1px solid var(--c-rule-hi);
+  padding: 16px 28px;
+  transition: border-color .25s, color .25s, background .25s;
+  position: relative;
+  opacity: 0; animation: fu .8s var(--ease) .58s forwards;
+}
+.nf-back:hover { border-color: var(--c-accent); color: var(--c-accent); background: rgba(91,160,164,.04); }
+.nf-back-arrow { transition: transform .3s var(--ease); }
+.nf-back:hover .nf-back-arrow { transform: translateX(-4px); }
+
+/* ═══════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════ */
+footer {
+  padding: 20px var(--pad);
+  border-top: 1px solid var(--c-rule);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--c-bg2);
+}
+.f-logo {
+  font-family: var(--f-heading);
+  font-size: 12px; font-weight: 700; letter-spacing: var(--ls-wide); text-transform: uppercase;
+  color: var(--c-tertiary);
+}
+.f-logo em { font-style: italic; color: var(--c-accent); }
+.f-copy {
+  font-family: var(--f-heading);
+  font-size: var(--t-micro); font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE & ACCESSIBILITY
+═══════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+  #cur, #cur-r { display: none !important; }
+  body { cursor: auto; }
+  a { cursor: pointer; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  #grain { display: none; }
+}
+@media (max-width: 768px) {
+  :root { --pad: 24px; }
+  .nf-crosshair { display: none; }
+  footer { flex-direction: column; gap: 8px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div id="veil"></div>
+<div id="cur"></div>
+<div id="cur-r"></div>
+<div id="grain"></div>
+
+<nav aria-label="Main navigation">
+  <a href="index.html" class="n-logo">
+    <span class="logo-first">Kieran</span>
+    <span class="logo-sep">/</span>
+    <span class="logo-last">Green</span>
+  </a>
+</nav>
+
+<main class="not-found" aria-labelledby="nf-title">
+  <div class="nf-crosshair nf-crosshair-h" aria-hidden="true"></div>
+  <div class="nf-crosshair nf-crosshair-v" aria-hidden="true"></div>
+  <div class="nf-ghost" aria-hidden="true">404</div>
+
+  <p class="nf-eyebrow"><span class="nf-eyebrow-line"></span>Error 404</p>
+  <h1 class="nf-heading" id="nf-title">Page<br><em>not found.</em></h1>
+  <p class="nf-sub">That URL doesn't exist — it may have moved or never existed. Head back to the portfolio and find something real.</p>
+  <a href="index.html" class="nf-back">
+    <span class="nf-back-arrow">←</span>
+    Back to portfolio
+  </a>
+</main>
+
+<footer role="contentinfo">
+  <div class="f-logo">Kieran <em>Green</em> — Industrial Designer</div>
+  <div class="f-copy">© <span id="copy-year"></span> — All rights reserved</div>
+</footer>
+
+<script>
+/* ── CURSOR — CAD crosshair ── */
+const cur  = document.getElementById('cur');
+const curR = document.getElementById('cur-r');
+let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+let rx = mx, ry = my;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+});
+if (window.matchMedia('(pointer:fine)').matches) {
+  (function loop() {
+    const nrx = rx + (mx - rx) * .1;
+    const nry = ry + (my - ry) * .1;
+    if (Math.abs(nrx - rx) > 0.02 || Math.abs(nry - ry) > 0.02) {
+      rx = nrx; ry = nry;
+      curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
+    }
+    requestAnimationFrame(loop);
+  })();
+}
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('hl'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('hl'));
+});
+document.addEventListener('mouseleave', () => { cur.style.opacity = '0'; curR.style.opacity = '0'; });
+document.addEventListener('mouseenter', () => { cur.style.opacity = '1'; curR.style.opacity = '1'; });
+
+/* ── VEIL + PAGE READY ── */
+const veil = document.getElementById('veil');
+function navigateTo(href) {
+  veil.style.transition = 'clip-path .5s cubic-bezier(0.77,0,0.18,1)';
+  veil.style.clipPath = 'inset(0 0% 0 0)';
+  setTimeout(() => { window.location.href = href; }, 520);
+}
+requestAnimationFrame(() => {
+  document.body.classList.add('ready');
+  veil.classList.add('gone');
+});
+window.addEventListener('pageshow', e => {
+  if (e.persisted) {
+    veil.classList.remove('gone');
+    veil.classList.add('instant');
+    document.body.classList.add('ready');
+    void veil.offsetWidth;
+    veil.classList.remove('instant');
+  }
+});
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href]');
+  if (!a) return;
+  const href = a.getAttribute('href');
+  if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+  e.preventDefault();
+  navigateTo(href);
+});
+
+/* ── COPYRIGHT YEAR ── */
+document.getElementById('copy-year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
