@@ -26,12 +26,16 @@
 .carousel-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--rule);background:none;color:var(--mist);display:flex;align-items:center;justify-content:center;cursor:none;font-size:14px;transition:border-color .25s,color .25s,transform .3s var(--ease);}
 .carousel-btn:hover{border-color:var(--hi);color:var(--hi);transform:scale(1.05);}
 
-let autoTimer = setInterval(() => goTo(current + 1), 4000);
-let isPaused = false;
+let autoTimer;
+
+function startAuto() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => goTo(current + 1), 4000);
+}
 
 function startAuto() {
   if (autoTimer) clearInterval(autoTimer);
-  autoTimer = setInterval(() => goTo(current + 1), 4000);
+  autoTimer = startAuto(() => goTo(current + 1), 4000);
 }
 
 function pauseAuto() {
@@ -97,29 +101,68 @@ function resumeAuto() {
   </div>
 </section>
 
-(function(){
+document.addEventListener('DOMContentLoaded', () => {
   const carTrack = document.getElementById('carousel-track');
+  if (!carTrack) return;
+
   const cards = Array.from(carTrack.querySelectorAll('.card'));
   const pips = Array.from(document.querySelectorAll('.carousel-pip'));
-  let current = 0;
 
-  function goTo(idx){
+  let current = 0;
+  let autoTimer;
+  let resizeTimer;
+
+  function goTo(idx) {
     current = (idx + cards.length) % cards.length;
 
-    cards.forEach((c,i)=>c.classList.toggle('active', i === current));
-    pips.forEach((p,i)=>p.classList.toggle('active', i === current));
+    cards.forEach((c, i) => c.classList.toggle('active', i === current));
+    pips.forEach((p, i) => p.classList.toggle('active', i === current));
 
     const wrap = carTrack.parentElement;
     const card = cards[current];
-    const offset = card.offsetLeft - (wrap.offsetWidth/2) + (card.offsetWidth/2);
+
+    const offset =
+      card.offsetLeft -
+      (wrap.offsetWidth / 2) +
+      (card.offsetWidth / 2);
 
     carTrack.style.transform = `translateX(${-offset}px)`;
   }
 
-  setInterval(()=>goTo(current+1), 4000);
+  function startAuto() {
+    clearInterval(autoTimer);
+    autoTimer = setInterval(() => goTo(current + 1), 4000);
+  }
 
-  requestAnimationFrame(()=>goTo(0));
-})();
+  function pauseAuto() {
+    clearInterval(autoTimer);
+  }
+
+  // nav
+  document.getElementById('car-prev')?.addEventListener('click', () => {
+    goTo(current - 1);
+    startAuto();
+  });
+
+  document.getElementById('car-next')?.addEventListener('click', () => {
+    goTo(current + 1);
+    startAuto();
+  });
+
+  // hover pause
+  carTrack.addEventListener('mouseenter', pauseAuto);
+  carTrack.addEventListener('mouseleave', startAuto);
+
+  // resize debounce
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => goTo(current), 100);
+  });
+
+  // init
+  requestAnimationFrame(() => goTo(0));
+  startAuto();
+});
 
 /* ── MOBILE ── */
 (goes in media section)
