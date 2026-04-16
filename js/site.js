@@ -40,7 +40,7 @@ class AppController {
     this._containers = new Map();
     this._activeKey  = null;
     this._locked     = false;
-    this._LOCK_MS    = 850; // >= longest container _TRANS_MS + buffer
+    this._LOCK_MS    = 900; // >= longest container _TRANS_MS (820) + ~80ms real margin
 
     // ── Wheel velocity model ───────────────────────────────────────────
     this._wVel        = 0;
@@ -159,6 +159,10 @@ class AppController {
     // Notify PageChrome so the section indicator updates immediately,
     // rather than relying on scroll position (unreliable in scroll-lock mode).
     this._chrome?.notifySection?.(name);
+    // Suppress the scroll-position-based indicator for the settle window so
+    // the PageChrome scroll listener cannot overwrite the label we just set
+    // while a smooth scroll (e.g. ContactContainer.enter) is still in flight.
+    this._chrome?.suppressScrollIndicator?.(this._SETTLE_MS);
   }
 
   _dispatchScroll(direction) {
@@ -197,7 +201,6 @@ class PageChrome {
     // Cursor
     this._cur     = null;
     this._curR    = null;
-    this._prog    = null;
     this._mx      = window.innerWidth  / 2;
     this._my      = window.innerHeight / 2;
     this._rx      = this._mx;
@@ -205,19 +208,11 @@ class PageChrome {
     this._isDown  = false;
     this._inLink  = false;
     this._inProj  = false;
-    this._ringTgt = 42;
-    this._ringCur = 42;
-
-    this._STATES = {
-      default: { dot: 8,  ring: 42,  ringColor: 'rgba(91,160,164,.32)' },
-      link:    { dot: 5,  ring: 64,  ringColor: 'rgba(91,160,164,.6)'  },
-      proj:    { dot: 4,  ring: 120, ringColor: 'rgba(91,160,164,.18)' },
-      click:   { dot: 14, ring: 42,  ringColor: 'rgba(91,160,164,.5)'  },
-    };
 
     // Section indicator
     this._secInd  = null;
     this._navEl   = null;
+    this._suppressIndicatorUntil = 0; // timestamp — scroll-based updates are muted until this time
     this._SECTIONS = [
       { id: 'top',           label: 'Hero'     },
       { id: 'projects-spacer', label: 'Projects' },
@@ -239,7 +234,6 @@ class PageChrome {
     // ── Cursor + progress bar ──────────────────────────────────────────
     this._cur   = document.getElementById('cur');
     this._curR  = document.getElementById('cur-r');
-    this._prog  = document.getElementById('prog');
     this._navEl = document.getElementById('nav');
     this._secInd= document.getElementById('section-indicator');
 
@@ -290,19 +284,17 @@ class PageChrome {
       el.addEventListener('mouseleave', () => { this._inProj = false; this._apply(); });
     });
 
-    // Cursor ring RAF loop
+    // Cursor follower — position tracking only.
+    // Width/height/appearance are owned entirely by CSS via body classes.
     if (window.matchMedia('(pointer:fine)').matches) {
       const loop = () => {
         const rxN = this._rx + (this._mx - this._rx) * 0.1;
         const ryN = this._ry + (this._my - this._ry) * 0.1;
-        const rN  = this._ringCur + (this._ringTgt - this._ringCur) * 0.12;
-        if (Math.abs(rxN - this._rx) > 0.02 || Math.abs(ryN - this._ry) > 0.02 || Math.abs(rN - this._ringCur) > 0.05) {
-          this._rx = rxN; this._ry = ryN; this._ringCur = rN;
+        if (Math.abs(rxN - this._rx) > 0.02 || Math.abs(ryN - this._ry) > 0.02) {
+          this._rx = rxN; this._ry = ryN;
           if (this._curR) {
-            this._curR.style.left   = `${this._rx}px`;
-            this._curR.style.top    = `${this._ry}px`;
-            this._curR.style.width  = `${this._ringCur}px`;
-            this._curR.style.height = `${this._ringCur}px`;
+            this._curR.style.left = `${this._rx}px`;
+            this._curR.style.top  = `${this._ry}px`;
           }
         }
         requestAnimationFrame(loop);
@@ -315,7 +307,13 @@ class PageChrome {
     const io = new IntersectionObserver(entries => entries.forEach(e => {
       if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
     }), { threshold: 0.06 });
-    document.querySelectorAll('.rev, .rev-stagger').forEach(r => io.observe(r));
+    document.querySelectorAll('.rev, .rev-stagger').forEach(r => {
+      // Skip elements inside the About scroll-lock stage and the Carousel fixed
+      // overlay — these are revealed by their own enter() logic, not by scroll
+      // position. Observing them causes spurious style recalcs mid-transition.
+      if (r.closest('#about-stage, .projects')) return;
+      io.observe(r);
+    });
 
     // ── Anchor nav — routes through AppController so the scroll-lock
     //    container system stays in sync instead of fighting window.scrollTo.
@@ -437,6 +435,9 @@ class PageChrome {
       if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
       if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
       if (this._secInd && this._sectionOffsets.length) {
+        // Skip position-based label while a container transition is settling.
+        // notifySection() already set the correct label; let it stick.
+        if (performance.now() < this._suppressIndicatorUntil) return;
         let active = this._SECTIONS[0].label;
         for (let i = this._sectionOffsets.length - 1; i >= 0; i--) {
           if (y >= this._sectionOffsets[i].top - 100) { active = this._sectionOffsets[i].label; break; }
@@ -467,11 +468,9 @@ class PageChrome {
     if (copyYear) copyYear.textContent = new Date().getFullYear();
   }
 
-  /** Called by AppController on every dispatched scroll — updates progress bar */
+  /** Called by AppController on every dispatched scroll. Progress bar removed. */
   onScroll(y) {
-    if (!this._prog) return;
-    const max = document.body.scrollHeight - window.innerHeight;
-    this._prog.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+    // intentionally empty — kept so the AppController call-site is unchanged
   }
 
   /**
@@ -490,12 +489,24 @@ class PageChrome {
     }
   }
 
-  _state() { return this._isDown ? 'click' : this._inLink ? 'link' : this._inProj ? 'proj' : 'default'; }
+  /**
+   * Mutes the scroll-position-based section indicator for `ms` milliseconds.
+   * Called by AppController._activateDirect after every section change so that
+   * an in-flight smooth scroll (ContactContainer.enter) cannot clobber the label
+   * that notifySection() just set.
+   * @param {number} ms
+   */
+  suppressScrollIndicator(ms) {
+    this._suppressIndicatorUntil = performance.now() + ms;
+  }
+
+  // Cursor state is expressed as body classes so CSS owns all appearance.
+  // Priority: click > link > proj > default (matches original _state() logic).
   _apply() {
-    const s = this._STATES[this._state()];
-    if (this._cur) { this._cur.style.width = `${s.dot}px`; this._cur.style.height = `${s.dot}px`; }
-    this._ringTgt = s.ring;
-    if (this._curR) this._curR.style.borderColor = s.ringColor;
+    const b = document.body;
+    b.classList.toggle('cur-click', this._isDown);
+    b.classList.toggle('cur-link',  !this._isDown && this._inLink);
+    b.classList.toggle('cur-proj',  !this._isDown && !this._inLink && this._inProj);
   }
 
   _setTheme(t) {
@@ -597,6 +608,8 @@ class Hero3DContainer {
   exit() {
     if (!this._root) return;
     this._active = false;
+    // Cancel any pending auto-rotate resume so it cannot fire after we've left.
+    if (this._rotateTimer) { clearTimeout(this._rotateTimer); this._rotateTimer = null; }
     this._root.style.transition = 'opacity 0.4s ease';
     this._root.style.opacity    = '0';
     // Strip reveal classes so re-entering Hero re-plays the entrance animation.
@@ -730,7 +743,11 @@ class CarouselContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 820;
 
-    this._onResize = () => { this._sizeSpacer(); setTimeout(() => this._calcSpacerTop(), 200); };
+    this._onResize = () => {
+      this._sizeSpacer();
+      clearTimeout(this._resizeTopTimer);
+      this._resizeTopTimer = setTimeout(() => this._calcSpacerTop(), 220);
+    };
   }
 
   init(root) {
@@ -914,7 +931,11 @@ class AboutContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 820;
 
-    this._onResize = () => { this._sizeSpacer(); setTimeout(() => this._calcSpacerTop(), 200); };
+    this._onResize = () => {
+      this._sizeSpacer();
+      clearTimeout(this._resizeTopTimer);
+      this._resizeTopTimer = setTimeout(() => this._calcSpacerTop(), 220);
+    };
   }
 
   init(root) {
@@ -1062,23 +1083,32 @@ class ContactContainer {
   enter(fromDirection = 0) {
     if (!this._root) return;
     this._active = true;
-    this._cacheTop();
-    // Scroll to the top of the contact section (includes personal-statement above it).
-    // Find the personal-statement section which sits just above contact — that's
-    // the natural entry point when arriving from About.
+    // Resolve the scroll target first so we can set _contactTop synchronously.
+    // The deferred _cacheTop() call below was the only source of truth before,
+    // meaning nativeScrollDirection read a stale value for ~600ms after entry.
     const psEl = document.getElementById('statement') || this._root;
     const top  = Math.round(psEl.getBoundingClientRect().top + window.scrollY);
+    // Set _contactTop immediately from the *target* position, not from the
+    // post-scroll DOM state. This makes nativeScrollDirection accurate from
+    // the very first wheel event after entering Contact.
+    this._contactTop = top;
     // Use instant scroll if we're jumping from a far section (hero/carousel)
     // to avoid a long slow scroll across the whole page.
     const dist = Math.abs(window.scrollY - top);
     window.scrollTo({ top, behavior: dist > window.innerHeight * 2 ? 'instant' : 'smooth' });
-    // Re-cache after scroll settles (smooth scroll moves scrollY asynchronously)
-    setTimeout(() => this._cacheTop(), 600);
+    // Re-cache after the scroll settles as a safety net for resize-caused drift.
+    setTimeout(() => this._cacheTop(), 650);
   }
 
   exit() {
     if (!this._root) return;
     this._active = false;
+    // Abort any in-flight smooth scroll so scrollY is deterministic before
+    // AboutContainer (or any other container) takes over. Without this, the
+    // continuing smooth scroll fires PageChrome's scroll listener with
+    // intermediate scrollY values that trip nativeScrollDirection incorrectly
+    // on the very next wheel event.
+    window.scrollTo({ top: window.scrollY, behavior: 'instant' });
   }
 
   /**
