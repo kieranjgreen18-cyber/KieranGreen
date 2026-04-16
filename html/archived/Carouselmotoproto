@@ -58,13 +58,13 @@ function resumeAuto() {
 
   <div class="carousel reveal">
     <div class="carousel-track" id="carousel-track">
-      <div class="card lnk active" data-project="0" 
+      <div class="card lnk active" data-project="0"> 
         <img src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/42b62a60-3b3d-4135-85e1-cd1a4bb29aee_rwc_110x0x1434x1911x32.png?h=7bc7f5af9f8200b904bfbfd5f4224df2" alt="3D Printed Car">
         <div class="card-info">
           <div class="card-num">01 — 2025</div>
         </div>
       </div>
-      <div class="card lnk" data-project="1"
+      <div class="card lnk" data-project="1">
         <img src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d3e27f8b-1d6e-4cfd-be03-42d5eeddea84_rwc_0x160x719x957x32.png?h=6462c877d968cef5bdd0216d0ce42b6d" alt="Sabretta Pen">
         <div class="card-info">
           <div class="card-num">02 — 2025</div>
@@ -73,7 +73,7 @@ function resumeAuto() {
           <div class="card-tags"><span class="chip">Rhino 3D</span><span class="chip">Keyshot</span><span class="chip">Premiere Pro</span></div>
         </div>
       </div>
-      <div class="card lnk" data-project="2"
+      <div class="card lnk" data-project="2">
         <img src="https://cdn.myportfolio.com/0817bb27-7a7d-4fbe-905d-08989acede83/d674bd55-ac5f-465a-b2de-d8afe9c732a0_rwc_383x242x1005x1339x32.png?h=ff2f4c332ac075fa1aacce5aa24c7e38" alt="Poul Henningsen Lamp" style="object-position:center 30%;">
         <div class="card-info">
           <div class="card-num">03 — 2025</div>
