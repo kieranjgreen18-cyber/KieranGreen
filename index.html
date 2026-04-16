@@ -340,7 +340,7 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #veil.gone    { clip-path: inset(0 100% 0 0); pointer-events: none; transition: clip-path var(--dur-slow) var(--snap); }
 #veil.instant { transition: none !important; clip-path: inset(0 100% 0 0) !important; pointer-events: none; }
 
-/* ── Cursor: CAD crosshair reticle ── */
+/* ── Cursor: CAD crosshair reticle — matches project pages exactly ── */
 /* Horizontal arm */
 #cur {
   position: fixed; z-index: var(--z-veil); pointer-events: none;
@@ -348,9 +348,7 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   background: var(--c-accent);
   transform: translate(-50%, -50%);
   will-change: transform;
-  transition: width var(--dur-fast) var(--ease),
-              opacity var(--dur-fast) var(--ease),
-              background var(--dur-fast);
+  transition: opacity var(--dur-fast) var(--ease);
 }
 /* Center gap — punched out of horizontal arm */
 #cur::before {
@@ -359,7 +357,6 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   width: 4px; height: 1px;
   background: var(--c-bg);
   transform: translateX(-50%);
-  transition: width var(--dur-fast) var(--ease);
 }
 /* Vertical arm */
 #cur::after {
@@ -368,52 +365,40 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   width: 1px; height: 16px;
   background: var(--c-accent);
   transform: translate(-50%, -50%);
-  transition: height var(--dur-fast) var(--ease),
-              background var(--dur-fast);
 }
 /* Corner bracket — lazy follower */
 #cur-r {
   position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
-  width: 20px; height: 20px;
-  transform: translate(-50%,-50%);
+  width: 24px; height: 24px;
+  transform: translate(-50%, -50%);
   will-change: transform;
   transition: width var(--dur-mid) var(--ease),
               height var(--dur-mid) var(--ease),
               opacity var(--dur-fast);
 }
-/* Corner brackets drawn via box-shadow */
-#cur-r {
-  --bc: rgba(91,160,164,.55);
-  --bs: 20px;
-}
 #cur-r::before,
 #cur-r::after {
   content: '';
   position: absolute;
-  width: 6px; height: 6px;
-  border-color: var(--bc, rgba(91,160,164,.55));
+  width: 7px; height: 7px;
+  border-color: rgba(91,160,164,.5);
   border-style: solid;
   transition: border-color var(--dur-fast),
               width var(--dur-mid) var(--ease),
               height var(--dur-mid) var(--ease);
 }
-#cur-r::before {
-  top: 0; left: 0;
-  border-width: 1px 0 0 1px;
-}
-#cur-r::after {
-  bottom: 0; right: 0;
-  border-width: 0 1px 1px 0;
-}
+#cur-r::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+#cur-r::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
 
-/* Scroll progress bar */
-#prog {
-  position: fixed; top: 0; left: 0; height: 1.5px;
-  background: linear-gradient(to right, var(--c-accent), var(--c-accent-hi)); z-index: calc(var(--z-veil) - 2);
-  width: 100%; transform: scaleX(0); transform-origin: left;
-  pointer-events: none; box-shadow: 0 0 8px rgba(91,160,164,.55);
-  will-change: transform;
-}
+/* Cursor state variants — PageChrome toggles these classes on body */
+body.cur-link  #cur-r { width: 38px; height: 38px; }
+body.cur-link  #cur-r::before,
+body.cur-link  #cur-r::after  { border-color: rgba(91,160,164,.85); }
+body.cur-proj  #cur-r { width: 54px; height: 54px; }
+body.cur-proj  #cur-r::before,
+body.cur-proj  #cur-r::after  { border-color: rgba(91,160,164,.25); }
+body.cur-click #cur   { opacity: .55; }
+body.cur-click #cur-r { width: 16px; height: 16px; }
 
 /* Section indicator — vertical, left rail */
 #section-indicator {
@@ -461,6 +446,11 @@ nav#nav.scrolled {
   opacity: 0; animation: fd .6s var(--ease) .05s forwards;
   display: inline-flex; align-items: baseline; gap: .35em;
   transition: color .28s var(--ease);
+  /* Reserve enough horizontal space so the random scramble chars never
+     push the nav links rightward. The natural width of "Kieran / Green"
+     at the largest clamp value (15px, ls-wide 0.26em) is ~120px.
+     min-width: max-content would reflow; a fixed value is intentional. */
+  min-width: 130px;
 }
 .logo-first { transition: color .25s; }
 .logo-sep   { font-weight: 700; letter-spacing: 0; color: rgba(91,160,164,.4); margin: 0 -.15em; }
@@ -1386,6 +1376,10 @@ footer {
   .proj-swipe-hint { display: flex; }
   .proj[data-pos="active"] .proj-open  { opacity: 1; }
   .proj[data-pos="active"] .proj-title .ch { opacity: 1; transform: translateY(0); }
+  /* Body text and tags are hover-only on desktop; on touch show them
+     directly on the active slide since hover doesn't exist */
+  .proj[data-pos="active"] .proj-desc { opacity: .75; transform: translateY(0); }
+  .proj[data-pos="active"] .proj-tags { opacity: 1;   transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1719,7 +1713,6 @@ button:focus-visible {
 <div id="cur"           aria-hidden="true"></div>
 <div id="cur-r"         aria-hidden="true"></div>
 <div id="grain"         aria-hidden="true"></div>
-<div id="prog"          aria-hidden="true"></div>
 <div id="section-flash" aria-hidden="true"></div>
 <div id="section-indicator" aria-hidden="true"></div>
 
