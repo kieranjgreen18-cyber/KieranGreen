@@ -169,24 +169,27 @@ strong { color: var(--c-primary); font-weight: 700; }
 .card:hover img{transform:scale(1.05);filter:saturate(1.05);}
 .card-info{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,9,9,.95) 0%,rgba(8,9,9,.1) 52%,transparent 100%);opacity:0;transition:opacity .45s ease;display:flex;flex-direction:column;justify-content:flex-end;padding:var(--s-4);}
 .card:hover .card-info{opacity:1;}
-.card-num{font-size:9px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--hi);margin-bottom:var(--s-1);transform:translateY(8px);transition:transform .5s var(--ease) .03s;}
+.card-num{font-size:9px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--c-primary);margin-bottom:var(--s-1);transform:translateY(8px);transition:transform .5s var(--ease) .03s;}
 .card:hover .card-num{transform:translateY(0);}
 .card-name{font-size:20px;font-weight:200;letter-spacing:-.01em;margin-bottom:var(--s-1);transform:translateY(10px);transition:transform .5s var(--ease) .06s;}
 .card:hover .card-name{transform:translateY(0);}
-.card-desc{font-size:12px;line-height:1.7;color:var(--warm);max-width:500px;margin-bottom:var(--s-2);transform:translateY(10px);transition:transform .5s var(--ease) .09s;}
+.card-desc{font-size:12px;line-height:1.7;color:var(--c-secondary);max-width:500px;margin-bottom:var(--s-2);transform:translateY(10px);transition:transform .5s var(--ease) .09s;}
 .card:hover .card-desc{transform:translateY(0);}
 .card-tags{display:flex;gap:6px;flex-wrap:wrap;transform:translateY(10px);transition:transform .5s var(--ease) .12s;}
 .card:hover .card-tags{transform:translateY(0);}
-.chip{font-size:8px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);border:1px solid rgba(255,255,255,.1);padding:4px 9px;}
+.chip{font-size:8px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--c-secondary);border:1px solid rgba(255,255,255,.1);padding:4px 9px;}
 .card-arrow{position:absolute;top:var(--s-3);right:var(--s-3);width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:12px;opacity:0;transform:scale(.6) rotate(-20deg);transition:all .4s var(--ease);}
 .card:hover .card-arrow{opacity:1;transform:scale(1) rotate(0);}
 .carousel-footer{display:flex;align-items:center;justify-content:space-between;padding:var(--s-3) var(--pad) 0;}
 .carousel-progress{display:flex;gap:8px;align-items:center;}
-.carousel-pip{width:20px;height:1px;background:var(--rule);transition:background .4s,width .4s var(--ease);}
-.carousel-pip.active{width:40px;background:var(--hi);}
+.carousel-pip{width:20px;height:1px;background:var(--c-rule);transition:background .4s,width .4s var(--ease);}
+.carousel-pip.active{width:40px;background:var(--c-primary);}
 .carousel-btns{display:flex;gap:8px;}
-.carousel-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--rule);background:none;color:var(--mist);display:flex;align-items:center;justify-content:center;cursor:none;font-size:14px;transition:border-color .25s,color .25s,transform .3s var(--ease);}
-.carousel-btn:hover{border-color:var(--hi);color:var(--hi);transform:scale(1.05);}
+.carousel-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--c-rule);background:none;color:var(--c-secondary);display:flex;align-items:center;justify-content:center;cursor:none;font-size:14px;transition:border-color .25s,color .25s,transform .3s var(--ease);}
+.carousel-btn:hover{border-color:var(--c-primary);color:var(--c-primary);transform:scale(1.05);}
+/* Carousel wrapper sits outside case-copy padding */
+.carousel-wrap{width:100%;overflow:hidden;}
+.carousel-wrap .carousel-footer{padding:var(--s-3) var(--s-7) 0;}
   
 .proj-nav { display: grid; grid-template-columns: 1fr 1fr; background: var(--c-bg2); border-top: 1px solid var(--c-rule); }
 .pn-item { display: flex; flex-direction: column; justify-content: center; gap: var(--s-1); padding: var(--s-7) var(--pad); text-decoration: none; cursor: none; position: relative; overflow: hidden; transition: background var(--dur-fast); }
@@ -353,8 +356,9 @@ strong { color: var(--c-primary); font-weight: 700; }
   .pull-quote { padding: var(--s-7) var(--pad); flex-direction: column; gap: var(--s-2); }
   .pull-quote::before { font-size: 56px; }
   .carousel-track{gap:12px;}
-  .card{width:85vw;aspect-ratio:4/3;}
+  .card{width:80vw;max-width:340px;aspect-ratio:17/22;}
   .carousel-footer{padding:var(--s-2) var(--pad) 0;}
+  .carousel-wrap .carousel-footer{padding:var(--s-2) var(--pad) 0;}
   .proj-nav { grid-template-columns: 1fr; }
   .pn-item { padding: var(--s-5) var(--pad); }
   .pn-item + .pn-item { border-left: none; border-top: 1px solid var(--c-rule); }
@@ -440,7 +444,8 @@ strong { color: var(--c-primary); font-weight: 700; }
           </p>
         </div>
 
-          <div class="carousel reveal">
+          <div class="carousel-wrap reveal">
+            <div class="carousel">
     <div class="carousel-track" id="carousel-track">
       <div class="card lnk active" data-project="0"> 
         <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterearly-exhib.png" alt="Motorcycle Poster Initial">
@@ -479,7 +484,7 @@ strong { color: var(--c-primary); font-weight: 700; }
       <button class="carousel-btn lnk" id="car-next">→</button>
     </div>
   </div>
-</section>
+          </div>
         
         <div class="copy-section rev d2">
           <div class="section-rule">
@@ -646,6 +651,15 @@ if (carTrack) {
 
   carTrack.addEventListener('mouseenter', pauseAuto);
   carTrack.addEventListener('mouseleave', startAuto);
+
+  // Touch swipe support
+  let touchStartX = 0;
+  carTrack.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; pauseAuto(); }, { passive: true });
+  carTrack.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) { goTo(current + (dx < 0 ? 1 : -1)); }
+    startAuto();
+  }, { passive: true });
 
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
