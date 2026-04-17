@@ -187,9 +187,11 @@ strong { color: var(--c-primary); font-weight: 700; }
 .carousel-btns{display:flex;gap:8px;}
 .carousel-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--c-rule);background:none;color:var(--c-secondary);display:flex;align-items:center;justify-content:center;cursor:none;font-size:14px;transition:border-color .25s,color .25s,transform .3s var(--ease);}
 .carousel-btn:hover{border-color:var(--c-primary);color:var(--c-primary);transform:scale(1.05);}
-/* Carousel wrapper sits outside case-copy padding */
-.carousel-wrap{width:100%;overflow:hidden;}
-.carousel-wrap .carousel-footer{padding:var(--s-3) var(--s-7) 0;}
+/* Carousel wrapper — full column width, outside case-copy padding */
+.carousel-wrap{width:100%;overflow:hidden;padding-bottom:var(--s-4);}
+.carousel-wrap .carousel-footer{padding:var(--s-3) var(--pad) 0;}
+.carousel .card:not(.active){cursor:pointer;}
+@media (pointer:fine){.carousel{cursor:none;}}
   
 .proj-nav { display: grid; grid-template-columns: 1fr 1fr; background: var(--c-bg2); border-top: 1px solid var(--c-rule); }
 .pn-item { display: flex; flex-direction: column; justify-content: center; gap: var(--s-1); padding: var(--s-7) var(--pad); text-decoration: none; cursor: none; position: relative; overflow: hidden; transition: background var(--dur-fast); }
@@ -443,49 +445,40 @@ strong { color: var(--c-primary); font-weight: 700; }
             Great vehicle design evokes that same feeling even while standing still. Within Prof. Rafael Corazza's Myth in Motion class — a cross-disciplinary collaborative project designing the bike of the not-too-distant future — I set out to design an electric sportbike that embodies this idea.
           </p>
         </div>
+      </div>
 
-          <div class="carousel-wrap reveal">
-            <div class="carousel">
-    <div class="carousel-track" id="carousel-track">
-      <div class="card lnk active" data-project="0"> 
-        <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterearly-exhib.png" alt="Motorcycle Poster Initial">
-        <div class="card-info">
-          <div class="card-num">01 — 2025</div>
-        </div>
-      </div>
-      <div class="card lnk" data-project="1">
-        <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterideation.png" alt="Motorcycle Poster Ideation">
-        <div class="card-info">
-          <div class="card-num">02 — 2025</div>
-          <div class="card-name">Sabretta Pen</div>
-          <div class="card-desc">A ballpoint pen with genuine desire behind it — form drawn from the flowing fenders of 1930s roadsters. Modeled, animated, directed.</div>
-          <div class="card-tags"><span class="chip">Rhino 3D</span><span class="chip">Keyshot</span><span class="chip">Premiere Pro</span></div>
-        </div>
-      </div>
-      <div class="card lnk" data-project="2">
-        <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterfinal.jpg" alt="Motorcycle Final" style="object-position:center 30%;">
-        <div class="card-info">
-          <div class="card-num">03 — 2025</div>
-          <div class="card-name">Poul Henningsen Lamp</div>
-          <div class="card-desc">Modeled the iconic PH lamp in Rhino 3D, studying how Henningsen engineered light diffusion through layered shades.</div>
-          <div class="card-tags"><span class="chip">Rhino 3D</span><span class="chip">CAD Modeling</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="carousel-footer">
-    <div class="carousel-progress" id="carousel-progress">
-      <div class="carousel-pip active"></div>
-      <div class="carousel-pip"></div>
-      <div class="carousel-pip"></div>
-    </div>
-    <div class="carousel-btns">
-      <button class="carousel-btn lnk" id="car-prev">←</button>
-      <button class="carousel-btn lnk" id="car-next">→</button>
-    </div>
-  </div>
+      <!-- CAROUSEL — outside case-copy so it reaches full column width -->
+      <div class="carousel-wrap rev">
+        <div class="carousel">
+          <div class="carousel-track" id="carousel-track">
+            <div class="card active" data-project="0">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterearly-exhib.png" alt="Motorcycle Poster Initial">
+              <div class="card-info"><div class="card-num">01 — 2025</div></div>
+            </div>
+            <div class="card" data-project="1">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterideation.png" alt="Motorcycle Poster Ideation">
+              <div class="card-info"><div class="card-num">02 — 2025</div></div>
+            </div>
+            <div class="card" data-project="2">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterfinal.jpg" alt="Motorcycle Final" style="object-position:center 30%;">
+              <div class="card-info"><div class="card-num">03 — 2025</div></div>
+            </div>
           </div>
-        
+        </div>
+        <div class="carousel-footer">
+          <div class="carousel-progress" id="carousel-progress">
+            <div class="carousel-pip active"></div>
+            <div class="carousel-pip"></div>
+            <div class="carousel-pip"></div>
+          </div>
+          <div class="carousel-btns">
+            <button class="carousel-btn" id="car-prev">←</button>
+            <button class="carousel-btn" id="car-next">→</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="case-copy">
         <div class="copy-section rev d2">
           <div class="section-rule">
             <h2 class="t-label">The Concept</h2>
@@ -652,7 +645,30 @@ if (carTrack) {
   carTrack.addEventListener('mouseenter', pauseAuto);
   carTrack.addEventListener('mouseleave', startAuto);
 
-  // Touch swipe support
+  // Click on a non-active card to navigate to it
+  cards.forEach((card, i) => {
+    card.addEventListener('click', () => {
+      if (i !== current) {
+        goTo(i);
+        startAuto();
+      }
+    });
+  });
+
+  // Click left/right half of the carousel viewport to navigate
+  const carouselEl = carTrack.closest('.carousel');
+  carouselEl.addEventListener('click', e => {
+    const rect = carouselEl.getBoundingClientRect();
+    const mid = rect.left + rect.width / 2;
+    // Only trigger if not clicking directly on the active card
+    const activeCard = cards[current];
+    const cardRect = activeCard.getBoundingClientRect();
+    const onActive = e.clientX >= cardRect.left && e.clientX <= cardRect.right;
+    if (!onActive) {
+      goTo(current + (e.clientX > mid ? 1 : -1));
+      startAuto();
+    }
+  });
   let touchStartX = 0;
   carTrack.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; pauseAuto(); }, { passive: true });
   carTrack.addEventListener('touchend', e => {
