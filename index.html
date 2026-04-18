@@ -1048,12 +1048,21 @@ model-viewer#mini-viewer {
 
 /* Photo gallery */
 .photo-gallery { position: absolute; inset: 0; pointer-events: none; }
-.panel[data-panel="0"] .pf-main   { position: absolute; top: 50%; left: 50%; transform: translate(-52%,-52%) rotate(-1.4deg); width: 66%; aspect-ratio: 4/3; }
-.panel[data-panel="0"] .pf-accent { position: absolute; bottom: 5%; right: 6%; width: 28%; aspect-ratio: 3/4; transform: rotate(2.2deg); z-index: 2; }
-.panel[data-panel="1"] .pf-main   { position: absolute; top: 8%; left: 7%; width: 52%; aspect-ratio: 3/4; transform: rotate(-0.8deg); }
-.panel[data-panel="1"] .pf-accent { position: absolute; bottom: 5%; right: 5%; width: 46%; aspect-ratio: 4/3; transform: rotate(1.6deg); z-index: 2; }
-.panel[data-panel="2"] .pf-main   { position: absolute; top: 10%; left: 5%; width: 72%; aspect-ratio: 16/10; transform: rotate(0.6deg); }
-.panel[data-panel="2"] .pf-accent { position: absolute; bottom: 5%; right: 4%; width: 32%; aspect-ratio: 1/1; transform: rotate(-2deg); z-index: 2; }
+/* Intro panel (panel 0) — portrait hero */
+.panel[data-panel="0"] .pf-main   { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 72%; aspect-ratio: 3/4; }
+.panel[data-panel="0"] .pf-accent { display: none; }
+
+/* Engine Bay (panel 1) */
+.panel[data-panel="1"] .pf-main   { position: absolute; top: 50%; left: 50%; transform: translate(-52%,-52%) rotate(-1.4deg); width: 66%; aspect-ratio: 4/3; }
+.panel[data-panel="1"] .pf-accent { position: absolute; bottom: 5%; right: 6%; width: 28%; aspect-ratio: 3/4; transform: rotate(2.2deg); z-index: 2; }
+
+/* Shop Floor (panel 2) */
+.panel[data-panel="2"] .pf-main   { position: absolute; top: 8%; left: 7%; width: 52%; aspect-ratio: 3/4; transform: rotate(-0.8deg); }
+.panel[data-panel="2"] .pf-accent { position: absolute; bottom: 5%; right: 5%; width: 46%; aspect-ratio: 4/3; transform: rotate(1.6deg); z-index: 2; }
+
+/* Practice Room (panel 3) */
+.panel[data-panel="3"] .pf-main   { position: absolute; top: 10%; left: 5%; width: 72%; aspect-ratio: 16/10; transform: rotate(0.6deg); }
+.panel[data-panel="3"] .pf-accent { position: absolute; bottom: 5%; right: 4%; width: 32%; aspect-ratio: 1/1; transform: rotate(-2deg); z-index: 2; }
 
 .photo-frame {
   overflow: hidden;
@@ -1113,9 +1122,26 @@ model-viewer#mini-viewer {
 
 /* Statement panel */
 .panel-statement {
-  grid-template-columns: 1fr; align-items: center;
+  grid-template-columns: 1fr 1fr; align-items: center;
   padding: var(--s-8) var(--pad);
+  gap: var(--s-7);
 }
+/* Statement video — right side on desktop */
+.stmt-video-row {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity .9s var(--ease) .30s, transform .9s var(--ease) .30s;
+}
+.panel.is-active .stmt-video-row { opacity: 1; transform: none; }
+.stmt-video-frame {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  background: var(--c-bg); overflow: hidden;
+  border: 1px solid var(--c-rule);
+  box-shadow: var(--shadow-lg);
+}
+.stmt-video-frame iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block;
+}
+.stmt-video-frame .ps-film-bar { background: var(--c-bg); height: clamp(16px,2.5vw,32px); }
 .stmt-wm {
   position: absolute; right: calc(var(--pad) - 0.04em); bottom: -0.1em;
   font-family: var(--f-heading); font-size: clamp(120px, 18vw, 260px);
@@ -1449,21 +1475,45 @@ footer {
   .proj-desc { max-width: 100%; }
 
   /* About panels */
-  .panel { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .col-left { border-right: none; border-bottom: 1px solid var(--c-rule); max-height: 45vh; overflow: hidden; }
-  .col-top { min-height: 120px; overflow: hidden; flex: 1 1 0; min-height: 0; }
-  .col-bottom { padding: var(--s-3) var(--pad) var(--s-4); }
+  .panel { grid-template-columns: 1fr; }
+  /* On mobile: panels stack vertically. The gallery sits as a full-bleed
+     background behind the title text in col-left, then col-right is below. */
+  .col-left {
+    border-right: none;
+    position: relative;
+    min-height: 45vmax;
+    max-height: 52vh;
+    overflow: hidden;
+  }
+  /* Photo gallery fills the entire col-left area on mobile */
+  .photo-gallery {
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+  /* Col-bottom overlays on top of gallery images */
+  .col-top { position: absolute; inset: 0; overflow: hidden; flex: none; }
+  .col-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: var(--s-3) var(--pad) var(--s-4);
+    z-index: 10;
+    background: linear-gradient(to bottom, transparent 0%, rgba(8,9,9,0.7) 30%, var(--c-bg) 75%);
+  }
   .col-right  { padding: var(--s-4) var(--pad) var(--s-8); }
   .ghost-num, .stmt-wm, .prog-dots { display: none; }
-  .panel-statement { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  .panel-statement { grid-template-columns: 1fr; gap: var(--s-5); padding: var(--s-6) var(--pad); overflow-y: auto; }
+  .stmt-video-row { display: none; }
 
   /* Rein in photo gallery frames on mobile so they stay inside col-top */
-  .panel[data-panel="0"] .pf-main   { width: 58%; top: 48%; left: 48%; }
-  .panel[data-panel="0"] .pf-accent { width: 28%; bottom: 4%; right: 4%; }
-  .panel[data-panel="1"] .pf-main   { width: 46%; top: 6%; left: 5%; }
-  .panel[data-panel="1"] .pf-accent { width: 42%; bottom: 4%; right: 4%; }
-  .panel[data-panel="2"] .pf-main   { width: 64%; top: 8%; left: 4%; }
-  .panel[data-panel="2"] .pf-accent { width: 30%; bottom: 4%; right: 3%; }
+  /* Intro panel mobile */
+  .panel-intro .col-left { min-height: 42vmax; max-height: 48vh; }
+  .panel-intro .col-right { padding: var(--s-4) var(--pad) var(--s-6); }
+  .intro-name { font-size: clamp(36px, 10vw, 56px); }
+  .panel[data-panel="1"] .pf-main   { width: 58%; top: 48%; left: 48%; }
+  .panel[data-panel="1"] .pf-accent { width: 28%; bottom: 4%; right: 4%; }
+  .panel[data-panel="2"] .pf-main   { width: 46%; top: 6%; left: 5%; }
+  .panel[data-panel="2"] .pf-accent { width: 42%; bottom: 4%; right: 4%; }
+  .panel[data-panel="3"] .pf-main   { width: 64%; top: 8%; left: 4%; }
+  .panel[data-panel="3"] .pf-accent { width: 30%; bottom: 4%; right: 3%; }
 
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
@@ -1541,7 +1591,60 @@ footer {
 .proj[data-pos="active"] .proj-tag:nth-child(2) { transition-delay: 0.68s; }
 .proj[data-pos="active"] .proj-tag:nth-child(3) { transition-delay: 0.76s; }
 
-/* ── About panel: photo hover lift ── */
+/* ── Intro panel (panel 0) — portrait + greeting ── */
+.panel-intro .col-left {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-bg);
+}
+.intro-portrait-wrap {
+  position: absolute; inset: 0; overflow: hidden;
+}
+.intro-portrait-wrap img {
+  width: 100%; height: 100%; object-fit: cover; object-position: top center;
+  filter: saturate(0.65) brightness(0.78);
+  transition: filter .7s ease;
+}
+.panel.is-active .intro-portrait-wrap img { filter: saturate(0.82) brightness(0.88); }
+.intro-portrait-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to right, transparent 60%, var(--c-bg) 100%),
+    linear-gradient(to bottom, transparent 50%, var(--c-bg) 95%);
+}
+.panel-intro .col-right {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: var(--s-8) var(--pad) var(--s-8) var(--s-7);
+}
+.intro-eyebrow {
+  display: flex; align-items: center; gap: var(--s-2);
+  margin-bottom: var(--s-4);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+.panel.is-active .intro-eyebrow { opacity: 1; transform: none; }
+.intro-name {
+  font-family: var(--f-heading);
+  font-size: clamp(44px, 6.5vw, 88px);
+  font-weight: 100; letter-spacing: var(--ls-tight); line-height: .92;
+  text-transform: uppercase; color: var(--c-primary);
+  margin-bottom: var(--s-5);
+}
+.intro-name .tline { display: block; overflow: hidden; padding-bottom: .05em; }
+.intro-name .tword {
+  display: inline-block; transform: translateY(110%); opacity: 0;
+  transition: transform 0.75s var(--ease), opacity 0.60s var(--ease);
+}
+.panel.is-active .intro-name .tline:nth-child(1) .tword { transform: translateY(0); opacity: 1; transition-delay: .08s; }
+.panel.is-active .intro-name .tline:nth-child(2) .tword { transform: translateY(0); opacity: 1; transition-delay: .20s; }
+.panel.is-active .intro-name .tline:nth-child(3) .tword { transform: translateY(0); opacity: 1; transition-delay: .32s; }
+.intro-meta {
+  max-width: 400px; color: var(--c-secondary);
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.75s var(--ease) .44s, transform 0.75s var(--ease) .44s;
+}
+.panel.is-active .intro-meta { opacity: 1; transform: translateY(0); }
+
+
 .panel.is-active .photo-frame:hover {
   transform: translateY(-4px) rotate(0.5deg);
   box-shadow: var(--shadow-lg), 0 0 24px rgba(91,160,164,0.10);
@@ -2007,8 +2110,30 @@ button:focus-visible {
       <div class="v-rule"></div>
     </div>
 
-    <!-- Panel 0 — The Engine Bay -->
-    <article class="panel" data-panel="0" aria-label="About: Chapter 01 — Origin, The Engine Bay">
+    <!-- Panel 0 — Intro / Portrait -->
+    <article class="panel panel-intro" data-panel="0" aria-label="About: Introduction — Kieran Green">
+      <div class="col-left">
+        <div class="intro-portrait-wrap">
+          <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/portrait.JPEG" alt="Portrait of Kieran Green, industrial designer" loading="eager" decoding="async">
+        </div>
+        <div class="intro-portrait-vignette" aria-hidden="true"></div>
+      </div>
+      <div class="col-right">
+        <span class="ch-rule" aria-hidden="true"></span>
+        <p class="intro-eyebrow t-label">Industrial Designer</p>
+        <h2 class="intro-name" id="about-h2">
+          <span class="tline"><span class="tword">Hi, I'm</span></span>
+          <span class="tline"><span class="tword">Kieran</span></span>
+          <span class="tline"><span class="tword"><em>Green.</em></span></span>
+        </h2>
+        <p class="intro-meta t-body">
+          Industrial Design student at SCAD — based in the San Francisco region. I work where craft meets engineering: from sketches to surfaces you can hold.
+        </p>
+      </div>
+    </article>
+
+    <!-- Panel 1 — The Engine Bay -->
+    <article class="panel" data-panel="1" aria-label="About: Chapter 01 — Origin, The Engine Bay">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">01</div>
         <div class="col-top">
@@ -2028,7 +2153,7 @@ button:focus-visible {
       </div>
       <div class="col-right">
         <span class="ch-rule" aria-hidden="true"></span>
-        <h2 class="ch-title t-heading" id="about-h2">
+        <h3 class="ch-title t-heading">
           <span class="tline"><span class="tword">Rebuilt a car.</span></span>
           <span class="tline"><span class="tword"><em>Learned what</em></span></span>
           <span class="tline"><span class="tword">constraints feel like.</span></span>
@@ -2040,7 +2165,7 @@ button:focus-visible {
     </article>
 
     <!-- Panel 1 — The Shop Floor -->
-    <article class="panel" data-panel="1" aria-label="About: Chapter 02 — Experience, The Shop Floor">
+    <article class="panel" data-panel="2" aria-label="About: Chapter 02 — Experience, The Shop Floor">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">02</div>
         <div class="col-top">
@@ -2072,7 +2197,7 @@ button:focus-visible {
     </article>
 
     <!-- Panel 2 — The Practice Room -->
-    <article class="panel" data-panel="2" aria-label="About: Chapter 03 — Instinct, The Practice Room">
+    <article class="panel" data-panel="3" aria-label="About: Chapter 03 — Instinct, The Practice Room">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">03</div>
         <div class="col-top">
@@ -2103,21 +2228,36 @@ button:focus-visible {
       </div>
     </article>
 
-    <!-- Panel 3 — Statement -->
-    <article class="panel panel-statement" data-panel="3" aria-label="About: Personal Statement">
+    <!-- Panel 4 — Personal Statement (final slide) -->
+    <article class="panel panel-statement" data-panel="4" aria-label="About: Personal Statement">
       <div class="stmt-wm" aria-hidden="true">KG</div>
       <div class="stmt-wrap">
         <p class="stmt-kicker t-label">About</p>
         <p class="stmt-text t-statement">
-          Design isn't about changing everything at once. <br>
-          <strong>It's about making everyday moments just a little better, <br> one product at a time.</strong> <br>
+          Design isn\'t about changing everything at once. <br>
+          <strong>It\'s about making everyday moments just a little better, <br> one product at a time.</strong> <br>
           If this resonates, reach out and let’s make something better together.
         </p>
       </div>
+      <div class="stmt-video-row">
+        <div class="stmt-video-frame">
+          <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
+          <iframe
+            src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1"
+            title="Kieran Green — Personal Statement"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+          <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
+        </div>
+      </div>
     </article>
 
-    <!-- Progress dots -->
+    <!-- Progress dots (5 panels) -->
     <nav class="prog-dots" aria-label="About section progress">
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
@@ -2130,38 +2270,6 @@ button:focus-visible {
       <span>Scroll</span>
     </div>
 
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════
-     PERSONAL STATEMENT VIDEO
-═══════════════════════════════════════════════════════════ -->
-<section class="personal-statement" id="statement" aria-labelledby="ps-heading-label">
-  <div class="personal-statement-inner rev">
-    <div class="ps-text-col rev-stagger">
-      <p class="ps-eyebrow t-label" id="ps-heading-label" aria-label="Section: Personal Statement">Personal Statement</p>
-      <h2 class="ps-heading">
-        Design is<br>thinking<br><em>out loud.</em>
-      </h2>
-      <p class="ps-body t-body">
-        A short film on why I design, where it comes from, and what I'm working toward —
-        from the engine bay to the drawing board.
-      </p>
-    </div>
-    <div class="ps-video-col">
-      <div class="ps-video-frame">
-        <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
-        <iframe
-          src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1"
-          title="Kieran Green — Personal Statement"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          loading="lazy"
-        referrerpolicy="strict-origin-when-cross-origin"
-        ></iframe>
-        <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
-      </div>
-    </div>
   </div>
 </section>
 
