@@ -188,7 +188,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 .carousel-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--c-rule);background:none;color:var(--c-secondary);display:flex;align-items:center;justify-content:center;cursor:none;font-size:14px;transition:border-color .25s,color .25s,transform .3s var(--ease);}
 .carousel-btn:hover{border-color:var(--c-primary);color:var(--c-primary);transform:scale(1.05);}
 /* Carousel wrapper — full column width, outside case-copy padding */
-.carousel-wrap{width:100%;overflow:hidden;padding-bottom:var(--s-4);}
+.carousel-wrap{width:100%;max-width:100%;overflow:hidden;contain:layout;padding-bottom:var(--s-4);}
 .carousel-wrap .carousel-footer{padding:var(--s-3) var(--pad) 0;}
 .carousel .card:not(.active){cursor:pointer;}
 @media (pointer:fine){.carousel{cursor:none;}}
@@ -358,7 +358,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   .pull-quote { padding: var(--s-7) var(--pad); flex-direction: column; gap: var(--s-2); }
   .pull-quote::before { font-size: 56px; }
   .carousel-track{gap:12px;}
-  .card{width:80vw;max-width:340px;aspect-ratio:17/22;}
+  .card{width:calc(100% - var(--pad) * 2);max-width:340px;aspect-ratio:17/22;}
   .carousel-footer{padding:var(--s-2) var(--pad) 0;}
   .carousel-wrap .carousel-footer{padding:var(--s-2) var(--pad) 0;}
   .proj-nav { grid-template-columns: 1fr; }
