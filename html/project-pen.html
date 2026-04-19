@@ -1203,17 +1203,22 @@ strong { color: var(--c-primary); font-weight: 700; }
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
     });
-
-     /* ── Custom cinematic environment (moody glow) ───────────────── */
+     
+/* ── Automotive HDRI Studio Environment (clearcoat tuned) ── */
 (function buildSyntheticEnv() {
   if (!penViewer) return;
 
-  const W = 512, H = 256;
+  // ↑ Increase resolution for clearcoat definition
+  const W = 1024, H = 512;
+
   const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
+  canvas.width = W;
+  canvas.height = H;
+
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#000000';
+  // Base dark studio floor / void
+  ctx.fillStyle = '#05070a';
   ctx.fillRect(0, 0, W, H);
 
   function toXY(azDeg, elDeg) {
@@ -1222,51 +1227,105 @@ strong { color: var(--c-primary); font-weight: 700; }
     return [x, y];
   }
 
-  function addLight(azDeg, elDeg, rx, ry, stops) {
+  function addLight(azDeg, elDeg, rx, ry, stops, intensity = 1) {
     const [cx, cy] = toXY(azDeg, elDeg);
 
+    ctx.globalCompositeOperation = 'lighter';
+
     for (const ox of [0, W, -W]) {
-      const g = ctx.createRadialGradient(cx+ox, cy, 0, cx+ox, cy, Math.max(rx, ry));
+      const g = ctx.createRadialGradient(
+        cx + ox, cy, 0,
+        cx + ox, cy, Math.max(rx, ry)
+      );
+
       stops.forEach(([s, c]) => g.addColorStop(s, c));
 
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.beginPath();
-      ctx.ellipse(cx+ox, cy, rx, ry, 0, 0, Math.PI * 2);
       ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(cx + ox, cy, rx, ry, 0, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
+  function addStripLight(azDeg, elDeg, width, height, color, strength = 0.3) {
+    const [cx, cy] = toXY(azDeg, elDeg);
+
+    const g = ctx.createLinearGradient(cx - width, cy, cx + width, cy);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(0.5, `rgba(${color},${strength})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - width, cy - height, width * 2, height * 2);
+  }
+
+  /* ─────────────────────────────────────────────
+     1. HORIZON BAND (this is what makes it “car-like”)
+  ───────────────────────────────────────────── */
+  const horizon = ctx.createLinearGradient(0, H * 0.55, 0, H);
+
+  horizon.addColorStop(0.0, 'rgba(180,200,255,0.00)');
+  horizon.addColorStop(0.45, 'rgba(120,160,255,0.05)');
+  horizon.addColorStop(0.50, 'rgba(255,255,255,0.18)');
+  horizon.addColorStop(0.55, 'rgba(120,160,255,0.05)');
+  horizon.addColorStop(1.0, 'rgba(0,0,0,0)');
+
   ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = horizon;
+  ctx.fillRect(0, 0, W, H);
 
-  // 🔥 Strong rim (main glow)
-  addLight(180, 50, 110, 70, [
-    [0,   'rgba(255,255,255,1.6)'],
-    [0.3, 'rgba(220,235,255,0.9)'],
-    [0.7, 'rgba(180,210,255,0.3)'],
+  /* ─────────────────────────────────────────────
+     2. KEY LIGHT (neutral white, controlled size)
+  ───────────────────────────────────────────── */
+  addLight(20, 55, 70, 55, [
+    [0,   'rgba(255,245,235,0.9)'],
+    [0.35,'rgba(255,235,220,0.35)'],
     [1.0, 'rgba(0,0,0,0)']
   ]);
 
-  // 🔥 Warm kicker
-  addLight(220, 35, 65, 45, [
-    [0,   'rgba(255,200,140,1.0)'],
-    [0.5, 'rgba(255,170,90,0.35)'],
+  /* ─────────────────────────────────────────────
+     3. COOL RIM (tight + contrast = clearcoat pop)
+  ───────────────────────────────────────────── */
+  addLight(190, 45, 55, 35, [
+    [0,   'rgba(210,230,255,1.0)'],
+    [0.4, 'rgba(160,200,255,0.25)'],
     [1.0, 'rgba(0,0,0,0)']
   ]);
 
-  // 🔥 Key light
-  addLight(15, 60, 90, 70, [
-    [0,   'rgba(255,245,230,0.9)'],
-    [0.4, 'rgba(255,235,210,0.35)'],
+  /* ─────────────────────────────────────────────
+     4. WARM KICKER (small accent only)
+  ───────────────────────────────────────────── */
+  addLight(240, 30, 35, 25, [
+    [0,   'rgba(255,180,120,0.8)'],
+    [0.5, 'rgba(255,140,80,0.2)'],
     [1.0, 'rgba(0,0,0,0)']
   ]);
 
-  // 🔥 Subtle fill
-  addLight(350, 15, 120, 80, [
-    [0,   'rgba(200,210,230,0.25)'],
-    [0.6, 'rgba(180,195,220,0.08)'],
+  /* ─────────────────────────────────────────────
+     5. VERY SOFT FILL (blue-gray, minimal)
+  ───────────────────────────────────────────── */
+  addLight(340, 10, 90, 60, [
+    [0,   'rgba(170,190,220,0.12)'],
     [1.0, 'rgba(0,0,0,0)']
   ]);
+
+  /* ─────────────────────────────────────────────
+     6. STUDIO STRIP LIGHTS (THIS IS THE PAINT MAGIC)
+  ───────────────────────────────────────────── */
+
+  // overhead white softbox strip
+  addStripLight(90, 80, 260, 18, '255,255,255', 0.35);
+
+  // secondary offset strip (creates rolling highlight)
+  addStripLight(120, 60, 180, 12, '220,235,255', 0.22);
+
+  // subtle floor reflection strip
+  addStripLight(270, -10, 300, 20, '120,140,180', 0.08);
+
+  /* ─────────────────────────────────────────────
+     7. FINALIZE
+  ───────────────────────────────────────────── */
 
   ctx.globalCompositeOperation = 'source-over';
 
@@ -1274,18 +1333,8 @@ strong { color: var(--c-primary); font-weight: 700; }
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     penViewer.setAttribute('environment-image', url);
-  }, 'image/jpeg', 0.95);
+  }, 'image/jpeg', 0.98);
 })();
-
-    /* AR button — only wired if viewer exists */
-    const arBtn = document.getElementById('ar-btn');
-    if (arBtn) {
-      arBtn.addEventListener('click', () => {
-        if (penViewer.canActivateAR) penViewer.activateAR();
-      });
-    }
-  }
-
 
   const cur = document.getElementById('cur');
   const curR = document.getElementById('cur-r');
