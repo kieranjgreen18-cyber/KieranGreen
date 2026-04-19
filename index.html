@@ -1032,7 +1032,8 @@ model-viewer#mini-viewer {
   content: ''; display: block; width: 32px; height: 1.5px;
   background: linear-gradient(to right, var(--c-accent), var(--c-accent-hi)); flex-shrink: 0;
 }
-.ch-label { display: block; }
+/* Mobile duplicate — hidden on desktop, shown inside col-right on mobile */
+.ch-index-mobile { display: none; }
 
 /* Photo gallery */
 .photo-gallery { position: absolute; inset: 0; pointer-events: none; }
@@ -1567,7 +1568,8 @@ footer {
   .t-chapter { font-size: clamp(36px, 9vw, 56px); line-height: 0.90; opacity: 0.55; }
 
   /* col-right: text block sits OVER the image, at the bottom.
-     Position it absolute at the bottom, above col-bottom gradient. */
+     Position it absolute at the bottom, above col-bottom gradient.
+     backdrop-filter blurs the image behind the text zone — frosted film poster effect. */
   .col-right {
     position: absolute;
     bottom: 0; left: 0; right: 0;
@@ -1583,6 +1585,13 @@ footer {
       rgba(8,9,9,0.72) 30%,
       rgba(8,9,9,0.35) 58%,
       transparent 80%);
+    /* Blur the image behind the entire text zone */
+    backdrop-filter: blur(6px) saturate(0.85);
+    -webkit-backdrop-filter: blur(6px) saturate(0.85);
+    /* Mask the blur so it's opaque at the bottom and fades out upward,
+       matching the gradient — avoids a hard blurred edge mid-image */
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
+    mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
   }
   [data-theme="light"] .col-right {
     background: linear-gradient(to top,
@@ -1591,6 +1600,20 @@ footer {
       rgba(237,238,237,0.40) 58%,
       transparent 80%);
   }
+
+  /* ch-label (The Engine Bay / The Shop Floor / The Practice Room) — hide on mobile */
+  .ch-label { display: none !important; }
+
+  /* ch-index in col-bottom — hidden on mobile (replaced by mobile copy in col-right) */
+  .col-bottom .ch-index { display: none; }
+
+  /* ch-index-mobile — shown only on mobile, sits above the heading in col-right */
+  .ch-index-mobile {
+    display: flex !important;
+    margin-bottom: var(--s-2);
+    margin-top: 0;
+  }
+
   /* Accent rule */
   .ch-rule { margin-bottom: var(--s-3); }
   /* Big, confident heading — text-shadow ensures legibility even if
@@ -1660,7 +1683,7 @@ footer {
   .panel-intro .col-right {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    padding: var(--s-6) var(--pad) var(--s-7);
+    padding: var(--s-6) var(--pad) var(--s-7) var(--pad);
     z-index: 20;
     justify-content: flex-end;
     background: linear-gradient(to top,
@@ -1668,6 +1691,10 @@ footer {
       rgba(8,9,9,0.65) 30%,
       rgba(8,9,9,0.28) 58%,
       transparent 80%);
+    backdrop-filter: blur(6px) saturate(0.85);
+    -webkit-backdrop-filter: blur(6px) saturate(0.85);
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
+    mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
   }
   [data-theme="light"] .panel-intro .col-right {
     background: linear-gradient(to top,
@@ -2119,7 +2146,9 @@ button:focus-visible {
 
   <!-- Drag affordance -->
   <div class="model-hint t-micro" id="model-hint" aria-hidden="true">
-    <div class="model-hint-icon" aria-hidden="true">↻</div>
+    <div class="model-hint-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M2.5 12a9.5 9.5 0 0 1 17.7-4.5L21.5 8"/><path d="M2.5 22v-6h6"/><path d="M21.5 12a9.5 9.5 0 0 1-17.7 4.5L2.5 16"/></svg>
+    </div>
     Drag to rotate
   </div>
 
@@ -2335,6 +2364,7 @@ button:focus-visible {
         </div>
       </div>
       <div class="col-right">
+        <p class="ch-index t-label ch-index-mobile" aria-hidden="true">01 — Origin</p>
         <span class="ch-rule" aria-hidden="true"></span>
         <h3 class="ch-title t-heading">
           <span class="tline"><span class="tword">Rebuilt a car.</span></span>
@@ -2367,6 +2397,7 @@ button:focus-visible {
         </div>
       </div>
       <div class="col-right">
+        <p class="ch-index t-label ch-index-mobile" aria-hidden="true">02 — Experience</p>
         <span class="ch-rule" aria-hidden="true"></span>
         <h3 class="ch-title t-heading">
           <span class="tline"><span class="tword">Sold bikes.</span></span>
@@ -2399,6 +2430,7 @@ button:focus-visible {
         </div>
       </div>
       <div class="col-right">
+        <p class="ch-index t-label ch-index-mobile" aria-hidden="true">03 — Instinct</p>
         <span class="ch-rule" aria-hidden="true"></span>
         <h3 class="ch-title t-heading">
           <span class="tline"><span class="tword">Built a chair.</span></span>
