@@ -24,6 +24,14 @@
 
 'use strict';
 
+// ── Wheel velocity tuning constants ───────────────────────────────────────
+// Declared at module level so they are visible to any future method that
+// needs to read or override them (e.g. per-device tuning).
+const W_THRESH = 160; // accumulated velocity required to trigger a section change
+const W_DECAY  = 0.94; // per-frame velocity decay factor (applied over 16ms increments)
+const W_CLAMP  = 90;  // maximum per-event contribution to velocity
+const W_MIN    = 20;  // minimum per-event contribution (filters micro-deltas)
+
 /* ─────────────────────────────────────────────────────────────────────────
    §1  APP CONTROLLER
    ─────────────────────────────────────────────────────────────────────────
@@ -49,10 +57,6 @@ class AppController {
     // trackpad inertia from the previous section cannot chain into the next.
     this._settleUntil = 0;
     this._SETTLE_MS   = 520;
-    const W_THRESH  = 160;
-    const W_DECAY   = 0.94;
-    const W_CLAMP   = 90;
-    const W_MIN     = 20;
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
@@ -388,7 +392,7 @@ class PageChrome {
             i < iter ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
           ).join('');
           if (iter >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
-          iter += 0.38;
+          iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
         }, 26);
       };
       logo.addEventListener('mouseenter', scramble);
@@ -403,7 +407,10 @@ class PageChrome {
         return { label: s.label, top: el ? el.getBoundingClientRect().top + window.scrollY : 0 };
       });
     };
-    setTimeout(buildOffsets, 300);
+    // Use a one-shot ResizeObserver instead of a fixed setTimeout so offsets
+    // are calculated after actual layout settles, regardless of font-load timing.
+    const ro = new ResizeObserver(() => { buildOffsets(); ro.disconnect(); });
+    ro.observe(document.body);
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
@@ -774,14 +781,16 @@ class CarouselContainer {
 
     // Card tilt (element-level, not window)
     if (!window.matchMedia('(pointer:coarse)').matches) {
+      const rectCache = new WeakMap(); // avoids hanging non-standard properties on DOM nodes
       this._projs.forEach(proj => {
         const img = proj.querySelector('.proj-img');
         if (!img) return;
-        proj.addEventListener('mouseenter', () => { proj._r = proj.getBoundingClientRect(); });
+        proj.addEventListener('mouseenter', () => { rectCache.set(proj, proj.getBoundingClientRect()); });
         proj.addEventListener('mousemove',  e => {
-          if (!proj._r) proj._r = proj.getBoundingClientRect();
-          const nx = (e.clientX - proj._r.left) / proj._r.width  - 0.5;
-          const ny = (e.clientY - proj._r.top)  / proj._r.height - 0.5;
+          if (!rectCache.has(proj)) rectCache.set(proj, proj.getBoundingClientRect());
+          const r  = rectCache.get(proj);
+          const nx = (e.clientX - r.left) / r.width  - 0.5;
+          const ny = (e.clientY - r.top)  / r.height - 0.5;
           img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
         });
         proj.addEventListener('mouseleave', () => { img.style.transform = ''; });
@@ -1060,8 +1069,10 @@ class ContactContainer {
     // Resolve the scroll target first so we can set _contactTop synchronously.
     // The deferred _cacheTop() call below was the only source of truth before,
     // meaning nativeScrollDirection read a stale value for ~600ms after entry.
-    const psEl = document.getElementById('statement') || this._root;
-    const top  = Math.round(psEl.getBoundingClientRect().top + window.scrollY);
+    const psEl = document.getElementById('statement');
+    if (!psEl) console.warn('[ContactContainer] #statement not found — falling back to contact root for scroll target. Check if the element was renamed.');
+    const scrollTarget = psEl || this._root;
+    const top  = Math.round(scrollTarget.getBoundingClientRect().top + window.scrollY);
     // Set _contactTop immediately from the *target* position, not from the
     // post-scroll DOM state. This makes nativeScrollDirection accurate from
     // the very first wheel event after entering Contact.
