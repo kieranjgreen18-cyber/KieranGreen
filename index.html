@@ -1568,37 +1568,39 @@ footer {
   .t-chapter { font-size: clamp(36px, 9vw, 56px); line-height: 0.90; opacity: 0.55; }
 
   /* col-right: text block sits OVER the image, at the bottom.
-     Position it absolute at the bottom, above col-bottom gradient.
-     backdrop-filter blurs the image behind the text zone — frosted film poster effect. */
+     The blur lives on a ::before pseudo so the mask never clips the text. */
   .col-right {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    padding: var(--s-6) var(--pad) var(--s-7);
+    padding: var(--s-6) var(--pad) var(--s-7) var(--pad);
     z-index: 20;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    /* Supplementary scrim so headings that float above the col-bottom
-       gradient remain legible regardless of image brightness or colour */
-    background: linear-gradient(to top,
-      rgba(8,9,9,0.92) 0%,
-      rgba(8,9,9,0.72) 30%,
-      rgba(8,9,9,0.35) 58%,
-      transparent 80%);
-    /* Blur the image behind the entire text zone */
-    backdrop-filter: blur(6px) saturate(0.85);
-    -webkit-backdrop-filter: blur(6px) saturate(0.85);
-    /* Mask the blur so it's opaque at the bottom and fades out upward,
-       matching the gradient — avoids a hard blurred edge mid-image */
-    -webkit-mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
-    mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
+    background: none;
+    isolation: isolate;
   }
-  [data-theme="light"] .col-right {
+  .col-right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
     background: linear-gradient(to top,
-      rgba(237,238,237,0.95) 0%,
-      rgba(237,238,237,0.78) 30%,
-      rgba(237,238,237,0.40) 58%,
-      transparent 80%);
+      rgba(8,9,9,0.94) 0%,
+      rgba(8,9,9,0.78) 28%,
+      rgba(8,9,9,0.42) 54%,
+      transparent 78%);
+    backdrop-filter: blur(7px) saturate(0.80);
+    -webkit-backdrop-filter: blur(7px) saturate(0.80);
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+    mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+  }
+  [data-theme="light"] .col-right::before {
+    background: linear-gradient(to top,
+      rgba(237,238,237,0.96) 0%,
+      rgba(237,238,237,0.82) 28%,
+      rgba(237,238,237,0.45) 54%,
+      transparent 78%);
   }
 
   /* ch-label (The Engine Bay / The Shop Floor / The Practice Room) — hide on mobile */
@@ -1686,22 +1688,29 @@ footer {
     padding: var(--s-6) var(--pad) var(--s-7) var(--pad);
     z-index: 20;
     justify-content: flex-end;
-    background: linear-gradient(to top,
-      rgba(8,9,9,0.88) 0%,
-      rgba(8,9,9,0.65) 30%,
-      rgba(8,9,9,0.28) 58%,
-      transparent 80%);
-    backdrop-filter: blur(6px) saturate(0.85);
-    -webkit-backdrop-filter: blur(6px) saturate(0.85);
-    -webkit-mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
-    mask-image: linear-gradient(to top, black 0%, black 50%, transparent 85%);
+    background: none;
   }
-  [data-theme="light"] .panel-intro .col-right {
+  .panel-intro .col-right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
     background: linear-gradient(to top,
-      rgba(237,238,237,0.92) 0%,
-      rgba(237,238,237,0.72) 30%,
-      rgba(237,238,237,0.35) 58%,
-      transparent 80%);
+      rgba(8,9,9,0.94) 0%,
+      rgba(8,9,9,0.78) 28%,
+      rgba(8,9,9,0.42) 54%,
+      transparent 78%);
+    backdrop-filter: blur(7px) saturate(0.80);
+    -webkit-backdrop-filter: blur(7px) saturate(0.80);
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+    mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+  }
+  [data-theme="light"] .panel-intro .col-right::before {
+    background: linear-gradient(to top,
+      rgba(237,238,237,0.96) 0%,
+      rgba(237,238,237,0.82) 28%,
+      rgba(237,238,237,0.45) 54%,
+      transparent 78%);
   }
   .intro-eyebrow { margin-bottom: var(--s-2); }
   .intro-name {
