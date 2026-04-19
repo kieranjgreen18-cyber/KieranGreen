@@ -482,24 +482,16 @@ strong { color: var(--c-primary); font-weight: 700; }
   width: 58%;
   z-index: 3;
   pointer-events: none;
-  /* fade in with hero */
   opacity: 0;
   animation: fadeUp 1.1s var(--ease) 0.5s forwards;
-  /* mask: fade left edge into hero bg, fade top, keep right/bottom solid */
-  -webkit-mask-image:
-    linear-gradient(to right,  transparent 0%, rgba(0,0,0,0.15) 12%, rgba(0,0,0,0.7) 28%, black 44%),
-    linear-gradient(to bottom, transparent 0%, black 14%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(to right,  transparent 0%, rgba(0,0,0,0.15) 12%, rgba(0,0,0,0.7) 28%, black 44%),
-    linear-gradient(to bottom, transparent 0%, black 14%);
-  mask-composite: intersect;
+  /* subtle left-edge fade — skybox is near-black so blends naturally into hero */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 8%, black 22%);
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 8%, black 22%);
 }
 
 .hero-model-wrap model-viewer {
   width: 100%;
   height: 100%;
-  /* poster bg matches studio env darkness */
   --poster-color: #080909;
   --progress-bar-color: var(--c-accent);
   --progress-bar-height: 1px;
@@ -918,12 +910,11 @@ strong { color: var(--c-primary); font-weight: 700; }
         auto-rotate
         auto-rotate-delay="800"
         rotation-per-second="4deg"
-        skybox-image="https://modelviewer.dev/shared-assets/environments/aircraft_workshop_01_1k.hdr"
-        skybox-height="0m"
-        environment-image="https://modelviewer.dev/shared-assets/environments/aircraft_workshop_01_1k.hdr"
-        shadow-intensity="1.2"
-        shadow-softness="0.85"
-        exposure="0.72"
+        skybox-image="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr"
+        environment-image="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr"
+        shadow-intensity="2.0"
+        shadow-softness="0.4"
+        exposure="0.28"
         camera-orbit="20deg 80deg 100%"
         min-camera-orbit="auto 60deg auto"
         max-camera-orbit="auto 100deg auto"
