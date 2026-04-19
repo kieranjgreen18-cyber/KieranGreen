@@ -433,7 +433,10 @@ body.cur-click #cur-r { width: 16px; height: 16px; }
 ═══════════════════════════════════════════════════════════════ */
 nav#nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
-  display: flex; align-items: center; justify-content: space-between;
+  /* Three equal columns so .n-links is always centered to the viewport,
+     fully independent of the logo or right-controls width. The logo
+     scramble can reflow freely without nudging the nav links at all. */
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
   padding: var(--s-3) var(--pad);
   background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
   transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), backdrop-filter var(--dur-mid), border-color var(--dur-mid);
@@ -453,11 +456,6 @@ nav#nav.scrolled {
   opacity: 0; animation: fd .6s var(--ease) .05s forwards;
   display: inline-flex; align-items: baseline; gap: .35em;
   transition: color .28s var(--ease);
-  /* Reserve enough horizontal space so the random scramble chars never
-     push the nav links rightward. The natural width of "Kieran / Green"
-     at the largest clamp value (15px, ls-wide 0.26em) is ~120px.
-     min-width: max-content would reflow; a fixed value is intentional. */
-  min-width: 130px;
 }
 .logo-first { transition: color .25s; }
 .logo-sep   { font-weight: 700; letter-spacing: 0; color: rgba(91,160,164,.4); margin: 0 -.15em; }
@@ -489,6 +487,7 @@ nav#nav.scrolled {
 .n-right {
   display: flex; align-items: center; gap: var(--s-2);
   opacity: 0; animation: fd .6s var(--ease) .18s forwards;
+  justify-self: end;
 }
 
 /* Availability badge */
