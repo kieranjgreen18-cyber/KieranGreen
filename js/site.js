@@ -163,10 +163,11 @@ class AppController {
     // Notify PageChrome so the section indicator updates immediately,
     // rather than relying on scroll position (unreliable in scroll-lock mode).
     this._chrome?.notifySection?.(name);
-    // Suppress the scroll-position-based indicator for the settle window so
-    // the PageChrome scroll listener cannot overwrite the label we just set
-    // while a smooth scroll (e.g. ContactContainer.enter) is still in flight.
-    this._chrome?.suppressScrollIndicator?.(this._SETTLE_MS);
+    // Suppress the scroll-position-based indicator for longer when entering
+    // Contact (smooth scroll can take ~700ms) so the label doesn't flicker
+    // back to "About" while the page is still scrolling into position.
+    const suppressMs = name === 'contact' ? 900 : this._SETTLE_MS;
+    this._chrome?.suppressScrollIndicator?.(suppressMs);
   }
 
   _dispatchScroll(direction) {
@@ -289,15 +290,25 @@ class PageChrome {
 
     // Cursor follower — position tracking only.
     // Width/height/appearance are owned entirely by CSS via body classes.
+    // _cursorMoved is a dirty flag: set on mousemove, cleared when follower
+    // catches up. This lets the RAF bail out early on idle frames instead of
+    // running the lerp and threshold check on every single frame.
     if (window.matchMedia('(pointer:fine)').matches) {
+      let cursorMoved = false;
+      document.addEventListener('mousemove', () => { cursorMoved = true; }, { passive: true });
       const loop = () => {
-        const rxN = this._rx + (this._mx - this._rx) * 0.1;
-        const ryN = this._ry + (this._my - this._ry) * 0.1;
-        if (Math.abs(rxN - this._rx) > 0.02 || Math.abs(ryN - this._ry) > 0.02) {
-          this._rx = rxN; this._ry = ryN;
-          if (this._curR) {
-            this._curR.style.left = `${this._rx}px`;
-            this._curR.style.top  = `${this._ry}px`;
+        if (cursorMoved) {
+          const rxN = this._rx + (this._mx - this._rx) * 0.1;
+          const ryN = this._ry + (this._my - this._ry) * 0.1;
+          if (Math.abs(rxN - this._rx) > 0.02 || Math.abs(ryN - this._ry) > 0.02) {
+            this._rx = rxN; this._ry = ryN;
+            if (this._curR) {
+              this._curR.style.left = `${this._rx}px`;
+              this._curR.style.top  = `${this._ry}px`;
+            }
+          } else {
+            // Follower has fully caught up — go idle until next mousemove
+            cursorMoved = false;
           }
         }
         requestAnimationFrame(loop);
@@ -1002,7 +1013,12 @@ class AboutContainer {
     }
     if (next >= this._N) {
       this._transitioning = false;
-      if (this._nextKey) this._app.setSection(this._nextKey, +1);
+      if (this._nextKey) {
+        // Small delay so the last panel's exit animation (opacity 0.70s) has
+        // visibly started before Contact.enter() fires its smooth scroll.
+        // Without this, the about-stage snaps away before the panel fades out.
+        setTimeout(() => this._app.setSection(this._nextKey, +1), 120);
+      }
       return;
     }
     this._transitioning = true;
@@ -1114,7 +1130,7 @@ class ContactContainer {
     // below the entry point of the contact region. Once they've scrolled
     // back up to within 80px of the top, intercept and hand back to About.
     if (dir === -1) {
-      const atTop = window.scrollY <= this._contactTop + 80;
+      const atTop = window.scrollY <= this._contactTop + 40;
       return !atTop;
     }
     return false;
