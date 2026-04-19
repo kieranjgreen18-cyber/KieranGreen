@@ -1203,22 +1203,17 @@ strong { color: var(--c-primary); font-weight: 700; }
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
     });
-     
-/* ── Automotive HDRI Studio Environment (SAFE VERSION) ── */
+
+     /* ── Custom cinematic environment (moody glow) ───────────────── */
 (function buildSyntheticEnv() {
   if (!penViewer) return;
 
-  const W = 1024, H = 512;
-
+  const W = 512, H = 256;
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-
+  canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  if (!ctx) return console.warn('HDRI: no canvas context');
-
-  ctx.fillStyle = '#05070a';
+  ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, W, H);
 
   function toXY(azDeg, elDeg) {
@@ -1230,72 +1225,67 @@ strong { color: var(--c-primary); font-weight: 700; }
   function addLight(azDeg, elDeg, rx, ry, stops) {
     const [cx, cy] = toXY(azDeg, elDeg);
 
-    const prev = ctx.globalCompositeOperation;
-    ctx.globalCompositeOperation = 'lighter';
-
     for (const ox of [0, W, -W]) {
-      const g = ctx.createRadialGradient(cx + ox, cy, 0, cx + ox, cy, Math.max(rx, ry));
+      const g = ctx.createRadialGradient(cx+ox, cy, 0, cx+ox, cy, Math.max(rx, ry));
       stops.forEach(([s, c]) => g.addColorStop(s, c));
 
-      ctx.fillStyle = g;
+      ctx.globalCompositeOperation = 'lighter';
       ctx.beginPath();
-      ctx.ellipse(cx + ox, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx+ox, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fillStyle = g;
       ctx.fill();
     }
-
-    ctx.globalCompositeOperation = prev;
   }
 
-  function addStripLight(azDeg, elDeg, width, height, color, strength) {
-    const [cx, cy] = toXY(azDeg, elDeg);
+  ctx.globalCompositeOperation = 'lighter';
 
-    const prev = ctx.globalCompositeOperation;
-    ctx.globalCompositeOperation = 'lighter';
-
-    const g = ctx.createLinearGradient(cx - width, cy, cx + width, cy);
-    g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(0.5, `rgba(${color},${strength})`);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-
-    ctx.fillStyle = g;
-    ctx.fillRect(cx - width, cy - height, width * 2, height * 2);
-
-    ctx.globalCompositeOperation = prev;
-  }
-
-  /* lighting (simplified safe version) */
-  const horizon = ctx.createLinearGradient(0, H * 0.55, 0, H);
-  horizon.addColorStop(0, 'rgba(180,200,255,0)');
-  horizon.addColorStop(0.5, 'rgba(255,255,255,0.15)');
-  horizon.addColorStop(1, 'rgba(0,0,0,0)');
-
-  ctx.fillStyle = horizon;
-  ctx.fillRect(0, 0, W, H);
-
-  addLight(20, 55, 70, 55, [
-    [0, 'rgba(255,245,235,0.9)'],
-    [1, 'rgba(0,0,0,0)']
+  // 🔥 Strong rim (main glow)
+  addLight(180, 50, 110, 70, [
+    [0,   'rgba(255,255,255,1.6)'],
+    [0.3, 'rgba(220,235,255,0.9)'],
+    [0.7, 'rgba(180,210,255,0.3)'],
+    [1.0, 'rgba(0,0,0,0)']
   ]);
 
-  addLight(190, 45, 55, 35, [
-    [0, 'rgba(210,230,255,1)'],
-    [1, 'rgba(0,0,0,0)']
+  // 🔥 Warm kicker
+  addLight(220, 35, 65, 45, [
+    [0,   'rgba(255,200,140,1.0)'],
+    [0.5, 'rgba(255,170,90,0.35)'],
+    [1.0, 'rgba(0,0,0,0)']
   ]);
 
-  addStripLight(90, 80, 260, 18, '255,255,255', 0.3);
+  // 🔥 Key light
+  addLight(15, 60, 90, 70, [
+    [0,   'rgba(255,245,230,0.9)'],
+    [0.4, 'rgba(255,235,210,0.35)'],
+    [1.0, 'rgba(0,0,0,0)']
+  ]);
+
+  // 🔥 Subtle fill
+  addLight(350, 15, 120, 80, [
+    [0,   'rgba(200,210,230,0.25)'],
+    [0.6, 'rgba(180,195,220,0.08)'],
+    [1.0, 'rgba(0,0,0,0)']
+  ]);
 
   ctx.globalCompositeOperation = 'source-over';
 
   canvas.toBlob(blob => {
-    if (!blob) {
-      console.warn('HDRI: blob generation failed');
-      return;
-    }
-
+    if (!blob) return;
     const url = URL.createObjectURL(blob);
     penViewer.setAttribute('environment-image', url);
   }, 'image/jpeg', 0.95);
 })();
+
+    /* AR button — only wired if viewer exists */
+    const arBtn = document.getElementById('ar-btn');
+    if (arBtn) {
+      arBtn.addEventListener('click', () => {
+        if (penViewer.canActivateAR) penViewer.activateAR();
+      });
+    }
+  }
+
 
   const cur = document.getElementById('cur');
   const curR = document.getElementById('cur-r');
