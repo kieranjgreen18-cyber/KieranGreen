@@ -1007,12 +1007,19 @@ class AboutContainer {
     if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
     const next = this._activeIdx + dir;
     if (next < 0) {
-      this._transitioning = false;
+      // Lock out further _advance calls while we hand off to the previous section.
+      // Without this, rapid trackpad ticks during the handoff re-enter _advance
+      // (transitioning is false, debounce doesn't match) and fire setSection again.
+      this._transitioning = true;
       if (this._prevKey) this._app.setSection(this._prevKey, -1);
+      // _transitioning is reset to false by enter() when the new section activates,
+      // so no setTimeout cleanup is needed here.
       return;
     }
     if (next >= this._N) {
-      this._transitioning = false;
+      // Same lock for the forward boundary — prevents the 120ms delay window from
+      // accepting additional wheel ticks that would chain setSection calls.
+      this._transitioning = true;
       if (this._nextKey) {
         // Small delay so the last panel's exit animation (opacity 0.70s) has
         // visibly started before Contact.enter() fires its smooth scroll.
