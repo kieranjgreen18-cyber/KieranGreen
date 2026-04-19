@@ -974,12 +974,11 @@ strong { color: var(--c-primary); font-weight: 700; }
   auto-rotate-delay="800"
   rotation-per-second="4deg"
 
-  environment-image="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr"
-  environment-intensity="2.8"
-  exposure="1.3"
+  environment-intensity="2.2"
+  exposure="0.92"
 
-  shadow-intensity="1.0"
-  shadow-softness="0.5"
+  shadow-intensity="2.2"
+  shadow-softness="0.25"
 
   camera-orbit="35deg 75deg 100%"
   min-camera-orbit="auto 60deg auto"
@@ -1202,80 +1201,223 @@ strong { color: var(--c-primary); font-weight: 700; }
     penViewer.addEventListener('load', async () => {
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
+
+      /* ── Automotive paint material override ──────────────────────────
+         Soul Red is a DIELECTRIC paint (metallic ≈ 0), not metallic.
+         Gloss comes from the clearcoat layer (KHR_materials_clearcoat),
+         not from metalness. Base roughness is medium-low so the colour
+         reads through; the near-zero clearcoat roughness gives the
+         mirror gloss. This is the correct physical structure for
+         all high-end automotive paints.
+      ──────────────────────────────────────────────────────────────── */
+      try {
+        const model = penViewer.model;
+        if (!model) return;
+
+        model.materials.forEach(mat => {
+          const pbr = mat.pbrMetallicRoughness;
+
+          // Soul Red Crystal baseColor — deep saturated crimson in linear space.
+          // sRGB (168, 0, 28) → linear approx. Do NOT go fully saturated;
+          // PBR validators warn that pure (1,0,0) is non-physical for dielectrics.
+          pbr.setBaseColorFactor([0.36, 0.004, 0.018, 1.0]);
+
+          // Keep metallic low — paint is dielectric.
+          // Base roughness ~0.28 so the colour has body; not mirror on its own.
+          pbr.setMetallicFactor(0.0);
+          pbr.setRoughnessFactor(0.28);
+
+          /* Clearcoat — the key to automotive gloss.
+             model-viewer 3.x exposes KHR_materials_clearcoat via
+             material.extensions['KHR_materials_clearcoat']          */
+          const cc = mat.extensions && mat.extensions['KHR_materials_clearcoat'];
+          if (cc) {
+            if (typeof cc.setClearcoatFactor === 'function')        cc.setClearcoatFactor(1.0);
+            if (typeof cc.setClearcoatRoughnessFactor === 'function') cc.setClearcoatRoughnessFactor(0.04);
+          }
+        });
+      } catch(e) {
+        // Material API unavailable — env map still improves appearance
+        console.warn('Material override skipped:', e);
+      }
     });
 
-     /* ── Custom cinematic environment (moody glow) ───────────────── */
-(function buildSyntheticEnv() {
-  if (!penViewer) return;
+    /* ── Automotive studio environment — strip-light approach ────────────
+       Real car photography uses long softbox strip lights (1–2m tall,
+       very narrow) that produce those sharp ribbon reflections across
+       body panels. On a lat-long equirectangular env map these read as
+       tall, thin vertical bands of brightness — NOT round blobs.
+       Three strips: key (slightly warm), rim/backlight (cool-white),
+       and a faint warm fill on the opposite side. Everything else is
+       near-black so the dark-shadow areas stay moody.
+    ──────────────────────────────────────────────────────────────────── */
+    (function buildAutomotiveEnv() {
+      if (!penViewer) return;
 
-  const W = 512, H = 256;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
+      // Higher resolution = sharper, more defined strip reflections
+      const W = 1024, H = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#090b0a';
-  ctx.fillRect(0, 0, W, H);
+      // Near-black studio background — not pure black, gives shadow depth
+      ctx.fillStyle = '#080a09';
+      ctx.fillRect(0, 0, W, H);
 
-  function toXY(azDeg, elDeg) {
-    const x = ((azDeg % 360 + 360) % 360) / 360 * W;
-    const y = (1 - (elDeg + 90) / 180) * H;
-    return [x, y];
-  }
+      // Convert azimuth/elevation to equirectangular pixel coords
+      function toXY(azDeg, elDeg) {
+        const x = ((azDeg % 360 + 360) % 360) / 360 * W;
+        const y = (1 - (elDeg + 90) / 180) * H;
+        return [x, y];
+      }
 
-  function addLight(azDeg, elDeg, rx, ry, stops) {
-    const [cx, cy] = toXY(azDeg, elDeg);
+      // Draw a sharp vertical strip light — tall & very narrow.
+      // azDeg: horizontal position. elCenter: vertical center (0=horizon).
+      // halfW: half-width in pixels on the map. halfH: half-height.
+      // edgeSoftness: how many px the falloff is (sharp = automotive look).
+      function addStripLight(azDeg, elCenter, halfW, halfH, color, alpha, edgeSoftness) {
+        const [cx, cy] = toXY(azDeg, elCenter);
 
-    for (const ox of [0, W, -W]) {
-      const g = ctx.createRadialGradient(cx+ox, cy, 0, cx+ox, cy, Math.max(rx, ry));
-      stops.forEach(([s, c]) => g.addColorStop(s, c));
+        // Draw tiled copies to handle wrap-around at seam
+        for (const ox of [0, W, -W]) {
+          const x0 = cx + ox - halfW;
+          const y0 = cy - halfH;
+          const sw = halfW * 2;
+          const sh = halfH * 2;
 
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.beginPath();
-      ctx.ellipse(cx+ox, cy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fillStyle = g;
-      ctx.fill();
-    }
-  }
+          // Horizontal gradient — sharp center, soft edges
+          const gH = ctx.createLinearGradient(x0, 0, x0 + sw, 0);
+          gH.addColorStop(0,    `rgba(0,0,0,0)`);
+          gH.addColorStop(Math.min(edgeSoftness / sw, 0.35), `${color}${Math.round(alpha * 255).toString(16).padStart(2,'0')}`);
+          gH.addColorStop(0.5,  `${color}ff`);
+          gH.addColorStop(Math.max(1 - edgeSoftness / sw, 0.65), `${color}${Math.round(alpha * 255).toString(16).padStart(2,'0')}`);
+          gH.addColorStop(1,    `rgba(0,0,0,0)`);
 
-  ctx.globalCompositeOperation = 'lighter';
+          // Vertical gradient — feathered top and bottom
+          const gV = ctx.createLinearGradient(0, y0, 0, y0 + sh);
+          gV.addColorStop(0,    'rgba(0,0,0,0)');
+          gV.addColorStop(0.12, 'rgba(255,255,255,1)');
+          gV.addColorStop(0.5,  'rgba(255,255,255,1)');
+          gV.addColorStop(0.88, 'rgba(255,255,255,1)');
+          gV.addColorStop(1,    'rgba(0,0,0,0)');
 
-  // 🔥 Strong rim (main glow)
-  addLight(180, 50, 60, 30, [
-    [0,   'rgba(255,255,255,1.6)'],
-    [0.3, 'rgba(220,235,255,0.9)'],
-    [0.7, 'rgba(180,210,255,0.3)'],
-    [1.0, 'rgba(0,0,0,0)']
-  ]);
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
 
-  // 🔥 Warm kicker
-  addLight(220, 35, 45, 25, [
-    [0,   'rgba(255,200,140,1.0)'],
-    [0.5, 'rgba(255,170,90,0.35)'],
-    [1.0, 'rgba(0,0,0,0)']
-  ]);
+          // Draw horizontal pass
+          ctx.fillStyle = gH;
+          ctx.fillRect(x0, y0, sw, sh);
 
-  // 🔥 Key light
-  addLight(15, 60, 60, 30, [
-    [0,   'rgba(255,245,230,0.9)'],
-    [0.4, 'rgba(255,235,210,0.35)'],
-    [1.0, 'rgba(0,0,0,0)']
-  ]);
+          // Multiply by vertical mask using 'destination-in' on a temp canvas
+          // (Canvas 2D doesn't support multiply blend natively for this, so
+          //  we approximate with a second lighter pass that tapers vertically)
+          const gVtaper = ctx.createLinearGradient(0, y0, 0, y0 + sh);
+          gVtaper.addColorStop(0,   'rgba(0,0,0,0)');
+          gVtaper.addColorStop(0.08,'rgba(0,0,0,0)');
+          gVtaper.addColorStop(0.15,'rgba(0,0,0,0)');
+          gVtaper.addColorStop(1,   'rgba(0,0,0,0)');
+          ctx.restore();
+        }
+      }
 
-  // 🔥 Subtle fill
-  addLight(350, 15, 70, 40, [
-    [0,   'rgba(200,210,230,0.25)'],
-    [0.6, 'rgba(180,195,220,0.08)'],
-    [1.0, 'rgba(0,0,0,0)']
-  ]);
+      // Simpler but effective: use ellipses with very high aspect ratio
+      // to simulate strip lights — width << height
+      function addStrip(azDeg, elDeg, rx, ry, stops) {
+        const [cx, cy] = toXY(azDeg, elDeg);
+        for (const ox of [0, W, -W]) {
+          const g = ctx.createRadialGradient(cx+ox, cy, 0, cx+ox, cy, 1);
+          // Use a linear gradient mapped to the ellipse shape
+          const gl = ctx.createLinearGradient(cx+ox - rx, cy, cx+ox + rx, cy);
+          stops.forEach(([s, c]) => gl.addColorStop(s, c));
 
-  ctx.globalCompositeOperation = 'source-over';
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.translate(cx+ox, cy);
+          ctx.scale(1, ry / rx); // squash to strip aspect ratio
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rx, rx, 0, 0, Math.PI * 2);
+          ctx.fillStyle = gl;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
 
-  canvas.toBlob(blob => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    penViewer.setAttribute('environment-image', url);
-  }, 'image/jpeg', 0.95);
-})();
+      // Helper: draws a sharp-edged rectangular strip (the right approach)
+      function rect(azDeg, elDeg, wPx, hPx, color, opacity) {
+        const [cx, cy] = toXY(azDeg, elDeg);
+        for (const ox of [0, W, -W]) {
+          // Horizontal feather (strip width falloff)
+          const gx = ctx.createLinearGradient(cx+ox - wPx, cy, cx+ox + wPx, cy);
+          gx.addColorStop(0,    'rgba(0,0,0,0)');
+          gx.addColorStop(0.25, color.replace(')', `,${opacity})`).replace('rgb','rgba'));
+          gx.addColorStop(0.5,  color.replace(')', `,${opacity})`).replace('rgb','rgba'));
+          gx.addColorStop(0.75, color.replace(')', `,${opacity})`).replace('rgb','rgba'));
+          gx.addColorStop(1,    'rgba(0,0,0,0)');
+
+          // Vertical feather
+          const gy = ctx.createLinearGradient(0, cy - hPx, 0, cy + hPx);
+          gy.addColorStop(0,    'rgba(0,0,0,0)');
+          gy.addColorStop(0.07, color.replace(')', `,${opacity})`).replace('rgb','rgba'));
+          gy.addColorStop(0.93, color.replace(')', `,${opacity})`).replace('rgb','rgba'));
+          gy.addColorStop(1,    'rgba(0,0,0,0)');
+
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = gx;
+          ctx.fillRect(cx+ox - wPx, cy - hPx, wPx*2, hPx*2);
+          ctx.fillStyle = gy;
+          ctx.fillRect(cx+ox - wPx, cy - hPx, wPx*2, hPx*2);
+          ctx.restore();
+        }
+      }
+
+      // ── KEY strip — front-left, slightly warm white ──────────────────
+      // Long tall strip, narrow width = crisp ribbon reflection on body
+      // azimuth 25° (slightly right of straight-on), elevation 0 (horizon)
+      addStrip(25, 2, 14, 105, [
+        [0,    'rgba(0,0,0,0)'],
+        [0.28, 'rgba(255,248,238,0.85)'],
+        [0.5,  'rgba(255,252,245,1.0)'],
+        [0.72, 'rgba(255,248,238,0.85)'],
+        [1,    'rgba(0,0,0,0)']
+      ]);
+
+      // ── RIM / BACKLIGHT strip — behind, cool-white, narrower ─────────
+      // Creates the bright crescent on the back edge of the pen
+      addStrip(195, 10, 10, 90, [
+        [0,    'rgba(0,0,0,0)'],
+        [0.2,  'rgba(210,225,255,0.7)'],
+        [0.5,  'rgba(230,240,255,1.0)'],
+        [0.8,  'rgba(210,225,255,0.7)'],
+        [1,    'rgba(0,0,0,0)']
+      ]);
+
+      // ── FILL strip — opposite side, very dim warm ─────────────────────
+      // Lifts the shadow side just enough to see the form
+      addStrip(320, -5, 22, 80, [
+        [0,    'rgba(0,0,0,0)'],
+        [0.35, 'rgba(255,235,210,0.12)'],
+        [0.5,  'rgba(255,235,210,0.18)'],
+        [0.65, 'rgba(255,235,210,0.12)'],
+        [1,    'rgba(0,0,0,0)']
+      ]);
+
+      // ── Overhead practicals — tiny specular dots on top ───────────────
+      // Very small, simulate studio ceiling fixtures caught in clearcoat
+      addStrip(60, 65, 5, 8, [
+        [0,   'rgba(0,0,0,0)'],
+        [0.4, 'rgba(255,250,240,0.4)'],
+        [0.5, 'rgba(255,250,240,0.6)'],
+        [0.6, 'rgba(255,250,240,0.4)'],
+        [1,   'rgba(0,0,0,0)']
+      ]);
+
+      canvas.toBlob(blob => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        penViewer.setAttribute('environment-image', url);
+      }, 'image/jpeg', 0.97);
+    })();
 
     /* AR button — only wired if viewer exists */
     const arBtn = document.getElementById('ar-btn');
