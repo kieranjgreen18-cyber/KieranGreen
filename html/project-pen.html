@@ -911,12 +911,13 @@ strong { color: var(--c-primary); font-weight: 700; }
         auto-rotate
         auto-rotate-delay="800"
         rotation-per-second="4deg"
+        environment-image="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr"
         shadow-intensity="2.0"
         shadow-softness="0.4"
-        exposure="0.55"
+        exposure="0.28"
         camera-orbit="20deg 80deg 100%"
-        min-camera-orbit="auto 80deg auto"
-        max-camera-orbit="auto 80deg auto"
+        min-camera-orbit="auto 60deg auto"
+        max-camera-orbit="auto 100deg auto"
         field-of-view="22deg"
         interaction-prompt="none"
         loading="eager"
@@ -1126,91 +1127,6 @@ strong { color: var(--c-primary); font-weight: 700; }
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
     });
-
-    /* ── Synthetic studio environment map ──────────────────────────
-       Renders a 512×256 equirectangular HDR-style env to a Canvas,
-       then feeds it as a blob URL to environment-image.
-
-       Light rig (azimuth = left/right in panorama, elevation = up/down):
-         Rim light   180°az / 55°el  — top-rear, cool bright white
-         Warm kicker 220°az / 38°el  — secondary rear edge, amber
-         Key light    15°az / 62°el  — front-top, soft warm
-         Fill        350°az / 18°el  — low front, barely lifts shadows
-
-       The env map stays fixed in world space while the model rotates
-       under it — rim always hits from behind regardless of orbit angle.
-    ──────────────────────────────────────────────────────────────── */
-    (function buildSyntheticEnv() {
-      const W = 512, H = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext('2d');
-
-      // Fill solid black base
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, W, H);
-
-      // Convert spherical coords to equirectangular pixel position
-      function toXY(azDeg, elDeg) {
-        const x = ((azDeg % 360 + 360) % 360) / 360 * W;
-        const y = (1 - (elDeg + 90) / 180) * H;
-        return [x, y];
-      }
-
-      // Draw a soft light blob with radial gradient
-      function addLight(azDeg, elDeg, radiusX, radiusY, colorStops) {
-        const [cx, cy] = toXY(azDeg, elDeg);
-        // Draw twice to handle panorama wrap-around at 0/360 seam
-        for (const ox of [0, W, -W]) {
-          const grd = ctx.createRadialGradient(cx+ox, cy, 0, cx+ox, cy, Math.max(radiusX, radiusY));
-          colorStops.forEach(([stop, color]) => grd.addColorStop(stop, color));
-          ctx.globalCompositeOperation = 'lighter';
-          ctx.beginPath();
-          ctx.ellipse(cx+ox, cy, radiusX, radiusY, 0, 0, Math.PI*2);
-          ctx.fillStyle = grd;
-          ctx.fill();
-        }
-      }
-
-      ctx.globalCompositeOperation = 'lighter';
-
-      // Rim light — top-rear, cool bright white (the key "hero" light)
-      addLight(180, 48, 95, 60, [
-        [0,   'rgba(255, 255, 255, 1.0)'],
-        [0.3, 'rgba(220, 235, 255, 0.7)'],
-        [0.7, 'rgba(180, 210, 255, 0.2)'],
-        [1.0, 'rgba(0,   0,   0,   0.0)']
-      ]);
-
-      // Warm kicker — secondary rear offset, amber tint
-      addLight(220, 32, 55, 38, [
-        [0,   'rgba(255, 210, 160, 0.65)'],
-        [0.5, 'rgba(255, 180, 100, 0.25)'],
-        [1.0, 'rgba(0,   0,   0,   0.0)']
-      ]);
-
-      // Key light — front-top, soft warm white
-      addLight(15, 58, 80, 65, [
-        [0,   'rgba(255, 248, 235, 0.55)'],
-        [0.4, 'rgba(255, 240, 210, 0.22)'],
-        [1.0, 'rgba(0,   0,   0,   0.0)']
-      ]);
-
-      // Fill — low front, very subtle, just lifts pure black faces
-      addLight(350, 15, 110, 70, [
-        [0,   'rgba(200, 210, 230, 0.12)'],
-        [0.6, 'rgba(180, 195, 220, 0.05)'],
-        [1.0, 'rgba(0,   0,   0,   0.0)']
-      ]);
-
-      ctx.globalCompositeOperation = 'source-over';
-
-      canvas.toBlob(blob => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        penViewer.setAttribute('environment-image', url);
-      }, 'image/jpeg', 0.95);
-    })();
   }
 
 
