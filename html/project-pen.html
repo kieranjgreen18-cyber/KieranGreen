@@ -974,11 +974,11 @@ strong { color: var(--c-primary); font-weight: 700; }
   auto-rotate-delay="800"
   rotation-per-second="4deg"
 
-  environment-intensity="2.2"
-  exposure="0.92"
+  environment-intensity="6.0"
+  exposure="1.8"
 
-  shadow-intensity="2.2"
-  shadow-softness="0.25"
+  shadow-intensity="1.2"
+  shadow-softness="0.5"
 
   camera-orbit="35deg 75deg 100%"
   min-camera-orbit="auto 60deg auto"
@@ -1202,42 +1202,26 @@ strong { color: var(--c-primary); font-weight: 700; }
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
 
-      /* ── Automotive paint material override ──────────────────────────
-         Soul Red is a DIELECTRIC paint (metallic ≈ 0), not metallic.
-         Gloss comes from the clearcoat layer (KHR_materials_clearcoat),
-         not from metalness. Base roughness is medium-low so the colour
-         reads through; the near-zero clearcoat roughness gives the
-         mirror gloss. This is the correct physical structure for
-         all high-end automotive paints.
+      /* ── Clearcoat only — baseColor/metallic/roughness already correct in GLB ──
+         #6C0000 is baked in. We only add the clearcoat layer here,
+         which gives the gloss without touching the colour at all.
       ──────────────────────────────────────────────────────────────── */
       try {
         const model = penViewer.model;
         if (!model) return;
-
         model.materials.forEach(mat => {
           const pbr = mat.pbrMetallicRoughness;
+          // Only reduce roughness so the paint surface itself is glossier
+          pbr.setRoughnessFactor(0.18);
 
-          // Soul Red Crystal baseColor — deep saturated crimson in linear space.
-          // sRGB (168, 0, 28) → linear approx. Do NOT go fully saturated;
-          // PBR validators warn that pure (1,0,0) is non-physical for dielectrics.
-          pbr.setBaseColorFactor([0.36, 0.004, 0.018, 1.0]);
-
-          // Keep metallic low — paint is dielectric.
-          // Base roughness ~0.28 so the colour has body; not mirror on its own.
-          pbr.setMetallicFactor(0.0);
-          pbr.setRoughnessFactor(0.28);
-
-          /* Clearcoat — the key to automotive gloss.
-             model-viewer 3.x exposes KHR_materials_clearcoat via
-             material.extensions['KHR_materials_clearcoat']          */
+          // Clearcoat layer — the gloss lives here
           const cc = mat.extensions && mat.extensions['KHR_materials_clearcoat'];
           if (cc) {
-            if (typeof cc.setClearcoatFactor === 'function')        cc.setClearcoatFactor(1.0);
+            if (typeof cc.setClearcoatFactor === 'function')          cc.setClearcoatFactor(1.0);
             if (typeof cc.setClearcoatRoughnessFactor === 'function') cc.setClearcoatRoughnessFactor(0.04);
           }
         });
       } catch(e) {
-        // Material API unavailable — env map still improves appearance
         console.warn('Material override skipped:', e);
       }
     });
@@ -1376,9 +1360,17 @@ strong { color: var(--c-primary); font-weight: 700; }
       // azimuth 25° (slightly right of straight-on), elevation 0 (horizon)
       addStrip(25, 2, 14, 105, [
         [0,    'rgba(0,0,0,0)'],
-        [0.28, 'rgba(255,248,238,0.85)'],
+        [0.28, 'rgba(255,248,238,0.95)'],
         [0.5,  'rgba(255,252,245,1.0)'],
-        [0.72, 'rgba(255,248,238,0.85)'],
+        [0.72, 'rgba(255,248,238,0.95)'],
+        [1,    'rgba(0,0,0,0)']
+      ]);
+      // Second pass to boost brightness (lighter blending doubles intensity)
+      addStrip(25, 2, 10, 90, [
+        [0,    'rgba(0,0,0,0)'],
+        [0.3,  'rgba(255,250,240,0.6)'],
+        [0.5,  'rgba(255,255,255,0.9)'],
+        [0.7,  'rgba(255,250,240,0.6)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
@@ -1386,9 +1378,16 @@ strong { color: var(--c-primary); font-weight: 700; }
       // Creates the bright crescent on the back edge of the pen
       addStrip(195, 10, 10, 90, [
         [0,    'rgba(0,0,0,0)'],
-        [0.2,  'rgba(210,225,255,0.7)'],
+        [0.2,  'rgba(210,225,255,0.85)'],
         [0.5,  'rgba(230,240,255,1.0)'],
-        [0.8,  'rgba(210,225,255,0.7)'],
+        [0.8,  'rgba(210,225,255,0.85)'],
+        [1,    'rgba(0,0,0,0)']
+      ]);
+      addStrip(195, 10, 7, 75, [
+        [0,    'rgba(0,0,0,0)'],
+        [0.3,  'rgba(220,235,255,0.7)'],
+        [0.5,  'rgba(240,248,255,0.95)'],
+        [0.7,  'rgba(220,235,255,0.7)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
@@ -1396,9 +1395,9 @@ strong { color: var(--c-primary); font-weight: 700; }
       // Lifts the shadow side just enough to see the form
       addStrip(320, -5, 22, 80, [
         [0,    'rgba(0,0,0,0)'],
-        [0.35, 'rgba(255,235,210,0.12)'],
-        [0.5,  'rgba(255,235,210,0.18)'],
-        [0.65, 'rgba(255,235,210,0.12)'],
+        [0.35, 'rgba(255,235,210,0.28)'],
+        [0.5,  'rgba(255,235,210,0.38)'],
+        [0.65, 'rgba(255,235,210,0.28)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
@@ -1406,9 +1405,9 @@ strong { color: var(--c-primary); font-weight: 700; }
       // Very small, simulate studio ceiling fixtures caught in clearcoat
       addStrip(60, 65, 5, 8, [
         [0,   'rgba(0,0,0,0)'],
-        [0.4, 'rgba(255,250,240,0.4)'],
-        [0.5, 'rgba(255,250,240,0.6)'],
-        [0.6, 'rgba(255,250,240,0.4)'],
+        [0.4, 'rgba(255,250,240,0.6)'],
+        [0.5, 'rgba(255,250,240,0.85)'],
+        [0.6, 'rgba(255,250,240,0.6)'],
         [1,   'rgba(0,0,0,0)']
       ]);
 
