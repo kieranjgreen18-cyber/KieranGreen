@@ -1537,7 +1537,8 @@ footer {
   /* Ghost number — hide on mobile */
   .ghost-num { display: none; }
 
-  /* Strong gradient from bottom so text pops — dark base, fades to transparent */
+  /* Strong gradient from bottom so text pops — extends higher to cover
+     the full text block now that col-right also carries a scrim */
   .col-bottom {
     position: absolute;
     bottom: 0; left: 0; right: 0;
@@ -1547,18 +1548,20 @@ footer {
     background:
       linear-gradient(to top,
         rgba(8,9,9,1.00) 0%,
-        rgba(8,9,9,0.88) 28%,
-        rgba(8,9,9,0.60) 48%,
-        rgba(8,9,9,0.20) 65%,
-        transparent 80%);
+        rgba(8,9,9,0.92) 20%,
+        rgba(8,9,9,0.70) 40%,
+        rgba(8,9,9,0.35) 60%,
+        rgba(8,9,9,0.10) 75%,
+        transparent 90%);
   }
   [data-theme="light"] .col-bottom {
     background: linear-gradient(to top,
       rgba(237,238,237,1.00) 0%,
-      rgba(237,238,237,0.88) 28%,
-      rgba(237,238,237,0.60) 48%,
-      rgba(237,238,237,0.20) 65%,
-      transparent 80%);
+      rgba(237,238,237,0.92) 20%,
+      rgba(237,238,237,0.70) 40%,
+      rgba(237,238,237,0.35) 60%,
+      rgba(237,238,237,0.10) 75%,
+      transparent 90%);
   }
   .ch-index  { margin-bottom: var(--s-2); }
   .t-chapter { font-size: clamp(36px, 9vw, 56px); line-height: 0.90; opacity: 0.55; }
@@ -1573,23 +1576,52 @@ footer {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    /* No background — the col-bottom gradient handles legibility */
+    /* Supplementary scrim so headings that float above the col-bottom
+       gradient remain legible regardless of image brightness or colour */
+    background: linear-gradient(to top,
+      rgba(8,9,9,0.92) 0%,
+      rgba(8,9,9,0.72) 30%,
+      rgba(8,9,9,0.35) 58%,
+      transparent 80%);
+  }
+  [data-theme="light"] .col-right {
+    background: linear-gradient(to top,
+      rgba(237,238,237,0.95) 0%,
+      rgba(237,238,237,0.78) 30%,
+      rgba(237,238,237,0.40) 58%,
+      transparent 80%);
   }
   /* Accent rule */
   .ch-rule { margin-bottom: var(--s-3); }
-  /* Big, confident heading */
+  /* Big, confident heading — text-shadow ensures legibility even if
+     the gradient doesn't reach all the way to the top of tall type */
   .ch-title {
     font-size: clamp(38px, 10vw, 58px);
     line-height: 0.90;
     margin-bottom: var(--s-3);
     color: var(--c-primary);
+    text-shadow:
+      0 1px 12px rgba(0,0,0,0.70),
+      0 2px 32px rgba(0,0,0,0.50);
   }
-  /* Body copy — readable but secondary */
+  [data-theme="light"] .ch-title {
+    text-shadow:
+      0 1px 8px rgba(237,238,237,0.80),
+      0 2px 20px rgba(237,238,237,0.60);
+  }
+  /* Body copy — lifted to --c-primary on mobile so it pops off the dark scrim */
   .ch-body {
     font-size: 15px;
     line-height: 1.62;
     max-width: 100%;
-    color: var(--c-secondary);
+    color: var(--c-primary);
+    opacity: 0.82;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.60);
+  }
+  [data-theme="light"] .ch-body {
+    color: var(--c-primary);
+    opacity: 0.85;
+    text-shadow: 0 1px 6px rgba(237,238,237,0.70);
   }
 
   /* ── Intro panel (panel 0) — portrait fills screen ── */
@@ -1611,16 +1643,18 @@ footer {
     background:
       linear-gradient(to top,
         rgba(8,9,9,1.00) 0%,
-        rgba(8,9,9,0.75) 35%,
-        rgba(8,9,9,0.10) 60%,
-        transparent 80%);
+        rgba(8,9,9,0.88) 28%,
+        rgba(8,9,9,0.55) 48%,
+        rgba(8,9,9,0.15) 68%,
+        transparent 85%);
   }
   [data-theme="light"] .intro-portrait-vignette {
     background: linear-gradient(to top,
       rgba(237,238,237,1.00) 0%,
-      rgba(237,238,237,0.75) 35%,
-      rgba(237,238,237,0.10) 60%,
-      transparent 80%);
+      rgba(237,238,237,0.88) 28%,
+      rgba(237,238,237,0.55) 48%,
+      rgba(237,238,237,0.15) 68%,
+      transparent 85%);
   }
   /* Text over portrait */
   .panel-intro .col-right {
@@ -1629,14 +1663,45 @@ footer {
     padding: var(--s-6) var(--pad) var(--s-7);
     z-index: 20;
     justify-content: flex-end;
+    background: linear-gradient(to top,
+      rgba(8,9,9,0.88) 0%,
+      rgba(8,9,9,0.65) 30%,
+      rgba(8,9,9,0.28) 58%,
+      transparent 80%);
+  }
+  [data-theme="light"] .panel-intro .col-right {
+    background: linear-gradient(to top,
+      rgba(237,238,237,0.92) 0%,
+      rgba(237,238,237,0.72) 30%,
+      rgba(237,238,237,0.35) 58%,
+      transparent 80%);
   }
   .intro-eyebrow { margin-bottom: var(--s-2); }
   .intro-name {
     font-size: clamp(42px, 11vw, 64px);
     line-height: 0.88;
     margin-bottom: var(--s-3);
+    text-shadow:
+      0 1px 12px rgba(0,0,0,0.72),
+      0 2px 28px rgba(0,0,0,0.48);
   }
-  .intro-meta { font-size: 15px; line-height: 1.60; color: var(--c-secondary); }
+  [data-theme="light"] .intro-name {
+    text-shadow:
+      0 1px 8px rgba(237,238,237,0.80),
+      0 2px 18px rgba(237,238,237,0.55);
+  }
+  .intro-meta {
+    font-size: 15px;
+    line-height: 1.60;
+    color: var(--c-primary);
+    opacity: 0.80;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.55);
+  }
+  [data-theme="light"] .intro-meta {
+    color: var(--c-primary);
+    opacity: 0.82;
+    text-shadow: 0 1px 5px rgba(237,238,237,0.65);
+  }
 
   /* ── Statement panel (panel 4) — no image, full-height text ── */
   .panel-statement {
