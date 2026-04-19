@@ -40,6 +40,12 @@
 <!-- Font preloads -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/AnyConv.com__D-DINCondensed.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/AnyConv.com__D-DIN.woff2" crossorigin>
+<!-- Preconnect for third-party image hosts so DNS + TLS is ready before images are needed -->
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+<!-- Preload the first About panel images (panel 0 / intro portrait, saab) so they
+     don't pop in when the About stage first becomes active -->
+<link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/portrait.JPEG">
+<link rel="preload" as="image" href="assets/images/saab.jpg">
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -995,12 +1001,8 @@ model-viewer#mini-viewer {
   transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
 }
 .panel.is-below {
-  opacity: 0; transform: translateY(58px); pointer-events: none;
-  transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
-}
-.panel.is-below {
   opacity: 0; transform: translateY(56px); pointer-events: none;
-  transition: transform 0.55s var(--snap), opacity 0.45s var(--ease-out);
+  transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
 }
 
 /* Left column */
@@ -1056,6 +1058,7 @@ model-viewer#mini-viewer {
   border: 1px solid rgba(91,160,164,0.16);
   box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.038);
   opacity: 0; transition: opacity 0.9s var(--ease), box-shadow 0.6s ease;
+  will-change: opacity;
 }
 .panel.is-active .pf-main   { opacity: 1; transition-delay: .05s; }
 .panel.is-active .pf-accent { opacity: 1; transition-delay: .22s; }
@@ -1063,6 +1066,7 @@ model-viewer#mini-viewer {
   width: 100%; height: 100%; object-fit: cover; display: block;
   filter: saturate(0.72) brightness(0.85);
   transition: filter .7s ease, transform .7s var(--ease);
+  will-change: filter, transform;
 }
 .photo-placeholder {
   width: 100%; height: 100%;
@@ -2101,10 +2105,10 @@ button:focus-visible {
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="assets/images/saab.jpg" alt="Rebuilding the Saab engine bay — stripped-down, everything deliberate" loading="eager" decoding="async">
+              <img src="assets/images/saab.jpg" alt="Rebuilding the Saab engine bay — stripped-down, everything deliberate" loading="eager" fetchpriority="high" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/engineblock.jpg" alt="Engine bay detail — machined metal components" loading="lazy" decoding="async">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/engineblock.jpg" alt="Engine bay detail — machined metal components" loading="eager" fetchpriority="low" decoding="async">
             </div>
           </div>
         </div>
@@ -2133,10 +2137,10 @@ button:focus-visible {
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&q=80" alt="Bike shop floor — rows of bicycles on display" loading="lazy" decoding="async">
+              <img src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&q=80" alt="Bike shop floor — rows of bicycles on display" loading="eager" fetchpriority="low" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
-              <img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80" alt="Bicycle component detail — drivetrain close-up" loading="lazy" decoding="async">
+              <img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80" alt="Bicycle component detail — drivetrain close-up" loading="eager" fetchpriority="low" decoding="async">
             </div>
           </div>
         </div>
@@ -2165,10 +2169,10 @@ button:focus-visible {
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/paperchair.jpg" alt="Paper chair ideation" loading="lazy" decoding="async">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/paperchair.jpg" alt="Paper chair ideation" loading="eager" fetchpriority="low" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/chairhero.jpg" alt="Chair final result" loading="lazy" decoding="async">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/chairhero.jpg" alt="Chair final result" loading="eager" fetchpriority="low" decoding="async">
             </div>
           </div>
         </div>
