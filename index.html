@@ -207,6 +207,18 @@
 }
 [data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.9) 0%, transparent 100%); }
 [data-theme="light"] nav.scrolled { background: rgba(237,238,237,0.94); backdrop-filter: blur(32px) saturate(1.5); }
+/* Light theme mobile nav background override */
+@media (max-width: 768px) {
+  [data-theme="light"] nav#nav { background: linear-gradient(to bottom, rgba(237,238,237,.96) 0%, rgba(237,238,237,.82) 60%, transparent 100%); }
+  [data-theme="light"] nav#nav.scrolled { background: rgba(237,238,237,0.96); }
+  [data-theme="light"] .col-bottom {
+    background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(237,238,237,0.55) 25%,
+      rgba(237,238,237,0.92) 70%,
+      var(--c-bg) 100%);
+  }
+}
 [data-theme="light"] .hero-vignette { background: linear-gradient(to right, rgba(237,238,237,0.97) 0%, rgba(237,238,237,0.75) 28%, rgba(237,238,237,0.25) 58%, transparent 78%), linear-gradient(to top, rgba(237,238,237,0.95) 0%, rgba(237,238,237,0.45) 7%, transparent 18%), linear-gradient(to bottom, rgba(237,238,237,0.60) 0%, transparent 16%); }
 [data-theme="light"] .proj:nth-child(odd)  .proj-veil { background: linear-gradient(to right, rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
 [data-theme="light"] .proj:nth-child(even) .proj-veil { background: linear-gradient(to left,  rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
@@ -1423,11 +1435,26 @@ footer {
 }
 
 @media (max-width: 768px) {
-  /* Nav */
+  /* Nav — collapse to flex row: logo left, controls right */
+  nav#nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(8,9,9,.95) 0%, rgba(8,9,9,.75) 60%, transparent 100%);
+  }
+  nav#nav.scrolled { background: rgba(8,9,9,.95); }
   .n-links, .n-avail { display: none; }
   .n-ham { display: flex; }
-  nav#nav { background: linear-gradient(to bottom, rgba(8,9,9,.95) 0%, rgba(8,9,9,.75) 60%, transparent 100%); }
-  nav#nav.scrolled { background: rgba(8,9,9,.95); }
+  /* Right controls: ensure theme + hamburger are visible and together */
+  .n-right {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    justify-self: unset;
+    margin-left: auto;
+  }
+  /* Both theme and hamburger always visible on mobile */
+  .n-theme { display: flex; }
   #section-indicator { display: none; }
 
   /* Hero */
@@ -1464,40 +1491,119 @@ footer {
   .proj-title { font-size: clamp(44px, 13vw, 80px); }
   .proj-desc { max-width: 100%; }
 
-  /* About panels */
-  .panel { grid-template-columns: 1fr; }
-  /* On mobile: panels stack vertically. The gallery sits as a full-bleed
-     background behind the title text in col-left, then col-right is below. */
+  /* ── ABOUT — mobile-native layout ─────────────────────────────
+     The about-stage is position:fixed fullscreen and the AppController
+     intercepts all touch scroll — so every panel must fit within 100svh.
+
+     Architecture:
+       .panel            → absolute inset:0, two CSS rows via grid
+                           top 42svh image strip | bottom 58svh text zone
+       .col-left         → occupies the top row, full-bleed photo
+       .col-bottom       → absolute overlay at base of image strip
+       .col-right        → occupies the bottom row, clipped to fit
+  ────────────────────────────────────────────────────────────── */
+
+  .panel {
+    grid-template-columns: 1fr;
+    grid-template-rows: 42svh 1fr;
+    align-items: start;
+    overflow: hidden;
+  }
+
+  /* ── Image strip — top row ── */
   .col-left {
     border-right: none;
     position: relative;
-    min-height: 45vmax;
-    max-height: 52vh;
+    height: 42svh;
+    min-height: 0;
+    max-height: none;
     overflow: hidden;
+    display: block;
+    flex: none;
   }
-  /* Photo gallery fills the entire col-left area on mobile */
-  .photo-gallery {
-    position: absolute; inset: 0;
-    pointer-events: none;
-  }
-  /* Col-bottom overlays on top of gallery images */
-  .col-top { position: absolute; inset: 0; overflow: hidden; flex: none; }
+
+  /* Photo gallery fills col-left */
+  .photo-gallery { position: absolute; inset: 0; pointer-events: none; }
+  .col-top       { position: absolute; inset: 0; overflow: hidden; flex: none; }
+
+  /* Chapter label overlays bottom of image */
   .col-bottom {
     position: absolute; bottom: 0; left: 0; right: 0;
-    padding: var(--s-3) var(--pad) var(--s-4);
+    padding: var(--s-2) var(--pad) var(--s-2);
     z-index: 10;
-    background: linear-gradient(to bottom, transparent 0%, rgba(8,9,9,0.7) 30%, var(--c-bg) 75%);
+    background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(8,9,9,0.6) 30%,
+      rgba(8,9,9,0.92) 70%,
+      var(--c-bg) 100%);
   }
-  .col-right  { padding: var(--s-4) var(--pad) var(--s-8); }
-  .ghost-num, .stmt-wm, .prog-dots { display: none; }
-  .panel-statement { grid-template-columns: 1fr; gap: var(--s-5); padding: var(--s-6) var(--pad); overflow-y: auto; }
-  .stmt-video-row { display: none; }
 
-  /* Rein in photo gallery frames on mobile so they stay inside col-top */
-  /* Intro panel mobile */
-  .panel-intro .col-left { min-height: 42vmax; max-height: 48vh; }
-  .panel-intro .col-right { padding: var(--s-4) var(--pad) var(--s-6); }
-  .intro-name { font-size: clamp(36px, 10vw, 56px); }
+  /* ── Text zone — bottom row ── */
+  .col-right {
+    padding: var(--s-3) var(--pad) var(--s-4);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  /* Chapter index strip */
+  .ch-index { margin-bottom: 6px; }
+  /* Chapter label size — compact for mobile */
+  .t-chapter { font-size: clamp(22px, 6vw, 36px); line-height: 0.88; }
+
+  /* Heading — tighter on mobile */
+  .ch-title {
+    font-size: clamp(28px, 7.5vw, 46px);
+    margin-bottom: var(--s-2);
+    line-height: 0.88;
+  }
+  /* Body — slightly smaller so it breathes within the constrained row */
+  .ch-body {
+    max-width: 100%;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Rule above ch-title */
+  .ch-rule { margin-bottom: var(--s-2); }
+
+  /* Ghost number — too big, hide */
+  .ghost-num { display: none; }
+
+  /* Progress dots — tuck in on right */
+  .prog-dots { right: var(--s-2); gap: 8px; }
+
+  /* ── Intro panel (panel 0) ── */
+  .panel-intro .col-left  { height: 42svh; }
+  .panel-intro .col-right { padding: var(--s-3) var(--pad) var(--s-4); }
+  .intro-name {
+    font-size: clamp(30px, 9vw, 48px);
+    margin-bottom: var(--s-2);
+    line-height: 0.88;
+  }
+  .intro-meta { font-size: 14px; line-height: 1.55; }
+  .intro-eyebrow { margin-bottom: var(--s-2); }
+
+  /* ── Statement panel (panel 4) ── */
+  .panel-statement {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--s-6) var(--pad) var(--s-5);
+    gap: 0;
+    overflow: hidden;
+  }
+  .stmt-wm     { display: none; }
+  .stmt-video-row { display: none; }
+  .stmt-wrap   { display: flex; flex-direction: column; gap: var(--s-3); }
+  .stmt-kicker { margin-bottom: 0; }
+  .stmt-text   { font-size: clamp(15px, 4.5vw, 20px); line-height: 1.65; }
+
+  /* ── Photo frame positions ── */
   .panel[data-panel="1"] .pf-main   { width: 58%; top: 48%; left: 48%; }
   .panel[data-panel="1"] .pf-accent { width: 28%; bottom: 4%; right: 4%; }
   .panel[data-panel="2"] .pf-main   { width: 46%; top: 6%; left: 5%; }
@@ -1520,8 +1626,13 @@ footer {
 
 @media (max-width: 480px) {
   .hero-h1 { font-size: clamp(48px, 14vw, 68px); }
-  .ch-title { font-size: clamp(30px, 8vw, 48px); }
-  .t-statement { font-size: clamp(16px, 5vw, 22px); }
+  /* Shrink image strip slightly on very small phones so text row has more room */
+  .col-left,
+  .panel-intro .col-left { grid-row: 1; height: 38svh; }
+  .panel { grid-template-rows: 38svh 1fr; }
+  .ch-title { font-size: clamp(26px, 8vw, 40px); }
+  .intro-name { font-size: clamp(28px, 9vw, 42px); }
+  .t-statement { font-size: clamp(15px, 4.5vw, 20px); }
   .contact-h { font-size: clamp(48px, 14vw, 72px); }
   .c-link, .c-soc, .c-dl { font-size: clamp(18px, 6vw, 28px); }
 }
