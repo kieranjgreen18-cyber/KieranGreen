@@ -185,7 +185,6 @@ class AppController {
      • Theme toggle
      • Hamburger / mobile drawer
      • Logo scramble
-     • Hero coordinates scramble
      • Copyright year
 
    ONLY object besides AppController that may attach document-level listeners.
@@ -255,7 +254,7 @@ class PageChrome {
         veil.style.clipPath = 'inset(0 100% 0 0)';
         veil.style.pointerEvents = 'none';
         void veil.offsetWidth;
-        requestAnimationFrame(() => { if (veil) { veil.style.transition = ''; veil.style.clipPath = ''; } });
+        requestAnimationFrame(() => { if (veil) { veil.style.transition = ''; } });
       }
     });
 
@@ -383,7 +382,7 @@ class PageChrome {
     if (logo && logoLast) {
       const scramble = () => {
         if (scrambling) return; scrambling = true;
-        let iter = 0; const TARGET = 'GREEN';
+        let iter = 0; const TARGET = 'Green';
         const iv = setInterval(() => {
           logoLast.textContent = TARGET.split('').map((c, i) =>
             i < iter ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
@@ -395,31 +394,6 @@ class PageChrome {
       logo.addEventListener('mouseenter', scramble);
       logo.addEventListener('focus', () => { if (!scrambling) logo.dispatchEvent(new MouseEvent('mouseenter')); });
     }
-
-    // ── Hero coordinates scramble ──────────────────────────────────────
-    (function() {
-      const coords = document.querySelectorAll('.hero-coord-item');
-      if (!coords.length) return;
-      const digits = '0123456789';
-      let done = false, frame = 0;
-      function scrambleCoords() {
-        if (done) return; frame++;
-        coords.forEach((el, i) => {
-          const labels = ['X','Y','Z'];
-          el.textContent = frame > 18 + i * 6
-            ? labels[i] + ':' + String(Math.floor(Math.random() * 9999)).padStart(4, '0')
-            : labels[i] + ':' + Array.from({ length: 4 }, () => digits[Math.floor(Math.random() * 10)]).join('');
-        });
-        if (frame < 36) requestAnimationFrame(scrambleCoords);
-        else { done = true; coords[0].textContent = 'X:5312'; coords[1].textContent = 'Y:2048'; coords[2].textContent = 'Z:0000'; }
-      }
-      setTimeout(scrambleCoords, 700);
-      window.addEventListener('scroll', () => {
-        if (!done) return;
-        const pct = Math.round((window.scrollY / Math.max(1, document.body.scrollHeight - window.innerHeight)) * 9999);
-        coords[2].textContent = 'Z:' + String(pct).padStart(4, '0');
-      }, { passive: true });
-    })();
 
     // ── Nav scrolled + section indicator ──────────────────────────────
     const heroScrollEl = document.getElementById('hero-scroll');
