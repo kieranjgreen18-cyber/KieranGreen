@@ -975,13 +975,13 @@ strong { color: var(--c-primary); font-weight: 700; }
   rotation-per-second="4deg"
 
   environment-image="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr"
-  environment-intensity="2.3"
-  exposure="1.4"
+  environment-intensity="3.2"
+  exposure="1.1"
 
-  shadow-intensity="0.7"
-  shadow-softness="0.85"
+  shadow-intensity="1.0"
+  shadow-softness="0.5"
 
-  camera-orbit="20deg 80deg 100%"
+  camera-orbit="35deg 75deg 100%"
   min-camera-orbit="auto 60deg auto"
   max-camera-orbit="auto 100deg auto"
 
@@ -990,7 +990,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   ar
   ar-modes="webxr scene-viewer quick-look"
   loading="eager"
-  tone-mapping="commerce"
+  tone-mapping="aces"
 ></model-viewer>
     </div>
 
@@ -1240,7 +1240,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   ctx.globalCompositeOperation = 'lighter';
 
   // 🔥 Strong rim (main glow)
-  addLight(180, 50, 110, 70, [
+  addLight(180, 50, 60, 30, [
     [0,   'rgba(255,255,255,1.6)'],
     [0.3, 'rgba(220,235,255,0.9)'],
     [0.7, 'rgba(180,210,255,0.3)'],
@@ -1248,21 +1248,21 @@ strong { color: var(--c-primary); font-weight: 700; }
   ]);
 
   // 🔥 Warm kicker
-  addLight(220, 35, 65, 45, [
+  addLight(220, 35, 45, 25, [
     [0,   'rgba(255,200,140,1.0)'],
     [0.5, 'rgba(255,170,90,0.35)'],
     [1.0, 'rgba(0,0,0,0)']
   ]);
 
   // 🔥 Key light
-  addLight(15, 60, 90, 70, [
+  addLight(15, 60, 60, 30, [
     [0,   'rgba(255,245,230,0.9)'],
     [0.4, 'rgba(255,235,210,0.35)'],
     [1.0, 'rgba(0,0,0,0)']
   ]);
 
   // 🔥 Subtle fill
-  addLight(350, 15, 120, 80, [
+  addLight(350, 15, 70, 40, [
     [0,   'rgba(200,210,230,0.25)'],
     [0.6, 'rgba(180,195,220,0.08)'],
     [1.0, 'rgba(0,0,0,0)']
