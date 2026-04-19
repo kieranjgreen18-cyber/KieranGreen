@@ -1423,7 +1423,7 @@ footer {
 }
 
 @media (max-width: 768px) {
-  /* Nav — drop grid, use flex: logo left, controls pinned right */
+  /* Nav — flex so logo is left, controls are always right */
   nav#nav {
     display: flex;
     justify-content: space-between;
@@ -1472,101 +1472,190 @@ footer {
   .proj-title { font-size: clamp(44px, 13vw, 80px); }
   .proj-desc { max-width: 100%; }
 
-  /* ── About panels — mobile ──────────────────────────────────────
-     .panel is position:absolute inset:0 — it fills 100svh exactly.
-     AppController preventDefault all touches so content MUST fit.
-     Split into two rows: image strip (top) + text zone (bottom).
-  ─────────────────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════
+     ABOUT — mobile layout
+     Each panel fills the fixed fullscreen stage (position:absolute inset:0).
+     The image fills the WHOLE panel as a background.
+     Text is layered at the bottom over a strong gradient — like a film poster.
+     No splitting, no cropping. AppController owns all touch so no overflow scroll.
+  ═══════════════════════════════════════════════════════════ */
+
+  /* Panel: image fills everything, text floats at bottom */
   .panel {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 44svh 1fr;
-    overflow: hidden;
+    display: block; /* kill desktop grid */
+    position: absolute; inset: 0; /* already set in base, reinforce */
   }
 
-  /* Image strip — top row */
+  /* col-left becomes the full-panel image background */
   .col-left {
-    grid-row: 1;
-    grid-column: 1;
-    display: block;           /* override base flex */
-    position: relative;
-    height: 100%;             /* fills the 44svh grid row */
-    min-height: 0;
+    position: absolute;
+    inset: 0;
+    display: block;
     border-right: none;
     overflow: hidden;
+    /* remove desktop flex sizing */
+    flex: none;
+    height: auto;
+    min-height: 0;
+    max-height: none;
   }
-  .col-top    { position: absolute; inset: 0; overflow: hidden; flex: none; }
-  .photo-gallery { position: absolute; inset: 0; pointer-events: none; }
 
-  /* Chapter label — fades out of the bottom of the image strip */
+  /* col-top (photo frames container) fills col-left entirely */
+  .col-top {
+    position: absolute; inset: 0;
+    overflow: hidden;
+    flex: none;
+  }
+
+  /* Photo gallery sits inside col-top, also full coverage */
+  .photo-gallery {
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+
+  /* Desktop: photos are floating frames. Mobile: pf-main goes full-bleed,
+     pf-accent is hidden — one clean, confident image fills the screen */
+  .pf-main {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    aspect-ratio: unset !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .pf-main img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: saturate(0.80) brightness(0.72);
+  }
+  .pf-accent { display: none !important; }
+
+  /* Ghost number — hide on mobile */
+  .ghost-num { display: none; }
+
+  /* Strong gradient from bottom so text pops — dark base, fades to transparent */
   .col-bottom {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: var(--s-2) var(--pad) var(--s-3);
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    /* Text lives here — push it up to give breathing room above safe area */
+    padding: var(--s-10) var(--pad) var(--s-6);
     z-index: 10;
-    background: linear-gradient(to bottom,
-      transparent 0%,
-      rgba(8,9,9,.55) 28%,
-      rgba(8,9,9,.90) 65%,
-      var(--c-bg) 100%);
+    background:
+      linear-gradient(to top,
+        rgba(8,9,9,1.00) 0%,
+        rgba(8,9,9,0.88) 28%,
+        rgba(8,9,9,0.60) 48%,
+        rgba(8,9,9,0.20) 65%,
+        transparent 80%);
   }
   [data-theme="light"] .col-bottom {
-    background: linear-gradient(to bottom,
-      transparent 0%,
-      rgba(237,238,237,.55) 28%,
-      rgba(237,238,237,.90) 65%,
-      var(--c-bg) 100%);
+    background: linear-gradient(to top,
+      rgba(237,238,237,1.00) 0%,
+      rgba(237,238,237,0.88) 28%,
+      rgba(237,238,237,0.60) 48%,
+      rgba(237,238,237,0.20) 65%,
+      transparent 80%);
   }
+  .ch-index  { margin-bottom: var(--s-2); }
+  .t-chapter { font-size: clamp(36px, 9vw, 56px); line-height: 0.90; opacity: 0.55; }
 
-  /* Chapter label type */
-  .ch-index  { margin-bottom: 4px; }
-  .t-chapter { font-size: clamp(20px, 5.5vw, 34px); line-height: 0.90; }
-
-  /* Text zone — bottom row */
+  /* col-right: text block sits OVER the image, at the bottom.
+     Position it absolute at the bottom, above col-bottom gradient. */
   .col-right {
-    grid-row: 2;
-    grid-column: 1;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: var(--s-6) var(--pad) var(--s-7);
+    z-index: 20;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: var(--s-3) var(--pad) var(--s-4);
-    overflow: hidden;
-    min-height: 0;
+    justify-content: flex-end;
+    /* No background — the col-bottom gradient handles legibility */
   }
-  .ch-rule  { margin-bottom: var(--s-2); }
-  .ch-title { font-size: clamp(26px, 7vw, 44px); line-height: 0.90; margin-bottom: var(--s-2); }
-  .ch-body  { font-size: 14px; line-height: 1.58; max-width: 100%; }
-  .ghost-num { display: none; }
-  .prog-dots { right: var(--s-2); gap: 8px; }
+  /* Accent rule */
+  .ch-rule { margin-bottom: var(--s-3); }
+  /* Big, confident heading */
+  .ch-title {
+    font-size: clamp(38px, 10vw, 58px);
+    line-height: 0.90;
+    margin-bottom: var(--s-3);
+    color: var(--c-primary);
+  }
+  /* Body copy — readable but secondary */
+  .ch-body {
+    font-size: 15px;
+    line-height: 1.62;
+    max-width: 100%;
+    color: var(--c-secondary);
+  }
 
-  /* Intro panel (panel 0) */
-  .panel-intro .col-left  { height: 100%; }
-  .panel-intro .col-right { padding: var(--s-3) var(--pad) var(--s-4); }
+  /* ── Intro panel (panel 0) — portrait fills screen ── */
+  /* panel-intro doesn't use col-top/photo-gallery — it uses intro-portrait-wrap directly */
+  .panel-intro .col-left {
+    position: absolute; inset: 0;
+    display: block;
+    background: var(--c-bg);
+  }
+  .intro-portrait-wrap {
+    position: absolute; inset: 0;
+  }
+  .intro-portrait-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: top center;
+    filter: saturate(0.72) brightness(0.78);
+  }
+  .intro-portrait-vignette {
+    background:
+      linear-gradient(to top,
+        rgba(8,9,9,1.00) 0%,
+        rgba(8,9,9,0.75) 35%,
+        rgba(8,9,9,0.10) 60%,
+        transparent 80%);
+  }
+  [data-theme="light"] .intro-portrait-vignette {
+    background: linear-gradient(to top,
+      rgba(237,238,237,1.00) 0%,
+      rgba(237,238,237,0.75) 35%,
+      rgba(237,238,237,0.10) 60%,
+      transparent 80%);
+  }
+  /* Text over portrait */
+  .panel-intro .col-right {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: var(--s-6) var(--pad) var(--s-7);
+    z-index: 20;
+    justify-content: flex-end;
+  }
   .intro-eyebrow { margin-bottom: var(--s-2); }
-  .intro-name    { font-size: clamp(28px, 8.5vw, 48px); line-height: 0.90; margin-bottom: var(--s-2); }
-  .intro-meta    { font-size: 14px; line-height: 1.55; }
+  .intro-name {
+    font-size: clamp(42px, 11vw, 64px);
+    line-height: 0.88;
+    margin-bottom: var(--s-3);
+  }
+  .intro-meta { font-size: 15px; line-height: 1.60; color: var(--c-secondary); }
 
-  /* Statement panel (panel 4) — no image strip, full-height text */
+  /* ── Statement panel (panel 4) — no image, full-height text ── */
   .panel-statement {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    grid-template-columns: unset;
-    padding: var(--s-6) var(--pad) var(--s-5);
+    padding: var(--s-8) var(--pad);
     overflow: hidden;
+    /* override any grid from above */
+    grid-template-columns: unset;
   }
   .stmt-wm        { display: none; }
   .stmt-video-row { display: none; }
-  .stmt-wrap      { display: flex; flex-direction: column; gap: var(--s-3); }
-  .stmt-kicker    { margin-bottom: 0; }
-  .stmt-text      { font-size: clamp(15px, 4.2vw, 20px); line-height: 1.65; }
+  .stmt-wrap      { max-width: 100%; }
+  .stmt-kicker    { margin-bottom: var(--s-4); }
+  .stmt-text      { font-size: clamp(18px, 5vw, 26px); line-height: 1.70; }
 
-  /* Photo frame positions within the 44svh col-left */
-  .panel[data-panel="1"] .pf-main   { width: 58%; top: 48%; left: 48%; }
-  .panel[data-panel="1"] .pf-accent { width: 28%; bottom: 4%; right: 4%; }
-  .panel[data-panel="2"] .pf-main   { width: 46%; top: 6%;  left: 5%; }
-  .panel[data-panel="2"] .pf-accent { width: 42%; bottom: 4%; right: 4%; }
-  .panel[data-panel="3"] .pf-main   { width: 64%; top: 8%;  left: 4%; }
-  .panel[data-panel="3"] .pf-accent { width: 30%; bottom: 4%; right: 3%; }
+  /* Progress dots */
+  .prog-dots { right: var(--s-2); gap: 8px; }
 
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
@@ -1582,12 +1671,10 @@ footer {
 }
 
 @media (max-width: 480px) {
-  .hero-h1 { font-size: clamp(48px, 14vw, 68px); }
-  /* Tighter image strip on small phones to give text row more room */
-  .panel { grid-template-rows: 38svh 1fr; }
-  .ch-title { font-size: clamp(24px, 7.5vw, 38px); }
-  .intro-name { font-size: clamp(26px, 8.5vw, 42px); }
-  .t-statement { font-size: clamp(15px, 4.2vw, 20px); }
+  .hero-h1   { font-size: clamp(48px, 14vw, 68px); }
+  .ch-title  { font-size: clamp(34px, 9.5vw, 52px); }
+  .intro-name { font-size: clamp(38px, 10.5vw, 58px); }
+  .t-statement { font-size: clamp(16px, 4.8vw, 24px); }
   .contact-h { font-size: clamp(48px, 14vw, 72px); }
   .c-link, .c-soc, .c-dl { font-size: clamp(18px, 6vw, 28px); }
 }
