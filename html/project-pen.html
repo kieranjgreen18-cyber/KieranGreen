@@ -572,18 +572,13 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 @media (max-width: 480px) {
-  /* ── Mobile hero: 3D model viewer replaces static background ── */
+  /* On mobile: hide the static photo, show model viewer full-bleed instead */
+  .hero-bg   { display: none; }
+  .hero-veil { display: none; }
 
-  /* Hide the static photo background and its gradient veil */
-  .hero-bg    { display: none; }
-  .hero-veil  { display: none; }
-
-  /* Model viewer: full-bleed background layer behind all content */
   .hero-model-wrap {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
     opacity: 1;
     pointer-events: all;
     -webkit-mask-image: none;
@@ -591,45 +586,28 @@ strong { color: var(--c-primary); font-weight: 700; }
     z-index: 1;
   }
 
-  /* Vignette — semi-transparent gradient overlay so text remains legible */
-  .hero-mobile-veil {
-    display: block;
-    position: absolute;
-    inset: 0;
+  /* Gradient veil over the model so text stays legible */
+  .hero-model-wrap::after {
+    content: '';
+    position: absolute; inset: 0;
     background:
-      linear-gradient(to top,   rgba(8,9,9,.96) 0%, rgba(8,9,9,.55) 28%, rgba(8,9,9,.08) 58%, transparent 100%),
-      linear-gradient(to bottom, rgba(8,9,9,.48) 0%, transparent 16%);
+      linear-gradient(to top,   rgba(8,9,9,.96) 0%, rgba(8,9,9,.52) 30%, transparent 70%),
+      linear-gradient(to bottom, rgba(8,9,9,.50) 0%, transparent 20%);
     pointer-events: none;
-    z-index: 2;
+    z-index: 10; /* above model-viewer, below AR btn */
   }
-  [data-theme="light"] .hero-mobile-veil {
+  [data-theme="light"] .hero-model-wrap::after {
     background:
-      linear-gradient(to top,   rgba(237,238,237,.98) 0%, rgba(237,238,237,.6) 28%, transparent 60%),
-      linear-gradient(to bottom, rgba(237,238,237,.5) 0%, transparent 18%);
+      linear-gradient(to top,   rgba(237,238,237,.98) 0%, rgba(237,238,237,.6) 30%, transparent 70%),
+      linear-gradient(to bottom, rgba(237,238,237,.50) 0%, transparent 20%);
   }
 
-  /* Hero content — sits above vignette */
-  .hero-content {
-    max-width: 100%;
-    position: relative;
-    z-index: 3;
-  }
+  .hero-content { max-width: 100%; position: relative; z-index: 3; }
+  .hero-model-hint { display: none; }
+  .hero-model-label { display: none; }
 
-  /* Drag hint — tuck above the hero chips */
-  .hero-model-hint {
-    display: flex;
-    position: absolute;
-    bottom: 130px;
-    right: var(--pad);
-    z-index: 4;
-    animation: fadeUp 0.6s var(--ease) 1.8s both;
-  }
-
-  /* AR button — bottom right corner, above chips */
-  .hero-ar-btn {
-    display: flex;
-    z-index: 4;
-  }
+  /* AR button visible on mobile */
+  .hero-ar-btn { display: flex; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -798,36 +776,34 @@ strong { color: var(--c-primary); font-weight: 700; }
   border-top: 1px solid var(--c-rule);
 }
 
-/* ── AR Button — mobile only, bottom right of hero ── */
+/* ── AR button — mobile only, anchored bottom-right of hero ── */
 .hero-ar-btn {
-  display: none; /* hidden on desktop; shown via media query on mobile */
+  display: none; /* shown via @media (max-width: 480px) */
   position: absolute;
-  bottom: var(--s-4);
-  right: var(--s-3);
-  z-index: 7;
+  bottom: var(--s-5);
+  right: var(--pad);
+  z-index: 20;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   font-family: var(--f-heading);
   font-size: var(--t-micro);
   font-weight: 700;
   letter-spacing: var(--ls-stencil);
   text-transform: uppercase;
   color: var(--c-accent);
-  background: rgba(8,9,9,0.72);
-  border: 1px solid rgba(91,160,164,0.35);
-  padding: 10px 14px;
-  border-radius: 2px;
+  background: rgba(8,9,9,0.70);
+  border: 1px solid rgba(91,160,164,0.40);
+  padding: 10px 14px 9px;
   backdrop-filter: blur(12px);
   cursor: pointer;
-  transition: border-color var(--dur-fast), background var(--dur-fast), color var(--dur-fast);
-  text-decoration: none;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
 }
 .hero-ar-btn:hover {
   border-color: var(--c-accent);
-  background: var(--c-accent-lo);
-  color: var(--c-accent-hi);
+  background: rgba(91,160,164,0.15);
 }
-.hero-ar-btn svg { flex-shrink: 0; }
+
+/* ── Video embed ── */
 .video-embed {
   padding: 0 var(--pad) 0 var(--s-7);
 }
@@ -983,14 +959,10 @@ strong { color: var(--c-primary); font-weight: 700; }
 
   <!-- HERO -->
   <header class="hero" id="hero" aria-label="Project: Sabretta Pen">
-    <!-- Static background — hidden on mobile, replaced by model viewer -->
     <div class="hero-bg" role="img" aria-label="Sabretta Pen — studio render, dark background"></div>
     <div class="hero-veil" aria-hidden="true"></div>
 
-    <!-- Mobile-only vignette overlay (shown when model viewer is bg) -->
-    <div class="hero-mobile-veil" aria-hidden="true" style="display:none"></div>
-
-    <!-- 3D model viewer — right side, floats on hero background -->
+    <!-- 3D model viewer — right side on desktop, full-bleed on mobile -->
     <div class="hero-model-wrap" aria-label="Interactive 3D model of Sabretta Pen">
       <model-viewer
         id="pen-viewer"
@@ -1025,13 +997,9 @@ strong { color: var(--c-primary); font-weight: 700; }
     <!-- Model label -->
     <span class="hero-model-label" aria-hidden="true">Sabretta · Rhino 3D</span>
 
-    <!-- AR button — mobile only, bottom right corner -->
-    <button class="hero-ar-btn" id="ar-btn" aria-label="View in Augmented Reality" type="button">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-        <path d="M2 17l10 5 10-5"/>
-        <path d="M2 12l10 5 10-5"/>
-      </svg>
+    <!-- AR button — bottom right, mobile only (display:none on desktop via CSS) -->
+    <button class="hero-ar-btn" id="ar-btn" aria-label="View pen in augmented reality" type="button">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
       View in AR
     </button>
 
@@ -1200,16 +1168,6 @@ strong { color: var(--c-primary); font-weight: 700; }
 (function () {
   'use strict';
 
-  /* ── AR button — triggers model-viewer's native AR on mobile ── */
-  const arBtn = document.getElementById('ar-btn');
-  if (arBtn && penViewer) {
-    arBtn.addEventListener('click', () => {
-      if (penViewer.canActivateAR) {
-        penViewer.activateAR();
-      }
-    });
-  }
-
   /* ── Hero 3D model viewer interactions ── */
   const penViewer = document.getElementById('pen-viewer');
   const penHint   = document.getElementById('pen-model-hint');
@@ -1238,6 +1196,14 @@ strong { color: var(--c-primary); font-weight: 700; }
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
     });
+
+    /* AR button — only wired if viewer exists */
+    const arBtn = document.getElementById('ar-btn');
+    if (arBtn) {
+      arBtn.addEventListener('click', () => {
+        if (penViewer.canActivateAR) penViewer.activateAR();
+      });
+    }
   }
 
 
