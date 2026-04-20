@@ -1202,34 +1202,62 @@ strong { color: var(--c-primary); font-weight: 700; }
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
 
-      /* ── Selective material override ─────────────────────────────────────
-         Clearcoat on all materials; baseColor/roughness only on paint body.
-         Metal tips identified by high metallicFactor — left untouched.
+      /* ── Surgical material override ──────────────────────────────────────
+         The GLB has multiple materials. We must NOT touch dark or metallic
+         materials (groove, clip, body seam) — applying clearcoat or color
+         boosts to those creates the chrome-mirror conflict.
+
+         Rules:
+           PAINT  — red body: R>0.35, G<0.20, B<0.20, metallic<0.4
+                    → boost brightness, low roughness, add clearcoat gloss
+           DARK   — low perceptual luminance (grooves/seams/recesses)
+                    → DO NOTHING. Intentionally near-black.
+           CHROME / OTHER — metal tips, clip, anything unclassified
+                    → DO NOTHING. Baked values render correctly.
+                      Adding clearcoat here caused the mirror-chrome blob.
       ──────────────────────────────────────────────────────────────────── */
       try {
         const model = penViewer.model;
         if (!model) return;
+
+        // Debug log — reveals material names and PBR values in console
+        console.group('Sabretta pen materials');
+        model.materials.forEach((mat, i) => {
+          const pbr = mat.pbrMetallicRoughness;
+          const bc  = pbr.baseColorFactor ?? [0,0,0,1];
+          const m   = pbr.metallicFactor  ?? 0;
+          const r   = pbr.roughnessFactor ?? 1;
+          console.log(`[${i}] "${mat.name||'unnamed'}" bc=[${bc.map(v=>v.toFixed(2))}] m=${m.toFixed(2)} r=${r.toFixed(2)}`);
+        });
+        console.groupEnd();
+
         model.materials.forEach(mat => {
-          const pbr      = mat.pbrMetallicRoughness;
-          const bc       = pbr.baseColorFactor;
-          const metallic = pbr.metallicFactor ?? 0;
-          // Paint body: strong red channel, weak G+B, not metallic
-          const isPaintBody = bc && bc[0] > 0.25 && bc[1] < 0.25 && bc[2] < 0.25 && metallic < 0.5;
-          if (isPaintBody) {
-            pbr.setRoughnessFactor(0.22);
+          const pbr = mat.pbrMetallicRoughness;
+          const bc  = pbr.baseColorFactor ?? [0,0,0,1];
+          const m   = pbr.metallicFactor  ?? 0;
+
+          // Perceptual luminance of the base colour
+          const lum = bc[0] * 0.299 + bc[1] * 0.587 + bc[2] * 0.114;
+
+          const isPaint = bc[0] > 0.35 && bc[1] < 0.20 && bc[2] < 0.20 && m < 0.4;
+          const isDark  = lum < 0.12;   // grooves, seams, recesses
+
+          if (isPaint) {
+            pbr.setRoughnessFactor(0.18);
             pbr.setBaseColorFactor([
-              Math.min(1.0, bc[0] * 1.9),
-              Math.min(1.0, bc[1] * 1.9),
-              Math.min(1.0, bc[2] * 1.9),
+              Math.min(1.0, bc[0] * 1.75),
+              Math.min(1.0, bc[1] * 1.75),
+              Math.min(1.0, bc[2] * 1.75),
               bc[3]
             ]);
+            // Clearcoat ONLY on confirmed paint — gives lacquer gloss
+            const cc = mat.extensions && mat.extensions['KHR_materials_clearcoat'];
+            if (cc) {
+              if (typeof cc.setClearcoatFactor === 'function')          cc.setClearcoatFactor(0.9);
+              if (typeof cc.setClearcoatRoughnessFactor === 'function') cc.setClearcoatRoughnessFactor(0.06);
+            }
           }
-          // Clearcoat on everything
-          const cc = mat.extensions && mat.extensions['KHR_materials_clearcoat'];
-          if (cc) {
-            if (typeof cc.setClearcoatFactor === 'function')          cc.setClearcoatFactor(1.0);
-            if (typeof cc.setClearcoatRoughnessFactor === 'function') cc.setClearcoatRoughnessFactor(0.04);
-          }
+          // isDark and all other materials: leave completely untouched
         });
       } catch(e) {
         console.warn('Material override skipped:', e);
