@@ -974,8 +974,8 @@ strong { color: var(--c-primary); font-weight: 700; }
   auto-rotate-delay="800"
   rotation-per-second="4deg"
 
-  environment-intensity="6.0"
-  exposure="1.8"
+  environment-intensity="8.0"
+  exposure="2.4"
 
   shadow-intensity="1.2"
   shadow-softness="0.5"
@@ -1244,8 +1244,8 @@ strong { color: var(--c-primary); font-weight: 700; }
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d');
 
-      // Near-black studio background — not pure black, gives shadow depth
-      ctx.fillStyle = '#080a09';
+      // Dark studio background — lifted from near-black to give shadow depth and ambient bounce
+      ctx.fillStyle = '#1a1e1e';
       ctx.fillRect(0, 0, W, H);
 
       // Convert azimuth/elevation to equirectangular pixel coords
@@ -1391,13 +1391,13 @@ strong { color: var(--c-primary); font-weight: 700; }
         [1,    'rgba(0,0,0,0)']
       ]);
 
-      // ── FILL strip — opposite side, very dim warm ─────────────────────
-      // Lifts the shadow side just enough to see the form
-      addStrip(320, -5, 22, 80, [
+      // ── FILL strip — opposite side, warm ambient fill ─────────────────
+      // Lifts the shadow side enough to clearly read the form
+      addStrip(320, -5, 32, 100, [
         [0,    'rgba(0,0,0,0)'],
-        [0.35, 'rgba(255,235,210,0.28)'],
-        [0.5,  'rgba(255,235,210,0.38)'],
-        [0.65, 'rgba(255,235,210,0.28)'],
+        [0.35, 'rgba(255,235,210,0.55)'],
+        [0.5,  'rgba(255,235,210,0.70)'],
+        [0.65, 'rgba(255,235,210,0.55)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
@@ -1409,6 +1409,16 @@ strong { color: var(--c-primary); font-weight: 700; }
         [0.5, 'rgba(255,250,240,0.85)'],
         [0.6, 'rgba(255,250,240,0.6)'],
         [1,   'rgba(0,0,0,0)']
+      ]);
+
+      // ── Broad dome fill — upper hemisphere ambient ────────────────────
+      // Simulates a large softbox / skylight overhead, lifts the whole model
+      addStrip(90, 55, 120, 40, [
+        [0,    'rgba(0,0,0,0)'],
+        [0.35, 'rgba(230,240,255,0.22)'],
+        [0.5,  'rgba(230,240,255,0.30)'],
+        [0.65, 'rgba(230,240,255,0.22)'],
+        [1,    'rgba(0,0,0,0)']
       ]);
 
       canvas.toBlob(blob => {
