@@ -1201,67 +1201,12 @@ strong { color: var(--c-primary); font-weight: 700; }
     penViewer.addEventListener('load', async () => {
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
-
-      /* ── Surgical material override ──────────────────────────────────────
-         The GLB has multiple materials. We must NOT touch dark or metallic
-         materials (groove, clip, body seam) — applying clearcoat or color
-         boosts to those creates the chrome-mirror conflict.
-
-         Rules:
-           PAINT  — red body: R>0.35, G<0.20, B<0.20, metallic<0.4
-                    → boost brightness, low roughness, add clearcoat gloss
-           DARK   — low perceptual luminance (grooves/seams/recesses)
-                    → DO NOTHING. Intentionally near-black.
-           CHROME / OTHER — metal tips, clip, anything unclassified
-                    → DO NOTHING. Baked values render correctly.
-                      Adding clearcoat here caused the mirror-chrome blob.
-      ──────────────────────────────────────────────────────────────────── */
-      try {
-        const model = penViewer.model;
-        if (!model) return;
-
-        // Debug log — reveals material names and PBR values in console
-        console.group('Sabretta pen materials');
-        model.materials.forEach((mat, i) => {
-          const pbr = mat.pbrMetallicRoughness;
-          const bc  = pbr.baseColorFactor ?? [0,0,0,1];
-          const m   = pbr.metallicFactor  ?? 0;
-          const r   = pbr.roughnessFactor ?? 1;
-          console.log(`[${i}] "${mat.name||'unnamed'}" bc=[${bc.map(v=>v.toFixed(2))}] m=${m.toFixed(2)} r=${r.toFixed(2)}`);
-        });
-        console.groupEnd();
-
-        model.materials.forEach(mat => {
-          const pbr = mat.pbrMetallicRoughness;
-          const bc  = pbr.baseColorFactor ?? [0,0,0,1];
-          const m   = pbr.metallicFactor  ?? 0;
-
-          // Perceptual luminance of the base colour
-          const lum = bc[0] * 0.299 + bc[1] * 0.587 + bc[2] * 0.114;
-
-          const isPaint = bc[0] > 0.35 && bc[1] < 0.20 && bc[2] < 0.20 && m < 0.4;
-          const isDark  = lum < 0.12;   // grooves, seams, recesses
-
-          if (isPaint) {
-            pbr.setRoughnessFactor(0.18);
-            pbr.setBaseColorFactor([
-              Math.min(1.0, bc[0] * 1.75),
-              Math.min(1.0, bc[1] * 1.75),
-              Math.min(1.0, bc[2] * 1.75),
-              bc[3]
-            ]);
-            // Clearcoat ONLY on confirmed paint — gives lacquer gloss
-            const cc = mat.extensions && mat.extensions['KHR_materials_clearcoat'];
-            if (cc) {
-              if (typeof cc.setClearcoatFactor === 'function')          cc.setClearcoatFactor(0.9);
-              if (typeof cc.setClearcoatRoughnessFactor === 'function') cc.setClearcoatRoughnessFactor(0.06);
-            }
-          }
-          // isDark and all other materials: leave completely untouched
-        });
-      } catch(e) {
-        console.warn('Material override skipped:', e);
-      }
+      /* All 5 materials are correctly baked in the GLB — no JS overrides needed.
+         [3] Physically Based = red paint, roughness=0.21, clearcoat=1.0 (baked) ✓
+         [1] Metal (1)        = polished chrome tip ✓
+         [4] Metal            = dark polished metal ✓
+         [0] unnamed          = black matte groove ✓
+         [2] Unnamed-0        = dark clip recess ✓                                */
     });
 
     /* ── Automotive studio environment — strip-light approach ────────────
@@ -1285,13 +1230,13 @@ strong { color: var(--c-primary); font-weight: 700; }
       // ── REFERENCE MATCH: near-black studio, one sharp key ribbon, subtle rim ──
       // Background: near-black. Key: tight warm-white vertical strip front-left.
       // Rim: cool-white behind. Shadow side: barely lit. No broad fill.
-      ctx.fillStyle = '#060808';
+      ctx.fillStyle = '#080b0b';
       ctx.fillRect(0, 0, W, H);
 
       // Very subtle floor bounce at equator — just enough to not be pure black
       const floorGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
       floorGrad.addColorStop(0, 'rgba(0,0,0,0)');
-      floorGrad.addColorStop(1, 'rgba(20,12,8,0.6)');
+      floorGrad.addColorStop(1, 'rgba(30,20,15,0.5)');
       ctx.fillStyle = floorGrad;
       ctx.fillRect(0, 0, W, H);
 
@@ -1301,61 +1246,55 @@ strong { color: var(--c-primary); font-weight: 700; }
         return [x, y];
       }
 
-      // Draw a vertical strip light — narrow width (rx), tall height (ry)
-      // Gradient goes LEFT→RIGHT (horizontal) across the narrow axis
-      // so the strip appears as a bright vertical ribbon on the env map
+      // Draw a vertical strip light — tall rectangle, narrow width
+      // Gradient is horizontal (left→right across narrow axis) = width falloff
+      // Height spans ry*2 pixels vertically = the tall softbox ribbon
       function addStrip(azDeg, elDeg, rx, ry, stops) {
         const [cx, cy] = toXY(azDeg, elDeg);
         for (const ox of [0, W, -W]) {
-          // Horizontal gradient across the narrow (rx) axis — this IS the strip width falloff
           const gl = ctx.createLinearGradient(cx+ox - rx, cy, cx+ox + rx, cy);
           stops.forEach(([s, c]) => gl.addColorStop(s, c));
           ctx.save();
           ctx.globalCompositeOperation = 'lighter';
-          // Draw a tall rectangle (the strip), centered at (cx+ox, cy)
-          // Width = rx*2, Height = ry*2 — tall and narrow
-          const x = cx + ox - rx;
-          const y = cy - ry;
           ctx.fillStyle = gl;
-          ctx.fillRect(x, y, rx * 2, ry * 2);
+          ctx.fillRect(cx + ox - rx, cy - ry, rx * 2, ry * 2);
           ctx.restore();
         }
       }
 
-      // ── KEY — tight warm-white ribbon, front-left (matches reference) ─
-      // Very narrow width = sharp specular ribbon across the pen body
-      addStrip(30, 0, 18, H * 0.55, [
+      // ── KEY — warm-white ribbon, front-left (~30° azimuth) ────────────
+      // rx = half-width in pixels (narrow = sharp ribbon reflection)
+      // ry = half-height; H*0.45 spans ~80% of the hemisphere vertically
+      addStrip(30, 0, 10, H * 0.45, [
         [0,    'rgba(0,0,0,0)'],
-        [0.25, 'rgba(255,248,235,0.75)'],
+        [0.25, 'rgba(255,248,235,0.80)'],
         [0.50, 'rgba(255,255,255,1.00)'],
-        [0.75, 'rgba(255,248,235,0.75)'],
+        [0.75, 'rgba(255,248,235,0.80)'],
         [1,    'rgba(0,0,0,0)']
       ]);
-      // Second pass — tighter core to sharpen the hotspot
-      addStrip(30, 0, 7, H * 0.48, [
+      // Tighter core pass — sharpens the specular hotspot
+      addStrip(30, 0, 4, H * 0.40, [
         [0,    'rgba(0,0,0,0)'],
-        [0.30, 'rgba(255,252,240,0.85)'],
+        [0.30, 'rgba(255,252,240,0.65)'],
         [0.50, 'rgba(255,255,255,1.00)'],
-        [0.70, 'rgba(255,252,240,0.85)'],
+        [0.70, 'rgba(255,252,240,0.65)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
-      // ── RIM — cool-white backlight, opposite side ─────────────────────
-      // Gives the back edge that cool crescent glow in the reference
-      addStrip(200, 8, 12, H * 0.50, [
+      // ── RIM — cool-white backlight, opposite side (~200° azimuth) ─────
+      addStrip(200, 8, 8, H * 0.42, [
         [0,    'rgba(0,0,0,0)'],
-        [0.20, 'rgba(200,220,255,0.65)'],
-        [0.50, 'rgba(225,240,255,0.95)'],
-        [0.80, 'rgba(200,220,255,0.65)'],
+        [0.20, 'rgba(200,220,255,0.60)'],
+        [0.50, 'rgba(225,240,255,0.90)'],
+        [0.80, 'rgba(200,220,255,0.60)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
-      // ── SHADOW FILL — barely-there warm fill, just lifts the void ─────
-      // Reference shadow side isn't pure black — just very dark warm
-      addStrip(310, -8, 35, H * 0.40, [
+      // ── SHADOW FILL — barely-there warm fill on shadow side ───────────
+      addStrip(310, -8, 30, H * 0.35, [
         [0,    'rgba(0,0,0,0)'],
         [0.40, 'rgba(255,220,190,0.10)'],
-        [0.50, 'rgba(255,220,190,0.16)'],
+        [0.50, 'rgba(255,220,190,0.15)'],
         [0.60, 'rgba(255,220,190,0.10)'],
         [1,    'rgba(0,0,0,0)']
       ]);
