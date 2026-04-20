@@ -1202,21 +1202,21 @@ strong { color: var(--c-primary); font-weight: 700; }
       await penViewer.updateComplete;
       penViewer.jumpCameraToGoal();
 
-      /* ── Clearcoat only — baseColor/metallic/roughness already correct in GLB ──
-         #6C0000 is baked in. We only add the clearcoat layer here,
-         which gives the gloss without touching the colour at all.
-      ──────────────────────────────────────────────────────────────── */
+      /* ── Selective material override ─────────────────────────────────────
+         Clearcoat on all materials; baseColor/roughness only on paint body.
+         Metal tips identified by high metallicFactor — left untouched.
+      ──────────────────────────────────────────────────────────────────── */
       try {
         const model = penViewer.model;
         if (!model) return;
         model.materials.forEach(mat => {
-          const pbr = mat.pbrMetallicRoughness;
-          // Lift roughness so surface catches more light
-          pbr.setRoughnessFactor(0.22);
-          // Boost the base color factor to make dark paint read correctly
-          const bc = pbr.baseColorFactor;
-          if (bc) {
-            // Modest lift — keeps the deep red rich, not washed out
+          const pbr      = mat.pbrMetallicRoughness;
+          const bc       = pbr.baseColorFactor;
+          const metallic = pbr.metallicFactor ?? 0;
+          // Paint body: strong red channel, weak G+B, not metallic
+          const isPaintBody = bc && bc[0] > 0.25 && bc[1] < 0.25 && bc[2] < 0.25 && metallic < 0.5;
+          if (isPaintBody) {
+            pbr.setRoughnessFactor(0.22);
             pbr.setBaseColorFactor([
               Math.min(1.0, bc[0] * 1.9),
               Math.min(1.0, bc[1] * 1.9),
@@ -1224,8 +1224,7 @@ strong { color: var(--c-primary); font-weight: 700; }
               bc[3]
             ]);
           }
-
-          // Clearcoat layer — the gloss lives here
+          // Clearcoat on everything
           const cc = mat.extensions && mat.extensions['KHR_materials_clearcoat'];
           if (cc) {
             if (typeof cc.setClearcoatFactor === 'function')          cc.setClearcoatFactor(1.0);
@@ -1258,13 +1257,13 @@ strong { color: var(--c-primary); font-weight: 700; }
       // ── REFERENCE MATCH: near-black studio, one sharp key ribbon, subtle rim ──
       // Background: near-black. Key: tight warm-white vertical strip front-left.
       // Rim: cool-white behind. Shadow side: barely lit. No broad fill.
-      ctx.fillStyle = '#080b0b';
+      ctx.fillStyle = '#060808';
       ctx.fillRect(0, 0, W, H);
 
       // Very subtle floor bounce at equator — just enough to not be pure black
       const floorGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
       floorGrad.addColorStop(0, 'rgba(0,0,0,0)');
-      floorGrad.addColorStop(1, 'rgba(30,20,15,0.5)');
+      floorGrad.addColorStop(1, 'rgba(20,12,8,0.6)');
       ctx.fillStyle = floorGrad;
       ctx.fillRect(0, 0, W, H);
 
@@ -1274,59 +1273,62 @@ strong { color: var(--c-primary); font-weight: 700; }
         return [x, y];
       }
 
-      // Draw a vertical strip light — narrow width, tall height
+      // Draw a vertical strip light — narrow width (rx), tall height (ry)
+      // Gradient goes LEFT→RIGHT (horizontal) across the narrow axis
+      // so the strip appears as a bright vertical ribbon on the env map
       function addStrip(azDeg, elDeg, rx, ry, stops) {
         const [cx, cy] = toXY(azDeg, elDeg);
         for (const ox of [0, W, -W]) {
+          // Horizontal gradient across the narrow (rx) axis — this IS the strip width falloff
           const gl = ctx.createLinearGradient(cx+ox - rx, cy, cx+ox + rx, cy);
           stops.forEach(([s, c]) => gl.addColorStop(s, c));
           ctx.save();
           ctx.globalCompositeOperation = 'lighter';
-          ctx.translate(cx+ox, cy);
-          ctx.scale(1, ry / rx);
-          ctx.beginPath();
-          ctx.ellipse(0, 0, rx, rx, 0, 0, Math.PI * 2);
+          // Draw a tall rectangle (the strip), centered at (cx+ox, cy)
+          // Width = rx*2, Height = ry*2 — tall and narrow
+          const x = cx + ox - rx;
+          const y = cy - ry;
           ctx.fillStyle = gl;
-          ctx.fill();
+          ctx.fillRect(x, y, rx * 2, ry * 2);
           ctx.restore();
         }
       }
 
       // ── KEY — tight warm-white ribbon, front-left (matches reference) ─
       // Very narrow width = sharp specular ribbon across the pen body
-      addStrip(30, 0, 9, 115, [
+      addStrip(30, 0, 18, H * 0.55, [
         [0,    'rgba(0,0,0,0)'],
-        [0.30, 'rgba(255,248,235,0.85)'],
-        [0.50, 'rgba(255,253,245,1.00)'],
-        [0.70, 'rgba(255,248,235,0.85)'],
+        [0.25, 'rgba(255,248,235,0.75)'],
+        [0.50, 'rgba(255,255,255,1.00)'],
+        [0.75, 'rgba(255,248,235,0.75)'],
         [1,    'rgba(0,0,0,0)']
       ]);
       // Second pass — tighter core to sharpen the hotspot
-      addStrip(30, 0, 4, 95, [
+      addStrip(30, 0, 7, H * 0.48, [
         [0,    'rgba(0,0,0,0)'],
-        [0.35, 'rgba(255,252,242,0.70)'],
+        [0.30, 'rgba(255,252,240,0.85)'],
         [0.50, 'rgba(255,255,255,1.00)'],
-        [0.65, 'rgba(255,252,242,0.70)'],
+        [0.70, 'rgba(255,252,240,0.85)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
       // ── RIM — cool-white backlight, opposite side ─────────────────────
       // Gives the back edge that cool crescent glow in the reference
-      addStrip(200, 8, 7, 90, [
+      addStrip(200, 8, 12, H * 0.50, [
         [0,    'rgba(0,0,0,0)'],
-        [0.25, 'rgba(200,220,255,0.70)'],
-        [0.50, 'rgba(220,235,255,0.90)'],
-        [0.75, 'rgba(200,220,255,0.70)'],
+        [0.20, 'rgba(200,220,255,0.65)'],
+        [0.50, 'rgba(225,240,255,0.95)'],
+        [0.80, 'rgba(200,220,255,0.65)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
       // ── SHADOW FILL — barely-there warm fill, just lifts the void ─────
       // Reference shadow side isn't pure black — just very dark warm
-      addStrip(310, -8, 28, 85, [
+      addStrip(310, -8, 35, H * 0.40, [
         [0,    'rgba(0,0,0,0)'],
-        [0.40, 'rgba(255,220,190,0.12)'],
-        [0.50, 'rgba(255,220,190,0.18)'],
-        [0.60, 'rgba(255,220,190,0.12)'],
+        [0.40, 'rgba(255,220,190,0.10)'],
+        [0.50, 'rgba(255,220,190,0.16)'],
+        [0.60, 'rgba(255,220,190,0.10)'],
         [1,    'rgba(0,0,0,0)']
       ]);
 
