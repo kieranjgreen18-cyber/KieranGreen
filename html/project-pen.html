@@ -974,12 +974,11 @@ strong { color: var(--c-primary); font-weight: 700; }
   auto-rotate-delay="800"
   rotation-per-second="4deg"
 
-  environment-intensity="10.0"
-  exposure="3.8"
-   saturation="0.4"
+  environment-intensity="2.2"
+  exposure="1.35"
 
-  shadow-intensity="1.5"
-  shadow-softness="0.4"
+  shadow-intensity="0.8"
+  shadow-softness="0.6"
 
   camera-orbit="35deg 75deg 100%"
   min-camera-orbit="auto 60deg auto"
@@ -990,7 +989,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   ar
   ar-modes="webxr scene-viewer quick-look"
   loading="eager"
-  tone-mapping="commerce"
+  tone-mapping="aces"
 ></model-viewer>
     </div>
 
@@ -1210,36 +1209,44 @@ strong { color: var(--c-primary); font-weight: 700; }
          [2] Unnamed-0        = dark clip recess ✓                                */
     });
 
-    /* ── Automotive studio environment — strip-light approach ────────────
-       Real car photography uses long softbox strip lights (1–2m tall,
-       very narrow) that produce those sharp ribbon reflections across
-       body panels. On a lat-long equirectangular env map these read as
-       tall, thin vertical bands of brightness — NOT round blobs.
-       Three strips: key (slightly warm), rim/backlight (cool-white),
-       and a faint warm fill on the opposite side. Everything else is
-       near-black so the dark-shadow areas stay moody.
+    /* ── Coachbuilder IBL — 2048×1024 equirectangular ─────────────────────
+       Delahaye-era twin-panel studio rig. The pen is near-black gloss so
+       we need WIDE, BRIGHT strip sources — not tiny dots — to produce those
+       long sweeping body-panel highlights that reveal the form.
+
+       Layout:
+         28°  Primary key  — broad warm-white, tight specular spine
+         52°  Secondary    — offset panel, cooler, wraps far barrel side
+        195°  Rim/sep      — cool blue-white, razor separation edge
+        310°  Counter-fill — barely-there warm fill, stops shadow dying
     ──────────────────────────────────────────────────────────────────── */
     (function buildAutomotiveEnv() {
       if (!penViewer) return;
 
-      // Higher resolution = sharper, more defined strip reflections
-      const W = 1024, H = 512;
+      const W = 2048, H = 1024;
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d');
 
-      // ── REFERENCE MATCH: near-black studio, one sharp key ribbon, subtle rim ──
-      // Background: near-black. Key: tight warm-white vertical strip front-left.
-      // Rim: cool-white behind. Shadow side: barely lit. No broad fill.
-      ctx.fillStyle = '#080b0b';
+      // Base: very dark warm void — dark but not pure black, pen has contrast
+      ctx.fillStyle = '#0c0a09';
       ctx.fillRect(0, 0, W, H);
 
-      // Very subtle floor bounce at equator — just enough to not be pure black
-      const floorGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
-      floorGrad.addColorStop(0, 'rgba(0,0,0,0)');
-      floorGrad.addColorStop(1, 'rgba(30,20,15,0.5)');
+      // Subtle ceiling warmth — catches top of barrel as ambient fill
+      const ceilGrad = ctx.createLinearGradient(0, 0, 0, H * 0.42);
+      ceilGrad.addColorStop(0,   'rgba(55,38,22,0.70)');
+      ceilGrad.addColorStop(0.5, 'rgba(32,22,14,0.38)');
+      ceilGrad.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = ceilGrad;
+      ctx.fillRect(0, 0, W, H * 0.42);
+
+      // Floor bounce — warm, from below, wraps nib region
+      const floorGrad = ctx.createLinearGradient(0, H * 0.52, 0, H);
+      floorGrad.addColorStop(0,   'rgba(0,0,0,0)');
+      floorGrad.addColorStop(0.4, 'rgba(38,24,14,0.40)');
+      floorGrad.addColorStop(1,   'rgba(60,36,18,0.60)');
       ctx.fillStyle = floorGrad;
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillRect(0, H * 0.52, W, H * 0.48);
 
       function toXY(azDeg, elDeg) {
         const x = ((azDeg % 360 + 360) % 360) / 360 * W;
@@ -1247,13 +1254,11 @@ strong { color: var(--c-primary); font-weight: 700; }
         return [x, y];
       }
 
-      // Draw a vertical strip light — tall rectangle, narrow width
-      // Gradient is horizontal (left→right across narrow axis) = width falloff
-      // Height spans ry*2 pixels vertically = the tall softbox ribbon
-      function addStrip(azDeg, elDeg, rx, ry, stops) {
+      // Softbox strip — vertical rectangle, horizontal gaussian falloff, seam-wrapped
+      function strip(azDeg, elDeg, rx, ry, stops) {
         const [cx, cy] = toXY(azDeg, elDeg);
         for (const ox of [0, W, -W]) {
-          const gl = ctx.createLinearGradient(cx+ox - rx, cy, cx+ox + rx, cy);
+          const gl = ctx.createLinearGradient(cx + ox - rx, cy, cx + ox + rx, cy);
           stops.forEach(([s, c]) => gl.addColorStop(s, c));
           ctx.save();
           ctx.globalCompositeOperation = 'lighter';
@@ -1263,48 +1268,85 @@ strong { color: var(--c-primary); font-weight: 700; }
         }
       }
 
-      // ── KEY — warm-white ribbon, front-left (~30° azimuth) ────────────
-      // rx = half-width in pixels (narrow = sharp ribbon reflection)
-      // ry = half-height; H*0.45 spans ~80% of the hemisphere vertically
-      addStrip(30, 0, 10, H * 0.45, [
-        [0,    'rgba(0,0,0,0)'],
-        [0.25, 'rgba(255,248,235,0.80)'],
+      // ── PRIMARY KEY — broad warm-white, front-left (28°) ──────────────
+      // Wide outer glow: wraps the barrel with a soft halo of warmth
+      strip(28, 2, 90, H * 0.52, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.15, 'rgba(255,240,210,0.20)'],
+        [0.38, 'rgba(255,248,230,0.70)'],
         [0.50, 'rgba(255,255,255,1.00)'],
-        [0.75, 'rgba(255,248,235,0.80)'],
-        [1,    'rgba(0,0,0,0)']
+        [0.62, 'rgba(255,248,230,0.70)'],
+        [0.85, 'rgba(255,240,210,0.20)'],
+        [1.00, 'rgba(0,0,0,0)']
       ]);
-      // Tighter core pass — sharpens the specular hotspot
-      addStrip(30, 0, 4, H * 0.40, [
-        [0,    'rgba(0,0,0,0)'],
-        [0.30, 'rgba(255,252,240,0.65)'],
+      // Mid softbox body — the readable panel highlight
+      strip(28, 2, 28, H * 0.50, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.20, 'rgba(255,250,235,0.55)'],
         [0.50, 'rgba(255,255,255,1.00)'],
-        [0.70, 'rgba(255,252,240,0.65)'],
-        [1,    'rgba(0,0,0,0)']
+        [0.80, 'rgba(255,250,235,0.55)'],
+        [1.00, 'rgba(0,0,0,0)']
+      ]);
+      // Razor specular spine — the sharp glint on the barrel ridge
+      strip(28, 2, 4, H * 0.47, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.25, 'rgba(255,253,245,0.80)'],
+        [0.50, 'rgba(255,255,255,1.00)'],
+        [0.75, 'rgba(255,253,245,0.80)'],
+        [1.00, 'rgba(0,0,0,0)']
       ]);
 
-      // ── RIM — cool-white backlight, opposite side (~200° azimuth) ─────
-      addStrip(200, 8, 8, H * 0.42, [
-        [0,    'rgba(0,0,0,0)'],
-        [0.20, 'rgba(200,220,255,0.60)'],
-        [0.50, 'rgba(225,240,255,0.90)'],
-        [0.80, 'rgba(200,220,255,0.60)'],
-        [1,    'rgba(0,0,0,0)']
+      // ── SECONDARY KEY — offset panel, 54°, slightly cooler ────────────
+      strip(54, -1, 50, H * 0.46, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.18, 'rgba(225,232,255,0.18)'],
+        [0.42, 'rgba(238,243,255,0.55)'],
+        [0.50, 'rgba(248,251,255,0.75)'],
+        [0.58, 'rgba(238,243,255,0.55)'],
+        [0.82, 'rgba(225,232,255,0.18)'],
+        [1.00, 'rgba(0,0,0,0)']
+      ]);
+      strip(54, -1, 5, H * 0.42, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.25, 'rgba(232,238,255,0.65)'],
+        [0.50, 'rgba(245,249,255,1.00)'],
+        [0.75, 'rgba(232,238,255,0.65)'],
+        [1.00, 'rgba(0,0,0,0)']
       ]);
 
-      // ── SHADOW FILL — barely-there warm fill on shadow side ───────────
-      addStrip(310, -8, 30, H * 0.35, [
-        [0,    'rgba(0,0,0,0)'],
-        [0.40, 'rgba(255,220,190,0.10)'],
-        [0.50, 'rgba(255,220,190,0.15)'],
-        [0.60, 'rgba(255,220,190,0.10)'],
-        [1,    'rgba(0,0,0,0)']
+      // ── RIM — cool blue-white separation, back-right (195°) ───────────
+      strip(195, 6, 18, H * 0.50, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.12, 'rgba(160,198,255,0.28)'],
+        [0.35, 'rgba(200,222,255,0.75)'],
+        [0.50, 'rgba(218,236,255,1.00)'],
+        [0.65, 'rgba(200,222,255,0.75)'],
+        [0.88, 'rgba(160,198,255,0.28)'],
+        [1.00, 'rgba(0,0,0,0)']
+      ]);
+      // Razor rim spine
+      strip(195, 6, 3, H * 0.46, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.25, 'rgba(195,220,255,0.75)'],
+        [0.50, 'rgba(215,238,255,1.00)'],
+        [0.75, 'rgba(195,220,255,0.75)'],
+        [1.00, 'rgba(0,0,0,0)']
+      ]);
+
+      // ── COUNTER-FILL — warm amber, shadow side readable not dead ──────
+      strip(310, -5, 70, H * 0.42, [
+        [0.00, 'rgba(0,0,0,0)'],
+        [0.30, 'rgba(255,210,155,0.12)'],
+        [0.50, 'rgba(255,205,145,0.22)'],
+        [0.70, 'rgba(255,210,155,0.12)'],
+        [1.00, 'rgba(0,0,0,0)']
       ]);
 
       canvas.toBlob(blob => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
         penViewer.setAttribute('environment-image', url);
-      }, 'image/jpeg', 0.97);
+      }, 'image/jpeg', 0.98);
     })();
 
     /* AR button — only wired if viewer exists */
