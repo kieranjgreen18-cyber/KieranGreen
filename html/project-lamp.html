@@ -135,7 +135,7 @@ body {
 }
 body.ready { opacity: 1; }
 .page-scroll {
-  position: fixed; top: var(--nav-h); bottom: 0; left: 0; right: 0;
+  position: fixed; top: 0; bottom: 0; left: 0; right: 0;
   overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
 }
 :focus { outline: none; }
@@ -203,7 +203,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 .pn-dir { font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent); display: flex; align-items: center; gap: 6px; }
 .pn-title { font-family: var(--f-heading); font-size: clamp(18px, 2.2vw, 28px); font-weight: 100; letter-spacing: var(--ls-tight); color: var(--c-primary); line-height: 1.1; text-transform: uppercase; }
 
-.hero { position: relative; height: calc(100svh - var(--nav-h)); min-height: 480px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--pad) var(--s-8); }
+.hero { position: relative; height: 100svh; min-height: 480px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--pad) var(--s-8); }
 .hero-bg {
   position: absolute; inset: 0;
   background-image: url('https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/lamphero.png');
