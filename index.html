@@ -1037,7 +1037,7 @@ model-viewer#mini-viewer {
 
 /* Photo gallery */
 .photo-gallery { position: absolute; inset: 0; pointer-events: none; }
-/* Intro panel (panel 0) — ait hero */
+/* Intro panel (panel 0) — portrait hero */
 .panel[data-panel="0"] .pf-main   { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 72%; aspect-ratio: 3/4; }
 .panel[data-panel="0"] .pf-accent { display: none; }
 
@@ -1661,7 +1661,7 @@ footer {
   }
   .intro-portrait-wrap img {
     width: 100%; height: 100%;
-    object-fit: cover; object-position: center;
+    object-fit: cover; object-position: top center;
     filter: saturate(0.72) brightness(0.78);
   }
   .intro-portrait-vignette {
@@ -1827,7 +1827,7 @@ footer {
   position: absolute; inset: 0; overflow: hidden;
 }
 .intro-portrait-wrap img {
-  width: 100%; height: 100%; object-fit: cover; object-position: center 20%;
+  width: 100%; height: 100%; object-fit: cover; object-position: top center;
   filter: saturate(0.65) brightness(0.78);
   transition: filter .7s ease;
 }
@@ -2393,10 +2393,10 @@ button:focus-visible {
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/bikeline.JPG" alt="Bike shop floor — rows of bicycles on display" loading="eager" fetchpriority="low" decoding="async">
+              <img src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&q=80" alt="Bike shop floor — rows of bicycles on display" loading="eager" fetchpriority="low" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/trail.jpg" alt="Bicycle trail" loading="eager" fetchpriority="low" decoding="async">
+              <img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80" alt="Bicycle component detail — drivetrain close-up" loading="eager" fetchpriority="low" decoding="async">
             </div>
           </div>
         </div>
@@ -2453,7 +2453,7 @@ button:focus-visible {
     </article>
 
     <!-- Panel 4 — Personal Statement (final slide) -->
-    <article class="panel panel-statement" data-panel="4" aria-label="About: Personal Statement">
+    <article class="panel panel-statement" id="statement" data-panel="4" aria-label="About: Personal Statement">
       <div class="stmt-wm" aria-hidden="true">KG</div>
       <div class="stmt-wrap">
         <p class="stmt-kicker t-label">About</p>
