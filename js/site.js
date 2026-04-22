@@ -1089,12 +1089,10 @@ class ContactContainer {
   enter(fromDirection = 0) {
     if (!this._root) return;
     this._active = true;
-    // Resolve the scroll target first so we can set _contactTop synchronously.
-    // The deferred _cacheTop() call below was the only source of truth before,
-    // meaning nativeScrollDirection read a stale value for ~600ms after entry.
-    const psEl = document.getElementById('statement');
-    if (!psEl) console.warn('[ContactContainer] #statement not found — falling back to contact root for scroll target. Check if the element was renamed.');
-    const scrollTarget = psEl || this._root;
+    // Scroll directly to the contact root. The personal-statement panel lives
+    // inside the fixed about-stage overlay (not in document flow), so it cannot
+    // serve as a scroll target.
+    const scrollTarget = this._root;
     const top  = Math.round(scrollTarget.getBoundingClientRect().top + window.scrollY);
     // Set _contactTop immediately from the *target* position, not from the
     // post-scroll DOM state. This makes nativeScrollDirection accurate from
