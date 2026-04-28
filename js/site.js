@@ -27,10 +27,17 @@
 // ── Wheel velocity tuning constants ───────────────────────────────────────
 // Declared at module level so they are visible to any future method that
 // needs to read or override them (e.g. per-device tuning).
-const W_THRESH = 120; // accumulated velocity required to trigger a section change
-const W_DECAY  = 0.88; // per-frame velocity decay factor (applied over 16ms increments)
-const W_CLAMP  = 80;  // maximum per-event contribution to velocity
-const W_MIN    = 18;  // minimum per-event contribution (filters micro-deltas)
+// W_THRESH: velocity to cross before one section advance fires.
+//   Higher = more deliberate intent required = fewer accidental double-skips.
+// W_DECAY: per-16ms multiplier. 0.82 bleeds old velocity off fast so
+//   trackpad inertia after a swipe can't chain into the next section.
+// W_CLAMP: caps single-event contribution — mouse notch click ≈ 100-120px,
+//   clamped to 70 so mouse needs ~3 notches for one section change.
+// W_MIN: ignore micro-delta bursts (sub-pixel trackpad jitter).
+const W_THRESH = 200; // deliberate swipe required — prevents inertia chains
+const W_DECAY  = 0.80; // aggressive decay — old velocity bleeds off in ~200ms
+const W_CLAMP  = 70;  // cap per-event contribution
+const W_MIN    = 10;  // filter micro-deltas
 
 /* ─────────────────────────────────────────────────────────────────────────
    §1  APP CONTROLLER
@@ -48,14 +55,15 @@ class AppController {
     this._containers = new Map();
     this._activeKey  = null;
     this._locked     = false;
-    this._LOCK_MS    = 820; // >= longest container _TRANS_MS, no extra pad needed
+    this._LOCK_MS    = 900; // hard lock duration — >= _TRANS_MS with margin
     // ── Wheel velocity model ───────────────────────────────────────────
     this._wVel        = 0;
     this._wLastTime   = 0;
-    // After every section change, ignore wheel input for SETTLE_MS so that
-    // trackpad inertia from the previous section cannot chain into the next.
+    // Settle window: set BEFORE dispatch (in wheel handler) so inertia burst
+    // that immediately follows a threshold crossing is absorbed instantly.
+    // _activateDirect also extends it on section change for belt-and-suspenders.
     this._settleUntil = 0;
-    this._SETTLE_MS   = 440;
+    this._SETTLE_MS   = 680; // > typical trackpad inertia tail (~500ms)
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
@@ -82,11 +90,29 @@ class AppController {
         : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
       this._wVel += contrib;
       if (!nativeAllowed) {
-        if (this._wVel >  W_THRESH) { this._wVel = 0; this._dispatchScroll(+1); }
-        if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
+        if (this._wVel >  W_THRESH) {
+          this._wVel = 0;
+          // Arm the settle window NOW — before dispatch — so the inertia burst
+          // that immediately follows this triggering event is absorbed before
+          // any container or AppController lock logic even runs.
+          this._settleUntil = performance.now() + this._SETTLE_MS;
+          this._wLastTime   = 0;
+          this._dispatchScroll(+1);
+        }
+        if (this._wVel < -W_THRESH) {
+          this._wVel = 0;
+          this._settleUntil = performance.now() + this._SETTLE_MS;
+          this._wLastTime   = 0;
+          this._dispatchScroll(-1);
+        }
       } else {
         // Still watch for upward flick past threshold so we can hand back
-        if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
+        if (this._wVel < -W_THRESH) {
+          this._wVel = 0;
+          this._settleUntil = performance.now() + this._SETTLE_MS;
+          this._wLastTime   = 0;
+          this._dispatchScroll(-1);
+        }
       }
     }, { passive: false });
 
@@ -153,11 +179,13 @@ class AppController {
     if (!next) return;
     if (this._activeKey) this._containers.get(this._activeKey)?.exit();
     this._activeKey = name;
-    // Flush velocity and start settle window so inertia from the departing
-    // section cannot chain into the newly entered one.
+    // Flush velocity and extend settle window. We only push it forward —
+    // the wheel handler may have already set a settle window before dispatch,
+    // so we must not shorten it.
     this._wVel        = 0;
     this._wLastTime   = 0;
-    this._settleUntil = performance.now() + this._SETTLE_MS;
+    const settleEnd = performance.now() + this._SETTLE_MS;
+    if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
     next.enter(fromDirection);
     // Notify PageChrome so the section indicator updates immediately,
     // rather than relying on scroll position (unreliable in scroll-lock mode).
@@ -826,10 +854,7 @@ class CarouselContainer {
     // Any other direction (including direct nav jump = 0) resets to first card.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
     else                      this._activeIdx = 0;
-    // Reset all transition-debounce state on every entry. Stale values from a
-    // previous visit (particularly _transitioning=true or a recent _lastAdvDir)
-    // are the root cause of the carousel silently swallowing the boundary scroll
-    // that should hand off to the hero section.
+    // Reset all transition-debounce state on every entry.
     this._transitioning  = false;
     this._lastAdvanceAt  = 0;
     this._lastAdvDir     = 0;
@@ -839,6 +864,15 @@ class CarouselContainer {
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => this._setPositions(this._activeIdx, true)));
+    // On first entry, start background image loads for all slides now that
+    // the carousel is visible. Images that are already loaded are no-ops.
+    this._projs.forEach(p => {
+      const img = p.querySelector('.proj-img');
+      if (img && img.dataset.bg) {
+        img.style.backgroundImage = `url('${img.dataset.bg}')`;
+        delete img.dataset.bg;
+      }
+    });
   }
 
   exit() {
@@ -957,6 +991,9 @@ class AboutContainer {
     window.addEventListener('resize', this._onResize, { passive: true });
 
     this._setPanel(0);
+    // Preload panel 1 immediately on init — the user is very likely to scroll
+    // to it and it's cheaper to fetch during idle than on first advance.
+    this._preloadPanel(1);
     this._root.classList.remove('engaged');
   }
 
@@ -1005,6 +1042,27 @@ class AboutContainer {
     });
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
     if (this._hint) this._hint.classList.toggle('hide', idx > 0);
+    // Preload images for this panel AND the next — so they're decoded before arrival.
+    this._preloadPanel(idx);
+    this._preloadPanel(idx + 1);
+  }
+
+  /**
+   * Flush data-src → src on all <img data-src> inside a panel so the
+   * browser starts fetching while the panel transition is still running.
+   * Safe to call multiple times — img.src assignment is a no-op if the
+   * src is already set to the same value.
+   */
+  _preloadPanel(idx) {
+    const panel = this._panels[idx];
+    if (!panel) return;
+    panel.querySelectorAll('img[data-src]').forEach(img => {
+      const src = img.dataset.src;
+      if (src && img.src !== src) {
+        img.src = src;
+        img.removeAttribute('data-src');
+      }
+    });
   }
 
   _advance(dir) {
