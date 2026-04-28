@@ -548,6 +548,9 @@ class PageChrome {
    * @param {string} sectionKey  e.g. 'hero' | 'carousel' | 'about' | 'contact'
    */
   notifySection(key) {
+    // Drive body[data-section] so CSS can show/hide section-specific UI
+    // (e.g. the nav availability badge which should only appear on hero).
+    document.body.dataset.section = key;
     if (!this._secInd) return;
     const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About', contact: 'Contact' };
     const label = labelMap[key];
