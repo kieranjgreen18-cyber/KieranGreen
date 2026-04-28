@@ -772,10 +772,14 @@ model-viewer#mini-viewer {
   position: absolute; inset: 0; height: 100%;
   overflow: hidden; cursor: none;
   display: block; text-decoration: none;
-  will-change: transform;
+  /* No global will-change — we promote selectively below */
   transition: transform 0.68s var(--snap);
   transform: translateY(100%) translateZ(0);
 }
+/* Promote only the slides that are animating or about to animate */
+.proj[data-pos="active"],
+.proj[data-pos="prev"],
+.proj[data-pos="next"] { will-change: transform; }
 .proj[data-pos="far-above"] { transform: translateY(-200%) translateZ(0); visibility: hidden; transition: none !important; }
 .proj[data-pos="prev"]      { transform: translateY(-100%) translateZ(0); }
 .proj[data-pos="active"]    { transform: translateY(0) translateZ(0); }
@@ -991,11 +995,16 @@ model-viewer#mini-viewer {
 .panel {
   position: absolute; inset: 0;
   display: grid; grid-template-columns: 1fr 1fr;
-  z-index: 1; will-change: transform, opacity;
+  z-index: 1;
+  /* No will-change here — idle panels don't need compositor promotion.
+     The browser creates a layer on demand when opacity/transform animates. */
   opacity: 0; transform: translateY(56px) translateZ(0); pointer-events: none;
   transition: transform 0.85s var(--ease), opacity 0.70s var(--ease);
 }
 .panel.is-active {
+  /* Promote only the visible panel — keeps GPU layer count minimal so the
+     cursor compositor thread isn't competing with 4 unused panel layers. */
+  will-change: transform, opacity;
   opacity: 1; transform: translateY(0) translateZ(0); pointer-events: auto;
 }
 .panel.is-after {
@@ -2237,7 +2246,8 @@ button:focus-visible {
        aria-label="Sabretta Pen — ballpoint pen design inspired by 1930s roadster fenders, modeled and animated in Rhino 3D and Keyshot, 2025"
        style="background:#08090a;">
       <div class="proj-img" role="img" aria-label="Sabretta pen product visualization render"
-           style="background-image:url('assets/images/sabrettahero.png');background-position:center 40%;"></div>
+           data-bg="assets/images/sabrettahero.png"
+           style="background-position:center 40%;"></div>
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">02</div>
@@ -2262,7 +2272,8 @@ button:focus-visible {
        aria-label="Myth In Motion — electric motorcycle concept, visual drama and beating hearts, 2025"
        style="background:#080909;">
       <div class="proj-img" role="img" aria-label="Myth In Motion electric motorcycle concept render"
-           style="background-image:url('assets/images/MotorcycleHero.png');background-position:center;"></div>
+           data-bg="assets/images/MotorcycleHero.png"
+           style="background-position:center;"></div>
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">03</div>
@@ -2287,7 +2298,8 @@ button:focus-visible {
        aria-label="Poul Henningsen Lamp — CAD study of the iconic PH lamp, exploring light diffusion through geometry in Rhino 3D, 2025"
        style="background:#080a09;">
       <div class="proj-img" role="img" aria-label="Poul Henningsen PH lamp CAD model render"
-           style="background-image:url('assets/images/lamphero.png');background-position:center 20%;"></div>
+           data-bg="assets/images/lamphero.png"
+           style="background-position:center 20%;"></div>
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">04</div>
@@ -2338,6 +2350,7 @@ button:focus-visible {
     <article class="panel panel-intro" data-panel="0" aria-label="About: Introduction — Kieran Green">
       <div class="col-left">
         <div class="intro-portrait-wrap">
+          <!-- Panel 0 is the first visible panel — load eagerly -->
           <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/portrait.JPEG" alt="Portrait of Kieran Green, industrial designer" loading="eager" decoding="async">
         </div>
         <div class="intro-portrait-vignette" aria-hidden="true"></div>
@@ -2363,10 +2376,11 @@ button:focus-visible {
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="assets/images/saab.jpg" alt="Rebuilding the Saab engine bay — stripped-down, everything deliberate" loading="eager" fetchpriority="high" decoding="async">
+              <!-- data-src: loaded by AboutContainer._preloadPanel() before panel activates -->
+              <img data-src="assets/images/saab.jpg" alt="Rebuilding the Saab engine bay — stripped-down, everything deliberate" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/engineblock.jpg" alt="Engine bay detail — machined metal components" loading="eager" fetchpriority="low" decoding="async">
+              <img data-src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/engineblock.jpg" alt="Engine bay detail — machined metal components" decoding="async">
             </div>
           </div>
         </div>
@@ -2396,10 +2410,10 @@ button:focus-visible {
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/bikeline.JPG" alt="Bike shop floor — rows of bicycles on display" loading="eager" fetchpriority="low" decoding="async">
+              <img data-src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/bikeline.JPG" alt="Bike shop floor — rows of bicycles on display" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/trail.jpg" alt="Bicycle component detail — drivetrain close-up" loading="eager" fetchpriority="low" decoding="async">
+              <img data-src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/trail.jpg" alt="Bicycle component detail — drivetrain close-up" decoding="async">
             </div>
           </div>
         </div>
@@ -2429,10 +2443,10 @@ button:focus-visible {
         <div class="col-top">
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/paperchair.jpg" alt="Paper chair ideation" loading="eager" fetchpriority="low" decoding="async">
+              <img data-src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/paperchair.jpg" alt="Paper chair ideation" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/chairhero.jpg" alt="Chair final result" loading="eager" fetchpriority="low" decoding="async">
+              <img data-src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/chairhero.jpg" alt="Chair final result" decoding="async">
             </div>
           </div>
         </div>
