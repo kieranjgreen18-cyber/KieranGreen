@@ -370,31 +370,24 @@ class PageChrome {
     // catches up. This lets the RAF bail out early on idle frames instead of
     // running the lerp and threshold check on every single frame.
     if (window.matchMedia('(pointer:fine)').matches) {
-      let cursorMoved = false;
-      document.addEventListener('mousemove', () => { cursorMoved = true; }, { passive: true });
+      let rafId = 0;
       const loop = () => {
-        if (cursorMoved) {
-          const rxN = this._rx + (this._mx - this._rx) * 0.1;
-          const ryN = this._ry + (this._my - this._ry) * 0.1;
-          if (Math.abs(rxN - this._rx) > 0.1 || Math.abs(ryN - this._ry) > 0.1) {
-            this._rx = rxN; this._ry = ryN;
-            if (this._curR) {
-              this._curR.style.left = `${this._rx}px`;
-              this._curR.style.top  = `${this._ry}px`;
-            }
-          } else {
-            // Follower has fully caught up — snap to exact position and go idle
-            this._rx = this._mx; this._ry = this._my;
-            if (this._curR) {
-              this._curR.style.left = `${this._rx}px`;
-              this._curR.style.top  = `${this._ry}px`;
-            }
-            cursorMoved = false;
-          }
+        rafId = 0;
+        const rxN = this._rx + (this._mx - this._rx) * 0.12;
+        const ryN = this._ry + (this._my - this._ry) * 0.12;
+        const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
+        this._rx = stillMoving ? rxN : this._mx;
+        this._ry = stillMoving ? ryN : this._my;
+        if (this._curR) {
+          this._curR.style.left = `${this._rx}px`;
+          this._curR.style.top  = `${this._ry}px`;
         }
-        requestAnimationFrame(loop);
+        // Only continue while the follower is catching up; goes fully idle otherwise.
+        if (stillMoving) rafId = requestAnimationFrame(loop);
       };
-      requestAnimationFrame(loop);
+      document.addEventListener('mousemove', () => {
+        if (!rafId) rafId = requestAnimationFrame(loop);
+      }, { passive: true });
     }
     this._apply();
 
