@@ -569,6 +569,21 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   § PRINT PAIR
+═══════════════════════════════════════════════════════════════ */
+.print-pair-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+@media (max-width: 600px) {
+  .print-pair-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    § ARTICLE IMAGES
 ═══════════════════════════════════════════════════════════════ */
 .article-img {
@@ -730,7 +745,8 @@ strong { color: var(--c-primary); font-weight: 700; }
       <div class="hero-chips" role="list" aria-label="Tools used">
         <span class="hero-chip" role="listitem">Rhino 3D</span>
         <span class="hero-chip" role="listitem">FDM Prototyping</span>
-        <span class="hero-chip" role="listitem">Surface Modeling</span>
+        <span class="hero-chip" role="listitem">NURBS Surfacing</span>
+        <span class="hero-chip" role="listitem">Direct Modeling</span>
       </div>
     </div>
   </header>
@@ -748,12 +764,12 @@ strong { color: var(--c-primary); font-weight: 700; }
         <p class="meta-value">Rhino 3D<br>FDM Printer</p>
       </div>
       <div class="meta-group">
-        <p class="meta-label">Type</p>
-        <p class="meta-value">Surface Modeling</p>
+        <p class="meta-label">Methods</p>
+        <p class="meta-value">NURBS Surfacing<br>Direct Modeling</p>
       </div>
       <div class="meta-group">
         <p class="meta-label">Output</p>
-        <p class="meta-value">Physical FDM Print</p>
+        <p class="meta-value">PLA — 1:10 Scale<br>FDM Print</p>
       </div>
     </aside>
 
@@ -765,11 +781,43 @@ strong { color: var(--c-primary); font-weight: 700; }
             I surface modeled my personal vehicle — a Mini Clubman — in Rhino 3D, then <em>held the result in my hands.</em>
           </p>
           <p class="t-copy">
-            A study in translating complex automotive form into a controlled, manufacturable model.
+            A study in translating complex automotive form into a controlled, manufacturable model. Mostly surface and direct modeled, printed in PLA at 1:10 scale.
           </p>
         </div>
 
-      <!-- IMAGE 01 -->
+      <!-- PRINT PHOTOS — front & rear -->
+      <div class="article-img rev print-pair">
+        <div class="print-pair-grid">
+          <div>
+            <div class="img-frame r-tall">
+              <img
+                src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/minihero.png"
+                alt="3D Printed Mini Clubman — front three-quarter view"
+                loading="lazy"
+              >
+            </div>
+            <div class="img-cap">
+              <span class="t-label">01 / Mini Clubman — Front</span>
+              <span class="t-label" style="color:var(--c-muted)">PLA — 1:10</span>
+            </div>
+          </div>
+          <div>
+            <div class="img-frame r-tall">
+              <img
+                src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniherorear.png"
+                alt="3D Printed Mini Clubman — rear three-quarter view"
+                loading="lazy"
+              >
+            </div>
+            <div class="img-cap">
+              <span class="t-label">02 / Mini Clubman — Rear</span>
+              <span class="t-label" style="color:var(--c-muted)">PLA — 1:10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMAGE 01 (process render) -->
       <div class="article-img rev">
         <div class="img-frame r-wide">
           <img
@@ -780,7 +828,7 @@ strong { color: var(--c-primary); font-weight: 700; }
           >
         </div>
         <div class="img-cap">
-          <span class="t-label">01 / Mini Clubman — Process</span>
+          <span class="t-label">03 / Mini Clubman — Final Render</span>
           <span class="t-label" style="color:var(--c-muted)">Rhino 3D </span>
         </div>
       </div>
@@ -809,7 +857,7 @@ strong { color: var(--c-primary); font-weight: 700; }
           >
         </div>
         <div class="img-cap">
-          <span class="t-label">02 / Mini Clubman — Surfaces Process</span>
+          <span class="t-label">04 / Mini Clubman — Early Surfaces</span>
           <span class="t-label" style="color:var(--c-muted)">Rhino 3D </span>
         </div>
       </div>
@@ -817,7 +865,7 @@ strong { color: var(--c-primary); font-weight: 700; }
       <div class="case-copy">
          <div class="copy-section rev d2">
              <p class="t-copy">
-            Making a rough outline of the shape. This basic structure was achieved by making a bunch of curves from two lines. Over the process of building this model, most of these surfaces were redone as I discovered easier and better ways to accomplish the surface layouts for the shapes I had intended.
+            Starting from curves derived from two reference lines, I built an initial surface skeleton of the body. Most of these surfaces were eventually rebuilt — the roofline and door shoulders in particular required multiple approaches before the curvature continuity felt right across the whole form.
           </p>
        
         <!-- IMAGE 03 -->
@@ -831,8 +879,17 @@ strong { color: var(--c-primary); font-weight: 700; }
           >
         </div>
         <div class="img-cap">
-          <span class="t-label">03 / Mini Clubman — Surfaces Process</span>
+          <span class="t-label">05 / Mini Clubman — Surfaces Development</span>
           <span class="t-label" style="color:var(--c-muted)">Rhino 3D </span>
+        </div>
+      </div>
+
+      <!-- REFLECTION -->
+      <div class="case-copy">
+        <div class="copy-section rev d2">
+          <p class="t-copy">
+            This project fundamentally changed how I approach soft-form geometry — working without creases or hard edges forces a different kind of thinking about surface flow and transition. The constraint became the lesson.
+          </p>
         </div>
       </div>
 
