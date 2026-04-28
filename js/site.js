@@ -24,21 +24,6 @@
 
 'use strict';
 
-// ── Wheel velocity tuning constants ───────────────────────────────────────
-// Declared at module level so they are visible to any future method that
-// needs to read or override them (e.g. per-device tuning).
-// W_THRESH: velocity to cross before one section advance fires.
-//   Higher = more deliberate intent required = fewer accidental double-skips.
-// W_DECAY: per-16ms multiplier. 0.82 bleeds old velocity off fast so
-//   trackpad inertia after a swipe can't chain into the next section.
-// W_CLAMP: caps single-event contribution — mouse notch click ≈ 100-120px,
-//   clamped to 70 so mouse needs ~3 notches for one section change.
-// W_MIN: ignore micro-delta bursts (sub-pixel trackpad jitter).
-const W_THRESH = 200; // deliberate swipe required — prevents inertia chains
-const W_DECAY  = 0.80; // aggressive decay — old velocity bleeds off in ~200ms
-const W_CLAMP  = 70;  // cap per-event contribution
-const W_MIN    = 10;  // filter micro-deltas
-
 /* ─────────────────────────────────────────────────────────────────────────
    §1  APP CONTROLLER
    ─────────────────────────────────────────────────────────────────────────
@@ -47,7 +32,46 @@ const W_MIN    = 10;  // filter micro-deltas
      • which container is active
      • scroll direction dispatch
      • transition lock (prevents skipping sections mid-animation)
+
+   SCROLL ENGINE — Intent Classifier Model
+   ────────────────────────────────────────
+   The old velocity-accumulator model required 3+ mouse notches to fire and
+   produced a sticky, laggy feel on trackpads due to aggressive decay fighting
+   legitimate swipe intent. This engine uses a two-path classifier instead:
+
+   MOUSE PATH  (large discrete impulses, deltaY ≥ MOUSE_THRESHOLD per event)
+     One notch fires immediately. The event itself IS the intent.
+     A post-fire cooldown (MOUSE_COOLDOWN_MS) prevents double-fire from
+     mechanical bounce, but is short enough to feel instant.
+
+   TRACKPAD PATH  (many small continuous deltas)
+     Events are bucketed into a rolling window. The window's net displacement
+     must exceed TRACKPAD_THRESH before firing. After firing, the settle window
+     (SETTLE_MS) absorbs the inertia tail so it cannot chain into the next slide.
+     The key insight: we measure net displacement in a short time window, NOT
+     a velocity accumulator with exponential decay. This is more intuitive and
+     does not penalise users with slower deliberate swipes.
+
+   Both paths share the same settle window so the system cannot double-fire
+   regardless of input device.
    ───────────────────────────────────────────────────────────────────────── */
+
+// ── Tuning constants (all at module scope for easy adjustment) ────────────
+// MOUSE: raw |deltaY| >= this → treat as a discrete mouse wheel notch
+const MOUSE_THRESHOLD   = 60;   // px; typical notch is 100–120, even scaled-down is 60+
+// MOUSE: min ms between consecutive fires (prevents mechanical double-tick)
+const MOUSE_COOLDOWN_MS = 350;
+// TRACKPAD: fire once net displacement in rolling window exceeds this
+const TRACKPAD_THRESH   = 55;   // px net; comfortable flick without requiring a hard shove
+// TRACKPAD: rolling window duration — events older than this are discarded
+const TRACKPAD_WINDOW_MS= 180;  // ms; wide enough for a natural swipe, short for inertia rejection
+// TRACKPAD: ignore individual events below this (sub-pixel jitter filter)
+const TRACKPAD_MIN_DELTA= 1.5;  // px
+// POST-FIRE: absorb inertia/bounce for this long after any fire
+const SETTLE_MS         = 440;  // ms; covers trackpad inertia tail without feeling slow
+// GLOBAL LOCK: hard lock between section changes (must be ≥ largest TRANS_MS)
+const LOCK_MS           = 650;
+
 class AppController {
 
   constructor(chrome = null) {
@@ -55,63 +79,69 @@ class AppController {
     this._containers = new Map();
     this._activeKey  = null;
     this._locked     = false;
-    this._LOCK_MS    = 900; // hard lock duration — >= _TRANS_MS with margin
-    // ── Wheel velocity model ───────────────────────────────────────────
-    this._wVel        = 0;
-    this._wLastTime   = 0;
-    // Settle window: set BEFORE dispatch (in wheel handler) so inertia burst
-    // that immediately follows a threshold crossing is absorbed instantly.
-    // _activateDirect also extends it on section change for belt-and-suspenders.
-    this._settleUntil = 0;
-    this._SETTLE_MS   = 680; // > typical trackpad inertia tail (~500ms)
+
+    // ── Settle window (shared by both input paths) ─────────────────────
+    this._settleUntil   = 0;
+
+    // ── Mouse path state ───────────────────────────────────────────────
+    this._mouseLastFire = 0; // timestamp of last mouse-path fire
+
+    // ── Trackpad path state ────────────────────────────────────────────
+    // Ring buffer of {t, dy} entries within TRACKPAD_WINDOW_MS
+    this._tpBuf = [];
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
-      // Allow native scroll if the active container opts in for this direction.
-      // This lets terminal sections (e.g. Contact) scroll the page naturally
-      // downward while still intercepting upward wheel to hand back to About.
       const rawDir = e.deltaY > 0 ? +1 : e.deltaY < 0 ? -1 : 0;
       const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
       const nativeAllowed = activeContainer?.nativeScrollDirection?.(rawDir) === true;
       if (!nativeAllowed) e.preventDefault();
 
+      // Normalise delta to pixels regardless of deltaMode
       const raw = e.deltaMode === 1 ? e.deltaY * 32
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
+      if (raw === 0) return;
+
       const now = performance.now();
-      // During the post-transition settle window, eat the event but don't act.
-      // This absorbs trackpad inertia that would otherwise chain into the new section.
-      if (now < this._settleUntil) { this._wVel = 0; this._wLastTime = now; return; }
-      const gap = now - this._wLastTime;
-      if (gap > 600 || this._wLastTime === 0) { this._wVel = 0; }
-      else { this._wVel *= Math.pow(W_DECAY, gap / 16); }
-      this._wLastTime = now;
-      const contrib = raw === 0 ? 0
-        : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
-      this._wVel += contrib;
-      if (!nativeAllowed) {
-        if (this._wVel >  W_THRESH) {
-          this._wVel = 0;
-          // Arm the settle window NOW — before dispatch — so the inertia burst
-          // that immediately follows this triggering event is absorbed before
-          // any container or AppController lock logic even runs.
-          this._settleUntil = performance.now() + this._SETTLE_MS;
-          this._wLastTime   = 0;
-          this._dispatchScroll(+1);
-        }
-        if (this._wVel < -W_THRESH) {
-          this._wVel = 0;
-          this._settleUntil = performance.now() + this._SETTLE_MS;
-          this._wLastTime   = 0;
-          this._dispatchScroll(-1);
+
+      // ── POST-FIRE SETTLE: swallow everything until inertia clears ────
+      if (now < this._settleUntil) return;
+
+      const absRaw = Math.abs(raw);
+      const dir    = raw > 0 ? +1 : -1;
+
+      // ── CLASSIFY: mouse vs trackpad ──────────────────────────────────
+      // Mouse wheels produce large discrete impulses (≥ MOUSE_THRESHOLD per
+      // event). Trackpads produce many small continuous deltas. Checking the
+      // per-event magnitude reliably separates them without heuristic state.
+      const isMouse = absRaw >= MOUSE_THRESHOLD;
+
+      if (isMouse) {
+        // MOUSE PATH — one notch = one slide, gated by cooldown only
+        const sinceLastFire = now - this._mouseLastFire;
+        if (sinceLastFire < MOUSE_COOLDOWN_MS) return;
+        if (!nativeAllowed || dir === -1) {
+          this._mouseLastFire = now;
+          this._fire(dir, nativeAllowed);
         }
       } else {
-        // Still watch for upward flick past threshold so we can hand back
-        if (this._wVel < -W_THRESH) {
-          this._wVel = 0;
-          this._settleUntil = performance.now() + this._SETTLE_MS;
-          this._wLastTime   = 0;
-          this._dispatchScroll(-1);
+        // TRACKPAD PATH — accumulate in rolling window, fire on threshold
+        if (absRaw < TRACKPAD_MIN_DELTA) return;
+
+        // Prune entries older than the window
+        this._tpBuf = this._tpBuf.filter(ev => now - ev.t <= TRACKPAD_WINDOW_MS);
+        this._tpBuf.push({ t: now, dy: raw });
+
+        // Net displacement in window — must be consistently directional
+        const net = this._tpBuf.reduce((sum, ev) => sum + ev.dy, 0);
+
+        if (Math.abs(net) >= TRACKPAD_THRESH) {
+          const fireDir = net > 0 ? +1 : -1;
+          this._tpBuf = []; // reset buffer so next swipe starts clean
+          if (!nativeAllowed || fireDir === -1) {
+            this._fire(fireDir, nativeAllowed);
+          }
         }
       }
     }, { passive: false });
@@ -133,8 +163,7 @@ class AppController {
       const dy = Math.abs(e.touches[0].clientY - _ty0);
       const dx = Math.abs(e.touches[0].clientX - _tx0);
       if (dy > dx && dy > 10) {
-        // Check if active container allows native scroll in this direction
-        const touchDir = (e.touches[0].clientY - _ty0) > 0 ? -1 : +1; // finger up = scroll down
+        const touchDir = (e.touches[0].clientY - _ty0) > 0 ? -1 : +1;
         const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
         const nativeAllowed = activeContainer?.nativeScrollDirection?.(touchDir) === true;
         if (!nativeAllowed) e.preventDefault();
@@ -146,9 +175,26 @@ class AppController {
       const dt     = Math.max(1, performance.now() - _tTime0);
       const vel    = Math.abs(dy) / dt;
       const locked = Math.abs(dy) > dx * 1.2;
-      const valid  = (vel >= 0.3 && Math.abs(dy) >= 20) || Math.abs(dy) >= 44;
+      const valid  = (vel >= 0.25 && Math.abs(dy) >= 18) || Math.abs(dy) >= 40;
       if (locked && valid) this._dispatchScroll(dy > 0 ? +1 : -1);
     }, { passive: true });
+  }
+
+  /**
+   * Common fire path for both mouse and trackpad.
+   * Arms the settle window and dispatches to the active container.
+   * @param {number}  dir           +1 | -1
+   * @param {boolean} nativeAllowed whether the container allows native scroll in this dir
+   */
+  _fire(dir, nativeAllowed) {
+    // Arm settle window BEFORE dispatch so any inertia burst that arrives
+    // synchronously during the dispatch is already gated out.
+    this._settleUntil = performance.now() + SETTLE_MS;
+    // Clear trackpad buffer so the settle period starts clean
+    this._tpBuf = [];
+    if (!nativeAllowed || dir === -1) {
+      this._dispatchScroll(dir);
+    }
   }
 
   register(name, container) {
@@ -171,7 +217,7 @@ class AppController {
     if (!this._containers.has(name)) { console.warn(`[AppController] setSection("${name}") — not registered.`); return; }
     this._locked = true;
     this._activateDirect(name, fromDirection);
-    setTimeout(() => { this._locked = false; }, this._LOCK_MS);
+    setTimeout(() => { this._locked = false; }, LOCK_MS);
   }
 
   _activateDirect(name, fromDirection = 0) {
@@ -179,21 +225,14 @@ class AppController {
     if (!next) return;
     if (this._activeKey) this._containers.get(this._activeKey)?.exit();
     this._activeKey = name;
-    // Flush velocity and extend settle window. We only push it forward —
-    // the wheel handler may have already set a settle window before dispatch,
-    // so we must not shorten it.
-    this._wVel        = 0;
-    this._wLastTime   = 0;
-    const settleEnd = performance.now() + this._SETTLE_MS;
+    // Flush all wheel state and extend settle window (never shorten an already-armed window)
+    this._tpBuf = [];
+    this._mouseLastFire = 0;
+    const settleEnd = performance.now() + SETTLE_MS;
     if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
     next.enter(fromDirection);
-    // Notify PageChrome so the section indicator updates immediately,
-    // rather than relying on scroll position (unreliable in scroll-lock mode).
     this._chrome?.notifySection?.(name);
-    // Suppress the scroll-position-based indicator for longer when entering
-    // Contact (smooth scroll can take ~700ms) so the label doesn't flicker
-    // back to "About" while the page is still scrolling into position.
-    const suppressMs = name === 'contact' ? 900 : this._SETTLE_MS;
+    const suppressMs = name === 'contact' ? 750 : SETTLE_MS;
     this._chrome?.suppressScrollIndicator?.(suppressMs);
   }
 
@@ -767,7 +806,7 @@ class CarouselContainer {
     this._transitioning = false;
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
-    this._TRANS_MS      = 820;
+    this._TRANS_MS      = 520; // reduced from 820ms
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -921,7 +960,7 @@ class CarouselContainer {
   _advance(dir) {
     if (this._transitioning) return;
     const now = performance.now();
-    if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
+
     const next = this._activeIdx + dir;
     if (next < 0)        { this._app.setSection(this._prevKey, -1); return; }
     if (next >= this._N) { this._app.setSection(this._nextKey, +1); return; }
@@ -963,7 +1002,7 @@ class AboutContainer {
     this._transitioning = false;
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
-    this._TRANS_MS      = 820;
+    this._TRANS_MS      = 560; // reduced from 820ms
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1068,7 +1107,7 @@ class AboutContainer {
   _advance(dir) {
     if (this._transitioning) return;
     const now = performance.now();
-    if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
+
     const next = this._activeIdx + dir;
     if (next < 0) {
       // Lock out further _advance calls while we hand off to the previous section.
@@ -1088,7 +1127,7 @@ class AboutContainer {
         // Small delay so the last panel's exit animation (opacity 0.70s) has
         // visibly started before Contact.enter() fires its smooth scroll.
         // Without this, the about-stage snaps away before the panel fades out.
-        setTimeout(() => this._app.setSection(this._nextKey, +1), 120);
+        this._app.setSection(this._nextKey, +1);
       }
       return;
     }
@@ -1153,21 +1192,17 @@ class ContactContainer {
   enter(fromDirection = 0) {
     if (!this._root) return;
     this._active = true;
-    // Scroll directly to the contact root. The personal-statement panel lives
-    // inside the fixed about-stage overlay (not in document flow), so it cannot
-    // serve as a scroll target.
-    const scrollTarget = this._root;
-    const top  = Math.round(scrollTarget.getBoundingClientRect().top + window.scrollY);
-    // Set _contactTop immediately from the *target* position, not from the
-    // post-scroll DOM state. This makes nativeScrollDirection accurate from
-    // the very first wheel event after entering Contact.
+    const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+    // Cache immediately so nativeScrollDirection is accurate from the first event.
     this._contactTop = top;
-    // Use instant scroll if we're jumping from a far section (hero/carousel)
-    // to avoid a long slow scroll across the whole page.
+    // Always use instant scroll when arriving from About (fromDirection === +1)
+    // so the transition feels like a decisive snap, not a slow page drift.
+    // Only smooth-scroll when jumping from hero/carousel (dist > 2 viewports).
     const dist = Math.abs(window.scrollY - top);
-    window.scrollTo({ top, behavior: dist > window.innerHeight * 2 ? 'instant' : 'smooth' });
-    // Re-cache after the scroll settles as a safety net for resize-caused drift.
-    setTimeout(() => this._cacheTop(), 650);
+    const behavior = (fromDirection === +1 || dist <= window.innerHeight * 1.5) ? 'instant' : 'smooth';
+    window.scrollTo({ top, behavior });
+    // Re-cache after layout settles — guards against resize drift.
+    setTimeout(() => this._cacheTop(), 400);
   }
 
   exit() {
