@@ -324,16 +324,16 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 ═══════════════════════════════════════════════════════════════ */
 /* Film grain — hardware accelerated */
 #grain {
-  position: fixed; inset: -25%; width: 150%; height: 150%;
+  position: fixed; inset: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: var(--z-top); opacity: 0.024;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation: grain .9s steps(2) infinite;
-  contain: strict; will-change: transform;
+  contain: strict;
 }
 @keyframes grain {
-  0%, 100% { transform: translate3d(0,0,0); }
-  33%       { transform: translate3d(-1%,-2%,0); }
-  66%       { transform: translate3d(1%,1%,0); }
+  0%, 100% { background-position: 0 0; }
+  33%       { background-position: -6px -10px; }
+  66%       { background-position: 5px 6px; }
 }
 
 /* Page entrance veil */
@@ -529,6 +529,7 @@ nav#nav.scrolled {
 body.menu-open .n-ham span:nth-child(1) { transform: translateY(6px) rotate(45deg); background: var(--c-primary); }
 body.menu-open .n-ham span:nth-child(2) { opacity: 0; }
 body.menu-open .n-ham span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); background: var(--c-primary); }
+body.menu-open { overflow: hidden; }
 
 /* Mobile drawer */
 .nav-drawer {
@@ -740,6 +741,7 @@ model-viewer#mini-viewer {
   display: flex; width: max-content;
   animation: tick 60s linear infinite;
   will-change: transform;
+  transform: translateZ(0); /* promote to compositor layer */
 }
 .t-item {
   display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-4);
@@ -771,14 +773,14 @@ model-viewer#mini-viewer {
   overflow: hidden; cursor: none;
   display: block; text-decoration: none;
   will-change: transform;
-  transition: transform 0.72s var(--snap);
-  transform: translateY(100%);
+  transition: transform 0.68s var(--snap);
+  transform: translateY(100%) translateZ(0);
 }
-.proj[data-pos="far-above"] { transform: translateY(-200%); visibility: hidden; transition: none !important; }
-.proj[data-pos="prev"]      { transform: translateY(-100%); }
-.proj[data-pos="active"]    { transform: translateY(0); }
-.proj[data-pos="next"]      { transform: translateY(100%); }
-.proj[data-pos="far-below"] { transform: translateY(200%); visibility: hidden; transition: none !important; }
+.proj[data-pos="far-above"] { transform: translateY(-200%) translateZ(0); visibility: hidden; transition: none !important; }
+.proj[data-pos="prev"]      { transform: translateY(-100%) translateZ(0); }
+.proj[data-pos="active"]    { transform: translateY(0) translateZ(0); }
+.proj[data-pos="next"]      { transform: translateY(100%) translateZ(0); }
+.proj[data-pos="far-below"] { transform: translateY(200%) translateZ(0); visibility: hidden; transition: none !important; }
 
 /* Background image */
 .proj-img {
@@ -879,11 +881,12 @@ model-viewer#mini-viewer {
   -webkit-text-stroke: 1px rgba(91,160,164,.05);
   line-height: 1; pointer-events: none; user-select: none;
   bottom: -60px; letter-spacing: -.06em;
-  transition: -webkit-text-stroke .5s;
+  transition: -webkit-text-stroke .5s, transform var(--dur-slow) var(--ease);
 }
 .proj:nth-child(odd)  .proj-ghost { right: -30px; }
 .proj:nth-child(even) .proj-ghost { left: -30px; }
-.proj:nth-child(even):hover .proj-ghost { transform: translateX(6px) !important; }
+.proj:nth-child(odd):hover  .proj-ghost { transform: translateX(-6px); }
+.proj:nth-child(even):hover .proj-ghost { transform: translateX(6px); }
 .proj:hover .proj-ghost { -webkit-text-stroke: 1px rgba(91,160,164,.12); }
 
 /* Slide counter */
@@ -989,18 +992,18 @@ model-viewer#mini-viewer {
   position: absolute; inset: 0;
   display: grid; grid-template-columns: 1fr 1fr;
   z-index: 1; will-change: transform, opacity;
-  opacity: 0; transform: translateY(56px); pointer-events: none;
+  opacity: 0; transform: translateY(56px) translateZ(0); pointer-events: none;
   transition: transform 0.85s var(--ease), opacity 0.70s var(--ease);
 }
 .panel.is-active {
-  opacity: 1; transform: translateY(0); pointer-events: auto;
+  opacity: 1; transform: translateY(0) translateZ(0); pointer-events: auto;
 }
 .panel.is-after {
-  opacity: 0; transform: translateY(-46px); pointer-events: none;
+  opacity: 0; transform: translateY(-46px) translateZ(0); pointer-events: none;
   transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
 }
 .panel.is-below {
-  opacity: 0; transform: translateY(56px); pointer-events: none;
+  opacity: 0; transform: translateY(56px) translateZ(0); pointer-events: none;
   transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
 }
 
@@ -1057,8 +1060,8 @@ model-viewer#mini-viewer {
   overflow: hidden;
   border: 1px solid rgba(91,160,164,0.16);
   box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.038);
-  opacity: 0; transition: opacity 0.9s var(--ease), box-shadow 0.6s ease;
-  will-change: opacity;
+  opacity: 0; transition: opacity 0.9s var(--ease), box-shadow 0.6s ease, transform 0.42s var(--ease);
+  will-change: opacity, transform;
 }
 .panel.is-active .pf-main   { opacity: 1; transition-delay: .05s; }
 .panel.is-active .pf-accent { opacity: 1; transition-delay: .22s; }
@@ -1380,6 +1383,7 @@ footer {
 ═══════════════════════════════════════════════════════════════ */
 @keyframes fu { from { opacity: 0; transform: translateY(var(--s-2)); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fd { from { opacity: 0; transform: translateY(-10px); }       to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ═══════════════════════════════════════════════════════════════
    § ACCESSIBILITY
@@ -1881,8 +1885,9 @@ footer {
 
 /* ── Contact field row hover ── */
 .c-field {
-  transition: background var(--dur-fast) ease;
+  transition: background var(--dur-fast) ease, padding-left var(--dur-fast) var(--ease);
   border-radius: 2px;
+  padding-left: 0;
 }
 .c-field:hover {
   background: var(--c-surface);
@@ -1941,23 +1946,18 @@ footer { position: relative; }
 /* ── Ghost number enhanced depth ── */
 .proj:hover .proj-ghost {
   -webkit-text-stroke: 1px rgba(91,160,164,0.14);
-  transform: translateX(-6px);
-  transition: -webkit-text-stroke var(--dur-mid) ease,
-              transform var(--dur-slow) var(--ease);
-}
-.proj-ghost {
-  transition: -webkit-text-stroke var(--dur-mid) ease,
-              transform var(--dur-slow) var(--ease);
 }
 
 /* ── Scroll hint fade on first scroll ── */
 @keyframes scrollHintFade {
   0%   { opacity: 0.68; }
   80%  { opacity: 0.68; }
-  100% { opacity: 0; }
+  100% { opacity: 0; pointer-events: none; }
 }
 .hero-scroll.is-revealed {
-  animation: scrollHintFade 5s var(--ease) 2s forwards;
+  /* Don't animate immediately — let the base opacity transition set 0.68 first,
+     then after 2s delay the fade-out animation begins */
+  animation: scrollHintFade 4s var(--ease) 2.5s forwards;
 }
 
 /* ── Mobile: swipe hint entry animation ── */
@@ -2025,8 +2025,11 @@ button:focus-visible {
 
 
 /* ── Performance: CSS containment ── */
-.proj           { contain: layout style; }
-.panel          { contain: layout style; }
+/* Note: contain:style removed from .proj and .panel — it creates a new
+   stacking context that conflicts with will-change compositing layers
+   and breaks fixed/absolute z-index children within overlays. */
+.proj           { contain: layout; }
+.panel          { contain: layout; }
 .personal-statement { contain: layout; }
 .contact        { contain: layout; }
 .ticker         { contain: layout style; }
