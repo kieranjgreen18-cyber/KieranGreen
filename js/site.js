@@ -27,10 +27,10 @@
 // ── Wheel velocity tuning constants ───────────────────────────────────────
 // Declared at module level so they are visible to any future method that
 // needs to read or override them (e.g. per-device tuning).
-const W_THRESH = 160; // accumulated velocity required to trigger a section change
-const W_DECAY  = 0.94; // per-frame velocity decay factor (applied over 16ms increments)
-const W_CLAMP  = 90;  // maximum per-event contribution to velocity
-const W_MIN    = 20;  // minimum per-event contribution (filters micro-deltas)
+const W_THRESH = 120; // accumulated velocity required to trigger a section change
+const W_DECAY  = 0.88; // per-frame velocity decay factor (applied over 16ms increments)
+const W_CLAMP  = 80;  // maximum per-event contribution to velocity
+const W_MIN    = 18;  // minimum per-event contribution (filters micro-deltas)
 
 /* ─────────────────────────────────────────────────────────────────────────
    §1  APP CONTROLLER
@@ -48,15 +48,14 @@ class AppController {
     this._containers = new Map();
     this._activeKey  = null;
     this._locked     = false;
-    this._LOCK_MS    = 900; // >= longest container _TRANS_MS (820) + ~80ms real margin
-
+    this._LOCK_MS    = 820; // >= longest container _TRANS_MS, no extra pad needed
     // ── Wheel velocity model ───────────────────────────────────────────
     this._wVel        = 0;
     this._wLastTime   = 0;
     // After every section change, ignore wheel input for SETTLE_MS so that
     // trackpad inertia from the previous section cannot chain into the next.
     this._settleUntil = 0;
-    this._SETTLE_MS   = 520;
+    this._SETTLE_MS   = 440;
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
@@ -300,14 +299,19 @@ class PageChrome {
         if (cursorMoved) {
           const rxN = this._rx + (this._mx - this._rx) * 0.1;
           const ryN = this._ry + (this._my - this._ry) * 0.1;
-          if (Math.abs(rxN - this._rx) > 0.02 || Math.abs(ryN - this._ry) > 0.02) {
+          if (Math.abs(rxN - this._rx) > 0.1 || Math.abs(ryN - this._ry) > 0.1) {
             this._rx = rxN; this._ry = ryN;
             if (this._curR) {
               this._curR.style.left = `${this._rx}px`;
               this._curR.style.top  = `${this._ry}px`;
             }
           } else {
-            // Follower has fully caught up — go idle until next mousemove
+            // Follower has fully caught up — snap to exact position and go idle
+            this._rx = this._mx; this._ry = this._my;
+            if (this._curR) {
+              this._curR.style.left = `${this._rx}px`;
+              this._curR.style.top  = `${this._ry}px`;
+            }
             cursorMoved = false;
           }
         }
@@ -381,6 +385,8 @@ class PageChrome {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('click', () => {
+          // Close the drawer first, then after the transition starts, let the
+          // anchor click (caught by the delegation handler below) route the nav.
           document.body.classList.remove('menu-open');
           hamburger.setAttribute('aria-expanded', 'false');
           hamburger.setAttribute('aria-label', 'Open menu');
@@ -883,8 +889,8 @@ class CarouselContainer {
     const now = performance.now();
     if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
     const next = this._activeIdx + dir;
-    if (next < 0)        { this._transitioning = false; this._app.setSection(this._prevKey, -1); return; }
-    if (next >= this._N) { this._transitioning = false; this._app.setSection(this._nextKey, +1); return; }
+    if (next < 0)        { this._app.setSection(this._prevKey, -1); return; }
+    if (next >= this._N) { this._app.setSection(this._nextKey, +1); return; }
     this._transitioning = true;
     this._lastAdvanceAt = now;
     this._lastAdvDir    = dir;
