@@ -322,18 +322,21 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 /* ═══════════════════════════════════════════════════════════════
    § AMBIENT OVERLAYS
 ═══════════════════════════════════════════════════════════════ */
-/* Film grain — hardware accelerated */
+/* Film grain — compositor-only animation */
 #grain {
   position: fixed; inset: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: var(--z-top); opacity: 0.024;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200% 200%;
   animation: grain .9s steps(2) infinite;
+  will-change: transform;
   contain: strict;
 }
 @keyframes grain {
-  0%, 100% { background-position: 0 0; }
-  33%       { background-position: -6px -10px; }
-  66%       { background-position: 5px 6px; }
+  0%   { transform: translate(0, 0); }
+  33%  { transform: translate(-3%, -2%); }
+  66%  { transform: translate(2%, 1%); }
+  100% { transform: translate(0, 0); }
 }
 
 /* Page entrance veil */
@@ -498,13 +501,20 @@ nav#nav.scrolled {
 }
 .n-avail-dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--c-accent);
-  box-shadow: 0 0 0 0 rgba(91,160,164,.5);
-  animation: ping 2.5s ease infinite; flex-shrink: 0;
+  flex-shrink: 0; position: relative;
+}
+/* Ripple ring — uses transform+opacity (compositor-only, no repaint) */
+.n-avail-dot::after {
+  content: ''; position: absolute;
+  inset: -4px; border-radius: 50%;
+  border: 1px solid rgba(91,160,164,.55);
+  animation: ping 2.5s ease infinite;
+  will-change: transform, opacity;
 }
 @keyframes ping {
-  0%   { box-shadow: 0 0 0 0   rgba(91,160,164,.5); }
-  70%  { box-shadow: 0 0 0 6px rgba(91,160,164,0); }
-  100% { box-shadow: 0 0 0 0   rgba(91,160,164,0); }
+  0%   { transform: scale(0.5); opacity: .8; }
+  70%  { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
 }
 
 /* Theme toggle */
@@ -661,8 +671,15 @@ model-viewer#mini-viewer {
 .hero-text.is-revealed .hero-avail { opacity: 1; }
 .hero-avail-dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--c-accent);
-  box-shadow: 0 0 0 0 rgba(91,160,164,.5);
-  animation: ping 2.5s ease infinite; flex-shrink: 0;
+  flex-shrink: 0; position: relative;
+}
+.hero-avail-dot::after {
+  content: ''; position: absolute;
+  inset: -4px; border-radius: 50%;
+  border: 1px solid rgba(91,160,164,.55);
+  animation: ping 2.5s ease infinite;
+  will-change: transform, opacity;
+}
 }
 
 /* Scroll hint — bottom right */
@@ -711,7 +728,11 @@ model-viewer#mini-viewer {
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: 10px; animation: hintSpin 6s linear infinite;
 }
-@keyframes hintSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.model-hint.hidden .model-hint-icon,
+.model-hint:not(.is-revealed) .model-hint-icon { animation-play-state: paused; }
+/* Pause ripple animations when hero is not the active section to save GPU */
+.hero:not([style*="opacity: 1"]) .hero-avail-dot::after,
+.hero[style*="opacity: 0"] .hero-avail-dot::after { animation-play-state: paused; }
 
 /* Model error fallback */
 .model-error {
@@ -763,6 +784,7 @@ model-viewer#mini-viewer {
 .projects {
   position: fixed; inset: 0; z-index: var(--z-carousel);
   pointer-events: none; visibility: hidden;
+  contain: layout style paint;
 }
 .projects.carousel-active { pointer-events: auto; visibility: visible; }
 .proj-track { position: absolute; inset: 0; }
@@ -793,8 +815,10 @@ model-viewer#mini-viewer {
   transform: scale(1.06);
   filter: saturate(.68) brightness(.52);
   transition: transform 1.15s var(--ease), filter 1.15s ease;
-  will-change: transform, filter;
+  /* No permanent will-change — 4 slide images on GPU simultaneously is expensive.
+     Browser promotes on demand when transition fires. */
 }
+.proj[data-pos="active"] .proj-img { will-change: transform, filter; }
 .proj:hover .proj-img { transform: scale(1.01); filter: saturate(.92) brightness(.7); }
 
 /* Directional gradient veil */
@@ -817,7 +841,6 @@ model-viewer#mini-viewer {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 44%; z-index: 2;
   transition: transform .7s var(--ease);
-  will-change: transform;
 }
 .proj:nth-child(odd)  .proj-text { left: var(--pad); }
 .proj:nth-child(even) .proj-text { right: var(--pad); text-align: right; }
@@ -967,7 +990,7 @@ model-viewer#mini-viewer {
   position: fixed; inset: 0; z-index: var(--z-about);
   background: var(--c-bg);
   pointer-events: none; visibility: hidden;
-  will-change: visibility;
+  contain: layout style paint;
 }
 .about-stage.engaged { pointer-events: auto; visibility: visible; }
 
@@ -1070,7 +1093,6 @@ model-viewer#mini-viewer {
   border: 1px solid rgba(91,160,164,0.16);
   box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.038);
   opacity: 0; transition: opacity 0.9s var(--ease), box-shadow 0.6s ease, transform 0.42s var(--ease);
-  will-change: opacity, transform;
 }
 .panel.is-active .pf-main   { opacity: 1; transition-delay: .05s; }
 .panel.is-active .pf-accent { opacity: 1; transition-delay: .22s; }
@@ -1078,7 +1100,6 @@ model-viewer#mini-viewer {
   width: 100%; height: 100%; object-fit: cover; display: block;
   filter: saturate(0.72) brightness(0.85);
   transition: filter .7s ease, transform .7s var(--ease);
-  will-change: filter, transform;
 }
 .photo-placeholder {
   width: 100%; height: 100%;
@@ -1267,6 +1288,8 @@ model-viewer#mini-viewer {
   position: relative; overflow: hidden;
   min-height: 100svh; display: flex; align-items: center;
   border-top: 1px solid var(--c-rule);
+  content-visibility: auto;
+  contain-intrinsic-size: 0 100svh;
 }
 .contact-img {
   position: absolute; right: 0; top: 0; bottom: 0; width: 45%;
