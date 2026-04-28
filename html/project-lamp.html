@@ -386,13 +386,9 @@ strong { color: var(--c-primary); font-weight: 700; }
   </div>
 
   <!-- PROJ-NAV -->
-  <nav class="proj-nav" aria-label="Project navigation">
-    <a href="project-pen.html" class="pn-item">
+  <nav class="proj-nav" aria-label="Project navigation" style="grid-template-columns: 1fr;">
+    <a href="project-myth.html" class="pn-item">
       <span class="pn-dir"><svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="12" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="5,1 1,5 5,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Previous</span>
-      <span class="pn-title">Sabretta Pen</span>
-    </a>
-    <a href="project-myth.html" class="pn-item right">
-      <span class="pn-dir">Next <svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="1" y1="5" x2="12" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="8,1 12,5 8,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
       <span class="pn-title">Myth in Motion</span>
     </a>
   </nav>
@@ -435,7 +431,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   scroller.addEventListener('scroll', () => { topNav.classList.toggle('scrolled', scroller.scrollTop > 60); const max = scroller.scrollHeight - scroller.clientHeight; prog.style.width = (max > 0 ? (scroller.scrollTop / max) * 100 : 0) + '%'; }, { passive: true });
   const heroBg = document.querySelector('.hero-bg');
   const heroEl = document.getElementById('hero');
-  scroller.addEventListener('scroll', () => { if (scroller.scrollTop < scroller.clientHeight) { const shift = Math.min(heroEl.offsetHeight * .04, scroller.scrollTop * .18); heroBg.style.transform = `scale(1.04) translateY(${shift}px)`; } }, { passive: true });
+  scroller.addEventListener('scroll', () => { if (scroller.scrollTop < scroller.clientHeight) { const shift = Math.min(heroEl.offsetHeight * .04, scroller.scrollTop * .18); heroBg.style.transform = `scale(1.04) translateY(-${shift}px)`; } }, { passive: true });
   let theme = 'dark';
   const themeBtn = document.getElementById('theme-btn');
   function setTheme(t) { theme = t; document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('theme', t); } catch (e) {} }
