@@ -69,8 +69,9 @@ const TRACKPAD_WINDOW_MS= 180;  // ms; wide enough for a natural swipe, short fo
 const TRACKPAD_MIN_DELTA= 1.5;  // px
 // POST-FIRE: absorb inertia/bounce for this long after any fire
 const SETTLE_MS         = 440;  // ms; covers trackpad inertia tail without feeling slow
-// GLOBAL LOCK: hard lock between section changes (must be ≥ largest TRANS_MS)
-const LOCK_MS           = 650;
+// GLOBAL LOCK: hard lock between section changes — must be ≥ largest container TRANS_MS
+// About panels animate for 850ms; 950ms gives full clearance with a small margin.
+const LOCK_MS           = 950;
 
 class AppController {
 
@@ -122,7 +123,6 @@ class AppController {
         const sinceLastFire = now - this._mouseLastFire;
         if (sinceLastFire < MOUSE_COOLDOWN_MS) return;
         if (!nativeAllowed || dir === -1) {
-          this._mouseLastFire = now;
           this._fire(dir, nativeAllowed);
         }
       } else {
@@ -189,7 +189,12 @@ class AppController {
   _fire(dir, nativeAllowed) {
     // Arm settle window BEFORE dispatch so any inertia burst that arrives
     // synchronously during the dispatch is already gated out.
-    this._settleUntil = performance.now() + SETTLE_MS;
+    // Use LOCK_MS here — if this dispatch triggers a setSection(), _activateDirect
+    // will also set settleUntil to LOCK_MS. If it stays within-section, LOCK_MS
+    // is the right guard anyway (≥ any container's _TRANS_MS).
+    this._settleUntil = performance.now() + LOCK_MS;
+    // Also stamp mouseLastFire so the mouse cooldown is consistent with settle
+    this._mouseLastFire = performance.now();
     // Clear trackpad buffer so the settle period starts clean
     this._tpBuf = [];
     if (!nativeAllowed || dir === -1) {
@@ -225,14 +230,19 @@ class AppController {
     if (!next) return;
     if (this._activeKey) this._containers.get(this._activeKey)?.exit();
     this._activeKey = name;
-    // Flush all wheel state and extend settle window (never shorten an already-armed window)
+    // Flush trackpad buffer — stale events from the old section must not
+    // bleed into the new one.
     this._tpBuf = [];
-    this._mouseLastFire = 0;
-    const settleEnd = performance.now() + SETTLE_MS;
+    // IMPORTANT: do NOT reset _mouseLastFire here. The cooldown must persist
+    // across section changes so a single scroll gesture cannot simultaneously
+    // trigger the section change AND the first advance in the new section.
+    // Instead, extend the settle window to cover the full lock period so both
+    // guards are consistent.
+    const settleEnd = performance.now() + LOCK_MS;
     if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
     next.enter(fromDirection);
     this._chrome?.notifySection?.(name);
-    const suppressMs = name === 'contact' ? 750 : SETTLE_MS;
+    const suppressMs = name === 'contact' ? 750 : LOCK_MS;
     this._chrome?.suppressScrollIndicator?.(suppressMs);
   }
 
@@ -806,7 +816,7 @@ class CarouselContainer {
     this._transitioning = false;
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
-    this._TRANS_MS      = 520; // reduced from 820ms
+    this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1002,7 +1012,7 @@ class AboutContainer {
     this._transitioning = false;
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
-    this._TRANS_MS      = 560; // reduced from 820ms
+    this._TRANS_MS      = 900; // about panel CSS: 0.85s transform + margin
 
     this._onResize = () => {
       this._sizeSpacer();
