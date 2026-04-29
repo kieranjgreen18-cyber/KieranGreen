@@ -14,7 +14,7 @@
 <meta name="twitter:description" content="Reverse-engineering one of the most carefully engineered lighting objects ever designed.">
 <meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/lamphero.png">
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230800'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 
 <link rel="preload" as="font" type="font/woff2" href="../assets/fonts/AnyConv.com__D-DINCondensed.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="../assets/fonts/AnyConv.com__D-DIN.woff2" crossorigin>
@@ -284,7 +284,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 
 .carousel{position:relative;width:100%;overflow:hidden;user-select:none;}
 .carousel-track{display:flex;align-items:center;gap:20px;transition:transform 1.1s var(--ease);padding:20px 0;}
-.card{position:relative;overflow:hidden;cursor:none;flex-shrink:0;width:calc(100% - var(--pad) * 2);max-width:780px;aspect-ratio:22/17;transition:filter 1.1s var(--ease),opacity 1.1s var(--ease),transform 1.1s var(--ease);filter:brightness(.3);opacity:.6;transform:scale(.92);}
+.card{position:relative;overflow:hidden;cursor:none;flex-shrink:0;width:calc(100% - var(--pad) * 2);max-width:780px;aspect-ratio:17/22;transition:filter 1.1s var(--ease),opacity 1.1s var(--ease),transform 1.1s var(--ease);filter:brightness(.3);opacity:.6;transform:scale(.92);}
 .card.active{filter:brightness(1);opacity:1;transform:scale(1);}
 .card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 1.3s var(--ease),filter .9s ease;filter:saturate(.85);pointer-events:none;}
 .card:hover img{transform:scale(1.05);filter:saturate(1.05);}
@@ -327,14 +327,15 @@ strong { color: var(--c-primary); font-weight: 700; }
 
   <!-- HERO -->
   <header class="hero" id="hero" aria-label="Project: Poul Henningsen Lamp">
-    <div class="hero-bg" role="img" aria-label="Poul Henningsen PH Lamp — Rhino 3D model render"></div>
+    <div class="hero-bg" role="img" aria-label="Poul Henningsen PH Lamp — physical cardboard model"></div>
     <div class="hero-veil" aria-hidden="true"></div>
     <div class="hero-content">
       <p class="hero-eyebrow t-label">03 — 2025</p>
       <h1 class="hero-h1">Poul Henningsen<br>Lamp</h1>
       <div class="hero-chips" role="list" aria-label="Tools used">
-        <span class="hero-chip" role="listitem">Rhino 3D</span>
-        <span class="hero-chip" role="listitem">CAD Modeling</span>
+        <span class="hero-chip" role="listitem">Hand Sketching</span>
+        <span class="hero-chip" role="listitem">Laser Cutting</span>
+        <span class="hero-chip" role="listitem">Physical Modelling</span>
       </div>
     </div>
   </header>
@@ -349,11 +350,15 @@ strong { color: var(--c-primary); font-weight: 700; }
       </div>
       <div class="meta-group">
         <p class="meta-label">Tools</p>
-        <p class="meta-value">Rhino 3D</p>
+        <p class="meta-value">Hand Sketching<br>Laser Cutter</p>
       </div>
       <div class="meta-group">
         <p class="meta-label">Type</p>
-        <p class="meta-value">Modeling Study</p>
+        <p class="meta-value">Experimental<br>Physical Model</p>
+      </div>
+      <div class="meta-group">
+        <p class="meta-label">Output</p>
+        <p class="meta-value">Physical model<br>3D CAD file</p>
       </div>
       <div class="meta-group">
         <p class="meta-label">Reference</p>
@@ -382,19 +387,28 @@ strong { color: var(--c-primary); font-weight: 700; }
       <div class="case-copy">
         <div class="copy-section rev d1">
           <p class="t-intro">
-            A design and engineering study based off the principles of the iconic PH lamp — one of the most <em>engineered lighting objects</em> ever designed.
+            The best ideas don't always survive contact with reality. Sometimes what replaces them is <em>more interesting.</em>
           </p>
           <p class="t-copy">
-            Poul Henningsen spent years perfecting the geometry of layered shades so that the bulb is never visible from any angle, and light diffuses evenly without glare. Modeling it meant understanding exactly how he achieved that — every curve is intentional.
+            The original concept was a spinning PH lamp — a kinetic take on Henningsen's iconic layered form. It didn't work. The rotation created problems I couldn't resolve within the constraints of the project, so I pivoted: instead of animating the whole lamp, I turned my attention to the bulb itself. What would it mean to wrap the light source directly — to make the shade not a shell around the lamp, but a collar around the glow?
           </p>
         </div>
 
         <div class="copy-section rev d2">
           <div class="section-rule">
-            <h2 class="t-label">What I Learned</h2>
+            <h2 class="t-label">The Process</h2>
           </div>
           <p class="t-copy">
-            Reverse engineering a designed object is one of the best ways to understand it. Working through the PH lamp's shade geometry gave me a deep appreciation for how <strong>light, surface, and form can be co-designed from first principles</strong> rather than treated separately.
+            I worked through the idea in hand sketches, exploring how shade geometry changes when the reference point is the bulb rather than a fixture above it. Each iteration went straight to the laser cutter — cardboard kept the feedback loop fast. The assembly was hand-built, letting me test how light actually behaved through each form rather than guessing from a drawing.
+          </p>
+        </div>
+
+        <div class="copy-section rev d3">
+          <div class="section-rule">
+            <h2 class="t-label">What This Demonstrates</h2>
+          </div>
+          <p class="t-copy">
+            This project didn't go to plan — and that's the point. Recognising when an idea isn't working, making a deliberate pivot, and finding something genuinely worth pursuing in the wreckage: that's the design process at its most real. It sharpened my ability to <strong>iterate fast, stay curious under constraint</strong>, and treat failure as a prompt rather than a dead end.
           </p>
         </div>
       </div>
@@ -404,15 +418,15 @@ strong { color: var(--c-primary); font-weight: 700; }
         <div class="carousel">
           <div class="carousel-track" id="carousel-track">
             <div class="card active" data-project="0">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/ideationlamp.png" alt="Lamp Ideation">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterearly-exhib.png" alt="Motorcycle Poster Initial">
               <div class="card-info"><div class="card-num">01 — 2025</div></div>
             </div>
             <div class="card" data-project="1">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/ideationlamp2.jpg" alt="Lamp Ideation 2">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterideation.png" alt="Motorcycle Poster Ideation">
               <div class="card-info"><div class="card-num">02 — 2025</div></div>
             </div>
             <div class="card" data-project="2">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/Chande lonp.png" alt="Chande lonp" style="object-position:center 30%;">
+              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/motoposterfinal.jpg" alt="Motorcycle Final" style="object-position:center 30%;">
               <div class="card-info"><div class="card-num">03 — 2025</div></div>
             </div>
           </div>
@@ -432,7 +446,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 
       <!-- PULL QUOTE -->
       <blockquote class="pull-quote rev" aria-label="Project quote">
-        <p class="pull-quote-text">Reverse engineering a design <br>is how you truly <em>understand it.</em></p>
+        <p class="pull-quote-text">The pivot is where the <br>real idea <em>begins.</em></p>
       </blockquote>
 
     </div>
@@ -441,7 +455,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   <!-- PROJ-NAV -->
   <nav class="proj-nav" aria-label="Project navigation" style="grid-template-columns: 1fr;">
     <a href="project-myth.html" class="pn-item">
-      <span class="pn-dir"><svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="12" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="5,1 1,5 5," fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Previous</span>
+      <span class="pn-dir"><svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="12" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="5,1 1,5 5,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Previous</span>
       <span class="pn-title">Myth in Motion</span>
     </a>
   </nav>
@@ -464,8 +478,8 @@ strong { color: var(--c-primary); font-weight: 700; }
     document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx + 'px'; cur.style.top = my + 'px'; });
     (function loop() { rx += (mx - rx) * .1; ry += (my - ry) * .1; curR.style.left = rx + 'px'; curR.style.top = ry + 'px'; requestAnimationFrame(loop); })();
     document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => { cur.style.width = '8px'; curR.style.width = '48px'; curR.style.height = '48px'; curR.style.setProperty('--bc', 'rgba(1,160,164,.7)'); });
-      el.addEventListener('mouseleave', () => { cur.style.width = '16px'; curR.style.width = '24px'; curR.style.height = '24px'; curR.style.setProperty('--bc', 'rgba(1,160,164,.5)'); });
+      el.addEventListener('mouseenter', () => { cur.style.width = '8px'; curR.style.width = '48px'; curR.style.height = '48px'; curR.style.setProperty('--bc', 'rgba(91,160,164,.7)'); });
+      el.addEventListener('mouseleave', () => { cur.style.width = '16px'; curR.style.width = '24px'; curR.style.height = '24px'; curR.style.setProperty('--bc', 'rgba(91,160,164,.5)'); });
     });
     document.addEventListener('mouseleave', () => { cur.style.opacity = '0'; curR.style.opacity = '0'; });
     document.addEventListener('mouseenter', () => { cur.style.opacity = '1'; curR.style.opacity = '1'; });
