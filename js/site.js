@@ -1065,6 +1065,9 @@ class AboutContainer {
   enter(fromDirection = 0) {
     if (!this._root || !this._N) return;
     this._active = true;
+    // Restore spacer height before engaging so layout is correct when the
+    // stage becomes visible (was collapsed to 0 on exit to prevent gap).
+    this._sizeSpacer();
     this._calcSpacerTop();
     // Arrive on last panel when scrolling back up from below.
     // Any other direction (including direct nav = 0) resets to first panel.
@@ -1082,6 +1085,10 @@ class AboutContainer {
     if (!this._root) return;
     this._active = false;
     this._root.classList.remove('engaged');
+    // Collapse the spacer so no raw document gap is visible if a native-scroll
+    // event slips through while the about-stage is hidden (visibility:hidden).
+    // It is restored in enter() before the stage becomes visible again.
+    if (this._spacer) this._spacer.style.height = '0px';
   }
 
   onScroll(direction) {
@@ -1146,18 +1153,12 @@ class AboutContainer {
       return;
     }
     if (next >= this._N) {
-      // Same lock for the forward boundary — prevents the 120ms delay window from
-      // accepting additional wheel ticks that would chain setSection calls.
       this._transitioning = true;
       if (this._nextKey) {
-        // Small delay so the last panel's exit animation (opacity 0.70s) has
-        // visibly started before Contact.enter() fires its smooth scroll.
-        // Without this, the about-stage snaps away before the panel fades out.
         this._app.setSection(this._nextKey, +1);
       }
-      // Always clear _transitioning after TRANS_MS — guards against the case
-      // where setSection is blocked (e.g. LOCK_MS guard in AppController) and
-      // enter() never fires, which would leave About permanently locked.
+      // Safety net: clear _transitioning after TRANS_MS in case setSection is
+      // blocked (e.g. LOCK_MS guard) and enter() never fires to reset it.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
       return;
     }
@@ -1223,16 +1224,17 @@ class ContactContainer {
     if (!this._root) return;
     this._active = true;
     const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-    // Cache immediately so nativeScrollDirection is accurate from the first event.
     this._contactTop = top;
-    // Always use instant scroll when arriving from About (fromDirection === +1)
-    // so the transition feels like a decisive snap, not a slow page drift.
-    // Only smooth-scroll when jumping from hero/carousel (dist > 2 viewports).
-    const dist = Math.abs(window.scrollY - top);
-    const behavior = (fromDirection === +1 || dist <= window.innerHeight * 1.5) ? 'instant' : 'smooth';
-    window.scrollTo({ top, behavior });
-    // Re-cache after layout settles — guards against resize drift.
-    setTimeout(() => this._cacheTop(), 400);
+    // Delay the scroll snap until after the about-stage has faded out (0.35s CSS transition).
+    // Without this, scrollTo fires while the about-stage is still fading, making the
+    // transition feel like a hard cut. With the delay, the stage is gone before we move.
+    const FADE_MS = 350;
+    setTimeout(() => {
+      if (!this._active) return; // guard: user may have already scrolled back up
+      window.scrollTo({ top, behavior: 'instant' });
+      // Re-cache after layout settles — guards against resize drift.
+      setTimeout(() => this._cacheTop(), 400);
+    }, FADE_MS);
   }
 
   exit() {
@@ -1264,7 +1266,7 @@ class ContactContainer {
     // below the entry point of the contact region. Once they've scrolled
     // back up to within 80px of the top, intercept and hand back to About.
     if (dir === -1) {
-      const atTop = window.scrollY <= this._contactTop + 8;
+      const atTop = window.scrollY <= this._contactTop + 40;
       return !atTop;
     }
     return false;
