@@ -705,9 +705,10 @@ model-viewer#mini-viewer {
 }
 }
 
-/* Scroll hint — bottom centre (mirrors about-scroll-hint style) */
+/* Scroll hint — bottom centre, fixed so it resolves against the viewport
+   (mirrors about-scroll-hint placement; hidden when hero is not active) */
 .hero-scroll {
-  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   z-index: var(--z-raised);
   display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
   color: var(--c-secondary);
