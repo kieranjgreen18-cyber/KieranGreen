@@ -721,6 +721,7 @@ model-viewer#mini-viewer {
 .hero-scroll-line {
   width: 1px; height: 48px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
+  animation: pulse 2.2s ease infinite;
 }
 
 /* Model metadata label */
@@ -1648,8 +1649,8 @@ footer {
       transparent 78%);
     backdrop-filter: blur(7px) saturate(0.80);
     -webkit-backdrop-filter: blur(7px) saturate(0.80);
-    -webkit-mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
-    mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 100%);
+    mask-image: linear-gradient(to top, black 0%, black 100%);
   }
   [data-theme="light"] .col-right::before {
     background: linear-gradient(to top,
@@ -1670,6 +1671,11 @@ footer {
     display: flex !important;
     margin-bottom: var(--s-2);
     margin-top: 0;
+  }
+
+  /* Intro panel text — override the desktop left-padding so first slide aligns with the rest */
+  .panel-intro .col-right {
+    padding-left: var(--pad);
   }
 
   /* Accent rule */
