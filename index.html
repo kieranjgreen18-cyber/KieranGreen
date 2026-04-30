@@ -705,24 +705,21 @@ model-viewer#mini-viewer {
 }
 }
 
-/* Scroll hint — bottom right */
+/* Scroll hint — bottom centre (mirrors about-scroll-hint style) */
 .hero-scroll {
-  position: absolute; bottom: var(--s-8); right: var(--pad); z-index: var(--z-raised);
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  z-index: var(--z-raised);
   display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
   color: var(--c-secondary);
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
   opacity: 0; transition: opacity var(--dur-slow) var(--ease) 0.95s;
+  pointer-events: none;
 }
-.hero-scroll.is-revealed { opacity: 0.68; }
+.hero-scroll.is-revealed { opacity: 0.62; }
 .hero-scroll-line {
   width: 1px; height: 48px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
-  animation: scrollPulse 2.2s ease infinite;
-}
-@keyframes scrollPulse {
-  0%, 100% { opacity: .4; transform: scaleY(1); }
-  50%       { opacity: .9; transform: scaleY(.6); }
 }
 
 /* Model metadata label */
@@ -965,19 +962,18 @@ model-viewer#mini-viewer {
 .proj-open:hover { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-bg); }
 .proj[data-pos="active"] .proj-open { opacity: 1; }
 
-/* Mobile swipe hint */
+/* Mobile swipe hint — sits between tags and the slide counter */
 .proj-swipe-hint {
-  position: absolute; bottom: calc(var(--pad) + var(--s-9));
+  position: absolute;
+  /* counter is at bottom: var(--pad). hint sits just above it with room for counter height ~20px */
+  bottom: calc(var(--pad) + 28px);
   left: 50%; transform: translateX(-50%);
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
   color: var(--c-secondary); opacity: .68;
   display: none; align-items: center; gap: var(--s-2);
-  animation: swipeHintFade 2.5s ease 1s forwards;
   pointer-events: none; white-space: nowrap;
 }
-.proj-swipe-hint::before { content: '↕'; font-size: 13px; opacity: .75; }
-@keyframes swipeHintFade { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 
 /* Carousel dot nav — right rail */
 #c-dots {
@@ -2005,20 +2001,23 @@ footer { position: relative; }
 
 /* ── Scroll hint fade on first scroll ── */
 @keyframes scrollHintFade {
-  0%   { opacity: 0.68; }
-  80%  { opacity: 0.68; }
+  0%   { opacity: 0.62; }
+  80%  { opacity: 0.62; }
   100% { opacity: 0; pointer-events: none; }
 }
 .hero-scroll.is-revealed {
-  /* Don't animate immediately — let the base opacity transition set 0.68 first,
-     then after 2s delay the fade-out animation begins */
   animation: scrollHintFade 4s var(--ease) 2.5s forwards;
 }
 
-/* ── Mobile: swipe hint entry animation ── */
+/* ── Mobile: swipe hint entry + fade animations ── */
 @keyframes swipeReveal {
   from { opacity: 0; transform: translateX(-50%) translateY(6px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0.68; transform: translateX(-50%) translateY(0); }
+}
+@keyframes swipeHintFade {
+  0%   { opacity: 0.68; }
+  70%  { opacity: 0.68; }
+  100% { opacity: 0; }
 }
 .proj-swipe-hint {
   animation: swipeReveal 0.5s var(--ease) 0.4s both, swipeHintFade 2.5s ease 1s forwards;
@@ -2271,7 +2270,10 @@ button:focus-visible {
       <div class="proj-line"       aria-hidden="true"></div>
       <div class="proj-ghost"      aria-hidden="true">01</div>
       <div class="proj-counter"    aria-hidden="true"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>04</span></div>
-      <div class="proj-swipe-hint" aria-hidden="true">Swipe to navigate</div>
+      <div class="proj-swipe-hint" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.75;flex-shrink:0"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="5 9 12 2 19 9"/><polyline points="5 15 12 22 19 15"/></svg>
+        Swipe to navigate
+      </div>
       <div class="proj-text">
         <div class="proj-num t-micro">Mar 2025</div>
         <h2 class="proj-title t-title">3D Printed Car</h2>
