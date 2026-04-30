@@ -178,6 +178,26 @@ class AppController {
       const valid  = (vel >= 0.25 && Math.abs(dy) >= 18) || Math.abs(dy) >= 40;
       if (locked && valid) this._dispatchScroll(dy > 0 ? +1 : -1);
     }, { passive: true });
+
+    // ── Visibility change — phone lock/unlock recovery ─────────────────
+    // When the screen turns off mid-scroll, in-flight touch events are
+    // silently cancelled and the settle/lock timers keep running but their
+    // setTimeout callbacks fire while the page is hidden. On resume the
+    // settle window may still be non-zero (blocking all input) and
+    // _mouseLastFire may be stale, leaving the scroll engine locked.
+    // Fix: flush all transient per-gesture state on visibility restore.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        // Reset settle window and mouse cooldown so the first gesture after
+        // unlock is never blocked by a timer that fired while hidden.
+        this._settleUntil   = 0;
+        this._mouseLastFire = 0;
+        this._tpBuf         = [];
+        // If a section transition was in progress, clear the lock —
+        // the animation is long gone so there is nothing to protect.
+        this._locked = false;
+      }
+    });
   }
 
   /**
