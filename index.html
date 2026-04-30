@@ -721,7 +721,6 @@ model-viewer#mini-viewer {
 .hero-scroll-line {
   width: 1px; height: 48px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
-  animation: pulse 2.2s ease infinite;
 }
 
 /* Model metadata label */
@@ -1011,9 +1010,15 @@ model-viewer#mini-viewer {
   position: fixed; inset: 0; z-index: var(--z-about);
   background: var(--c-bg);
   pointer-events: none; visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease), visibility 0s linear 0.35s;
   contain: layout style paint;
 }
-.about-stage.engaged { pointer-events: auto; visibility: visible; }
+.about-stage.engaged {
+  pointer-events: auto; visibility: visible;
+  opacity: 1;
+  transition: opacity 0.35s var(--ease), visibility 0s linear 0s;
+}
 
 .panels-host {
   position: relative; width: 100%; height: 100%; overflow: hidden;
@@ -1034,6 +1039,14 @@ model-viewer#mini-viewer {
   padding: 0 var(--pad); pointer-events: none; z-index: 1;
 }
 .v-rule { width: 1px; height: 100%; background: var(--c-rule); }
+
+/* Kill staggered child transitions the moment a panel stops being active —
+   prevents text/media from slowly fading while the panel slides away */
+.panel.is-after *,
+.panel.is-below * {
+  transition-duration: 0s !important;
+  transition-delay:    0s !important;
+}
 
 /* Panel transitions */
 .panel {
@@ -1649,8 +1662,8 @@ footer {
       transparent 78%);
     backdrop-filter: blur(7px) saturate(0.80);
     -webkit-backdrop-filter: blur(7px) saturate(0.80);
-    -webkit-mask-image: linear-gradient(to top, black 0%, black 100%);
-    mask-image: linear-gradient(to top, black 0%, black 100%);
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+    mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
   }
   [data-theme="light"] .col-right::before {
     background: linear-gradient(to top,
@@ -1671,11 +1684,6 @@ footer {
     display: flex !important;
     margin-bottom: var(--s-2);
     margin-top: 0;
-  }
-
-  /* Intro panel text — override the desktop left-padding so first slide aligns with the rest */
-  .panel-intro .col-right {
-    padding-left: var(--pad);
   }
 
   /* Accent rule */
