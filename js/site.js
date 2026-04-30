@@ -1155,6 +1155,10 @@ class AboutContainer {
         // Without this, the about-stage snaps away before the panel fades out.
         this._app.setSection(this._nextKey, +1);
       }
+      // Always clear _transitioning after TRANS_MS — guards against the case
+      // where setSection is blocked (e.g. LOCK_MS guard in AppController) and
+      // enter() never fires, which would leave About permanently locked.
+      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
       return;
     }
     this._transitioning = true;
@@ -1260,7 +1264,7 @@ class ContactContainer {
     // below the entry point of the contact region. Once they've scrolled
     // back up to within 80px of the top, intercept and hand back to About.
     if (dir === -1) {
-      const atTop = window.scrollY <= this._contactTop + 40;
+      const atTop = window.scrollY <= this._contactTop + 8;
       return !atTop;
     }
     return false;
