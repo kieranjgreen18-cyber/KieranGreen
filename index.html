@@ -744,7 +744,9 @@ model-viewer#mini-viewer {
 /* Drag affordance */
 .model-hint {
   position: absolute; bottom: 22%; left: 62%; transform: translateX(-50%);
-  z-index: 20; color: rgba(91,160,164,0.38);
+  z-index: 20; color: rgba(91,160,164,0.75);
+  font-family: var(--f-heading); font-size: var(--t-micro);
+  font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
   display: flex; align-items: center; gap: 7px;
   white-space: nowrap; pointer-events: none;
   opacity: 0; transition: opacity var(--dur-mid) var(--ease) 1.3s;
@@ -1253,16 +1255,13 @@ model-viewer#mini-viewer {
 }
 .prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
 
-/* More-below indicator — anchored below the prog-dots */
+/* More-below indicator — flows below the last dot inside prog-dots */
 .about-more-below {
-  position: absolute; right: 17px;
-  /* sits below the dots cluster — dots are centred at 50%, 5 dots × 14px ≈ 70px total */
-  top: calc(50% + 48px);
   display: flex; flex-direction: column; align-items: center;
+  margin-top: 8px;
   color: var(--c-accent);
   opacity: 0; pointer-events: none;
   transition: opacity 0.5s var(--ease);
-  z-index: var(--z-carousel);
 }
 .about-more-below.visible { opacity: 1; }
 .more-below-arrow {
@@ -2672,15 +2671,14 @@ button:focus-visible {
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <!-- More-below chevron — shown on final panel -->
+      <div class="about-more-below" id="about-more-below" aria-hidden="true">
+        <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 24" fill="none">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          <polyline points="3,11 8,17 13,11" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
     </nav>
-
-    <!-- More-below indicator — appears on final About panel -->
-    <div class="about-more-below" id="about-more-below" aria-hidden="true">
-      <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 24" fill="none">
-        <line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-        <polyline points="3,11 8,17 13,11" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      </svg>
-    </div>
 
     <!-- Scroll hint -->
     <div class="about-scroll-hint" id="about-scroll-hint" aria-hidden="true">
