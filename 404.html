@@ -12,8 +12,8 @@
 <meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
 
 <!-- Font preloads — match index.html -->
-<link rel="preload" as="font" type="font/woff2" href="assets/fonts/AnyConv.com__D-DINCondensed.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="assets/fonts/AnyConv.com__D-DIN.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-webfont.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-webfont.woff2" crossorigin>
 
 <style>
 /* ═══════════════════════════════════════════════════════
@@ -21,25 +21,30 @@
 ═══════════════════════════════════════════════════════ */
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/AnyConv.com__D-DIN.woff2') format('woff2'),
+  src: url('assets/fonts/d-din-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-webfont.woff') format('woff'),
        url('assets/fonts/D-DIN.otf') format('opentype');
   font-weight: 300 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/AnyConv.com__D-DIN-Italic.woff2') format('woff2'),
+  src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-italic-webfont.woff') format('woff'),
        url('assets/fonts/D-DIN-Italic.otf') format('opentype');
   font-weight: 300 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
-  src: url('assets/fonts/AnyConv.com__D-DINCondensed.woff2') format('woff2'),
+  src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-dincondensed-webfont.woff') format('woff'),
        url('assets/fonts/D-DINCondensed.otf') format('opentype');
   font-weight: 100 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
-  src: url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
+  src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-dincondensed-bold-webfont.woff') format('woff'),
+       url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
