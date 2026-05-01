@@ -632,6 +632,7 @@ class Hero3DContainer {
     this._nav         = null;
     this._active      = false;
     this._hintDone    = false;
+    this._hintReady   = false;
     this._rotateTimer = null;
     this._t0y         = 0;
     this._t0x         = 0;
@@ -661,7 +662,7 @@ class Hero3DContainer {
     this._nav        = document.getElementById('nav'); // documented exception
 
     if (this._viewer) {
-      this._viewer.addEventListener('camera-change', this._onViewerCameraChange, { once: true });
+      this._viewer.addEventListener('camera-change', this._onViewerCameraChange);
       this._viewer.addEventListener('error',         this._onViewerError);
       this._viewer.addEventListener('load',          this._onViewerLoad);
       this._viewer.addEventListener('mousedown',     this._onMouseDown);
@@ -729,7 +730,11 @@ class Hero3DContainer {
   async _onViewerLoad() {
     await this._viewer.updateComplete;
     this._viewer.jumpCameraToGoal();
-    setTimeout(() => this._dismissHint(), 5000);
+    // Open the dismiss gate after the fadeUp animation has had time to play,
+    // then auto-dismiss after 5s. Without this, camera-change fires on init
+    // and hides the hint before it ever appears.
+    setTimeout(() => { this._hintReady = true; }, 1800);
+    setTimeout(() => { this._hintReady = true; this._dismissHint(); }, 6800);
 
     const model = this._viewer.model;
     if (!model?.materials?.length) return;
@@ -770,7 +775,7 @@ class Hero3DContainer {
   }
 
   _dismissHint() {
-    if (this._hintDone) return;
+    if (!this._hintReady || this._hintDone) return;
     this._hintDone = true;
     this._modelHint?.classList.add('hidden');
   }
@@ -1022,6 +1027,7 @@ class AboutContainer {
     this._panels  = [];
     this._dots    = [];
     this._hint    = null;
+    this._moreBelow = null;
     this._N       = 0;
     this._active        = false;
     this._activeIdx     = 0;
@@ -1040,6 +1046,7 @@ class AboutContainer {
   init(root) {
     this._root   = root;
     this._spacer = document.querySelector('.about-spacer'); // documented exception
+    this._moreBelow = document.getElementById('about-more-below'); // documented exception
 
     this._panels = Array.from(root.querySelectorAll('[data-panel]'));
     this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
@@ -1114,6 +1121,8 @@ class AboutContainer {
     });
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
     if (this._hint) this._hint.classList.toggle('hide', idx > 0);
+    // Show "more below" chevron only on the final panel
+    if (this._moreBelow) this._moreBelow.classList.toggle('visible', idx === this._N - 1);
     // Preload images for this panel AND the next — so they're decoded before arrival.
     this._preloadPanel(idx);
     this._preloadPanel(idx + 1);
