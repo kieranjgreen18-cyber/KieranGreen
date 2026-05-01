@@ -710,21 +710,20 @@ model-viewer#mini-viewer {
   animation: ping 2.5s ease infinite;
   will-change: transform, opacity;
 }
-}
 
 /* Scroll hint — bottom centre, fixed so it resolves against the viewport
-   (mirrors about-scroll-hint placement; hidden when hero is not active) */
+   Styled to match the about-scroll-hint exactly; hidden on mobile */
 .hero-scroll {
   position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   z-index: var(--z-raised);
   display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
-  color: var(--c-secondary);
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
-  opacity: 0; transition: opacity var(--dur-slow) var(--ease) 0.95s;
+  color: var(--c-secondary); opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease) 0.95s;
   pointer-events: none;
 }
-.hero-scroll.is-revealed { opacity: 0.62; }
+.hero-scroll.is-revealed { opacity: .62; }
 .hero-scroll-line {
   width: 1px; height: 48px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
@@ -741,9 +740,9 @@ model-viewer#mini-viewer {
   bottom: var(--s-2); right: var(--s-3); text-align: right;
 }
 
-/* Drag affordance */
+/* Drag affordance — top right of model viewer with standard padding */
 .model-hint {
-  position: absolute; bottom: 22%; left: 62%; transform: translateX(-50%);
+  position: absolute; top: var(--pad); right: var(--pad);
   z-index: 20; color: rgba(91,160,164,0.75);
   font-family: var(--f-heading); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
@@ -774,6 +773,12 @@ model-viewer#mini-viewer {
 /* Pause ripple animations when hero is not the active section to save GPU */
 .hero:not([style*="opacity: 1"]) .hero-avail-dot::after,
 .hero[style*="opacity: 0"] .hero-avail-dot::after { animation-play-state: paused; }
+
+/* 360° ring spin — used by model-360-ring */
+@keyframes hintSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 
 /* Model error fallback */
 .model-error {
@@ -1010,6 +1015,20 @@ model-viewer#mini-viewer {
 }
 .c-dot-wrap.on .c-dot { background: var(--c-accent); transform: scale(1.7); }
 
+/* Next-section arrow — below carousel dots, matching about-more-below style/size */
+.c-next-arrow {
+  display: flex; flex-direction: column; align-items: center;
+  margin-top: 8px;
+  color: var(--c-accent);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s var(--ease);
+}
+.c-next-arrow.visible { opacity: 1; }
+.c-next-arrow svg {
+  width: 16px; height: 24px;
+  animation: moreBelow 2s ease-in-out infinite;
+}
+
 /* Stage edge fades */
 .stage-edge {
   position: absolute; left: 0; right: 0; z-index: var(--z-stage);
@@ -1243,7 +1262,7 @@ model-viewer#mini-viewer {
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
-/* About progress dots */
+/* About progress dots — same right position as #c-dots (20px) */
 .about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 10px;
@@ -1252,6 +1271,7 @@ model-viewer#mini-viewer {
 .prog-dot {
   width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
   transition: background .4s, transform .4s;
+  align-self: flex-end; /* right-align within the flex column to match c-dot-wrap behavior */
 }
 .prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
 
@@ -1700,8 +1720,8 @@ footer {
       transparent 78%);
     backdrop-filter: blur(7px) saturate(0.80);
     -webkit-backdrop-filter: blur(7px) saturate(0.80);
-    -webkit-mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
-    mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 62%, transparent 92%);
+    mask-image: linear-gradient(to top, black 0%, black 62%, transparent 92%);
   }
   [data-theme="light"] .col-right::before {
     background: linear-gradient(to top,
@@ -1810,8 +1830,8 @@ footer {
       transparent 78%);
     backdrop-filter: blur(7px) saturate(0.80);
     -webkit-backdrop-filter: blur(7px) saturate(0.80);
-    -webkit-mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
-    mask-image: linear-gradient(to top, black 0%, black 45%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 62%, transparent 92%);
+    mask-image: linear-gradient(to top, black 0%, black 62%, transparent 92%);
   }
   [data-theme="light"] .panel-intro .col-right::before {
     background: linear-gradient(to top,
@@ -1820,6 +1840,8 @@ footer {
       rgba(237,238,237,0.45) 54%,
       transparent 78%);
   }
+  /* Remove decorative line from intro eyebrow on mobile — keeps text flush with heading */
+  .panel-intro .col-right .intro-eyebrow::before { display: none; }
   .intro-eyebrow { margin-bottom: var(--s-2); }
   .intro-name {
     font-size: clamp(42px, 11vw, 64px);
@@ -1941,12 +1963,6 @@ footer {
 .proj-tag--protected {
   border-color: rgba(91,160,164,0.14);
   color: var(--c-tertiary);
-}
-  transition: opacity var(--dur-mid) var(--ease),
-              border-color var(--dur-fast),
-              background var(--dur-fast),
-              color var(--dur-fast),
-              transform var(--dur-fast) var(--spring);
 }
 .proj-open:hover {
   transform: scale(1.08);
@@ -2087,15 +2103,8 @@ footer { position: relative; }
   -webkit-text-stroke: 1px rgba(91,160,164,0.14);
 }
 
-/* ── Scroll hint fade on first scroll ── */
-@keyframes scrollHintFade {
-  0%   { opacity: 0.62; }
-  80%  { opacity: 0.62; }
-  100% { opacity: 0; pointer-events: none; }
-}
-.hero-scroll.is-revealed {
-  animation: scrollHintFade 4s var(--ease) 2.5s forwards;
-}
+/* ── Hero scroll hint: matches about-scroll-hint — hide on scroll ── */
+.hero-scroll.hide { opacity: 0 !important; }
 
 /* ── Mobile: swipe hint entry + fade animations ── */
 @keyframes swipeReveal {
@@ -2287,10 +2296,10 @@ button:focus-visible {
     </div>
   </div>
 
-  <!-- Scroll hint — bottom right -->
-  <div class="hero-scroll t-micro" id="hero-scroll" aria-hidden="true" role="presentation">
+  <!-- Scroll hint — bottom centre, matches about-scroll-hint style -->
+  <div class="hero-scroll" id="hero-scroll" aria-hidden="true" role="presentation">
     <div class="hero-scroll-line"></div>
-    Scroll
+    <span>Scroll</span>
   </div>
 
   <!-- Model metadata -->
