@@ -1202,15 +1202,21 @@ strong { color: var(--c-primary); font-weight: 700; }
   const penHint   = document.getElementById('pen-model-hint');
 
   if (penViewer) {
-    /* Dismiss drag hint on first camera move or after 5s */
-    let penHintDone = false;
+    /* Dismiss drag hint on first user-initiated camera move or after 6s.
+       Guard with penHintReady — model-viewer fires camera-change on init
+       which would instantly hide the hint before fadeUp even starts. */
+    let penHintDone  = false;
+    let penHintReady = false;
     function dismissPenHint() {
-      if (penHintDone) return;
+      if (!penHintReady || penHintDone) return;
       penHintDone = true;
       if (penHint) penHint.classList.add('hidden');
     }
-    penViewer.addEventListener('camera-change', dismissPenHint, { once: true });
-    setTimeout(dismissPenHint, 5000);
+    penViewer.addEventListener('load', () => {
+      setTimeout(() => { penHintReady = true; }, 1800);
+    });
+    penViewer.addEventListener('camera-change', dismissPenHint);
+    setTimeout(() => { penHintReady = true; dismissPenHint(); }, 6000);
 
     /* Pause auto-rotate on drag, resume 800ms after release */
     penViewer.addEventListener('mousedown',  () => penViewer.removeAttribute('auto-rotate'));
