@@ -56,14 +56,28 @@
   src: url('assets/fonts/d-din-webfont.woff2') format('woff2'),
        url('assets/fonts/d-din-webfont.woff') format('woff'),
        url('assets/fonts/D-DIN.otf') format('opentype');
-  font-weight: 300 400; font-style: normal; font-display: swap;
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('assets/fonts/d-din-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN.otf') format('opentype');
+  font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
   src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2'),
        url('assets/fonts/d-din-italic-webfont.woff') format('woff'),
        url('assets/fonts/D-DIN-Italic.otf') format('opentype');
-  font-weight: 300 400; font-style: italic; font-display: swap;
+  font-weight: 300; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-italic-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN-Italic.otf') format('opentype');
+  font-weight: 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
@@ -445,15 +459,6 @@ body.cur-click #cur-r { width: 16px; height: 16px; }
 #section-indicator.visible { opacity: 1; }
 #section-indicator.stage-hidden { opacity: 0 !important; }
 
-/* Section crossfade flash prevention */
-#section-flash {
-  position: fixed; inset: 0; z-index: calc(var(--z-about) + 5);
-  background: var(--c-bg);
-  opacity: 0; pointer-events: none;
-  transition: opacity var(--dur-fast) ease;
-}
-#section-flash.show { opacity: 1; pointer-events: none; }
-
 /* ═══════════════════════════════════════════════════════════════
    § NAVIGATION
 ═══════════════════════════════════════════════════════════════ */
@@ -743,7 +748,7 @@ model-viewer#mini-viewer {
 /* Drag affordance — top right of model viewer with standard padding */
 .model-hint {
   position: absolute; top: var(--pad); right: var(--pad);
-  z-index: 20; color: rgba(91,160,164,0.75);
+  z-index: var(--z-raised); color: rgba(91,160,164,0.75);
   font-family: var(--f-heading); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
   display: flex; align-items: center; gap: 7px;
@@ -979,7 +984,7 @@ model-viewer#mini-viewer {
   border: 1px solid rgba(255,255,255,.15);
   display: flex; align-items: center; justify-content: center;
   color: var(--c-primary);
-  opacity: 0; transition: opacity .45s var(--ease), border-color .25s, background .25s, color .25s;
+  opacity: 0; transition: opacity .45s var(--ease), border-color .25s, background .25s, color .25s, transform .25s var(--ease);
   cursor: none;
 }
 .proj:nth-child(odd)  .proj-open { right: var(--pad); }
@@ -1300,7 +1305,7 @@ model-viewer#mini-viewer {
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
   color: var(--c-secondary); opacity: .62;
-  pointer-events: none; z-index: 50; transition: opacity .5s ease;
+  pointer-events: none; z-index: var(--z-carousel); transition: opacity .5s ease;
 }
 .about-scroll-hint.hide { opacity: 0; }
 .hint-line {
@@ -1840,8 +1845,6 @@ footer {
       rgba(237,238,237,0.45) 54%,
       transparent 78%);
   }
-  /* Remove decorative line from intro eyebrow on mobile — keeps text flush with heading */
-  .panel-intro .col-right .intro-eyebrow::before { display: none; }
   .intro-eyebrow { margin-bottom: var(--s-2); }
   .intro-name {
     font-size: clamp(42px, 11vw, 64px);
@@ -2580,7 +2583,7 @@ button:focus-visible {
       </div>
     </article>
 
-    <!-- Panel 1 — The Shop Floor -->
+    <!-- Panel 2 — The Shop Floor -->
     <article class="panel" data-panel="2" aria-label="About: Chapter 02 — Experience, The Shop Floor">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">02</div>
@@ -2613,7 +2616,7 @@ button:focus-visible {
       </div>
     </article>
 
-    <!-- Panel 2 — The Practice Room -->
+    <!-- Panel 3 — The Practice Room -->
     <article class="panel" data-panel="3" aria-label="About: Chapter 03 — Instinct, The Practice Room">
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">03</div>
@@ -2641,7 +2644,7 @@ button:focus-visible {
           <span class="tline"><span class="tword">form and engineering work together.</span></span>
         </h3>
         <p class="ch-body t-body">
-                  With no adhesives or fasteners allowed, you learn how continuity is strong. How form is strength- when your design literally carries weight. <strong>Good design is more than just eye candy- it lifts you up.</strong>
+          With no adhesives or fasteners allowed, you learn how continuity is strong. How form is strength — when your design literally carries weight. <strong>Good design is more than just eye candy — it lifts you up.</strong>
         </p>
       </div>
     </article>
