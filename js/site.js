@@ -685,15 +685,12 @@ class Hero3DContainer {
     if (!this._root) return;
     this._active = true;
     if (this._nav) this._nav.classList.remove('scrolled');
-    // Snap the page scroll back to the top. The hero is always at scrollY=0;
-    // leaving scrollY non-zero while the hero is visible would allow native
-    // scroll events to fire and could chain into the ContactContainer's
-    // nativeScrollDirection logic, or cause the section indicator / nav
-    // scrolled state to reflect a stale position.
     window.scrollTo({ top: 0, behavior: 'instant' });
     this._root.style.visibility = 'visible';
     this._root.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1)';
     this._root.style.opacity    = '1';
+    // Clear any inline opacity set by the scroll listener so the CSS transition plays correctly
+    if (this._heroScroll) this._heroScroll.style.opacity = '';
     requestAnimationFrame(() => this._revealHero());
   }
 
@@ -838,6 +835,7 @@ class CarouselContainer {
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
+    this._nextArrow     = null; // c-next-arrow element
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -894,7 +892,15 @@ class CarouselContainer {
     this._calcSpacerTop();
     window.addEventListener('resize', this._onResize, { passive: true });
 
-    // Card tilt (element-level, not window)
+    // Create the next-section arrow and append it to the dots container AFTER
+    // innerHTML is cleared — so it always exists and is never wiped.
+    const arrowEl = document.createElement('div');
+    arrowEl.className = 'c-next-arrow';
+    arrowEl.id = 'c-next-arrow';
+    arrowEl.setAttribute('aria-hidden', 'true');
+    arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 24" fill="none"><line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="3,11 8,17 13,11" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+    if (this._dotsEl) this._dotsEl.appendChild(arrowEl);
+    this._nextArrow = arrowEl;
     if (!window.matchMedia('(pointer:coarse)').matches) {
       const rectCache = new WeakMap(); // avoids hanging non-standard properties on DOM nodes
       this._projs.forEach(proj => {
@@ -950,6 +956,7 @@ class CarouselContainer {
     this._active = false;
     this._root.classList.remove('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '0';
+    if (this._nextArrow) this._nextArrow.classList.remove('visible');
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 400);
   }
 
@@ -986,6 +993,8 @@ class CarouselContainer {
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
+    // Show next-section arrow only on the last slide
+    if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
   }
 
   _advance(dir) {
