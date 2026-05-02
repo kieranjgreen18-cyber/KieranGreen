@@ -1011,8 +1011,9 @@ model-viewer#mini-viewer {
   position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
   z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 10px;
   pointer-events: none; opacity: 0; transition: opacity .4s;
+  width: 16px; align-items: flex-end;
 }
-.c-dot-wrap { display: flex; align-items: center; justify-content: flex-end; width: 8px; }
+.c-dot-wrap { display: flex; align-items: center; justify-content: flex-end; width: 16px; }
 .c-dot {
   width: 4px; height: 4px; border-radius: 50%;
   background: rgba(91,160,164,.28); display: block;
@@ -1020,17 +1021,17 @@ model-viewer#mini-viewer {
 }
 .c-dot-wrap.on .c-dot { background: var(--c-accent); transform: scale(1.7); }
 
-/* Next-section arrow — below carousel dots, matching about-more-below style/size */
+/* Next-section arrow — in-flow below the carousel dots, centred on the 16px column */
 .c-next-arrow {
   display: flex; flex-direction: column; align-items: center;
-  margin-top: 8px;
+  width: 16px; margin-top: 6px;
   color: var(--c-accent);
   opacity: 0; pointer-events: none;
   transition: opacity 0.5s var(--ease);
 }
 .c-next-arrow.visible { opacity: 1; }
 .c-next-arrow svg {
-  width: 16px; height: 24px;
+  width: 10px; height: 15px;
   animation: moreBelow 2s ease-in-out infinite;
 }
 
@@ -1267,30 +1268,30 @@ model-viewer#mini-viewer {
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
-/* About progress dots — same right position as #c-dots (20px) */
+/* About progress dots — exact mirror of #c-dots: 16px column, right: 20px */
 .about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 10px;
+  width: 16px; align-items: flex-end;
   z-index: var(--z-carousel); pointer-events: none;
 }
 .prog-dot {
   width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
   transition: background .4s, transform .4s;
-  align-self: flex-end; /* right-align within the flex column to match c-dot-wrap behavior */
 }
 .prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
 
-/* More-below indicator — flows below the last dot inside prog-dots */
+/* More-below indicator — in-flow below the last about dot, centred on the 16px column */
 .about-more-below {
   display: flex; flex-direction: column; align-items: center;
-  margin-top: 8px;
+  width: 16px; margin-top: 6px;
   color: var(--c-accent);
   opacity: 0; pointer-events: none;
   transition: opacity 0.5s var(--ease);
 }
 .about-more-below.visible { opacity: 1; }
 .more-below-arrow {
-  width: 16px; height: 24px;
+  width: 10px; height: 15px;
   animation: moreBelow 2s ease-in-out infinite;
 }
 @keyframes moreBelow {
@@ -2472,7 +2473,7 @@ button:focus-visible {
     </a>
 
     <!-- Project 05 — Protected Work -->
-    <a href="html/protected.html" class="proj proj--protected"
+    <a href="https://kgreen52.myportfolio.com/" target="_blank" rel="noopener noreferrer" class="proj proj--protected"
        aria-label="Protected Work — password-protected client and internship projects available on request"
        style="background:#070809;">
       <div class="proj-img proj-img--protected" role="img" aria-label="Protected work background" aria-hidden="true"></div>
@@ -2685,9 +2686,9 @@ button:focus-visible {
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <!-- More-below chevron — shown on final panel -->
       <div class="about-more-below" id="about-more-below" aria-hidden="true">
-        <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 24" fill="none">
-          <line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-          <polyline points="3,11 8,17 13,11" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 15" fill="none">
+          <line x1="5" y1="0" x2="5" y2="10" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          <polyline points="2,7 5,11 8,7" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
       </div>
     </nav>
