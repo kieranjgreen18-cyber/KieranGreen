@@ -728,10 +728,10 @@ class Hero3DContainer {
     await this._viewer.updateComplete;
     this._viewer.jumpCameraToGoal();
     // Open the dismiss gate after the fadeUp animation has had time to play,
-    // then auto-dismiss after 5s. Without this, camera-change fires on init
-    // and hides the hint before it ever appears.
+    // then auto-dismiss after 18s so the badge stays until the user interacts.
+    // Without this, camera-change fires on init and hides the hint before it appears.
     setTimeout(() => { this._hintReady = true; }, 1800);
-    setTimeout(() => { this._hintReady = true; this._dismissHint(); }, 6800);
+    setTimeout(() => { this._hintReady = true; this._dismissHint(); }, 18000);
 
     const model = this._viewer.model;
     if (!model?.materials?.length) return;
@@ -898,7 +898,7 @@ class CarouselContainer {
     arrowEl.className = 'c-next-arrow';
     arrowEl.id = 'c-next-arrow';
     arrowEl.setAttribute('aria-hidden', 'true');
-    arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 24" fill="none"><line x1="8" y1="0" x2="8" y2="16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="3,11 8,17 13,11" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+    arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 15" fill="none"><line x1="5" y1="0" x2="5" y2="10" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="2,7 5,11 8,7" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
     if (this._dotsEl) this._dotsEl.appendChild(arrowEl);
     this._nextArrow = arrowEl;
     if (!window.matchMedia('(pointer:coarse)').matches) {
