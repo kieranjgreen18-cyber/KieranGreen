@@ -641,7 +641,6 @@ model-viewer#mini-viewer {
   opacity: 0; transform: translateY(20px);
   transition: opacity var(--dur-slow) var(--ease) 0.3s,
               transform var(--dur-xl) var(--ease) 0.3s;
-  will-change: opacity, transform;
 }
 .hero-text.is-revealed { opacity: 1; transform: translateY(0); }
 
@@ -776,8 +775,8 @@ model-viewer#mini-viewer {
   letter-spacing: 0.04em; color: rgba(91,160,164,0.85);
 }
 /* Pause ripple animations when hero is not the active section to save GPU */
-.hero:not([style*="opacity: 1"]) .hero-avail-dot::after,
-.hero[style*="opacity: 0"] .hero-avail-dot::after { animation-play-state: paused; }
+body:not([data-section="hero"]) .hero-avail-dot::after,
+body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paused; }
 
 /* 360° ring spin — used by model-360-ring */
 @keyframes hintSpin {
@@ -1011,9 +1010,9 @@ model-viewer#mini-viewer {
   position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
   z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 10px;
   pointer-events: none; opacity: 0; transition: opacity .4s;
-  width: 16px; align-items: flex-end;
+  align-items: flex-end;
 }
-.c-dot-wrap { display: flex; align-items: center; justify-content: flex-end; width: 16px; }
+.c-dot-wrap { display: flex; align-items: center; justify-content: flex-end; }
 .c-dot {
   width: 4px; height: 4px; border-radius: 50%;
   background: rgba(91,160,164,.28); display: block;
@@ -1021,17 +1020,18 @@ model-viewer#mini-viewer {
 }
 .c-dot-wrap.on .c-dot { background: var(--c-accent); transform: scale(1.7); }
 
-/* Next-section arrow — in-flow below the carousel dots, centred on the 16px column */
+/* Next-section arrow — centered under dots to match dot column visually */
 .c-next-arrow {
-  display: flex; flex-direction: column; align-items: center;
-  width: 16px; margin-top: 6px;
+  align-self: center;
+  margin-top: 6px;
   color: var(--c-accent);
   opacity: 0; pointer-events: none;
   transition: opacity 0.5s var(--ease);
 }
 .c-next-arrow.visible { opacity: 1; }
 .c-next-arrow svg {
-  width: 10px; height: 15px;
+  display: block;
+  width: 6px; height: 9px;
   animation: moreBelow 2s ease-in-out infinite;
 }
 
@@ -1268,11 +1268,11 @@ model-viewer#mini-viewer {
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
-/* About progress dots — exact mirror of #c-dots: 16px column, right: 20px */
+/* About progress dots — exact mirror of #c-dots */
 .about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 10px;
-  width: 16px; align-items: flex-end;
+  align-items: flex-end;
   z-index: var(--z-carousel); pointer-events: none;
 }
 .prog-dot {
@@ -1281,17 +1281,18 @@ model-viewer#mini-viewer {
 }
 .prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
 
-/* More-below indicator — in-flow below the last about dot, centred on the 16px column */
+/* More-below indicator — centered to match the dots above it */
 .about-more-below {
-  display: flex; flex-direction: column; align-items: center;
-  width: 16px; margin-top: 6px;
+  align-self: center;
+  margin-top: 6px;
   color: var(--c-accent);
   opacity: 0; pointer-events: none;
   transition: opacity 0.5s var(--ease);
 }
 .about-more-below.visible { opacity: 1; }
 .more-below-arrow {
-  width: 10px; height: 15px;
+  display: block;
+  width: 6px; height: 9px;
   animation: moreBelow 2s ease-in-out infinite;
 }
 @keyframes moreBelow {
@@ -1306,17 +1307,13 @@ model-viewer#mini-viewer {
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
   color: var(--c-secondary); opacity: .62;
-  pointer-events: none; z-index: var(--z-carousel); transition: opacity .5s ease;
+  pointer-events: none; z-index: var(--z-carousel);
+  transition: opacity var(--dur-mid) var(--ease);
 }
 .about-scroll-hint.hide { opacity: 0; }
 .hint-line {
   width: 1px; height: 48px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
-  animation: pulse 2.2s ease infinite;
-}
-@keyframes pulse {
-  0%,100% { opacity: .4; transform: scaleY(1); }
-  50%      { opacity: .9; transform: scaleY(.6); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1923,8 +1920,14 @@ footer {
 
 /* Nav link padding-bottom already set above for underline space */
 
-/* ── Ticker pause on hover ── */
-.ticker:hover .t-track { animation-play-state: paused; }
+/* Pause scroll-hint and arrow animations when their containers are not active —
+   prevents unnecessary compositor work on idle sections */
+.about-stage:not(.engaged) .hint-line,
+.about-stage:not(.engaged) .more-below-arrow,
+body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: paused; }
+
+/* Pause ticker when not on the projects/carousel section — saves a compositor layer */
+body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 
 /* ── Project slide: image parallax depth ── */
 .proj[data-pos="active"] .proj-img {
@@ -1932,14 +1935,20 @@ footer {
 }
 
 /* ── Protected work slide ── */
-/* Noise-texture background using SVG filter */
+/* Multi-layer background: dark base + faint grid + accent glow + noise */
 .proj-img--protected {
-  background-color: #0a0b0d;
+  background-color: #070809;
   background-image:
-    radial-gradient(ellipse 60% 50% at 75% 50%, rgba(91,160,164,0.04) 0%, transparent 70%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 70% 60% at 65% 45%, rgba(91,160,164,0.13) 0%, rgba(91,160,164,0.04) 40%, transparent 70%),
+    radial-gradient(ellipse 40% 35% at 30% 70%, rgba(91,160,164,0.06) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(91,160,164,0.035) 39px, rgba(91,160,164,0.035) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(91,160,164,0.035) 39px, rgba(91,160,164,0.035) 40px),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.032'/%3E%3C/svg%3E");
   background-size: cover;
   opacity: 1 !important;
+  /* Override the default proj-img filter so the background shows properly */
+  filter: none !important;
+  transform: none !important;
 }
 /* Subtle crosshatch vignette lines on the protected slide */
 .proj--protected .proj-veil {
@@ -2053,8 +2062,17 @@ footer {
   padding-left: var(--s-2);
 }
 
-/* ── Footer subtle gradient edge ── */
-footer::before {
+/* When contact is the active section, keep the about-spacer invisible
+   so any stray scroll position can never flash the spacer gap */
+body.section-contact .about-spacer {
+  height: 0 !important;
+  pointer-events: none;
+}
+/* Prevent content-visibility: auto on contact from causing layout recalcs
+   that push the section down on first paint */
+.contact {
+  content-visibility: visible;
+}
   content: '';
   position: absolute;
   top: 0; left: var(--pad); right: var(--pad);
@@ -2125,9 +2143,7 @@ footer { position: relative; }
 }
 
 /* ── About scroll hint: only first panel ── */
-.about-scroll-hint {
-  transition: opacity var(--dur-mid) var(--ease);
-}
+/* (transition consolidated into .about-scroll-hint base rule above) */
 
 /* ── Keyboard focus ring enhancement ── */
 a:focus-visible,
@@ -2186,7 +2202,7 @@ button:focus-visible {
 .proj           { contain: layout; }
 .panel          { contain: layout; }
 .personal-statement { contain: layout; }
-.contact        { contain: layout; }
+.contact        { contain: layout paint; }
 .ticker         { contain: layout style; }
 
 </style>
@@ -2686,9 +2702,9 @@ button:focus-visible {
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <!-- More-below chevron — shown on final panel -->
       <div class="about-more-below" id="about-more-below" aria-hidden="true">
-        <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 15" fill="none">
-          <line x1="5" y1="0" x2="5" y2="10" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-          <polyline points="2,7 5,11 8,7" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none">
+          <line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          <polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
       </div>
     </nav>
