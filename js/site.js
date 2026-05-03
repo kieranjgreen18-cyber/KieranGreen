@@ -147,8 +147,16 @@ class AppController {
     }, { passive: false });
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); this._dispatchScroll(+1); }
-      if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); this._dispatchScroll(-1); }
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault();
+        const now = performance.now();
+        if (now >= this._settleUntil) this._fire(+1, false);
+      }
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        const now = performance.now();
+        if (now >= this._settleUntil) this._fire(-1, false);
+      }
       if (e.key === 'Escape') {
         const active = this._containers.get(this._activeKey);
         if (active?.onEscape) active.onEscape();
@@ -176,7 +184,11 @@ class AppController {
       const vel    = Math.abs(dy) / dt;
       const locked = Math.abs(dy) > dx * 1.2;
       const valid  = (vel >= 0.25 && Math.abs(dy) >= 18) || Math.abs(dy) >= 40;
-      if (locked && valid) this._dispatchScroll(dy > 0 ? +1 : -1);
+      if (locked && valid) {
+        const dir = dy > 0 ? +1 : -1;
+        const now = performance.now();
+        if (now >= this._settleUntil) this._fire(dir, false);
+      }
     }, { passive: true });
 
     // ── Visibility change — phone lock/unlock recovery ─────────────────
@@ -514,17 +526,23 @@ class PageChrome {
         return { label: s.label, top: el ? el.getBoundingClientRect().top + window.scrollY : 0 };
       });
     };
-    // Use a one-shot ResizeObserver instead of a fixed setTimeout so offsets
-    // are calculated after actual layout settles, regardless of font-load timing.
-    const ro = new ResizeObserver(() => { buildOffsets(); ro.disconnect(); });
+    // ResizeObserver on body: rebuild section offsets after any layout change.
+    // Kept connected (no disconnect) so dynamic content changes (e.g. spacer
+    // height updates from containers) also trigger a rebuild. Debounced so
+    // rapid resize events don't hammer getBoundingClientRect.
+    let roTimer;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(roTimer);
+      roTimer = setTimeout(() => buildOffsets(), 100);
+    });
     ro.observe(document.body);
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
       if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
       if (this._secInd && this._sectionOffsets.length) {
-        // Skip position-based label while a container transition is settling.
-        // notifySection() already set the correct label; let it stick.
+        // Skip all indicator work while a container transition is settling —
+        // notifySection() already set the correct label and visibility state.
         if (performance.now() < this._suppressIndicatorUntil) return;
         let active = this._SECTIONS[0].label;
         for (let i = this._sectionOffsets.length - 1; i >= 0; i--) {
@@ -634,6 +652,7 @@ class Hero3DContainer {
     this._hintDone    = false;
     this._hintReady   = false;
     this._rotateTimer = null;
+    this._hintTimer   = null;  // tracks the 18s auto-dismiss timer so it can be cancelled
     this._t0y         = 0;
     this._t0x         = 0;
     this._tScrolling  = null;
@@ -684,6 +703,9 @@ class Hero3DContainer {
   enter() {
     if (!this._root) return;
     this._active = true;
+    // Reset hint state so re-entry always shows the 360° hint again
+    this._hintDone  = false;
+    this._hintReady = false;
     if (this._nav) this._nav.classList.remove('scrolled');
     window.scrollTo({ top: 0, behavior: 'instant' });
     this._root.style.visibility = 'visible';
@@ -699,6 +721,10 @@ class Hero3DContainer {
     this._active = false;
     // Cancel any pending auto-rotate resume so it cannot fire after we've left.
     if (this._rotateTimer) { clearTimeout(this._rotateTimer); this._rotateTimer = null; }
+    // Cancel the hint auto-dismiss timer — it will be re-armed on next load event.
+    if (this._hintTimer) { clearTimeout(this._hintTimer); this._hintTimer = null; }
+    // Restore the hint element so it will be visible on re-entry.
+    this._modelHint?.classList.remove('hidden');
     this._root.style.transition = 'opacity 0.4s ease';
     this._root.style.opacity    = '0';
     // Strip reveal classes so re-entering Hero re-plays the entrance animation.
@@ -727,11 +753,17 @@ class Hero3DContainer {
   async _onViewerLoad() {
     await this._viewer.updateComplete;
     this._viewer.jumpCameraToGoal();
-    // Open the dismiss gate after the fadeUp animation has had time to play,
-    // then auto-dismiss after 18s so the badge stays until the user interacts.
-    // Without this, camera-change fires on init and hides the hint before it appears.
+    // Open the dismiss gate after the fadeUp animation has had time to play
+    // so camera-change on init doesn't hide the hint before it appears.
     setTimeout(() => { this._hintReady = true; }, 1800);
-    setTimeout(() => { this._hintReady = true; this._dismissHint(); }, 18000);
+    // Auto-dismiss after 18s — tracked so exit() can cancel it.
+    if (this._hintTimer) clearTimeout(this._hintTimer);
+    this._hintTimer = setTimeout(() => {
+      this._hintTimer = null;
+      if (!this._active) return; // navigated away — don't touch DOM
+      this._hintReady = true;
+      this._dismissHint();
+    }, 18000);
 
     const model = this._viewer.model;
     if (!model?.materials?.length) return;
@@ -898,7 +930,7 @@ class CarouselContainer {
     arrowEl.className = 'c-next-arrow';
     arrowEl.id = 'c-next-arrow';
     arrowEl.setAttribute('aria-hidden', 'true');
-    arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 15" fill="none"><line x1="5" y1="0" x2="5" y2="10" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="2,7 5,11 8,7" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+    arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none"><line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
     if (this._dotsEl) this._dotsEl.appendChild(arrowEl);
     this._nextArrow = arrowEl;
     if (!window.matchMedia('(pointer:coarse)').matches) {
@@ -1234,30 +1266,38 @@ class ContactContainer {
 
   _cacheTop() {
     if (this._root) {
-      this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+      // rAF ensures we read after any pending layout has flushed,
+      // so getBoundingClientRect() returns a stable value.
+      requestAnimationFrame(() => {
+        if (this._root) {
+          this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+        }
+      });
     }
   }
 
   enter(fromDirection = 0) {
     if (!this._root) return;
     this._active = true;
+    document.body.classList.add('section-contact');
     const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
     this._contactTop = top;
-    // Delay the scroll snap until after the about-stage has faded out (0.35s CSS transition).
-    // Without this, scrollTo fires while the about-stage is still fading, making the
-    // transition feel like a hard cut. With the delay, the stage is gone before we move.
-    const FADE_MS = 350;
-    setTimeout(() => {
-      if (!this._active) return; // guard: user may have already scrolled back up
-      window.scrollTo({ top, behavior: 'instant' });
-      // Re-cache after layout settles — guards against resize drift.
-      setTimeout(() => this._cacheTop(), 400);
-    }, FADE_MS);
+
+    // Immediately jump to contact top so the ticker and spacer are never
+    // visible — even if the about-stage hasn't finished fading out yet.
+    // Using 'instant' here prevents any flash of the intermediate document
+    // position (ticker / collapsed about-spacer gap) on both desktop and mobile.
+    window.scrollTo({ top, behavior: 'instant' });
+
+    // Re-cache after layout settles — guards against resize drift or
+    // the about-spacer height changing after our initial read.
+    setTimeout(() => this._cacheTop(), 400);
   }
 
   exit() {
     if (!this._root) return;
     this._active = false;
+    document.body.classList.remove('section-contact');
     // Abort any in-flight smooth scroll so scrollY is deterministic before
     // AboutContainer (or any other container) takes over. Without this, the
     // continuing smooth scroll fires PageChrome's scroll listener with
