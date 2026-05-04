@@ -223,27 +223,107 @@
 [data-theme="light"] {
   --c-bg:        #edeeed;
   --c-bg2:       #e4e6e4;
-  --c-surface:   rgba(0,0,0,0.032);
-  --c-surface2:  rgba(0,0,0,0.055);
+  --c-surface:   rgba(0,0,0,0.042);
+  --c-surface2:  rgba(0,0,0,0.07);
   --c-primary:   #080909;
-  --c-secondary: #4a5c5e;
-  --c-tertiary:  #7a9092;
-  --c-rule:      rgba(8,9,9,0.08);
-  --c-rule-hi:   rgba(8,9,9,0.14);
+  --c-secondary: #3d5052;
+  --c-tertiary:  #6a8082;
+  --c-muted:     rgba(8,9,9,0.45);
+  --c-rule:      rgba(8,9,9,0.12);
+  --c-rule-hi:   rgba(8,9,9,0.20);
   --shadow-sm:   0 2px 12px rgba(0,0,0,0.10);
   --shadow-md:   0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
   --shadow-lg:   0 20px 60px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.08);
 }
+
+/* ── Nav ── */
 [data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.9) 0%, transparent 100%); }
 [data-theme="light"] nav.scrolled { background: rgba(237,238,237,0.94); backdrop-filter: blur(32px) saturate(1.5); }
+/* Nav drawer — dark overlay becomes light panel */
+[data-theme="light"] .nav-drawer {
+  background: rgba(237,238,237,.98);
+  backdrop-filter: blur(40px) saturate(1.4);
+}
+[data-theme="light"] .nav-drawer a { color: var(--c-secondary); }
+[data-theme="light"] .nav-drawer a:hover { color: var(--c-accent); }
+
+/* ── Hero ── */
 [data-theme="light"] .hero-vignette { background: linear-gradient(to right, rgba(237,238,237,0.97) 0%, rgba(237,238,237,0.75) 28%, rgba(237,238,237,0.25) 58%, transparent 78%), linear-gradient(to top, rgba(237,238,237,0.95) 0%, rgba(237,238,237,0.45) 7%, transparent 18%), linear-gradient(to bottom, rgba(237,238,237,0.60) 0%, transparent 16%); }
-[data-theme="light"] .proj:nth-child(odd)  .proj-veil { background: linear-gradient(to right, rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
-[data-theme="light"] .proj:nth-child(even) .proj-veil { background: linear-gradient(to left,  rgba(237,238,237,.96) 0%, rgba(237,238,237,.6) 42%, transparent 72%); }
+/* Model metadata label — too faint against light bg */
+[data-theme="light"] .model-label { color: rgba(91,160,164,0.45); }
+/* Cursor reticle centre-gap uses --c-bg which adapts, but bg shadow of reticle needs to be light */
+[data-theme="light"] #cur::before { background: var(--c-bg); }
+
+/* ── Ticker ── */
 [data-theme="light"] .ticker { background: rgba(0,0,0,.04); }
 [data-theme="light"] .ticker::before { background: linear-gradient(to right, var(--c-bg), transparent); }
 [data-theme="light"] .ticker::after  { background: linear-gradient(to left,  var(--c-bg), transparent); }
+
+/* ── Grain ── */
 [data-theme="light"] #grain { opacity: .02; }
-[data-theme="light"] .col-bottom { background: linear-gradient(to bottom, transparent 0%, rgba(237,238,237,0.8) 25%, var(--c-bg) 55%); }
+
+/* ── Carousel — project slides ── */
+[data-theme="light"] .proj:nth-child(odd)  .proj-veil { background: linear-gradient(to right, rgba(237,238,237,.97) 0%, rgba(237,238,237,.65) 42%, transparent 72%); }
+[data-theme="light"] .proj:nth-child(even) .proj-veil { background: linear-gradient(to left,  rgba(237,238,237,.97) 0%, rgba(237,238,237,.65) 42%, transparent 72%); }
+/* Boost brightness so images aren't muddy behind the light veil */
+[data-theme="light"] .proj-img { filter: saturate(.75) brightness(.72); }
+[data-theme="light"] .proj:hover .proj-img { filter: saturate(.98) brightness(.86); }
+/* Open button — white border invisible on light bg */
+[data-theme="light"] .proj-open { border-color: rgba(8,9,9,.22); color: var(--c-primary); }
+[data-theme="light"] .proj-open:hover { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+/* Ghost number — slightly more visible */
+[data-theme="light"] .proj-ghost { -webkit-text-stroke: 1px rgba(91,160,164,.12); }
+/* Side accent line — fine as-is (uses --c-accent) */
+
+/* ── Protected slide ── */
+[data-theme="light"] .proj--protected .proj-veil,
+[data-theme="light"] .proj--protected:nth-child(odd) .proj-veil {
+  background: linear-gradient(to left, rgba(237,238,237,.97) 0%, rgba(237,238,237,.70) 38%, transparent 68%);
+}
+/* NDA/protected tags — darken text so they read on light */
+[data-theme="light"] .proj-tag--protected {
+  color: var(--c-secondary);
+  border-color: rgba(8,9,9,.18);
+  background: rgba(8,9,9,.04);
+}
+/* Protected image — needs more brightness on light to read through the lighter veil */
+[data-theme="light"] .proj-img--protected { filter: saturate(.35) brightness(.72) !important; }
+[data-theme="light"] .proj--protected:hover .proj-img--protected,
+[data-theme="light"] .proj[data-pos="active"].proj--protected .proj-img--protected {
+  filter: saturate(.55) brightness(.88) !important;
+}
+
+/* ── About ── */
+[data-theme="light"] .col-bottom { background: linear-gradient(to bottom, transparent 0%, rgba(237,238,237,0.82) 25%, var(--c-bg) 55%); }
+/* Photo-frame border and inset glow */
+[data-theme="light"] .photo-frame {
+  border-color: rgba(91,160,164,0.22);
+  box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(8,9,9,0.05);
+}
+/* Images — less desaturated, normal brightness on light */
+[data-theme="light"] .photo-frame img { filter: saturate(0.84) brightness(0.94); }
+[data-theme="light"] .panel.is-active .intro-portrait-wrap img { filter: saturate(0.92) brightness(0.96); }
+/* Ghost number */
+[data-theme="light"] .ghost-num { -webkit-text-stroke: 1px rgba(91,160,164,.10); }
+/* Scroll-hint line colour (hardcoded rgba in base — needs override for light) */
+[data-theme="light"] .hint-line { background: var(--c-secondary); opacity: .5; }
+
+/* ── Statement panel ── */
+[data-theme="light"] .stmt-wm { -webkit-text-stroke: 1px rgba(91,160,164,0.14); }
+
+/* ── Contact ── */
+/* Contact background image — more visible on light, slightly more saturated */
+[data-theme="light"] .contact-img { opacity: .20; filter: saturate(.45); }
+/* Watermark slightly stronger so it reads as intentional, not faded */
+[data-theme="light"] .contact-wm { -webkit-text-stroke: 1px rgba(91,160,164,.10); }
+/* c-field hover — --c-surface on light is very faint; boost it */
+[data-theme="light"] .c-field:hover { background: rgba(8,9,9,.055); }
+
+/* ── Footer ── */
+/* footer::before rule uses --c-accent-lo which is nearly invisible on light */
+[data-theme="light"] footer::before {
+  background: linear-gradient(to right, transparent, rgba(91,160,164,.22), transparent);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    § RESET & BASE
@@ -943,20 +1023,21 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 /* Tag pills */
 .proj-tags {
   display: flex; flex-wrap: wrap; gap: var(--s-1);
-  opacity: 0; transform: translateY(var(--s-1));
-  transition: opacity .5s var(--ease) .12s, transform .5s var(--ease) .12s;
+  opacity: 0;
+  transition: opacity .5s var(--ease) .12s;
 }
 .proj:nth-child(even) .proj-tags { justify-content: flex-end; }
-.proj:hover .proj-tags { opacity: 1; transform: translateY(0); }
+/* Tags fade in already at accent colour — no "unloaded" white state */
+.proj:hover .proj-tags { opacity: 1; }
 .proj-tag {
   font-family: var(--f-heading); font-size: 12px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
-  color: var(--c-primary);
-  border: 1px solid rgba(255,255,255,.18); padding: 6px 12px 5px;
-  background: rgba(255,255,255,.04);
+  color: var(--c-accent);
+  border: 1px solid rgba(91,160,164,.38); padding: 6px 12px 5px;
+  background: var(--c-accent-lo);
   transition: border-color .25s, color .25s, background .25s;
 }
-.proj:hover .proj-tag { border-color: rgba(91,160,164,.5); color: var(--c-accent); background: var(--c-accent-lo); }
+.proj:hover .proj-tag { border-color: rgba(91,160,164,.65); color: var(--c-accent); background: rgba(91,160,164,.18); }
 
 /* Ghost number watermark */
 .proj-ghost {
@@ -1535,7 +1616,7 @@ footer {
   /* Body text and tags are hover-only on desktop; on touch show them
      directly on the active slide since hover doesn't exist */
   .proj[data-pos="active"] .proj-desc { opacity: .75; transform: translateY(0); }
-  .proj[data-pos="active"] .proj-tags { opacity: 1;   transform: translateY(0); }
+  .proj[data-pos="active"] .proj-tags { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1963,17 +2044,18 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 /* Multi-layer background: dark base + faint grid + accent glow + noise */
 .proj-img--protected {
   background-color: #070809;
-  background-image:
-    radial-gradient(ellipse 70% 60% at 65% 45%, rgba(91,160,164,0.13) 0%, rgba(91,160,164,0.04) 40%, transparent 70%),
-    radial-gradient(ellipse 40% 35% at 30% 70%, rgba(91,160,164,0.06) 0%, transparent 60%),
-    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(91,160,164,0.035) 39px, rgba(91,160,164,0.035) 40px),
-    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(91,160,164,0.035) 39px, rgba(91,160,164,0.035) 40px),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.032'/%3E%3C/svg%3E");
+  /* Unsplash placeholder — moody architectural interior, desaturated to fit the palette */
+  background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80&auto=format&fit=crop');
   background-size: cover;
+  background-position: center 40%;
   opacity: 1 !important;
-  /* Override the default proj-img filter so the background shows properly */
-  filter: none !important;
-  transform: none !important;
+  /* Start heavily desaturated/dark so the gradient veil reads cleanly over it */
+  filter: saturate(.28) brightness(.55) !important;
+  transition: filter 1.15s ease !important;
+}
+.proj--protected:hover .proj-img--protected,
+.proj[data-pos="active"].proj--protected .proj-img--protected {
+  filter: saturate(.48) brightness(.72) !important;
 }
 /* Subtle crosshatch vignette lines on the protected slide */
 .proj--protected .proj-veil {
