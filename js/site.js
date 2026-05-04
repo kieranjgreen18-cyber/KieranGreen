@@ -680,6 +680,24 @@ class Hero3DContainer {
     this._errorEl    = root.querySelector('#model-error');
     this._nav        = document.getElementById('nav'); // documented exception
 
+    // ── Model-viewer preload: warm the HDR environment cache as soon as
+    //    the container inits. The GLB is preloaded via <link rel="preload">
+    //    in <head>; the HDR has no standard preload type so we use a no-op
+    //    fetch() here. Both are relatively large assets and benefit from
+    //    being in-cache before model-viewer requests them, significantly
+    //    reducing the "white box" pop-in on first visit.
+    if (this._viewer) {
+      const hdr = this._viewer.getAttribute('skybox-image');
+      if (hdr) {
+        // Low-priority background fetch — won't block any critical resources.
+        // 'no-cors' is used because modelviewer.dev doesn't send CORS headers
+        // for the HDR; we only need to warm the cache, not read the response.
+        try {
+          fetch(hdr, { mode: 'no-cors', importance: 'low' }).catch(() => {});
+        } catch (e) { /* ignore — purely opportunistic */ }
+      }
+    }
+
     if (this._viewer) {
       this._viewer.addEventListener('camera-change', this._onViewerCameraChange);
       this._viewer.addEventListener('error',         this._onViewerError);
@@ -1034,8 +1052,23 @@ class CarouselContainer {
     const now = performance.now();
 
     const next = this._activeIdx + dir;
-    if (next < 0)        { this._app.setSection(this._prevKey, -1); return; }
-    if (next >= this._N) { this._app.setSection(this._nextKey, +1); return; }
+    if (next < 0) {
+      // Lock out further _advance calls while we hand off to the previous section.
+      // Without this, rapid trackpad ticks during the handoff (before AppController's
+      // LOCK_MS engages) can re-enter _advance and double-fire setSection, causing the
+      // "sticky on scroll-up" symptom on the Sabretta pen slide.
+      this._transitioning = true;
+      this._app.setSection(this._prevKey, -1);
+      // Safety net: clear _transitioning if enter() never fires to reset it.
+      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
+      return;
+    }
+    if (next >= this._N) {
+      this._transitioning = true;
+      this._app.setSection(this._nextKey, +1);
+      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
+      return;
+    }
     this._transitioning = true;
     this._lastAdvanceAt = now;
     this._lastAdvDir    = dir;
@@ -1116,17 +1149,25 @@ class AboutContainer {
     // Restore spacer height before engaging so layout is correct when the
     // stage becomes visible (was collapsed to 0 on exit to prevent gap).
     this._sizeSpacer();
-    this._calcSpacerTop();
     // Arrive on last panel when scrolling back up from below.
     // Any other direction (including direct nav = 0) resets to first panel.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
     else                      this._activeIdx = 0;
     // Reset debounce state so the first scroll in any direction is never blocked.
+    // _transitioning is explicitly cleared here so any stale lock from a rapid
+    // prior gesture (e.g. Sabretta pen → About back-scroll) cannot block the
+    // first panel advance on re-entry.
     this._lastAdvDir    = 0;
     this._lastAdvanceAt = 0;
     this._transitioning = false;
     this._setPanel(this._activeIdx);
     this._root.classList.add('engaged');
+    // Defer _calcSpacerTop until after the browser has reflowed the restored
+    // spacer height. A single rAF is insufficient when coming from Contact because
+    // the height change (0 → N*vh) triggers a layout pass that may not complete
+    // until the next paint frame. Two rAFs guarantee a stable getBoundingClientRect,
+    // fixing the "landing in the spacer" bug on mobile when scrolling up from Contact.
+    requestAnimationFrame(() => requestAnimationFrame(() => this._calcSpacerTop()));
   }
 
   exit() {
@@ -1289,9 +1330,13 @@ class ContactContainer {
     // position (ticker / collapsed about-spacer gap) on both desktop and mobile.
     window.scrollTo({ top, behavior: 'instant' });
 
-    // Re-cache after layout settles — guards against resize drift or
-    // the about-spacer height changing after our initial read.
-    setTimeout(() => this._cacheTop(), 400);
+    // Re-cache twice: once after a short delay (covers most layout flushes)
+    // and once after a longer delay (covers mobile reflow of the about-spacer
+    // which AboutContainer.exit collapses to 0 — the layout change can shift
+    // the contact section's document position by several hundred px on mobile).
+    // Both measurements use rAF inside _cacheTop for an accurate read.
+    setTimeout(() => this._cacheTop(), 120);
+    setTimeout(() => this._cacheTop(), 500);
   }
 
   exit() {
@@ -1323,8 +1368,11 @@ class ContactContainer {
     // For upward: allow native scroll while the user is still scrolled
     // below the entry point of the contact region. Once they've scrolled
     // back up to within 80px of the top, intercept and hand back to About.
+    // 80px (was 40px) gives more reliable snap-back on mobile where
+    // getBoundingClientRect-based contactTop can be off by up to ~60px
+    // during the brief window after the about-spacer height is restored.
     if (dir === -1) {
-      const atTop = window.scrollY <= this._contactTop + 40;
+      const atTop = window.scrollY <= this._contactTop + 80;
       return !atTop;
     }
     return false;
