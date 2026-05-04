@@ -274,54 +274,15 @@
 /* ── Grain ── */
 [data-theme="light"] #grain { opacity: .02; }
 
-/* ── Carousel — project slides ── */
-[data-theme="light"] .proj:nth-child(odd)  .proj-veil { background: linear-gradient(to right, rgba(237,238,237,.97) 0%, rgba(237,238,237,.65) 42%, transparent 72%); }
-[data-theme="light"] .proj:nth-child(even) .proj-veil { background: linear-gradient(to left,  rgba(237,238,237,.97) 0%, rgba(237,238,237,.65) 42%, transparent 72%); }
-/* Boost brightness so images aren't muddy behind the light veil */
-[data-theme="light"] .proj-img { filter: saturate(.75) brightness(.72); }
-[data-theme="light"] .proj:hover .proj-img { filter: saturate(.98) brightness(.86); }
-/* Open button — white border invisible on light bg */
-[data-theme="light"] .proj-open { border-color: rgba(8,9,9,.22); color: var(--c-primary); }
-[data-theme="light"] .proj-open:hover { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
-/* Ghost number — slightly more visible */
-[data-theme="light"] .proj-ghost { -webkit-text-stroke: 1px rgba(91,160,164,.12); }
-/* Side accent line — fine as-is (uses --c-accent) */
+/* ── Carousel — keep dark mode values (legibility over light bg doesn't work with dark images) ── */
+/* Carousel and about sections deliberately retain dark mode values in light mode.
+   Light mode only applies to: nav, hero vignette, body sections (contact/footer), ticker */
 
 /* ── Protected slide ── */
-[data-theme="light"] .proj--protected .proj-veil,
-[data-theme="light"] .proj--protected:nth-child(odd) .proj-veil {
-  background: linear-gradient(to right, rgba(237,238,237,.97) 0%, rgba(237,238,237,.70) 38%, transparent 68%);
-}
-/* NDA/protected tags — darken text so they read on light */
-[data-theme="light"] .proj-tag--protected {
-  color: var(--c-secondary);
-  border-color: rgba(8,9,9,.18);
-  background: rgba(8,9,9,.04);
-}
-/* Protected image — needs more brightness on light to read through the lighter veil */
-[data-theme="light"] .proj-img--protected { filter: saturate(.35) brightness(.72) !important; }
-[data-theme="light"] .proj--protected:hover .proj-img--protected,
-[data-theme="light"] .proj[data-pos="active"].proj--protected .proj-img--protected {
-  filter: saturate(.55) brightness(.88) !important;
-}
+/* No light-mode overrides for carousel/about — dark values used throughout */
 
 /* ── About ── */
-[data-theme="light"] .col-bottom { background: linear-gradient(to bottom, transparent 0%, rgba(237,238,237,0.82) 25%, var(--c-bg) 55%); }
-/* Photo-frame border and inset glow */
-[data-theme="light"] .photo-frame {
-  border-color: rgba(91,160,164,0.22);
-  box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(8,9,9,0.05);
-}
-/* Images — less desaturated, normal brightness on light */
-[data-theme="light"] .photo-frame img { filter: saturate(0.84) brightness(0.94); }
-[data-theme="light"] .panel.is-active .intro-portrait-wrap img { filter: saturate(0.92) brightness(0.96); }
-/* Ghost number */
-[data-theme="light"] .ghost-num { -webkit-text-stroke: 1px rgba(91,160,164,.10); }
-/* Scroll-hint line colour (hardcoded rgba in base — needs override for light) */
-[data-theme="light"] .hint-line { background: var(--c-secondary); opacity: .5; }
-
-/* ── Statement panel ── */
-[data-theme="light"] .stmt-wm { -webkit-text-stroke: 1px rgba(91,160,164,0.14); }
+/* About stage retains dark background and dark values regardless of theme */
 
 /* ── Contact ── */
 /* Contact background image — more visible on light, slightly more saturated */
@@ -902,6 +863,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   background: rgba(255,255,255,.04);
   border-top: 1px solid var(--c-rule-hi); border-bottom: 1px solid var(--c-rule-hi);
   position: relative; z-index: var(--z-raised);
+  flex-shrink: 0; /* don't let ticker crush in flex containers */
 }
 .ticker::before, .ticker::after {
   content: ''; position: absolute; top: 0; bottom: 0;
@@ -1114,6 +1076,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 10px;
   pointer-events: none; opacity: 0; transition: opacity .4s;
   align-items: flex-end;
+  padding: 10px 8px;
+  background: rgba(8,9,9,0.35);
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
 }
 .c-dot-wrap { display: flex; align-items: center; justify-content: flex-end; }
 .c-dot {
@@ -1144,8 +1110,8 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   height: 80px; pointer-events: none;
   opacity: 0; transition: opacity .5s var(--ease);
 }
-.stage-edge-top { top: 0; background: linear-gradient(to bottom, var(--c-bg) 0%, transparent 100%); }
-.stage-edge-bot { bottom: 0; background: linear-gradient(to top,   var(--c-bg) 0%, transparent 100%); }
+.stage-edge-top { top: 0; background: linear-gradient(to bottom, #080909 0%, transparent 100%); }
+.stage-edge-bot { bottom: 0; background: linear-gradient(to top, #080909 0%, transparent 100%); }
 .projects.carousel-active .stage-edge { opacity: 1; }
 .about-stage.engaged .stage-edge { opacity: 1; }
 
@@ -1156,7 +1122,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 
 .about-stage {
   position: fixed; inset: 0; z-index: var(--z-about);
-  background: var(--c-bg);
+  background: #080909; /* always dark — about is a cinematic dark experience */
   pointer-events: none; visibility: hidden;
   opacity: 0;
   transition: opacity 0.35s var(--ease), visibility 0s linear 0.35s;
@@ -1172,13 +1138,13 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .panels-host {
   position: relative; width: 100%; height: 100%; overflow: hidden;
 }
-/* Subtle vignette overlay for depth */
+/* Subtle vignette overlay for depth — always dark since about-stage is always dark */
 .panels-host::after {
   content: '';
   position: absolute; inset: 0; z-index: var(--z-stage);
   pointer-events: none;
   background:
-    linear-gradient(to bottom, var(--c-bg) 0%, transparent 6%, transparent 94%, var(--c-bg) 100%);
+    linear-gradient(to bottom, #080909 0%, transparent 6%, transparent 94%, #080909 100%);
 }
 
 /* Decorative vertical rules */
@@ -1239,7 +1205,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .col-bottom {
   flex: 0 0 auto; position: relative; z-index: 10;
   padding: var(--s-3) var(--pad) var(--s-8);
-  background: linear-gradient(to bottom, transparent 0%, rgba(8,9,9,0.8) 25%, var(--c-bg) 55%);
+  background: linear-gradient(to bottom, transparent 0%, rgba(8,9,9,0.8) 25%, #080909 55%);
 }
 
 /* Chapter index */
@@ -1378,6 +1344,11 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   display: flex; flex-direction: column; gap: 10px;
   align-items: flex-end;
   z-index: var(--z-carousel); pointer-events: none;
+  /* Dark pill behind dots so they're always visible — about-stage is always dark */
+  padding: 10px 8px;
+  background: rgba(8,9,9,0.35);
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
 }
 .prog-dot {
   width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
@@ -1682,6 +1653,12 @@ footer {
       linear-gradient(to top,    rgba(8,9,9,0.95) 0%, rgba(8,9,9,0.45) 7%,  transparent 18%),
       linear-gradient(to bottom, rgba(8,9,9,0.60) 0%, transparent 16%);
   }
+  [data-theme="light"] .hero-vignette {
+    background:
+      linear-gradient(to right,  rgba(237,238,237,0.97) 0%, rgba(237,238,237,0.75) 28%, rgba(237,238,237,0.25) 58%, transparent 78%),
+      linear-gradient(to top,    rgba(237,238,237,0.95) 0%, rgba(237,238,237,0.45) 7%,  transparent 18%),
+      linear-gradient(to bottom, rgba(237,238,237,0.60) 0%, transparent 16%);
+  }
 
   /* Carousel */
   .proj:nth-child(odd)  .proj-text,
@@ -1787,11 +1764,11 @@ footer {
   }
   [data-theme="light"] .col-bottom {
     background: linear-gradient(to top,
-      rgba(237,238,237,1.00) 0%,
-      rgba(237,238,237,0.92) 20%,
-      rgba(237,238,237,0.70) 40%,
-      rgba(237,238,237,0.35) 60%,
-      rgba(237,238,237,0.10) 75%,
+      rgba(8,9,9,1.00) 0%,
+      rgba(8,9,9,0.92) 20%,
+      rgba(8,9,9,0.70) 40%,
+      rgba(8,9,9,0.35) 60%,
+      rgba(8,9,9,0.10) 75%,
       transparent 90%);
   }
   .ch-index  { margin-bottom: var(--s-2); }
@@ -1827,9 +1804,9 @@ footer {
   }
   [data-theme="light"] .col-right::before {
     background: linear-gradient(to top,
-      rgba(237,238,237,0.96) 0%,
-      rgba(237,238,237,0.82) 28%,
-      rgba(237,238,237,0.45) 54%,
+      rgba(8,9,9,0.94) 0%,
+      rgba(8,9,9,0.78) 28%,
+      rgba(8,9,9,0.42) 54%,
       transparent 78%);
   }
 
@@ -1839,11 +1816,9 @@ footer {
   /* ch-index in col-bottom — hidden on mobile (replaced by mobile copy in col-right) */
   .col-bottom .ch-index { display: none; }
 
-  /* ch-index-mobile — shown only on mobile, sits above the heading in col-right */
+  /* ch-index-mobile — hidden on mobile (removed for cleanliness) */
   .ch-index-mobile {
-    display: flex !important;
-    margin-bottom: var(--s-2);
-    margin-top: 0;
+    display: none !important;
   }
 
   /* Accent rule */
@@ -1861,8 +1836,8 @@ footer {
   }
   [data-theme="light"] .ch-title {
     text-shadow:
-      0 1px 8px rgba(237,238,237,0.80),
-      0 2px 20px rgba(237,238,237,0.60);
+      0 1px 12px rgba(0,0,0,0.70),
+      0 2px 32px rgba(0,0,0,0.50);
   }
   /* Body copy — lifted to --c-primary on mobile so it pops off the dark scrim */
   .ch-body {
@@ -1875,8 +1850,8 @@ footer {
   }
   [data-theme="light"] .ch-body {
     color: var(--c-primary);
-    opacity: 0.85;
-    text-shadow: 0 1px 6px rgba(237,238,237,0.70);
+    opacity: 0.82;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.60);
   }
 
   /* ── Intro panel (panel 0) — portrait fills screen ── */
@@ -1905,10 +1880,10 @@ footer {
   }
   [data-theme="light"] .intro-portrait-vignette {
     background: linear-gradient(to top,
-      rgba(237,238,237,1.00) 0%,
-      rgba(237,238,237,0.88) 28%,
-      rgba(237,238,237,0.55) 48%,
-      rgba(237,238,237,0.15) 68%,
+      rgba(8,9,9,1.00) 0%,
+      rgba(8,9,9,0.88) 28%,
+      rgba(8,9,9,0.55) 48%,
+      rgba(8,9,9,0.15) 68%,
       transparent 85%);
   }
   /* Text over portrait */
@@ -1937,9 +1912,9 @@ footer {
   }
   [data-theme="light"] .panel-intro .col-right::before {
     background: linear-gradient(to top,
-      rgba(237,238,237,0.96) 0%,
-      rgba(237,238,237,0.82) 28%,
-      rgba(237,238,237,0.45) 54%,
+      rgba(8,9,9,0.94) 0%,
+      rgba(8,9,9,0.78) 28%,
+      rgba(8,9,9,0.42) 54%,
       transparent 78%);
   }
   .intro-eyebrow { margin-bottom: var(--s-2); }
