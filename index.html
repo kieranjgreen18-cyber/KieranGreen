@@ -355,7 +355,7 @@
    § RESET & BASE
 ═══════════════════════════════════════════════════════════════ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: auto; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: auto; overflow-x: hidden; -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
 body {
   background: var(--c-bg);
   color: var(--c-primary);
@@ -365,6 +365,7 @@ body {
   line-height: var(--lh-body);
   cursor: none;
   overflow-x: hidden;
+  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   opacity: 0;
@@ -949,6 +950,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   position: fixed; inset: 0; z-index: var(--z-carousel);
   pointer-events: none; visibility: hidden;
   contain: layout style paint;
+  touch-action: none;
 }
 .projects.carousel-active { pointer-events: auto; visibility: visible; }
 .proj-track { position: absolute; inset: 0; }
@@ -1173,6 +1175,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   opacity: 0;
   transition: opacity 0.35s var(--ease), visibility 0s linear 0.35s;
   contain: layout style paint;
+  touch-action: none;
 }
 .about-stage.engaged {
   pointer-events: auto; visibility: visible;
