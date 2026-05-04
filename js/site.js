@@ -59,16 +59,22 @@
 // ── Tuning constants (all at module scope for easy adjustment) ────────────
 // MOUSE: raw |deltaY| >= this → treat as a discrete mouse wheel notch
 const MOUSE_THRESHOLD   = 60;   // px; typical notch is 100–120, even scaled-down is 60+
-// MOUSE: min ms between consecutive fires (prevents mechanical double-tick)
+// MOUSE: min ms between consecutive fires in the SAME direction (prevents mechanical double-tick)
 const MOUSE_COOLDOWN_MS = 350;
+// MOUSE: min ms between fires in OPPOSITE directions — much shorter since reversal is unambiguous
+const MOUSE_REVERSAL_MS = 80;
 // TRACKPAD: fire once net displacement in rolling window exceeds this
 const TRACKPAD_THRESH   = 55;   // px net; comfortable flick without requiring a hard shove
 // TRACKPAD: rolling window duration — events older than this are discarded
 const TRACKPAD_WINDOW_MS= 180;  // ms; wide enough for a natural swipe, short for inertia rejection
 // TRACKPAD: ignore individual events below this (sub-pixel jitter filter)
 const TRACKPAD_MIN_DELTA= 1.5;  // px
-// POST-FIRE: absorb inertia/bounce for this long after any fire
+// POST-FIRE: absorb inertia/bounce in the SAME direction as the last fire
 const SETTLE_MS         = 440;  // ms; covers trackpad inertia tail without feeling slow
+// POST-FIRE: settle window for the OPPOSITE direction — near-zero so reversals feel instant.
+// A small non-zero value (40ms) prevents a stray simultaneous event on the wrong path
+// from double-firing, without making reversal feel sluggish.
+const SETTLE_REVERSAL_MS = 40;
 // GLOBAL LOCK: hard lock between section changes — must be ≥ largest container TRANS_MS
 // About panels animate for 850ms; 950ms gives full clearance with a small margin.
 const LOCK_MS           = 950;
@@ -84,6 +90,12 @@ class AppController {
     // ── Settle window (shared by both input paths) ─────────────────────
     this._settleUntil   = 0;
 
+    // ── Last fire direction — used to make settle + cooldowns direction-aware ──
+    // A reversal (opposite dir) gets a much shorter settle/cooldown than a
+    // continuation (same dir), making the engine feel responsive to intentional
+    // direction changes without compromising inertia rejection.
+    this._lastFireDir   = 0; // 0 = no fire yet, +1 = last fired down, -1 = last fired up
+
     // ── Mouse path state ───────────────────────────────────────────────
     this._mouseLastFire = 0; // timestamp of last mouse-path fire
 
@@ -94,6 +106,13 @@ class AppController {
     this._tpBuf     = new Array(32);
     this._tpHead    = 0; // write pointer (next slot to overwrite)
     this._tpCount   = 0; // how many slots are currently valid
+
+    // ── Touch mid-gesture reversal tracking ────────────────────────────
+    // touchstart sets the origin; touchmove watches for a direction flip
+    // past a minimum threshold and resets the origin to the reversal point.
+    // This prevents a downward swipe followed by an upward recovery within
+    // the same touch gesture from reporting a near-zero net dy at touchend.
+    this._touchLastDir  = 0; // direction of the most recent touchmove segment
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
@@ -108,25 +127,33 @@ class AppController {
                 : e.deltaY;
       if (raw === 0) return;
 
-      const now = performance.now();
-
-      // ── POST-FIRE SETTLE: swallow everything until inertia clears ────
-      if (now < this._settleUntil) return;
-
-      const absRaw = Math.abs(raw);
+      const now    = performance.now();
       const dir    = raw > 0 ? +1 : -1;
+      const absRaw = Math.abs(raw);
+
+      // ── POST-FIRE SETTLE: direction-aware ────────────────────────────
+      // A reversal (opposite to last fire) uses SETTLE_REVERSAL_MS — near-zero
+      // so intentional direction changes feel instant. A continuation (same
+      // direction as last fire) uses the full SETTLE_MS to absorb inertia.
+      const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
+      const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
+      if (now < this._settleUntil) {
+        // Still within the settle window — but check if we're past the
+        // reversal threshold. _settleUntil was set using the full SETTLE_MS;
+        // recalculate whether the reversal window has cleared.
+        const settleStart = this._settleUntil - SETTLE_MS;
+        if (!isReversal || now < settleStart + effectiveSettle) return;
+      }
 
       // ── CLASSIFY: mouse vs trackpad ──────────────────────────────────
-      // Mouse wheels produce large discrete impulses (≥ MOUSE_THRESHOLD per
-      // event). Trackpads produce many small continuous deltas. Checking the
-      // per-event magnitude reliably separates them without heuristic state.
       const isMouse = absRaw >= MOUSE_THRESHOLD;
 
       if (isMouse) {
-        // MOUSE PATH — one notch = one slide, gated by cooldown only
-        if (nativeAllowed) return; // browser handles it; nothing for us to do
+        // MOUSE PATH — direction-aware cooldown
+        if (nativeAllowed) return;
         const sinceLastFire = now - this._mouseLastFire;
-        if (sinceLastFire < MOUSE_COOLDOWN_MS) return;
+        const cooldown = isReversal ? MOUSE_REVERSAL_MS : MOUSE_COOLDOWN_MS;
+        if (sinceLastFire < cooldown) return;
         this._fire(dir, false);
       } else {
         // TRACKPAD PATH — accumulate in rolling window, fire on threshold
@@ -202,16 +229,38 @@ class AppController {
 
     let _ty0 = 0, _tx0 = 0, _tTime0 = 0;
     window.addEventListener('touchstart', (e) => {
-      _ty0 = e.touches[0].clientY; _tx0 = e.touches[0].clientX; _tTime0 = performance.now();
+      _ty0 = e.touches[0].clientY;
+      _tx0 = e.touches[0].clientX;
+      _tTime0 = performance.now();
+      this._touchLastDir = 0; // reset mid-gesture direction tracking on new touch
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
-      const dy = Math.abs(e.touches[0].clientY - _ty0);
-      const dx = Math.abs(e.touches[0].clientX - _tx0);
+      const currentY = e.touches[0].clientY;
+      const currentX = e.touches[0].clientX;
+      const dy = Math.abs(currentY - _ty0);
+      const dx = Math.abs(currentX - _tx0);
       if (dy > dx && dy > 10) {
-        const touchDir = (e.touches[0].clientY - _ty0) > 0 ? -1 : +1;
+        const touchDir = (currentY - _ty0) > 0 ? -1 : +1;
         const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
         const nativeAllowed = activeContainer?.nativeScrollDirection?.(touchDir) === true;
         if (!nativeAllowed) e.preventDefault();
+
+        // ── Mid-gesture reversal reset ──────────────────────────────────
+        // If the user reverses direction mid-gesture (e.g. starts scrolling
+        // down then pulls back up), reset the origin to the current point.
+        // Without this, touchend measures dy from the original origin and sees
+        // a small or wrong-sign net, causing the gesture to misfire or drop.
+        // Only reset after a minimum displacement (12px) in the new direction
+        // to avoid flipping on micro-jitter at the turn-around point.
+        if (this._touchLastDir !== 0 && touchDir !== this._touchLastDir) {
+          const reversalDy = Math.abs(currentY - _ty0);
+          if (reversalDy > 12) {
+            _ty0    = currentY;
+            _tx0    = currentX;
+            _tTime0 = performance.now();
+          }
+        }
+        this._touchLastDir = touchDir;
       }
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
@@ -224,7 +273,13 @@ class AppController {
       if (locked && valid) {
         const dir = dy > 0 ? +1 : -1;
         const now = performance.now();
-        if (now < this._settleUntil) return;
+        // Direction-aware settle for touch too: reversals pass through faster
+        const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
+        const settleStart = this._settleUntil - SETTLE_MS;
+        const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
+        if (now < this._settleUntil) {
+          if (!isReversal || now < settleStart + effectiveSettle) return;
+        }
         const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
         const nativeAllowed = activeContainer?.nativeScrollDirection?.(dir) === true;
         if (!nativeAllowed) this._fire(dir);
@@ -240,16 +295,12 @@ class AppController {
     // Fix: flush all transient per-gesture state on visibility restore.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        // Reset settle window and mouse cooldown so the first gesture after
-        // unlock is never blocked by a timer that fired while hidden.
         this._settleUntil   = 0;
         this._mouseLastFire = 0;
+        this._lastFireDir   = 0;
+        this._touchLastDir  = 0;
         this._tpHead = 0; this._tpCount = 0;
-        // If a section transition was in progress, clear the lock —
-        // the animation is long gone so there is nothing to protect.
         this._locked = false;
-        // Re-sync chrome section indicator to the current active section
-        // in case notifySection fired while the page was hidden.
         if (this._activeKey) {
           this._chrome?.notifySection?.(this._activeKey);
         }
@@ -265,9 +316,13 @@ class AppController {
   _fire(dir) {
     // Arm settle window BEFORE dispatch so any inertia burst that arrives
     // synchronously during the dispatch is already gated out.
+    // Always arm with the full SETTLE_MS — the direction-aware check in the
+    // wheel handler computes the effective window at read-time using _lastFireDir,
+    // so we only need to record the ceiling here.
     const now = performance.now();
-    this._settleUntil   = now + LOCK_MS;
+    this._settleUntil   = now + SETTLE_MS;
     this._mouseLastFire = now;
+    this._lastFireDir   = dir;
     // Clear trackpad buffer so the settle period starts clean
     this._tpHead = 0; this._tpCount = 0;
     this._dispatchScroll(dir);
@@ -297,6 +352,8 @@ class AppController {
       // so the first scroll in the target section isn't eaten.
       this._settleUntil   = 0;
       this._mouseLastFire = 0;
+      this._lastFireDir   = 0;
+      this._touchLastDir  = 0;
       this._tpHead = 0; this._tpCount = 0;
     }
     this._activateDirect(name, fromDirection);
@@ -311,13 +368,19 @@ class AppController {
     // Flush trackpad buffer — stale events from the old section must not
     // bleed into the new one.
     this._tpHead = 0; this._tpCount = 0;
-    // IMPORTANT: do NOT reset _mouseLastFire here. The cooldown must persist
-    // across section changes so a single scroll gesture cannot simultaneously
-    // trigger the section change AND the first advance in the new section.
-    // Instead, extend the settle window to cover the full lock period so both
-    // guards are consistent.
-    const settleEnd = performance.now() + LOCK_MS;
-    if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
+    // Extend the settle window to cover the full lock period so a single scroll
+    // gesture cannot simultaneously trigger the section change AND the first
+    // advance in the new section.
+    // Containers that are native-scroll (no internal slides, no inertia to absorb)
+    // opt out by setting needsEntranceSettle = false. For those, we clear the
+    // settle window immediately so native scroll can begin without a frozen period.
+    if (next.needsEntranceSettle !== false) {
+      const settleEnd = performance.now() + LOCK_MS;
+      if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
+    } else {
+      this._settleUntil = 0;
+      this._lastFireDir = 0;
+    }
     next.enter(fromDirection);
     this._chrome?.notifySection?.(name);
     const suppressMs = name === 'contact' ? 750 : LOCK_MS;
@@ -1382,6 +1445,11 @@ class ContactContainer {
     // Track how far the user has scrolled past the contact top, so we know
     // when an upward scroll should hand back to About vs just scroll up in page.
     this._contactTop = 0;
+
+    // Native-scroll container — no internal slides, no inertia to absorb on entry.
+    // Tells AppController._activateDirect not to arm the post-entry settle window,
+    // which would otherwise freeze all scroll for LOCK_MS (950ms) after arriving.
+    this.needsEntranceSettle = false;
   }
 
   init(root) {
@@ -1407,21 +1475,32 @@ class ContactContainer {
     this._active = true;
     document.body.classList.add('section-contact');
 
-    // Immediately jump to contact top so the ticker and spacer are never
-    // visible — even if the about-stage hasn't finished fading out yet.
-    // Read position synchronously here (not via rAF) so scrollTo fires
-    // in the same task; _cacheTop() will then re-verify with rAF below.
+    // Synchronously read and jump to contact top.
     const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
     this._contactTop = top;
     window.scrollTo({ top, behavior: 'instant' });
 
-    // Re-cache twice: once after a short delay (covers most layout flushes)
-    // and once after a longer delay (covers mobile reflow of the about-spacer
-    // which AboutContainer.exit collapses to 0 — the layout change can shift
-    // the contact section's document position by several hundred px on mobile).
-    // Both measurements use rAF inside _cacheTop for an accurate read.
-    setTimeout(() => this._cacheTop(), 120);
-    setTimeout(() => this._cacheTop(), 500);
+    // Re-cache after layout settles. The about-spacer collapses to 0 after
+    // AboutContainer.exit(), shifting contact's document position. We take
+    // three measurements at increasing delays to catch slow reflows, and
+    // always clamp to the minimum seen so _contactTop never drifts above
+    // the actual section top (which would make atTop permanently false and
+    // block the hand-back to About indefinitely).
+    const recache = () => {
+      requestAnimationFrame(() => {
+        if (!this._root || !this._active) return;
+        const measured = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+        // Only accept the new value if we're currently scrolled at or near the
+        // contact top — if the user has already scrolled down, the measurement
+        // is relative to a shifted viewport and will be wrong.
+        if (Math.abs(window.scrollY - this._contactTop) < 50) {
+          this._contactTop = measured;
+        }
+      });
+    };
+    setTimeout(recache, 80);
+    setTimeout(recache, 300);
+    setTimeout(recache, 700);
   }
 
   exit() {
@@ -1450,20 +1529,17 @@ class ContactContainer {
     if (!this._active) return false;
     // Always allow downward native scroll so footer is reachable.
     if (dir === +1) return true;
-    // For upward: allow native scroll while the user is still scrolled
-    // below the entry point of the contact region. Once they've scrolled
-    // back up to within 8px of the top (tighter threshold = less spacer travel),
-    // intercept and hand back to About.
-    // If scrollY is somehow BELOW contactTop (stale cache after spacer collapse),
-    // re-measure immediately so we don't get permanently stuck.
     if (dir === -1) {
-      // Lazy re-cache: if our cached top looks wrong (page hasn't scrolled there),
-      // update it now to avoid mis-blocking the hand-back.
-      if (this._root && window.scrollY < this._contactTop - 200) {
-        this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-      }
-      // Tighter threshold (8px vs 80px) so the hand-back to About fires as soon
-      // as the user reaches the very top of contact — no scrolling into spacer.
+      // Allow native upward scroll while the user is still below the contact
+      // entry point. Intercept (return false) only when they've scrolled back
+      // to the very top — that's when we hand back to About.
+      // NOTE: do NOT re-measure contactTop here. getBoundingClientRect() in
+      // the hot scroll path reads during layout shifts (about-spacer collapsing)
+      // and returns unstable values that permanently corrupt _contactTop, causing
+      // every subsequent upward event to be intercepted and triggering a
+      // setSection loop that locks all scroll. _contactTop is only written in
+      // enter() and the two post-settle setTimeout callbacks in enter(), which
+      // run after the layout has stabilised.
       const atTop = window.scrollY <= this._contactTop + 8;
       return !atTop;
     }
