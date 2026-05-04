@@ -88,8 +88,12 @@ class AppController {
     this._mouseLastFire = 0; // timestamp of last mouse-path fire
 
     // ── Trackpad path state ────────────────────────────────────────────
-    // Ring buffer of {t, dy} entries within TRACKPAD_WINDOW_MS
-    this._tpBuf = [];
+    // Fixed-size ring buffer: avoids allocating a new array on every wheel
+    // event (the old filter() approach). Size is generous — at 60 fps and
+    // TRACKPAD_WINDOW_MS=180ms you see at most ~11 events; 32 slots is ample.
+    this._tpBuf     = new Array(32);
+    this._tpHead    = 0; // write pointer (next slot to overwrite)
+    this._tpCount   = 0; // how many slots are currently valid
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
@@ -128,20 +132,27 @@ class AppController {
         // TRACKPAD PATH — accumulate in rolling window, fire on threshold
         if (absRaw < TRACKPAD_MIN_DELTA) return;
 
-        // Prune entries older than the window
-        this._tpBuf = this._tpBuf.filter(ev => now - ev.t <= TRACKPAD_WINDOW_MS);
-        this._tpBuf.push({ t: now, dy: raw });
+        // Write into ring buffer; evict head if it falls outside the window
+        this._tpBuf[this._tpHead] = { t: now, dy: raw };
+        this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
+        if (this._tpCount < this._tpBuf.length) this._tpCount++;
 
         // If this direction is natively handled we still need to accumulate
         // so the buffer stays directionally consistent, but we must not fire.
         if (nativeAllowed) return;
 
-        // Net displacement in window — must be consistently directional
-        const net = this._tpBuf.reduce((sum, ev) => sum + ev.dy, 0);
+        // Net displacement across entries still within the rolling window
+        let net = 0;
+        const bufLen = this._tpBuf.length;
+        for (let i = 0; i < this._tpCount; i++) {
+          const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen) % bufLen];
+          if (now - slot.t > TRACKPAD_WINDOW_MS) break; // entries are newest-first; stop at first stale
+          net += slot.dy;
+        }
 
         if (Math.abs(net) >= TRACKPAD_THRESH) {
           const fireDir = net > 0 ? +1 : -1;
-          this._tpBuf = []; // reset buffer so next swipe starts clean
+          this._tpHead = 0; this._tpCount = 0; // reset ring buffer so next swipe starts clean
           this._fire(fireDir, false);
         }
       }
@@ -208,7 +219,7 @@ class AppController {
         // unlock is never blocked by a timer that fired while hidden.
         this._settleUntil   = 0;
         this._mouseLastFire = 0;
-        this._tpBuf         = [];
+        this._tpHead = 0; this._tpCount = 0;
         // If a section transition was in progress, clear the lock —
         // the animation is long gone so there is nothing to protect.
         this._locked = false;
@@ -224,8 +235,7 @@ class AppController {
   /**
    * Common fire path for both mouse and trackpad.
    * Arms the settle window and dispatches to the active container.
-   * @param {number}  dir           +1 | -1
-   * @param {boolean} nativeAllowed whether the container allows native scroll in this dir
+   * @param {number} dir  +1 | -1
    */
   _fire(dir) {
     // Arm settle window BEFORE dispatch so any inertia burst that arrives
@@ -234,7 +244,7 @@ class AppController {
     this._settleUntil   = now + LOCK_MS;
     this._mouseLastFire = now;
     // Clear trackpad buffer so the settle period starts clean
-    this._tpBuf = [];
+    this._tpHead = 0; this._tpCount = 0;
     this._dispatchScroll(dir);
   }
 
@@ -262,7 +272,7 @@ class AppController {
       // so the first scroll in the target section isn't eaten.
       this._settleUntil   = 0;
       this._mouseLastFire = 0;
-      this._tpBuf         = [];
+      this._tpHead = 0; this._tpCount = 0;
     }
     this._activateDirect(name, fromDirection);
     setTimeout(() => { this._locked = false; }, LOCK_MS);
@@ -275,7 +285,7 @@ class AppController {
     this._activeKey = name;
     // Flush trackpad buffer — stale events from the old section must not
     // bleed into the new one.
-    this._tpBuf = [];
+    this._tpHead = 0; this._tpCount = 0;
     // IMPORTANT: do NOT reset _mouseLastFire here. The cooldown must persist
     // across section changes so a single scroll gesture cannot simultaneously
     // trigger the section change AND the first advance in the new section.
@@ -290,7 +300,6 @@ class AppController {
   }
 
   _dispatchScroll(direction) {
-    if (this._chrome) this._chrome.onScroll(window.scrollY);
     if (!this._activeKey) return;
     const active = this._containers.get(this._activeKey);
     if (active?.onScroll) active.onScroll(direction);
@@ -589,9 +598,14 @@ class PageChrome {
     if (copyYear) copyYear.textContent = new Date().getFullYear();
   }
 
-  /** Called by AppController on every dispatched scroll. Progress bar removed. */
+  /**
+   * Retained as an extension point for future chrome-level scroll effects.
+   * Progress bar removed; AppController no longer calls this method.
+   * If you re-introduce a chrome scroll effect, re-add the call in
+   * AppController._dispatchScroll.
+   */
   onScroll(y) {
-    // intentionally empty — kept so the AppController call-site is unchanged
+    // intentionally empty
   }
 
   /**
@@ -906,6 +920,7 @@ class CarouselContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
     this._nextArrow     = null; // c-next-arrow element
+    this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -940,6 +955,10 @@ class CarouselContainer {
     // populate it here rather than creating a duplicate element.
     this._dotsEl = document.getElementById('c-dots');
     if (!this._dotsEl) {
+      // #c-dots is expected in the HTML. This fallback appends to body as a
+      // last resort, which places it outside the projects section — visible
+      // but potentially mis-styled. Log a warning so it surfaces in dev.
+      console.warn('[CarouselContainer] #c-dots element not found in HTML; appending fallback to document.body.');
       this._dotsEl = document.createElement('nav');
       this._dotsEl.id = 'c-dots';
       this._dotsEl.setAttribute('aria-label', 'Project navigation');
@@ -1344,13 +1363,13 @@ class ContactContainer {
     if (!this._root) return;
     this._active = true;
     document.body.classList.add('section-contact');
-    const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-    this._contactTop = top;
 
     // Immediately jump to contact top so the ticker and spacer are never
     // visible — even if the about-stage hasn't finished fading out yet.
-    // Using 'instant' here prevents any flash of the intermediate document
-    // position (ticker / collapsed about-spacer gap) on both desktop and mobile.
+    // Read position synchronously here (not via rAF) so scrollTo fires
+    // in the same task; _cacheTop() will then re-verify with rAF below.
+    const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+    this._contactTop = top;
     window.scrollTo({ top, behavior: 'instant' });
 
     // Re-cache twice: once after a short delay (covers most layout flushes)
