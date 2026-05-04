@@ -11,21 +11,47 @@
 <link rel="canonical" href="https://kieranjgreen18-cyber.github.io/KieranGreen/">
 
 <meta property="og:type" content="profile">
+<meta property="og:site_name" content="Kieran Green — Portfolio">
+<meta property="og:locale" content="en_US">
 <meta property="og:title" content="Kieran Green — Industrial Designer">
 <meta property="og:description" content="CAD modeling, surface development, and product visualization — from first sketch to something you can hold.">
 <meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniheroheader.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Kieran Green Industrial Designer portfolio hero image">
 <meta property="og:url" content="https://kieranjgreen18-cyber.github.io/KieranGreen/">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@kieranjgreen18">
 <meta name="twitter:title" content="Kieran Green — Industrial Designer">
 <meta name="twitter:description" content="CAD modeling, surface development, and product visualization — from first sketch to something you can hold.">
 <meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniheroheader.png">
+<meta name="twitter:image:alt" content="Kieran Green Industrial Designer portfolio hero image">
+<meta name="color-scheme" content="dark light">
+<link rel="alternate" hreflang="en" href="https://kieranjgreen18-cyber.github.io/KieranGreen/">
 
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "Person", "@id": "https://kieranjgreen18-cyber.github.io/KieranGreen/#person", "name": "Kieran Green", "jobTitle": "Industrial Designer", "url": "https://kieranjgreen18-cyber.github.io/KieranGreen/", "sameAs": ["https://www.linkedin.com/in/kieran-green-","https://kierangreen.myportfolio.com"] },
-    { "@type": "ProfilePage", "name": "Kieran Green — Industrial Designer Portfolio", "url": "https://kieranjgreen18-cyber.github.io/KieranGreen/", "mainEntity": { "@id": "https://kieranjgreen18-cyber.github.io/KieranGreen/#person" } }
+    {
+      "@type": "Person",
+      "@id": "https://kieranjgreen18-cyber.github.io/KieranGreen/#person",
+      "name": "Kieran Green",
+      "jobTitle": "Industrial Designer",
+      "description": "Industrial designer specialising in CAD modeling, surface development, FDM prototyping, and product visualization using Rhino 3D and Keyshot.",
+      "url": "https://kieranjgreen18-cyber.github.io/KieranGreen/",
+      "knowsAbout": ["Industrial Design", "CAD Modeling", "Rhino 3D", "Keyshot", "Surface Modeling", "SubD Modeling", "FDM Prototyping", "Product Visualization", "Form Development"],
+      "sameAs": [
+        "https://www.linkedin.com/in/kieran-green-",
+        "https://kierangreen.myportfolio.com"
+      ]
+    },
+    {
+      "@type": "ProfilePage",
+      "name": "Kieran Green — Industrial Designer Portfolio",
+      "url": "https://kieranjgreen18-cyber.github.io/KieranGreen/",
+      "mainEntity": { "@id": "https://kieranjgreen18-cyber.github.io/KieranGreen/#person" }
+    }
   ]
 }
 </script>
@@ -679,7 +705,7 @@ body.menu-open .nav-drawer { transform: translateY(0); pointer-events: auto; }
 .nav-drawer a {
   font-family: var(--f-heading); font-size: clamp(44px, 10vw, 72px);
   font-weight: 100; letter-spacing: var(--ls-tight); text-transform: uppercase;
-  color: var(--c-secondary); text-decoration: none; cursor: pointer;
+  color: var(--c-secondary); text-decoration: none; cursor: none;
   transition: color .3s var(--ease);
 }
 .nav-drawer a:hover { color: var(--c-accent); }
@@ -1549,6 +1575,7 @@ footer {
   border-top: 1px solid var(--c-rule);
   display: flex; align-items: center; justify-content: space-between;
   background: var(--c-bg2);
+  position: relative;
 }
 .f-logo {
   font-family: var(--f-heading); font-size: var(--t-ui); font-weight: 700;
@@ -1581,14 +1608,7 @@ footer {
 .rev-stagger.in > *:nth-child(5) { opacity: 1; transform: none; transition-delay: 0.36s; }
 .rev-stagger.in > *:nth-child(6) { opacity: 1; transform: none; transition-delay: 0.45s; }
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+/* Reduced motion — consolidated below in § ACCESSIBILITY */
 
 .d1 { transition-delay: 0.08s; }
 .d2 { transition-delay: 0.20s; }
@@ -1608,6 +1628,7 @@ footer {
   #cur, #cur-r { display: none !important; }
   body { cursor: auto; }
   a, button, .n-ham { cursor: pointer; }
+  .nav-drawer a { cursor: pointer; }
   .proj { cursor: pointer; }
   .c-link, .c-soc, .c-dl { cursor: pointer; }
   .proj-swipe-hint { display: flex; }
@@ -2186,7 +2207,6 @@ footer::before {
   background: linear-gradient(to right, transparent, var(--c-accent-lo), transparent);
   pointer-events: none;
 }
-footer { position: relative; }
 
 /* ── Prog-dot glow when active ── */
 .prog-dot.on {
@@ -2307,7 +2327,6 @@ button:focus-visible {
    and breaks fixed/absolute z-index children within overlays. */
 .proj           { contain: layout; }
 .panel          { contain: layout; }
-.personal-statement { contain: layout; }
 .contact        { contain: layout paint; }
 .ticker         { contain: layout style; }
 
@@ -2316,7 +2335,7 @@ button:focus-visible {
 <body>
 
 <!-- Skip navigation for keyboard users -->
-<a href="#hero-heading" class="skip-link">Skip to main content</a>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
 <!-- ── Ambient overlays ── -->
 <div id="veil"          aria-hidden="true"></div>
@@ -2325,8 +2344,8 @@ button:focus-visible {
 <div id="grain"         aria-hidden="true"></div>
 <div id="section-indicator" aria-hidden="true"></div>
 
-<!-- Carousel dot nav -->
-<nav id="c-dots" aria-label="Project navigation" aria-hidden="true"></nav>
+<!-- Carousel dot nav — visual only, described by section heading -->
+<div id="c-dots" role="presentation" aria-hidden="true"></div>
 
 <!-- Mobile Nav Drawer -->
 <nav class="nav-drawer" id="nav-drawer" aria-hidden="true" aria-label="Mobile navigation">
@@ -2338,13 +2357,13 @@ button:focus-visible {
 
 <!-- Primary Navigation -->
 <nav id="nav" aria-label="Main navigation">
-  <a href="#top" class="n-logo" aria-label="Kieran Green — Home" aria-current="page">
+  <a href="#top" class="n-logo" aria-label="Kieran Green — Home">
     <span class="logo-first">Kieran</span><span class="logo-sep" aria-hidden="true">/</span><span class="logo-last">Green</span>
   </a>
-  <div class="n-links" role="list">
-    <a href="#work"    role="listitem">Projects</a>
-    <a href="#about"   role="listitem">About</a>
-    <a href="#contact" role="listitem">Contact</a>
+  <div class="n-links">
+    <a href="#work">Projects</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
   </div>
   <div class="n-right">
     <div class="n-avail" aria-label="Currently available for work">
@@ -2369,6 +2388,7 @@ button:focus-visible {
 <!-- ═══════════════════════════════════════════════════════════
      HERO — Interactive 3D Model
 ═══════════════════════════════════════════════════════════ -->
+<main id="main-content">
 <section class="hero" id="top" aria-labelledby="hero-heading">
 
   <model-viewer
@@ -2793,6 +2813,7 @@ button:focus-visible {
             allowfullscreen
             loading="lazy"
             referrerpolicy="strict-origin-when-cross-origin"
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
           ></iframe>
           <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
         </div>
@@ -2867,6 +2888,8 @@ button:focus-visible {
     <li>Form Development — ideation through manufacture-ready geometry</li>
   </ul>
 </aside>
+
+</main>
 
 <footer role="contentinfo" aria-label="Site footer">
   <div class="f-logo">Kieran <em>Green</em> — Industrial Designer</div>
