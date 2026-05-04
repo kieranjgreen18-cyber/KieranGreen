@@ -122,7 +122,7 @@ class AppController {
         // MOUSE PATH — one notch = one slide, gated by cooldown only
         const sinceLastFire = now - this._mouseLastFire;
         if (sinceLastFire < MOUSE_COOLDOWN_MS) return;
-        if (!nativeAllowed || dir === -1) {
+        if (!nativeAllowed) {
           this._fire(dir, nativeAllowed);
         }
       } else {
@@ -139,7 +139,7 @@ class AppController {
         if (Math.abs(net) >= TRACKPAD_THRESH) {
           const fireDir = net > 0 ? +1 : -1;
           this._tpBuf = []; // reset buffer so next swipe starts clean
-          if (!nativeAllowed || fireDir === -1) {
+          if (!nativeAllowed) {
             this._fire(fireDir, nativeAllowed);
           }
         }
@@ -208,6 +208,11 @@ class AppController {
         // If a section transition was in progress, clear the lock —
         // the animation is long gone so there is nothing to protect.
         this._locked = false;
+        // Re-sync chrome section indicator to the current active section
+        // in case notifySection fired while the page was hidden.
+        if (this._activeKey) {
+          this._chrome?.notifySection?.(this._activeKey);
+        }
       }
     });
   }
@@ -221,15 +226,13 @@ class AppController {
   _fire(dir, nativeAllowed) {
     // Arm settle window BEFORE dispatch so any inertia burst that arrives
     // synchronously during the dispatch is already gated out.
-    // Use LOCK_MS here — if this dispatch triggers a setSection(), _activateDirect
-    // will also set settleUntil to LOCK_MS. If it stays within-section, LOCK_MS
-    // is the right guard anyway (≥ any container's _TRANS_MS).
     this._settleUntil = performance.now() + LOCK_MS;
     // Also stamp mouseLastFire so the mouse cooldown is consistent with settle
     this._mouseLastFire = performance.now();
     // Clear trackpad buffer so the settle period starts clean
     this._tpBuf = [];
-    if (!nativeAllowed || dir === -1) {
+    // Only dispatch if native scroll is not handling this direction
+    if (!nativeAllowed) {
       this._dispatchScroll(dir);
     }
   }
@@ -479,9 +482,9 @@ class PageChrome {
     if (hamburger && navDrawer) {
       hamburger.addEventListener('click', () => {
         const isOpen = document.body.classList.toggle('menu-open');
-        hamburger.setAttribute('aria-expanded', isOpen);
+        hamburger.setAttribute('aria-expanded', String(isOpen));
         hamburger.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
-        navDrawer.setAttribute('aria-hidden', !isOpen);
+        navDrawer.setAttribute('aria-hidden', String(!isOpen));
       });
       ['dw-top','dw-work','dw-about','dw-contact'].forEach(id => {
         const el = document.getElementById(id);
@@ -508,14 +511,14 @@ class PageChrome {
         let iter = 0; const TARGET = 'Green';
         const iv = setInterval(() => {
           logoLast.textContent = TARGET.split('').map((c, i) =>
-            i < iter ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
+            i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
           ).join('');
-          if (iter >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
+          if (Math.floor(iter) >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
           iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
         }, 26);
       };
       logo.addEventListener('mouseenter', scramble);
-      logo.addEventListener('focus', () => { if (!scrambling) logo.dispatchEvent(new MouseEvent('mouseenter')); });
+      logo.addEventListener('focus', () => { if (!scrambling) scramble(); });
     }
 
     // ── Nav scrolled + section indicator ──────────────────────────────
@@ -693,7 +696,7 @@ class Hero3DContainer {
         // 'no-cors' is used because modelviewer.dev doesn't send CORS headers
         // for the HDR; we only need to warm the cache, not read the response.
         try {
-          fetch(hdr, { mode: 'no-cors', importance: 'low' }).catch(() => {});
+          fetch(hdr, { mode: 'no-cors', priority: 'low' }).catch(() => {});
         } catch (e) { /* ignore — purely opportunistic */ }
       }
     }
@@ -855,7 +858,8 @@ class Hero3DContainer {
       e.preventDefault();
       // Don't call this.onScroll() directly — AppController's touchend
       // handler owns the dispatch for touch events.
-      this._t0y = e.touches[0].clientY; this._t0x = e.touches[0].clientX;
+      // NOTE: do NOT reset _t0y/_t0x here — the origin must remain fixed
+      // so AppController.touchend can measure total swipe displacement.
     }
   }
 }
