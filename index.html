@@ -46,6 +46,14 @@
      don't pop in when the About stage first becomes active -->
 <link rel="preload" as="image" href="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/portrait.JPEG">
 <link rel="preload" as="image" href="assets/images/saab.jpg">
+<!-- Preload the 3D model GLB — the single biggest contributor to model-viewer
+     pop-in on first visit. Fetching it in parallel with the model-viewer script
+     means the file is already in the browser cache when the element upgrades.
+     crossorigin is required because model-viewer uses a Worker to parse the GLB. -->
+<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin>
+<!-- Preconnect to modelviewer.dev so the HDR environment fetch has a warm
+     connection — avoids a cold DNS + TLS round-trip blocking the first render. -->
+<link rel="preconnect" href="https://modelviewer.dev" crossorigin>
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -1875,16 +1883,33 @@ footer {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: var(--s-8) var(--pad);
-    overflow: hidden;
+    padding: var(--s-6) var(--pad) var(--s-6) var(--pad);
+    overflow-y: auto;
+    overflow-x: hidden;
     /* override any grid from above */
     grid-template-columns: unset;
+    gap: var(--s-5);
   }
   .stmt-wm        { display: none; }
-  .stmt-video-row { display: none; }
-  .stmt-wrap      { max-width: 100%; }
+  /* Video: shown on mobile, sits ABOVE the text wrap, constrained so it
+     doesn't crowd the statement copy on small screens */
+  .stmt-video-row {
+    display: block;
+    order: -1;      /* push above .stmt-wrap */
+    width: 100%;
+    max-width: 100%;
+    opacity: 1 !important;  /* always visible — no animated fade on mobile */
+    transform: none !important;
+  }
+  .stmt-video-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 38vh;  /* cap height so text still fits on short screens */
+    overflow: hidden;
+  }
+  .stmt-wrap      { max-width: 100%; order: 0; }
   .stmt-kicker    { margin-bottom: var(--s-4); }
-  .stmt-text      { font-size: clamp(18px, 5vw, 26px); line-height: 1.70; }
+  .stmt-text      { font-size: clamp(16px, 5vw, 24px); line-height: 1.65; }
 
   /* Progress dots */
   .prog-dots { right: var(--s-2); gap: 8px; }
@@ -2073,6 +2098,7 @@ body.section-contact .about-spacer {
 .contact {
   content-visibility: visible;
 }
+footer::before {
   content: '';
   position: absolute;
   top: 0; left: var(--pad); right: var(--pad);
