@@ -132,13 +132,38 @@ class AppController {
         // TRACKPAD PATH — accumulate in rolling window, fire on threshold
         if (absRaw < TRACKPAD_MIN_DELTA) return;
 
-        // Write into ring buffer; evict head if it falls outside the window
+        // ── Direction-reversal flush ──────────────────────────────────────
+        // If the buffer has a non-zero net and the incoming delta opposes it,
+        // the user has reversed direction. Stale opposite-direction entries
+        // are not ambiguous noise — they are expired intent. Carrying them
+        // forward makes the threshold harder to cross in the new direction,
+        // which is exactly the contact→about hand-back bug: downward native
+        // scroll fills the buffer, reversal upward can never accumulate enough
+        // net to fire. Flushing on reversal is the correct general fix and
+        // covers all sections, not just contact.
+        if (this._tpCount > 0) {
+          // Compute net of the current buffer contents (newest-first scan)
+          let existingNet = 0;
+          const bufLen0 = this._tpBuf.length;
+          for (let i = 0; i < this._tpCount; i++) {
+            const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen0) % bufLen0];
+            if (now - slot.t > TRACKPAD_WINDOW_MS) break;
+            existingNet += slot.dy;
+          }
+          // Flush if the existing net and the incoming delta have opposite signs
+          if (existingNet !== 0 && Math.sign(existingNet) !== Math.sign(raw)) {
+            this._tpHead = 0; this._tpCount = 0;
+          }
+        }
+
+        // If this direction is natively handled, do not fire — but still
+        // write to the buffer so we track the current gesture direction.
+        // That way, when the user reverses into an intercepted direction,
+        // the flush above correctly clears the native-scroll history.
         this._tpBuf[this._tpHead] = { t: now, dy: raw };
         this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
         if (this._tpCount < this._tpBuf.length) this._tpCount++;
 
-        // If this direction is natively handled we still need to accumulate
-        // so the buffer stays directionally consistent, but we must not fire.
         if (nativeAllowed) return;
 
         // Net displacement across entries still within the rolling window
@@ -764,6 +789,10 @@ class Hero3DContainer {
     // next frame always triggers the entrance transition even on re-entry.
     [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
+    // Re-enable auto-rotate (was removed on exit to prevent GPU thrash)
+    if (this._viewer) {
+      this._viewer.setAttribute('auto-rotate', '');
+    }
     requestAnimationFrame(() => this._revealHero());
   }
 
@@ -781,6 +810,20 @@ class Hero3DContainer {
     // Strip reveal classes so re-entering Hero re-plays the entrance animation.
     [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
+    // Pause model-viewer on mobile to prevent GPU/state thrash when
+    // the user scrolls away and back repeatedly. Pausing stops the render
+    // loop and prevents the auto-rotate from accumulating delta while hidden.
+    if (this._viewer) {
+      this._viewer.removeAttribute('auto-rotate');
+      // On mobile, also reset camera to default orbit so re-entry always
+      // shows the model from the correct angle after extended interaction.
+      if (window.matchMedia('(pointer: coarse)').matches) {
+        try {
+          this._viewer.cameraOrbit = '-20deg 92deg 50%';
+          this._viewer.jumpCameraToGoal();
+        } catch(e) { /* non-fatal — viewer may not be loaded yet */ }
+      }
+    }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
   }
 
@@ -1409,7 +1452,8 @@ class ContactContainer {
     if (dir === +1) return true;
     // For upward: allow native scroll while the user is still scrolled
     // below the entry point of the contact region. Once they've scrolled
-    // back up to within 80px of the top, intercept and hand back to About.
+    // back up to within 8px of the top (tighter threshold = less spacer travel),
+    // intercept and hand back to About.
     // If scrollY is somehow BELOW contactTop (stale cache after spacer collapse),
     // re-measure immediately so we don't get permanently stuck.
     if (dir === -1) {
@@ -1418,7 +1462,9 @@ class ContactContainer {
       if (this._root && window.scrollY < this._contactTop - 200) {
         this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
       }
-      const atTop = window.scrollY <= this._contactTop + 80;
+      // Tighter threshold (8px vs 80px) so the hand-back to About fires as soon
+      // as the user reaches the very top of contact — no scrolling into spacer.
+      const atTop = window.scrollY <= this._contactTop + 8;
       return !atTop;
     }
     return false;
