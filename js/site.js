@@ -120,11 +120,10 @@ class AppController {
 
       if (isMouse) {
         // MOUSE PATH — one notch = one slide, gated by cooldown only
+        if (nativeAllowed) return; // browser handles it; nothing for us to do
         const sinceLastFire = now - this._mouseLastFire;
         if (sinceLastFire < MOUSE_COOLDOWN_MS) return;
-        if (!nativeAllowed) {
-          this._fire(dir, nativeAllowed);
-        }
+        this._fire(dir, false);
       } else {
         // TRACKPAD PATH — accumulate in rolling window, fire on threshold
         if (absRaw < TRACKPAD_MIN_DELTA) return;
@@ -133,15 +132,17 @@ class AppController {
         this._tpBuf = this._tpBuf.filter(ev => now - ev.t <= TRACKPAD_WINDOW_MS);
         this._tpBuf.push({ t: now, dy: raw });
 
+        // If this direction is natively handled we still need to accumulate
+        // so the buffer stays directionally consistent, but we must not fire.
+        if (nativeAllowed) return;
+
         // Net displacement in window — must be consistently directional
         const net = this._tpBuf.reduce((sum, ev) => sum + ev.dy, 0);
 
         if (Math.abs(net) >= TRACKPAD_THRESH) {
           const fireDir = net > 0 ? +1 : -1;
           this._tpBuf = []; // reset buffer so next swipe starts clean
-          if (!nativeAllowed) {
-            this._fire(fireDir, nativeAllowed);
-          }
+          this._fire(fireDir, false);
         }
       }
     }, { passive: false });
@@ -150,12 +151,12 @@ class AppController {
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
         e.preventDefault();
         const now = performance.now();
-        if (now >= this._settleUntil) this._fire(+1, false);
+        if (now >= this._settleUntil) this._fire(+1);
       }
       if (e.key === 'ArrowUp' || e.key === 'PageUp') {
         e.preventDefault();
         const now = performance.now();
-        if (now >= this._settleUntil) this._fire(-1, false);
+        if (now >= this._settleUntil) this._fire(-1);
       }
       if (e.key === 'Escape') {
         const active = this._containers.get(this._activeKey);
@@ -187,7 +188,10 @@ class AppController {
       if (locked && valid) {
         const dir = dy > 0 ? +1 : -1;
         const now = performance.now();
-        if (now >= this._settleUntil) this._fire(dir, false);
+        if (now < this._settleUntil) return;
+        const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
+        const nativeAllowed = activeContainer?.nativeScrollDirection?.(dir) === true;
+        if (!nativeAllowed) this._fire(dir);
       }
     }, { passive: true });
 
@@ -223,18 +227,15 @@ class AppController {
    * @param {number}  dir           +1 | -1
    * @param {boolean} nativeAllowed whether the container allows native scroll in this dir
    */
-  _fire(dir, nativeAllowed) {
+  _fire(dir) {
     // Arm settle window BEFORE dispatch so any inertia burst that arrives
     // synchronously during the dispatch is already gated out.
-    this._settleUntil = performance.now() + LOCK_MS;
-    // Also stamp mouseLastFire so the mouse cooldown is consistent with settle
-    this._mouseLastFire = performance.now();
+    const now = performance.now();
+    this._settleUntil   = now + LOCK_MS;
+    this._mouseLastFire = now;
     // Clear trackpad buffer so the settle period starts clean
     this._tpBuf = [];
-    // Only dispatch if native scroll is not handling this direction
-    if (!nativeAllowed) {
-      this._dispatchScroll(dir);
-    }
+    this._dispatchScroll(dir);
   }
 
   register(name, container) {
@@ -256,6 +257,13 @@ class AppController {
     if (name === this._activeKey)   return;
     if (!this._containers.has(name)) { console.warn(`[AppController] setSection("${name}") — not registered.`); return; }
     this._locked = true;
+    if (force) {
+      // Forced nav (e.g. from a nav anchor click): clear any active settle window
+      // so the first scroll in the target section isn't eaten.
+      this._settleUntil   = 0;
+      this._mouseLastFire = 0;
+      this._tpBuf         = [];
+    }
     this._activateDirect(name, fromDirection);
     setTimeout(() => { this._locked = false; }, LOCK_MS);
   }
@@ -313,13 +321,13 @@ class PageChrome {
     // AppController reference — set via setApp() after bootstrap wires everything
     this._app     = null;
 
-    // Cursor
+    // Cursor — positions initialised in init() once elements exist
     this._cur     = null;
     this._curR    = null;
-    this._mx      = window.innerWidth  / 2;
-    this._my      = window.innerHeight / 2;
-    this._rx      = this._mx;
-    this._ry      = this._my;
+    this._mx      = 0;
+    this._my      = 0;
+    this._rx      = 0;
+    this._ry      = 0;
     this._isDown  = false;
     this._inLink  = false;
     this._inProj  = false;
@@ -351,6 +359,9 @@ class PageChrome {
     this._curR  = document.getElementById('cur-r');
     this._navEl = document.getElementById('nav');
     this._secInd= document.getElementById('section-indicator');
+    // Initialise cursor position to viewport centre now that elements exist
+    this._mx = this._rx = window.innerWidth  / 2;
+    this._my = this._ry = window.innerHeight / 2;
 
     // ── Veil + body ready ──────────────────────────────────────────────
     const veil = document.getElementById('veil');
@@ -486,17 +497,16 @@ class PageChrome {
         hamburger.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
         navDrawer.setAttribute('aria-hidden', String(!isOpen));
       });
-      ['dw-top','dw-work','dw-about','dw-contact'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('click', () => {
-          // Close the drawer first, then after the transition starts, let the
-          // anchor click (caught by the delegation handler below) route the nav.
+      // Close drawer when any nav drawer link is tapped.
+      // The anchor click then bubbles to the document delegation handler which
+      // routes via app.setSection() — order is correct (close first, then navigate).
+      navDrawer.addEventListener('click', (e) => {
+        if (e.target.closest('a')) {
           document.body.classList.remove('menu-open');
           hamburger.setAttribute('aria-expanded', 'false');
           hamburger.setAttribute('aria-label', 'Open menu');
           navDrawer.setAttribute('aria-hidden', 'true');
-        });
+        }
       });
     }
 
@@ -536,7 +546,9 @@ class PageChrome {
     let roTimer;
     const ro = new ResizeObserver(() => {
       clearTimeout(roTimer);
-      roTimer = setTimeout(() => buildOffsets(), 100);
+      // Use a 160ms debounce (was 100ms) to ensure we measure AFTER any
+      // container transition that triggered the layout change has committed.
+      roTimer = setTimeout(() => buildOffsets(), 160);
     });
     ro.observe(document.body);
     window.addEventListener('scroll', () => {
@@ -709,7 +721,7 @@ class Hero3DContainer {
       this._viewer.addEventListener('mouseup',       this._onMouseUp);
       this._viewer.addEventListener('mouseleave',    this._onMouseLeave);
       this._viewer.addEventListener('touchstart',    this._onTouchStart,  { passive: true });
-      this._viewer.addEventListener('touchend',      this._onTouchEnd);
+      this._viewer.addEventListener('touchend',      this._onTouchEnd,    { passive: true });
     }
 
     // Intercept wheel/touch on root so model-viewer doesn't eat them
@@ -734,6 +746,10 @@ class Hero3DContainer {
     this._root.style.opacity    = '1';
     // Clear any inline opacity set by the scroll listener so the CSS transition plays correctly
     if (this._heroScroll) this._heroScroll.style.opacity = '';
+    // Force a clean re-reveal: strip classes first so re-adding them in the
+    // next frame always triggers the entrance transition even on re-entry.
+    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
+      .forEach(el => el?.classList.remove('is-revealed'));
     requestAnimationFrame(() => this._revealHero());
   }
 
@@ -984,8 +1000,10 @@ class CarouselContainer {
     // Any other direction (including direct nav jump = 0) resets to first card.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
     else                      this._activeIdx = 0;
-    // Reset all transition-debounce state on every entry.
-    this._transitioning  = false;
+    // Hold _transitioning true until the double-rAF entrance animation fires.
+    // Releasing it here (before rAF) would allow a rapid second scroll to
+    // advance the carousel before the entrance animation completes.
+    this._transitioning  = true;
     this._lastAdvanceAt  = 0;
     this._lastAdvDir     = 0;
     this._calcSpacerTop();
@@ -993,7 +1011,11 @@ class CarouselContainer {
     this._root.classList.add('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
-    requestAnimationFrame(() => requestAnimationFrame(() => this._setPositions(this._activeIdx, true)));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      this._setPositions(this._activeIdx, true);
+      // Release lock AFTER positions are applied so the first advance is always clean.
+      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
+    }));
     // On first entry, start background image loads for all slides now that
     // the carousel is visible. Images that are already loaded are no-ops.
     this._projs.forEach(p => {
@@ -1153,24 +1175,21 @@ class AboutContainer {
     // Restore spacer height before engaging so layout is correct when the
     // stage becomes visible (was collapsed to 0 on exit to prevent gap).
     this._sizeSpacer();
+    // Cache spacerTop synchronously with the current layout — this gives a
+    // usable value immediately, even before the double-rAF resolves.
+    this._calcSpacerTop();
     // Arrive on last panel when scrolling back up from below.
     // Any other direction (including direct nav = 0) resets to first panel.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
     else                      this._activeIdx = 0;
     // Reset debounce state so the first scroll in any direction is never blocked.
-    // _transitioning is explicitly cleared here so any stale lock from a rapid
-    // prior gesture (e.g. Sabretta pen → About back-scroll) cannot block the
-    // first panel advance on re-entry.
     this._lastAdvDir    = 0;
     this._lastAdvanceAt = 0;
     this._transitioning = false;
     this._setPanel(this._activeIdx);
     this._root.classList.add('engaged');
-    // Defer _calcSpacerTop until after the browser has reflowed the restored
-    // spacer height. A single rAF is insufficient when coming from Contact because
-    // the height change (0 → N*vh) triggers a layout pass that may not complete
-    // until the next paint frame. Two rAFs guarantee a stable getBoundingClientRect,
-    // fixing the "landing in the spacer" bug on mobile when scrolling up from Contact.
+    // Re-cache after layout has fully flushed (spacer height change triggers a
+    // layout pass that may not be stable until the next paint frame).
     requestAnimationFrame(() => requestAnimationFrame(() => this._calcSpacerTop()));
   }
 
@@ -1243,8 +1262,8 @@ class AboutContainer {
       // (transitioning is false, debounce doesn't match) and fire setSection again.
       this._transitioning = true;
       if (this._prevKey) this._app.setSection(this._prevKey, -1);
-      // _transitioning is reset to false by enter() when the new section activates,
-      // so no setTimeout cleanup is needed here.
+      // Safety net: clear _transitioning if enter() never fires to reset it.
+      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
       return;
     }
     if (next >= this._N) {
@@ -1372,10 +1391,14 @@ class ContactContainer {
     // For upward: allow native scroll while the user is still scrolled
     // below the entry point of the contact region. Once they've scrolled
     // back up to within 80px of the top, intercept and hand back to About.
-    // 80px (was 40px) gives more reliable snap-back on mobile where
-    // getBoundingClientRect-based contactTop can be off by up to ~60px
-    // during the brief window after the about-spacer height is restored.
+    // If scrollY is somehow BELOW contactTop (stale cache after spacer collapse),
+    // re-measure immediately so we don't get permanently stuck.
     if (dir === -1) {
+      // Lazy re-cache: if our cached top looks wrong (page hasn't scrolled there),
+      // update it now to avoid mis-blocking the hand-back.
+      if (this._root && window.scrollY < this._contactTop - 200) {
+        this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+      }
       const atTop = window.scrollY <= this._contactTop + 80;
       return !atTop;
     }
