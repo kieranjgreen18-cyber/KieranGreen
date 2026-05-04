@@ -278,7 +278,7 @@
 /* ── Protected slide ── */
 [data-theme="light"] .proj--protected .proj-veil,
 [data-theme="light"] .proj--protected:nth-child(odd) .proj-veil {
-  background: linear-gradient(to left, rgba(237,238,237,.97) 0%, rgba(237,238,237,.70) 38%, transparent 68%);
+  background: linear-gradient(to right, rgba(237,238,237,.97) 0%, rgba(237,238,237,.70) 38%, transparent 68%);
 }
 /* NDA/protected tags — darken text so they read on light */
 [data-theme="light"] .proj-tag--protected {
@@ -2057,12 +2057,10 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 .proj[data-pos="active"].proj--protected .proj-img--protected {
   filter: saturate(.48) brightness(.72) !important;
 }
-/* Subtle crosshatch vignette lines on the protected slide */
-.proj--protected .proj-veil {
-  background: linear-gradient(to left, rgba(7,8,9,0.97) 0%, rgba(7,8,9,0.65) 38%, transparent 68%);
-}
+/* Protected slide veil — slide 05 is nth-child(odd), text sits left, so gradient fades from left */
+.proj--protected .proj-veil,
 .proj--protected:nth-child(odd) .proj-veil {
-  background: linear-gradient(to left, rgba(7,8,9,0.97) 0%, rgba(7,8,9,0.65) 38%, transparent 68%);
+  background: linear-gradient(to right, rgba(7,8,9,0.97) 0%, rgba(7,8,9,0.65) 38%, transparent 68%);
 }
 /* Ghost number — slightly dimmer, accent-tinted */
 .proj-ghost--protected {
