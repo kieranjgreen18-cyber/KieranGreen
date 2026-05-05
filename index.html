@@ -334,19 +334,13 @@
   }
 }
 
-/* ── Contact ── */
-/* Contact background image — more visible on light, slightly more saturated */
-[data-theme="light"] .contact-img { opacity: .20; filter: saturate(.45); }
+/* ── Contact (now panel-contact inside About stage) ── */
+/* Background image — more visible on light, slightly more saturated */
+[data-theme="light"] .panel-contact .contact-img { opacity: .20; filter: saturate(.45); }
 /* Watermark slightly stronger so it reads as intentional, not faded */
-[data-theme="light"] .contact-wm { -webkit-text-stroke: 1px rgba(91,160,164,.10); }
+[data-theme="light"] .panel-contact .contact-wm { -webkit-text-stroke: 1px rgba(91,160,164,.10); }
 /* c-field hover — --c-surface on light is very faint; boost it */
-[data-theme="light"] .c-field:hover { background: rgba(8,9,9,.055); }
-
-/* ── Footer ── */
-/* footer::before rule uses --c-accent-lo which is nearly invisible on light */
-[data-theme="light"] footer::before {
-  background: linear-gradient(to right, transparent, rgba(91,160,164,.22), transparent);
-}
+[data-theme="light"] .panel-contact .c-field:hover { background: rgba(8,9,9,.055); }
 
 /* ═══════════════════════════════════════════════════════════════
    § RESET & BASE
@@ -1494,101 +1488,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   color: rgba(91,160,164,.4);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   § CONTACT
-═══════════════════════════════════════════════════════════════ */
-.contact {
-  position: relative; overflow: hidden;
-  min-height: 100svh; display: flex; align-items: center;
-  border-top: 1px solid var(--c-rule);
-  content-visibility: auto;
-  contain-intrinsic-size: 0 100svh;
-}
-.contact-img {
-  position: absolute; right: 0; top: 0; bottom: 0; width: 45%;
-  background-image: url('assets/images/sabrettahero.png');
-  background-size: cover; background-position: center;
-  opacity: .28;
-  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.8) 40%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.8) 40%);
-  filter: saturate(.5);
-}
-.contact-wm {
-  position: absolute; right: -2vw; bottom: -4vh;
-  font-family: var(--f-heading); font-size: clamp(180px,28vw,380px); font-weight: 700;
-  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.06);
-  pointer-events: none; user-select: none;
-  line-height: 1; letter-spacing: -.06em; text-transform: uppercase; white-space: nowrap;
-}
-.contact-inner {
-  position: relative; z-index: 2; padding: var(--s-10) var(--pad);
-  width: 60%; display: flex; flex-direction: column; gap: var(--s-5);
-}
-.contact-kicker {
-  display: flex; align-items: center; gap: var(--s-2);
-  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
-}
-.contact-kicker::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
-.contact-h {
-  font-family: var(--f-heading); font-size: clamp(72px, 11vw, 148px); font-weight: 100;
-  letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; color: var(--c-primary);
-}
-.contact-h em { font-style: italic; color: var(--c-accent); font-weight: 100; }
-.contact-sub {
-  font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-text);
-  color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open); max-width: 390px;
-}
-.contact-fields { display: flex; flex-direction: column; gap: 0; }
-.c-field {
-  padding: var(--s-3) 0; border-bottom: 1px solid var(--c-rule);
-  display: grid; grid-template-columns: clamp(80px,10vw,120px) 1fr;
-  gap: var(--s-3); align-items: center;
-}
-.c-field:first-child { border-top: 1px solid var(--c-rule); }
-.c-field-label {
-  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-accent); opacity: .6;
-}
-.c-link, .c-soc, .c-dl {
-  font-family: var(--f-heading); font-size: var(--t-subhead); font-weight: 100;
-  letter-spacing: var(--ls-tight); text-transform: uppercase;
-  color: var(--c-primary); text-decoration: none; cursor: none;
-  display: inline-flex; align-items: center; gap: var(--s-2);
-  transition: color .25s, gap .3s var(--ease);
-  background: none; padding: 0; border: none; position: relative;
-}
-.c-link::after, .c-soc::after, .c-dl::after {
-  content: ''; position: absolute; bottom: -3px; left: 0;
-  width: 100%; height: 1px; background: var(--c-accent);
-  transform: scaleX(0); transform-origin: left;
-  transition: transform .35s var(--ease);
-}
-.c-link:hover, .c-soc:hover, .c-dl:hover { color: var(--c-accent); gap: var(--s-3); }
-.c-link:active, .c-soc:active, .c-dl:active { opacity: 0.72; }
-.c-link:hover::after, .c-soc:hover::after, .c-dl:hover::after { transform: scaleX(1); }
-.c-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: center; }
-
-/* ═══════════════════════════════════════════════════════════════
-   § FOOTER
-═══════════════════════════════════════════════════════════════ */
-footer {
-  padding: var(--s-3) var(--pad);
-  border-top: 1px solid var(--c-rule);
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--c-bg2);
-  position: relative;
-}
-.f-logo {
-  font-family: var(--f-heading); font-size: var(--t-ui); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-secondary);
-}
-.f-logo em { font-style: italic; color: var(--c-accent); }
-.f-copy {
-  font-family: var(--f-meta); font-size: var(--t-micro); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-muted);
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   Old standalone .contact section removed — contact is now panel-contact
+   inside the About carousel (see § CONTACT PANEL above).
+   ─────────────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════
    § SCROLL REVEAL
@@ -2032,18 +1935,43 @@ footer {
   [data-theme="light"] .panels-host::after {
     background: linear-gradient(to bottom, #080909 0%, transparent 6%, transparent 94%, #080909 100%);
   }
+  /* Statement + contact panels on mobile light mode: keep bg light (no image) */
+  [data-theme="light"] .panel-statement,
+  [data-theme="light"] .panel-contact {
+    background: var(--c-bg);
+  }
+
+  /* Progress dots — mobile light mode: replace harsh opaque gradient with
+     a gentle radial-softened fade that doesn't compete with the dots visually */
+  [data-theme="light"] .prog-dots {
+    background:
+      radial-gradient(ellipse 64px 120px at center, rgba(237,238,237,0.72) 0%, rgba(237,238,237,0.40) 40%, transparent 100%);
+  }
 
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
 
-  /* Contact */
-  .contact-inner { width: 100%; padding: var(--s-8) var(--pad); }
-  .contact-img, .contact-wm { display: none; }
-  .contact-h { font-size: clamp(56px, 13vw, 80px); }
-  .c-field { grid-template-columns: 1fr; gap: var(--s-1); }
-
-  /* Footer */
-  footer { flex-direction: column; gap: var(--s-1); text-align: center; padding: var(--s-3) var(--pad); }
+  /* Contact panel — mobile layout */
+  .panel-contact {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0;
+    background: var(--c-bg);
+  }
+  .panel-contact .contact-img,
+  .panel-contact .contact-wm { display: none; }
+  .panel-contact .contact-inner {
+    width: 100%;
+    padding: var(--s-6) var(--pad) var(--s-5);
+  }
+  .panel-contact .contact-h { font-size: clamp(56px, 13vw, 80px); color: var(--c-primary); }
+  .panel-contact .c-field { grid-template-columns: 1fr; gap: var(--s-1); }
+  .panel-contact .c-dl--primary { font-size: clamp(30px, 8vw, 46px); }
+  .panel-contact .c-soc { cursor: pointer; }
+  .panel-contact .c-dl--primary { cursor: pointer; }
+  /* Panel footer — mobile */
+  .panel-footer { padding: var(--s-2) var(--pad); flex-direction: column; gap: 2px; align-items: center; text-align: center; }
 }
 
 @media (max-width: 480px) {
@@ -2051,8 +1979,9 @@ footer {
   .ch-title  { font-size: clamp(34px, 9.5vw, 52px); }
   .intro-name { font-size: clamp(38px, 10.5vw, 58px); }
   .t-statement { font-size: clamp(16px, 4.8vw, 24px); }
-  .contact-h { font-size: clamp(48px, 14vw, 72px); }
-  .c-link, .c-soc, .c-dl { font-size: clamp(18px, 6vw, 28px); }
+  .panel-contact .contact-h { font-size: clamp(48px, 14vw, 72px); }
+  .panel-contact .c-soc { font-size: clamp(18px, 6vw, 28px); }
+  .panel-contact .c-dl--primary { font-size: clamp(26px, 7vw, 38px); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2205,17 +2134,138 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   padding-left: var(--s-2);
 }
 
-/* When contact is the active section, keep the about-spacer invisible
-   so any stray scroll position can never flash the spacer gap */
-body.section-contact .about-spacer {
-  height: 0 !important;
-  pointer-events: none;
+/* ═══════════════════════════════════════════════════════════════
+   § CONTACT PANEL (embedded as the last About carousel slide)
+   The panel fills the fixed about-stage, same as all other panels.
+   On desktop: two-column layout. On mobile: single column, no image.
+═══════════════════════════════════════════════════════════════ */
+.panel-contact {
+  position: absolute; inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
 }
-/* Prevent content-visibility: auto on contact from causing layout recalcs
-   that push the section down on first paint */
-.contact {
-  content-visibility: visible;
+.panel-contact .contact-img {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 45%;
+  background-image: url('assets/images/sabrettahero.png');
+  background-size: cover; background-position: center;
+  opacity: .28;
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.8) 40%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.8) 40%);
+  filter: saturate(.5);
 }
+.panel-contact .contact-wm {
+  position: absolute; right: -2vw; bottom: -4vh;
+  font-family: var(--f-heading); font-size: clamp(180px,28vw,380px); font-weight: 700;
+  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.06);
+  pointer-events: none; user-select: none;
+  line-height: 1; letter-spacing: -.06em; text-transform: uppercase; white-space: nowrap;
+}
+.panel-contact .contact-inner {
+  position: relative; z-index: 2; padding: var(--s-8) var(--pad);
+  width: 60%; display: flex; flex-direction: column; gap: var(--s-5);
+}
+.panel-contact .contact-kicker {
+  display: flex; align-items: center; gap: var(--s-2);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
+}
+.panel-contact .contact-kicker::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
+.panel-contact .contact-h {
+  font-family: var(--f-heading); font-size: clamp(72px, 11vw, 148px); font-weight: 100;
+  letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; color: var(--c-primary);
+}
+.panel-contact .contact-h em { font-style: italic; color: var(--c-accent); font-weight: 100; }
+.panel-contact .contact-sub {
+  font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-text);
+  color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open); max-width: 390px;
+}
+.panel-contact .contact-fields { display: flex; flex-direction: column; gap: 0; }
+.panel-contact .c-field {
+  padding: var(--s-3) 0; border-bottom: 1px solid var(--c-rule);
+  display: grid; grid-template-columns: clamp(80px,10vw,120px) 1fr;
+  gap: var(--s-3); align-items: center;
+  transition: background var(--dur-fast) ease, padding-left var(--dur-fast) var(--ease);
+  border-radius: 2px;
+  padding-left: 0;
+}
+.panel-contact .c-field:hover {
+  background: var(--c-surface);
+  padding-left: var(--s-2);
+}
+.panel-contact .c-field:first-child { border-top: 1px solid var(--c-rule); }
+.panel-contact .c-field-label {
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); opacity: .6;
+}
+/* Email & LinkedIn — standard size */
+.panel-contact .c-soc {
+  font-family: var(--f-heading); font-size: var(--t-subhead); font-weight: 100;
+  letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-primary); text-decoration: none; cursor: none;
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  transition: color .25s, gap .3s var(--ease);
+  position: relative;
+}
+.panel-contact .c-soc::after {
+  content: ''; position: absolute; bottom: -3px; left: 0;
+  width: 100%; height: 1px; background: var(--c-accent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s var(--ease);
+}
+.panel-contact .c-soc:hover { color: var(--c-accent); gap: var(--s-3); }
+.panel-contact .c-soc:hover::after { transform: scaleX(1); }
+/* CV — larger than contact links, one step up the type scale */
+.panel-contact .c-dl--primary {
+  font-family: var(--f-heading); font-size: clamp(28px, 3.2vw, 46px); font-weight: 100;
+  letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-primary); text-decoration: none; cursor: none;
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  transition: color .25s, gap .3s var(--ease);
+  position: relative;
+}
+.panel-contact .c-dl--primary::after {
+  content: ''; position: absolute; bottom: -3px; left: 0;
+  width: 100%; height: 1px; background: var(--c-accent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s var(--ease);
+}
+.panel-contact .c-dl--primary:hover { color: var(--c-accent); gap: var(--s-3); }
+.panel-contact .c-dl--primary:hover::after { transform: scaleX(1); }
+.panel-contact .c-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: center; }
+/* Panel-footer — pinned to bottom of contact panel */
+.panel-footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: var(--s-2) var(--pad);
+  border-top: 1px solid var(--c-rule);
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 3;
+}
+.pf-logo {
+  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-secondary);
+  opacity: 0.55;
+}
+.pf-logo em { font-style: italic; color: var(--c-accent); }
+.pf-copy {
+  font-family: var(--f-meta); font-size: 9px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-muted);
+  opacity: 0.55;
+}
+
+/* Desktop light mode: statement (panel 4) and contact (panel 5) use light bg */
+@media (min-width: 769px) {
+  [data-theme="light"] .panel-statement {
+    background: var(--c-bg);
+  }
+  [data-theme="light"] .panel-contact {
+    background: var(--c-bg);
+  }
+  [data-theme="light"] .panel-contact .contact-h { color: var(--c-primary); }
+  [data-theme="light"] .panel-contact .panel-footer { border-top-color: var(--c-rule); }
+}
+
 footer::before {
   content: '';
   position: absolute;
@@ -2224,6 +2274,7 @@ footer::before {
   background: linear-gradient(to right, transparent, var(--c-accent-lo), transparent);
   pointer-events: none;
 }
+
 
 /* ── Prog-dot glow when active ── */
 .prog-dot.on {
@@ -2344,7 +2395,6 @@ button:focus-visible {
    and breaks fixed/absolute z-index children within overlays. */
 .proj           { contain: layout; }
 .panel          { contain: layout; }
-.contact        { contain: layout paint; }
 .ticker         { contain: layout style; }
 
 </style>
@@ -2837,7 +2887,35 @@ button:focus-visible {
       </div>
     </article>
 
-    <!-- Progress dots (5 panels) -->
+    <!-- Panel 5 — Contact (embedded as final About carousel slide) -->
+    <article class="panel panel-contact" data-panel="5" id="contact" aria-label="Contact Kieran Green">
+      <div class="contact-img" role="img" aria-label="Product visualization render of the Sabretta pen design"></div>
+      <div class="contact-wm" aria-hidden="true">Green</div>
+      <div class="contact-inner rev-stagger">
+        <p class="contact-kicker t-micro">Get in touch</p>
+        <h2 class="contact-h" id="contact-heading">Let's<br>build<br><em>something.</em></h2>
+        <p class="contact-sub t-body">Open to internships, collaborations, and freelance projects. Always drawn to interesting problems.</p>
+        <div class="contact-fields">
+          <div class="c-field">
+            <p class="c-field-label t-micro">Contact</p>
+            <div class="c-row">
+              <a href="https://kierangreen.myportfolio.com/contact" target="_blank" rel="noopener noreferrer" class="c-soc">Email →</a>
+              <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
+            </div>
+          </div>
+          <div class="c-field c-field--cv">
+            <p class="c-field-label t-micro">Resume</p>
+            <a href="assets/downloads/KieranGreenRes.pdf" download class="c-dl c-dl--primary">Download CV →</a>
+          </div>
+        </div>
+      </div>
+      <footer class="panel-footer" role="contentinfo" aria-label="Site footer">
+        <div class="pf-logo">Kieran <em>Green</em> — Industrial Designer</div>
+        <div class="pf-copy">© <span id="copy-year"></span> — All rights reserved</div>
+      </footer>
+    </article>
+
+    <!-- Progress dots (5 panels — contact panel has no dot, uses the arrow) -->
     <nav class="prog-dots" aria-label="About section progress">
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
@@ -2907,12 +2985,6 @@ button:focus-visible {
 </aside>
 
 </main>
-
-<footer role="contentinfo" aria-label="Site footer">
-  <div class="f-logo">Kieran <em>Green</em> — Industrial Designer</div>
-  <div class="f-copy">© <span id="copy-year"></span> — All rights reserved</div>
-</footer>
-
 
 <script src="js/site.js"></script>
 </body>
