@@ -119,7 +119,46 @@ class AppController {
       const rawDir = e.deltaY > 0 ? +1 : e.deltaY < 0 ? -1 : 0;
       const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
       const nativeAllowed = activeContainer?.nativeScrollDirection?.(rawDir) === true;
-      if (!nativeAllowed) e.preventDefault();
+
+      // ── NATIVE SCROLL: hand off to the browser immediately ────────────
+      // Do NOT call preventDefault — let the browser handle it. We still
+      // need to write trackpad events to the buffer (for direction tracking
+      // so the reversal-flush works on the next intercepted swipe), but we
+      // never fire the engine for a natively-handled direction.
+      if (nativeAllowed) {
+        // Trackpad only: keep buffer populated so direction-reversal flush
+        // works correctly when the user swipes back into an intercepted dir.
+        const raw2 = e.deltaMode === 1 ? e.deltaY * 32
+                   : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+                   : e.deltaY;
+        if (raw2 !== 0 && Math.abs(raw2) >= TRACKPAD_MIN_DELTA && Math.abs(raw2) < MOUSE_THRESHOLD) {
+          const now2 = performance.now();
+          // Flush on direction reversal before writing
+          if (this._tpCount > 0) {
+            let existingNet = 0;
+            const bl = this._tpBuf.length;
+            for (let i = 0; i < this._tpCount; i++) {
+              const slot = this._tpBuf[(this._tpHead - 1 - i + bl) % bl];
+              if (now2 - slot.t > TRACKPAD_WINDOW_MS) break;
+              existingNet += slot.dy;
+            }
+            if (existingNet !== 0 && Math.sign(existingNet) !== Math.sign(raw2)) {
+              this._tpHead = 0; this._tpCount = 0;
+            }
+          }
+          this._tpBuf[this._tpHead] = { t: now2, dy: raw2 };
+          this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
+          if (this._tpCount < this._tpBuf.length) this._tpCount++;
+        }
+        return; // browser owns this scroll
+      }
+
+      // ── INTERCEPTED SCROLL: engine will handle it ─────────────────────
+      // Only call preventDefault now that we know the engine is responsible.
+      // This prevents the browser from scrolling AND the engine from silently
+      // eating the event during a lock/settle window (which would leave the
+      // user with no feedback and a stuck scroll position).
+      e.preventDefault();
 
       // Normalise delta to pixels regardless of deltaMode
       const raw = e.deltaMode === 1 ? e.deltaY * 32
@@ -132,15 +171,9 @@ class AppController {
       const absRaw = Math.abs(raw);
 
       // ── POST-FIRE SETTLE: direction-aware ────────────────────────────
-      // A reversal (opposite to last fire) uses SETTLE_REVERSAL_MS — near-zero
-      // so intentional direction changes feel instant. A continuation (same
-      // direction as last fire) uses the full SETTLE_MS to absorb inertia.
       const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
       const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
       if (now < this._settleUntil) {
-        // Still within the settle window — but check if we're past the
-        // reversal threshold. _settleUntil was set using the full SETTLE_MS;
-        // recalculate whether the reversal window has cleared.
         const settleStart = this._settleUntil - SETTLE_MS;
         if (!isReversal || now < settleStart + effectiveSettle) return;
       }
@@ -149,27 +182,18 @@ class AppController {
       const isMouse = absRaw >= MOUSE_THRESHOLD;
 
       if (isMouse) {
-        // MOUSE PATH — direction-aware cooldown
-        if (nativeAllowed) return;
         const sinceLastFire = now - this._mouseLastFire;
         const cooldown = isReversal ? MOUSE_REVERSAL_MS : MOUSE_COOLDOWN_MS;
         if (sinceLastFire < cooldown) return;
-        this._fire(dir, false);
+        // Use _fireSoft when locked: a rejected setSection call shouldn't
+        // cost 440ms of settle. The full _fire settle is still armed on a
+        // successful transition (inside _activateDirect / enter()).
+        if (this._locked) { this._fireSoft(dir); } else { this._fire(dir); }
       } else {
-        // TRACKPAD PATH — accumulate in rolling window, fire on threshold
         if (absRaw < TRACKPAD_MIN_DELTA) return;
 
-        // ── Direction-reversal flush ──────────────────────────────────────
-        // If the buffer has a non-zero net and the incoming delta opposes it,
-        // the user has reversed direction. Stale opposite-direction entries
-        // are not ambiguous noise — they are expired intent. Carrying them
-        // forward makes the threshold harder to cross in the new direction,
-        // which is exactly the contact→about hand-back bug: downward native
-        // scroll fills the buffer, reversal upward can never accumulate enough
-        // net to fire. Flushing on reversal is the correct general fix and
-        // covers all sections, not just contact.
+        // Direction-reversal flush
         if (this._tpCount > 0) {
-          // Compute net of the current buffer contents (newest-first scan)
           let existingNet = 0;
           const bufLen0 = this._tpBuf.length;
           for (let i = 0; i < this._tpCount; i++) {
@@ -177,35 +201,28 @@ class AppController {
             if (now - slot.t > TRACKPAD_WINDOW_MS) break;
             existingNet += slot.dy;
           }
-          // Flush if the existing net and the incoming delta have opposite signs
           if (existingNet !== 0 && Math.sign(existingNet) !== Math.sign(raw)) {
             this._tpHead = 0; this._tpCount = 0;
           }
         }
 
-        // If this direction is natively handled, do not fire — but still
-        // write to the buffer so we track the current gesture direction.
-        // That way, when the user reverses into an intercepted direction,
-        // the flush above correctly clears the native-scroll history.
         this._tpBuf[this._tpHead] = { t: now, dy: raw };
         this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
         if (this._tpCount < this._tpBuf.length) this._tpCount++;
-
-        if (nativeAllowed) return;
 
         // Net displacement across entries still within the rolling window
         let net = 0;
         const bufLen = this._tpBuf.length;
         for (let i = 0; i < this._tpCount; i++) {
           const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen) % bufLen];
-          if (now - slot.t > TRACKPAD_WINDOW_MS) break; // entries are newest-first; stop at first stale
+          if (now - slot.t > TRACKPAD_WINDOW_MS) break;
           net += slot.dy;
         }
 
         if (Math.abs(net) >= TRACKPAD_THRESH) {
           const fireDir = net > 0 ? +1 : -1;
-          this._tpHead = 0; this._tpCount = 0; // reset ring buffer so next swipe starts clean
-          this._fire(fireDir, false);
+          this._tpHead = 0; this._tpCount = 0;
+          if (this._locked) { this._fireSoft(fireDir); } else { this._fire(fireDir); }
         }
       }
     }, { passive: false });
@@ -324,6 +341,20 @@ class AppController {
     this._mouseLastFire = now;
     this._lastFireDir   = dir;
     // Clear trackpad buffer so the settle period starts clean
+    this._tpHead = 0; this._tpCount = 0;
+    this._dispatchScroll(dir);
+  }
+
+  /**
+   * Like _fire but does NOT re-arm the settle window.
+   * Used when the container wants to attempt a section change that may be
+   * rejected by _locked — we don't want a failed setSection call to cost
+   * the user 440ms of frozen input.
+   */
+  _fireSoft(dir) {
+    const now = performance.now();
+    this._mouseLastFire = now;
+    this._lastFireDir   = dir;
     this._tpHead = 0; this._tpCount = 0;
     this._dispatchScroll(dir);
   }
