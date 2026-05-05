@@ -1474,33 +1474,19 @@ class ContactContainer {
     if (!this._root) return;
     this._active = true;
     document.body.classList.add('section-contact');
-
-    // Synchronously read and jump to contact top.
     const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
     this._contactTop = top;
+
+    // Immediately jump to contact top so the ticker and spacer are never
+    // visible — even if the about-stage hasn't finished fading out yet.
     window.scrollTo({ top, behavior: 'instant' });
 
-    // Re-cache after layout settles. The about-spacer collapses to 0 after
-    // AboutContainer.exit(), shifting contact's document position. We take
-    // three measurements at increasing delays to catch slow reflows, and
-    // always clamp to the minimum seen so _contactTop never drifts above
-    // the actual section top (which would make atTop permanently false and
-    // block the hand-back to About indefinitely).
-    const recache = () => {
-      requestAnimationFrame(() => {
-        if (!this._root || !this._active) return;
-        const measured = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-        // Only accept the new value if we're currently scrolled at or near the
-        // contact top — if the user has already scrolled down, the measurement
-        // is relative to a shifted viewport and will be wrong.
-        if (Math.abs(window.scrollY - this._contactTop) < 50) {
-          this._contactTop = measured;
-        }
-      });
-    };
-    setTimeout(recache, 80);
-    setTimeout(recache, 300);
-    setTimeout(recache, 700);
+    // Re-cache twice: once after a short delay (covers most layout flushes)
+    // and once after a longer delay (covers mobile reflow of the about-spacer
+    // which AboutContainer.exit collapses to 0 — the layout change can shift
+    // the contact section's document position by several hundred px on mobile).
+    setTimeout(() => this._cacheTop(), 120);
+    setTimeout(() => this._cacheTop(), 500);
   }
 
   exit() {
@@ -1530,17 +1516,17 @@ class ContactContainer {
     // Always allow downward native scroll so footer is reachable.
     if (dir === +1) return true;
     if (dir === -1) {
-      // Allow native upward scroll while the user is still below the contact
-      // entry point. Intercept (return false) only when they've scrolled back
-      // to the very top — that's when we hand back to About.
-      // NOTE: do NOT re-measure contactTop here. getBoundingClientRect() in
-      // the hot scroll path reads during layout shifts (about-spacer collapsing)
-      // and returns unstable values that permanently corrupt _contactTop, causing
-      // every subsequent upward event to be intercepted and triggering a
-      // setSection loop that locks all scroll. _contactTop is only written in
-      // enter() and the two post-settle setTimeout callbacks in enter(), which
-      // run after the layout has stabilised.
-      const atTop = window.scrollY <= this._contactTop + 8;
+      // Lazy re-cache: if our cached top looks wrong (scrollY is far below
+      // where contactTop claims the section is), the about-spacer has probably
+      // shifted the layout since we last measured. Re-measure now so we don't
+      // permanently block the hand-back to About.
+      if (this._root && window.scrollY < this._contactTop - 200) {
+        this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+      }
+      // Allow native upward scroll while the user is still scrolled below the
+      // contact entry point. Intercept only when they've scrolled back to
+      // within 80px of the top — that's when we hand back to About.
+      const atTop = window.scrollY <= this._contactTop + 80;
       return !atTop;
     }
     return false;
