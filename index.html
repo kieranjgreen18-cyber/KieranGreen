@@ -136,7 +136,7 @@
   --c-accent:     #5ba0a4;
   --c-accent-hi:  #7ec8cc;
   --c-accent-lo:  rgba(91,160,164,0.12);
-  --c-muted:      rgba(150,168,170,0.55);
+  --c-muted:      rgba(150,168,170,0.35);
   --c-rule:       rgba(255,255,255,0.055);
   --c-rule-hi:    rgba(255,255,255,0.10);
 
@@ -327,6 +327,9 @@
   }
   /* Statement panel video frame background */
   [data-theme="light"] .stmt-video-frame {
+    background: var(--c-bg);
+  }
+  [data-theme="light"] .stmt-video-frame .ps-film-bar {
     background: var(--c-bg);
   }
 }
@@ -1352,6 +1355,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .stmt-video-frame iframe {
   position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block;
 }
+.stmt-video-frame .ps-film-bar { background: var(--c-bg); height: clamp(16px,2.5vw,32px); }
 .stmt-wm {
   position: absolute; right: calc(var(--pad) - 0.04em); bottom: -0.1em;
   font-family: var(--f-heading); font-size: clamp(120px, 18vw, 260px);
@@ -1466,7 +1470,12 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .ps-video-frame iframe {
   position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block;
 }
-
+.ps-film-bar {
+  position: absolute; left: 0; right: 0;
+  height: clamp(20px, 3vw, 40px); background: var(--c-bg); z-index: 4; pointer-events: none;
+}
+.ps-film-bar-top { top: 0; }
+.ps-film-bar-bot { bottom: 0; }
 .ps-film-meta {
   position: absolute; bottom: 0; left: 0; right: 0;
   height: clamp(20px, 3vw, 40px); z-index: 5; pointer-events: none;
@@ -1954,7 +1963,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .panel-contact .contact-wm { display: none; }
   .panel-contact .contact-inner {
     width: 100%;
-    padding: var(--s-6) var(--pad) var(--s-5);
+    padding: var(--s-6) var(--pad) var(--s-7);
   }
   .panel-contact .contact-h { font-size: clamp(56px, 13vw, 80px); color: var(--c-primary); }
   .panel-contact .c-field { grid-template-columns: 1fr; gap: var(--s-1); }
@@ -2153,7 +2162,8 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   line-height: 1; letter-spacing: -.06em; text-transform: uppercase; white-space: nowrap;
 }
 .panel-contact .contact-inner {
-  position: relative; z-index: 2; padding: var(--s-8) var(--pad);
+  position: relative; z-index: 2;
+  padding: var(--s-8) var(--pad) var(--s-7);
   width: 60%; display: flex; flex-direction: column; gap: var(--s-5);
 }
 .panel-contact .contact-kicker {
@@ -2401,7 +2411,6 @@ button:focus-visible {
 <div id="cur-r"         aria-hidden="true"></div>
 <div id="grain"         aria-hidden="true"></div>
 <div id="section-indicator" aria-hidden="true"></div>
-<div id="about-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Carousel dot nav — visual only, described by section heading -->
 <div id="c-dots" role="presentation" aria-hidden="true"></div>
@@ -2713,6 +2722,7 @@ button:focus-visible {
 <section
   class="about-stage"
   id="about-stage"
+  aria-label="About Kieran Green"
   aria-labelledby="about-h2"
 >
   <div class="stage-edge stage-edge-top" aria-hidden="true"></div>
@@ -2863,6 +2873,7 @@ button:focus-visible {
       </div>
       <div class="stmt-video-row">
         <div class="stmt-video-frame">
+          <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
           <iframe
             data-src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1"
             title="Kieran Green — Personal Statement"
@@ -2872,6 +2883,7 @@ button:focus-visible {
             referrerpolicy="strict-origin-when-cross-origin"
             sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
           ></iframe>
+          <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
         </div>
       </div>
     </article>
