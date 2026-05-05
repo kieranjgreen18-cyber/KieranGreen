@@ -1965,11 +1965,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     width: 100%;
     padding: var(--s-6) var(--pad) var(--s-5);
   }
-  .panel-contact .contact-h { font-size: clamp(56px, 13vw, 80px); color: var(--c-primary); }
+  .panel-contact .contact-h { font-size: clamp(44px, 11vw, 72px); color: var(--c-primary); }
   .panel-contact .c-field { grid-template-columns: 1fr; gap: var(--s-1); }
-  .panel-contact .c-dl--primary { font-size: clamp(30px, 8vw, 46px); }
-  .panel-contact .c-soc { cursor: pointer; }
-  .panel-contact .c-dl--primary { cursor: pointer; }
+  .panel-contact .c-soc { font-size: clamp(18px, 5vw, 26px); cursor: pointer; }
+  .panel-contact .c-dl--primary { font-size: clamp(26px, 7vw, 40px); cursor: pointer; }
   /* Panel footer — mobile */
   .panel-footer { padding: var(--s-2) var(--pad); flex-direction: column; gap: 2px; align-items: center; text-align: center; }
 }
@@ -1979,9 +1978,9 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .ch-title  { font-size: clamp(34px, 9.5vw, 52px); }
   .intro-name { font-size: clamp(38px, 10.5vw, 58px); }
   .t-statement { font-size: clamp(16px, 4.8vw, 24px); }
-  .panel-contact .contact-h { font-size: clamp(48px, 14vw, 72px); }
-  .panel-contact .c-soc { font-size: clamp(18px, 6vw, 28px); }
-  .panel-contact .c-dl--primary { font-size: clamp(26px, 7vw, 38px); }
+  .panel-contact .contact-h { font-size: clamp(38px, 12vw, 58px); }
+  .panel-contact .c-soc { font-size: clamp(16px, 5.5vw, 22px); }
+  .panel-contact .c-dl--primary { font-size: clamp(22px, 7.5vw, 34px); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2163,7 +2162,7 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 }
 .panel-contact .contact-inner {
   position: relative; z-index: 2; padding: var(--s-8) var(--pad);
-  width: 60%; display: flex; flex-direction: column; gap: var(--s-5);
+  width: 60%; display: flex; flex-direction: column; gap: var(--s-4);
 }
 .panel-contact .contact-kicker {
   display: flex; align-items: center; gap: var(--s-2);
@@ -2172,7 +2171,7 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 }
 .panel-contact .contact-kicker::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
 .panel-contact .contact-h {
-  font-family: var(--f-heading); font-size: clamp(72px, 11vw, 148px); font-weight: 100;
+  font-family: var(--f-heading); font-size: var(--t-title); font-weight: 100;
   letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; color: var(--c-primary);
 }
 .panel-contact .contact-h em { font-style: italic; color: var(--c-accent); font-weight: 100; }
@@ -2199,7 +2198,7 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent); opacity: .6;
 }
-/* Email & LinkedIn — standard size */
+/* Email & LinkedIn — --t-subhead */
 .panel-contact .c-soc {
   font-family: var(--f-heading); font-size: var(--t-subhead); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
@@ -2216,9 +2215,9 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 }
 .panel-contact .c-soc:hover { color: var(--c-accent); gap: var(--s-3); }
 .panel-contact .c-soc:hover::after { transform: scaleX(1); }
-/* CV — larger than contact links, one step up the type scale */
+/* CV — --t-heading: one named scale step above --t-subhead */
 .panel-contact .c-dl--primary {
-  font-family: var(--f-heading); font-size: clamp(28px, 3.2vw, 46px); font-weight: 100;
+  font-family: var(--f-heading); font-size: var(--t-heading); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
   color: var(--c-primary); text-decoration: none; cursor: none;
   display: inline-flex; align-items: center; gap: var(--s-2);
@@ -2896,16 +2895,16 @@ button:focus-visible {
         <h2 class="contact-h" id="contact-heading">Let's<br>build<br><em>something.</em></h2>
         <p class="contact-sub t-body">Open to internships, collaborations, and freelance projects. Always drawn to interesting problems.</p>
         <div class="contact-fields">
+          <div class="c-field c-field--cv">
+            <p class="c-field-label t-micro">Resume</p>
+            <a href="assets/downloads/KieranGreenRes.pdf" download class="c-dl c-dl--primary">Download CV →</a>
+          </div>
           <div class="c-field">
             <p class="c-field-label t-micro">Contact</p>
             <div class="c-row">
               <a href="https://kierangreen.myportfolio.com/contact" target="_blank" rel="noopener noreferrer" class="c-soc">Email →</a>
               <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
             </div>
-          </div>
-          <div class="c-field c-field--cv">
-            <p class="c-field-label t-micro">Resume</p>
-            <a href="assets/downloads/KieranGreenRes.pdf" download class="c-dl c-dl--primary">Download CV →</a>
           </div>
         </div>
       </div>
