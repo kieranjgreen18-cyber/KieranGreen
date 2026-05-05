@@ -197,6 +197,14 @@ class AppController {
         const now = performance.now();
         if (now >= this._settleUntil) this._fire(-1);
       }
+      // Left/Right arrows navigate the about carousel when it is engaged
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const about = this._containers.get('about');
+        if (about?._active) {
+          e.preventDefault();
+          about._advance(e.key === 'ArrowRight' ? 1 : -1);
+        }
+      }
       if (e.key === 'Escape') {
         const active = this._containers.get(this._activeKey);
         if (active?.onEscape) active.onEscape();
@@ -1288,7 +1296,16 @@ class AboutContainer {
       if      (i < idx)  el.classList.add('is-after');
       else if (i === idx) el.classList.add('is-active');
       else               el.classList.add('is-below');
+      // Hide off-screen panels from AT — they are visually hidden and their
+      // links/text should not be reachable by keyboard or screen reader
+      el.setAttribute('aria-hidden', i === idx ? 'false' : 'true');
     });
+    // Announce the newly active panel to screen readers via the polite live region
+    const announcer = document.getElementById('about-announcer');
+    if (announcer) {
+      const label = this._panels[idx]?.getAttribute('aria-label') || '';
+      announcer.textContent = label;
+    }
     // Only drive dots for the non-contact panels (contact panel has no dot —
     // it uses the more-below arrow as its indicator instead).
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
