@@ -249,8 +249,16 @@
 }
 
 /* ── Nav ── */
-[data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.9) 0%, transparent 100%); }
-[data-theme="light"] nav.scrolled { background: rgba(237,238,237,0.94); backdrop-filter: blur(32px) saturate(1.5); }
+[data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.90) 0%, transparent 100%); }
+[data-theme="light"] nav.scrolled {
+  background: rgba(237,238,237,0.94);
+  backdrop-filter: blur(32px) saturate(1.5);
+  border-bottom: 1px solid rgba(8,9,9,0.10);
+}
+/* Nav links and logo — ensure they read against the light nav bg */
+[data-theme="light"] .n-links a { color: var(--c-secondary); }
+[data-theme="light"] .n-links a:hover { color: var(--c-primary); }
+[data-theme="light"] .n-logo { color: var(--c-secondary); }
 /* Nav drawer — dark overlay becomes light panel */
 [data-theme="light"] .nav-drawer {
   background: rgba(237,238,237,.98);
@@ -274,15 +282,57 @@
 /* ── Grain ── */
 [data-theme="light"] #grain { opacity: .02; }
 
-/* ── Carousel — keep dark mode values (legibility over light bg doesn't work with dark images) ── */
-/* Carousel and about sections deliberately retain dark mode values in light mode.
-   Light mode only applies to: nav, hero vignette, body sections (contact/footer), ticker */
+/* ── Carousel — force light text in light mode
+   Slides always have dark photographic backgrounds + dark gradient veils.
+   --c-primary flips to near-black in light mode, making text invisible
+   against the dark images. Pin text to the dark-mode light values. ── */
+[data-theme="light"] .projects .proj-title,
+[data-theme="light"] .projects .proj-counter,
+[data-theme="light"] .projects .proj-swipe-hint,
+[data-theme="light"] .projects .sc-cur { color: #edeeed; }
+[data-theme="light"] .projects .proj-desc { color: rgba(237,238,237,0.75); }
+[data-theme="light"] .projects .proj-open { color: #edeeed; }
 
 /* ── Protected slide ── */
 /* No light-mode overrides for carousel/about — dark values used throughout */
 
-/* ── About ── */
-/* About stage retains dark background and dark values regardless of theme */
+/* ── About — desktop light mode ──────────────────────────────────────────
+   Desktop About is a two-column layout: photo left, text right. In light mode
+   we want the stage background to use var(--c-bg) so the text column reads
+   cleanly against a light surface. The intro panel vignette already uses
+   var(--c-bg) tokens so it adapts automatically.
+
+   Mobile stays dark (image-forward, gradient-contrast design). Mobile
+   overrides further down in the responsive block lock the gradients to the
+   dark palette explicitly so light mode cannot bleed in.
+   ─────────────────────────────────────────────────────────────────────── */
+@media (min-width: 769px) {
+  [data-theme="light"] .about-stage {
+    background: var(--c-bg);
+  }
+  /* Top/bottom edge vignettes — match the light bg */
+  [data-theme="light"] .about-stage .stage-edge-top {
+    background: linear-gradient(to bottom, var(--c-bg) 0%, transparent 100%);
+  }
+  [data-theme="light"] .about-stage .stage-edge-bot {
+    background: linear-gradient(to top, var(--c-bg) 0%, transparent 100%);
+  }
+  /* panels-host depth vignette — match the light bg */
+  [data-theme="light"] .panels-host::after {
+    background: linear-gradient(to bottom, var(--c-bg) 0%, transparent 6%, transparent 94%, var(--c-bg) 100%);
+  }
+  /* col-bottom label/chapter gradient — fade from transparent to light bg */
+  [data-theme="light"] .col-bottom {
+    background: linear-gradient(to bottom, transparent 0%, var(--c-bg) 55%);
+  }
+  /* Statement panel video frame background */
+  [data-theme="light"] .stmt-video-frame {
+    background: var(--c-bg);
+  }
+  [data-theme="light"] .stmt-video-frame .ps-film-bar {
+    background: var(--c-bg);
+  }
+}
 
 /* ── Contact ── */
 /* Contact background image — more visible on light, slightly more saturated */
@@ -1075,13 +1125,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
   z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 10px;
   pointer-events: none; opacity: 0; transition: opacity .4s;
-  align-items: flex-end;
-  padding: 10px 8px;
-  background: rgba(8,9,9,0.35);
-  border-radius: 20px;
-  backdrop-filter: blur(4px);
+  align-items: center;
+  padding: 4px 0;
 }
-.c-dot-wrap { display: flex; align-items: center; justify-content: flex-end; }
+.c-dot-wrap { display: flex; align-items: center; justify-content: center; }
 .c-dot {
   width: 4px; height: 4px; border-radius: 50%;
   background: rgba(91,160,164,.28); display: block;
@@ -1089,7 +1136,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 .c-dot-wrap.on .c-dot { background: var(--c-accent); transform: scale(1.7); }
 
-/* Next-section arrow — centered under dots to match dot column visually */
+/* Next-section arrow — aligned to dot column center */
 .c-next-arrow {
   align-self: center;
   margin-top: 6px;
@@ -1342,13 +1389,9 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 10px;
-  align-items: flex-end;
+  align-items: center;
   z-index: var(--z-carousel); pointer-events: none;
-  /* Dark pill behind dots so they're always visible — about-stage is always dark */
-  padding: 10px 8px;
-  background: rgba(8,9,9,0.35);
-  border-radius: 20px;
-  backdrop-filter: blur(4px);
+  padding: 4px 0;
 }
 .prog-dot {
   width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
@@ -1356,7 +1399,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 .prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
 
-/* More-below indicator — centered to match the dots above it */
+/* More-below indicator — aligned to dot column center */
 .about-more-below {
   align-self: center;
   margin-top: 6px;
@@ -1823,33 +1866,33 @@ footer {
 
   /* Accent rule */
   .ch-rule { margin-bottom: var(--s-3); }
-  /* Big, confident heading — text-shadow ensures legibility even if
-     the gradient doesn't reach all the way to the top of tall type */
+  /* Big, confident heading — always white on mobile (dark scrim behind) */
   .ch-title {
     font-size: clamp(38px, 10vw, 58px);
     line-height: 0.90;
     margin-bottom: var(--s-3);
-    color: var(--c-primary);
+    color: #edeeed;
     text-shadow:
       0 1px 12px rgba(0,0,0,0.70),
       0 2px 32px rgba(0,0,0,0.50);
   }
   [data-theme="light"] .ch-title {
+    color: #edeeed;
     text-shadow:
       0 1px 12px rgba(0,0,0,0.70),
       0 2px 32px rgba(0,0,0,0.50);
   }
-  /* Body copy — lifted to --c-primary on mobile so it pops off the dark scrim */
+  /* Body copy — always white/light on mobile, pops off dark scrim */
   .ch-body {
     font-size: 15px;
     line-height: 1.62;
     max-width: 100%;
-    color: var(--c-primary);
+    color: #edeeed;
     opacity: 0.82;
     text-shadow: 0 1px 8px rgba(0,0,0,0.60);
   }
   [data-theme="light"] .ch-body {
-    color: var(--c-primary);
+    color: #edeeed;
     opacity: 0.82;
     text-shadow: 0 1px 8px rgba(0,0,0,0.60);
   }
@@ -1922,26 +1965,28 @@ footer {
     font-size: clamp(42px, 11vw, 64px);
     line-height: 0.88;
     margin-bottom: var(--s-3);
+    color: #edeeed;
     text-shadow:
       0 1px 12px rgba(0,0,0,0.72),
       0 2px 28px rgba(0,0,0,0.48);
   }
   [data-theme="light"] .intro-name {
+    color: #edeeed;
     text-shadow:
-      0 1px 8px rgba(237,238,237,0.80),
-      0 2px 18px rgba(237,238,237,0.55);
+      0 1px 12px rgba(0,0,0,0.72),
+      0 2px 28px rgba(0,0,0,0.48);
   }
   .intro-meta {
     font-size: 15px;
     line-height: 1.60;
-    color: var(--c-primary);
+    color: #edeeed;
     opacity: 0.80;
     text-shadow: 0 1px 6px rgba(0,0,0,0.55);
   }
   [data-theme="light"] .intro-meta {
-    color: var(--c-primary);
+    color: #edeeed;
     opacity: 0.82;
-    text-shadow: 0 1px 5px rgba(237,238,237,0.65);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.55);
   }
 
   /* ── Statement panel (panel 4) — no image, full-height text ── */
@@ -1979,6 +2024,14 @@ footer {
 
   /* Progress dots */
   .prog-dots { right: var(--s-2); gap: 8px; }
+
+  /* About stage — always dark on mobile (image-forward design) */
+  [data-theme="light"] .about-stage { background: #080909; }
+  [data-theme="light"] .about-stage .stage-edge-top { background: linear-gradient(to bottom, #080909 0%, transparent 100%); }
+  [data-theme="light"] .about-stage .stage-edge-bot { background: linear-gradient(to top, #080909 0%, transparent 100%); }
+  [data-theme="light"] .panels-host::after {
+    background: linear-gradient(to bottom, #080909 0%, transparent 6%, transparent 94%, #080909 100%);
+  }
 
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
