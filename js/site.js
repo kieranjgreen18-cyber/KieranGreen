@@ -116,48 +116,7 @@ class AppController {
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
-      const rawDir = e.deltaY > 0 ? +1 : e.deltaY < 0 ? -1 : 0;
-      const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
-      const nativeAllowed = activeContainer?.nativeScrollDirection?.(rawDir) === true;
-
-      // ── NATIVE SCROLL: hand off to the browser immediately ────────────
-      // Do NOT call preventDefault — let the browser handle it. We still
-      // need to write trackpad events to the buffer (for direction tracking
-      // so the reversal-flush works on the next intercepted swipe), but we
-      // never fire the engine for a natively-handled direction.
-      if (nativeAllowed) {
-        // Trackpad only: keep buffer populated so direction-reversal flush
-        // works correctly when the user swipes back into an intercepted dir.
-        const raw2 = e.deltaMode === 1 ? e.deltaY * 32
-                   : e.deltaMode === 2 ? e.deltaY * window.innerHeight
-                   : e.deltaY;
-        if (raw2 !== 0 && Math.abs(raw2) >= TRACKPAD_MIN_DELTA && Math.abs(raw2) < MOUSE_THRESHOLD) {
-          const now2 = performance.now();
-          // Flush on direction reversal before writing
-          if (this._tpCount > 0) {
-            let existingNet = 0;
-            const bl = this._tpBuf.length;
-            for (let i = 0; i < this._tpCount; i++) {
-              const slot = this._tpBuf[(this._tpHead - 1 - i + bl) % bl];
-              if (now2 - slot.t > TRACKPAD_WINDOW_MS) break;
-              existingNet += slot.dy;
-            }
-            if (existingNet !== 0 && Math.sign(existingNet) !== Math.sign(raw2)) {
-              this._tpHead = 0; this._tpCount = 0;
-            }
-          }
-          this._tpBuf[this._tpHead] = { t: now2, dy: raw2 };
-          this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
-          if (this._tpCount < this._tpBuf.length) this._tpCount++;
-        }
-        return; // browser owns this scroll
-      }
-
-      // ── INTERCEPTED SCROLL: engine will handle it ─────────────────────
-      // Only call preventDefault now that we know the engine is responsible.
-      // This prevents the browser from scrolling AND the engine from silently
-      // eating the event during a lock/settle window (which would leave the
-      // user with no feedback and a stuck scroll position).
+      // All sections are scroll-locked; the engine always intercepts wheel events.
       e.preventDefault();
 
       // Normalise delta to pixels regardless of deltaMode
@@ -258,9 +217,7 @@ class AppController {
       const dx = Math.abs(currentX - _tx0);
       if (dy > dx && dy > 10) {
         const touchDir = (currentY - _ty0) > 0 ? -1 : +1;
-        const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
-        const nativeAllowed = activeContainer?.nativeScrollDirection?.(touchDir) === true;
-        if (!nativeAllowed) e.preventDefault();
+        e.preventDefault();
 
         // ── Mid-gesture reversal reset ──────────────────────────────────
         // If the user reverses direction mid-gesture (e.g. starts scrolling
@@ -297,9 +254,7 @@ class AppController {
         if (now < this._settleUntil) {
           if (!isReversal || now < settleStart + effectiveSettle) return;
         }
-        const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
-        const nativeAllowed = activeContainer?.nativeScrollDirection?.(dir) === true;
-        if (!nativeAllowed) this._fire(dir);
+        this._fire(dir);
       }
     }, { passive: true });
 
@@ -402,26 +357,22 @@ class AppController {
     // Extend the settle window to cover the full lock period so a single scroll
     // gesture cannot simultaneously trigger the section change AND the first
     // advance in the new section.
-    // Containers that are native-scroll (no internal slides, no inertia to absorb)
-    // opt out by setting needsEntranceSettle = false. For those, we clear the
-    // settle window immediately so native scroll can begin without a frozen period.
-    if (next.needsEntranceSettle !== false) {
-      const settleEnd = performance.now() + LOCK_MS;
-      if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
-    } else {
-      this._settleUntil = 0;
-      this._lastFireDir = 0;
-    }
+    const settleEnd = performance.now() + LOCK_MS;
+    if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
     next.enter(fromDirection);
     this._chrome?.notifySection?.(name);
-    const suppressMs = name === 'contact' ? 750 : LOCK_MS;
-    this._chrome?.suppressScrollIndicator?.(suppressMs);
   }
 
   _dispatchScroll(direction) {
     if (!this._activeKey) return;
     const active = this._containers.get(this._activeKey);
     if (active?.onScroll) active.onScroll(direction);
+  }
+
+  /** Navigate directly to the contact panel (last About panel). */
+  goToContactPanel() {
+    const about = this._containers.get('about');
+    if (about) setTimeout(() => about.goToLastPanel(), 80);
   }
 }
 
@@ -463,15 +414,6 @@ class PageChrome {
     // Section indicator
     this._secInd  = null;
     this._navEl   = null;
-    this._suppressIndicatorUntil = 0; // timestamp — scroll-based updates are muted until this time
-    this._SECTIONS = [
-      { id: 'top',           label: 'Hero'     },
-      { id: 'projects-spacer', label: 'Projects' },
-      { id: 'about',         label: 'About'    },
-      { id: 'contact',       label: 'Contact'  },
-    ];
-    this._sectionOffsets = [];
-
     // Theme
     this._currentTheme = 'dark';
     this._SVG_SUN  = '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
@@ -586,7 +528,7 @@ class PageChrome {
       '#top':     'hero',
       '#work':    'carousel',
       '#about':   'about',
-      '#contact': 'contact',
+      '#contact': 'about',  // contact is now the last panel of about
     };
     document.addEventListener('click', e => {
       const a = e.target.closest('a[href]');
@@ -597,7 +539,9 @@ class PageChrome {
         e.preventDefault();
         const sectionKey = ANCHOR_SECTION_MAP[href];
         if (sectionKey && this._app) {
-          this._app.setSection(sectionKey, 0, true); // force=true: nav clicks bypass transition lock
+          this._app.setSection(sectionKey, 0, true);
+          // #contact jumps to the last About panel — ask the app to do it cleanly
+          if (href === '#contact') this._app.goToContactPanel();
         } else {
           // Fallback for anchors outside the container system
           const targetId = href.slice(1);
@@ -659,41 +603,12 @@ class PageChrome {
       logo.addEventListener('focus', () => { if (!scrambling) scramble(); });
     }
 
-    // ── Nav scrolled + section indicator ──────────────────────────────
+    // ── Nav scrolled + hero scroll hint ───────────────────────────────
     const heroScrollEl = document.getElementById('hero-scroll');
-    const buildOffsets = () => {
-      this._sectionOffsets = this._SECTIONS.map(s => {
-        const el = document.getElementById(s.id);
-        return { label: s.label, top: el ? el.getBoundingClientRect().top + window.scrollY : 0 };
-      });
-    };
-    // ResizeObserver on body: rebuild section offsets after any layout change.
-    // Kept connected (no disconnect) so dynamic content changes (e.g. spacer
-    // height updates from containers) also trigger a rebuild. Debounced so
-    // rapid resize events don't hammer getBoundingClientRect.
-    let roTimer;
-    const ro = new ResizeObserver(() => {
-      clearTimeout(roTimer);
-      // Use a 160ms debounce (was 100ms) to ensure we measure AFTER any
-      // container transition that triggered the layout change has committed.
-      roTimer = setTimeout(() => buildOffsets(), 160);
-    });
-    ro.observe(document.body);
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
       if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
-      if (this._secInd && this._sectionOffsets.length) {
-        // Skip all indicator work while a container transition is settling —
-        // notifySection() already set the correct label and visibility state.
-        if (performance.now() < this._suppressIndicatorUntil) return;
-        let active = this._SECTIONS[0].label;
-        for (let i = this._sectionOffsets.length - 1; i >= 0; i--) {
-          if (y >= this._sectionOffsets[i].top - 100) { active = this._sectionOffsets[i].label; break; }
-        }
-        this._secInd.textContent = active;
-        this._secInd.classList.toggle('visible', y > window.innerHeight * 0.5);
-      }
     }, { passive: true });
 
     // ── Resize ─────────────────────────────────────────────────────────
@@ -701,7 +616,6 @@ class PageChrome {
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        buildOffsets();
         if (window.innerWidth > 768) {
           document.body.classList.remove('menu-open');
           const h = document.getElementById('hamburger');
@@ -717,44 +631,24 @@ class PageChrome {
     if (copyYear) copyYear.textContent = new Date().getFullYear();
   }
 
-  /**
-   * Retained as an extension point for future chrome-level scroll effects.
-   * Progress bar removed; AppController no longer calls this method.
-   * If you re-introduce a chrome scroll effect, re-add the call in
-   * AppController._dispatchScroll.
-   */
-  onScroll(y) {
-    // intentionally empty
-  }
+  // Cursor state is expressed as body classes so CSS owns all appearance.
 
   /**
    * Called by AppController._activateDirect whenever the active section changes.
-   * Updates the section indicator label directly from the container key, bypassing
-   * the scroll-position heuristic which is unreliable in a scroll-locked layout.
-   * @param {string} sectionKey  e.g. 'hero' | 'carousel' | 'about' | 'contact'
+   * Updates body[data-section] and the section indicator label.
+   * @param {string} sectionKey  'hero' | 'carousel' | 'about'
    */
   notifySection(key) {
     // Drive body[data-section] so CSS can show/hide section-specific UI
     // (e.g. the nav availability badge which should only appear on hero).
     document.body.dataset.section = key;
     if (!this._secInd) return;
-    const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About', contact: 'Contact' };
+    const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About' };
     const label = labelMap[key];
     if (label) {
       this._secInd.textContent = label;
       this._secInd.classList.toggle('visible', key !== 'hero');
     }
-  }
-
-  /**
-   * Mutes the scroll-position-based section indicator for `ms` milliseconds.
-   * Called by AppController._activateDirect after every section change so that
-   * an in-flight smooth scroll (ContactContainer.enter) cannot clobber the label
-   * that notifySection() just set.
-   * @param {number} ms
-   */
-  suppressScrollIndicator(ms) {
-    this._suppressIndicatorUntil = performance.now() + ms;
   }
 
   // Cursor state is expressed as body classes so CSS owns all appearance.
@@ -1291,6 +1185,8 @@ class AboutContainer {
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 900; // about panel CSS: 0.85s transform + margin
+    // Index of the contact panel (last panel) — set in init() once panels are counted
+    this._contactPanelIdx = -1;
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1308,6 +1204,9 @@ class AboutContainer {
     this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
     this._hint   = root.querySelector('#about-scroll-hint');
     this._N      = this._panels.length;
+    // The last panel is the contact panel — track its index so we can
+    // update the section indicator label and suppress its dot.
+    this._contactPanelIdx = this._N - 1;
 
     if (!this._spacer || !this._N) {
       console.warn('[AboutContainer] Missing spacer or panels — check DOM.');
@@ -1364,6 +1263,11 @@ class AboutContainer {
     this._advance(direction);
   }
 
+  /** Called by AppController.goToContactPanel() when a nav link targets #contact. */
+  goToLastPanel() {
+    if (this._active) this._setPanel(this._N - 1);
+  }
+
   _sizeSpacer() {
     if (this._spacer) this._spacer.style.height = `${this._N * window.innerHeight}px`;
   }
@@ -1380,10 +1284,26 @@ class AboutContainer {
       else if (i === idx) el.classList.add('is-active');
       else               el.classList.add('is-below');
     });
+    // Only drive dots for the non-contact panels (contact panel has no dot —
+    // it uses the more-below arrow as its indicator instead).
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
     if (this._hint) this._hint.classList.toggle('hide', idx > 0);
-    // Show "more below" chevron only on the final panel
-    if (this._moreBelow) this._moreBelow.classList.toggle('visible', idx === this._N - 1);
+    // Show "more below" chevron on the panel BEFORE the contact panel (statement)
+    // — this signals there's one more slide (contact) without giving contact its own dot.
+    // Hide it on the contact panel itself (nothing below).
+    if (this._moreBelow) {
+      const showArrow = idx === this._N - 2; // second-to-last = statement panel
+      this._moreBelow.classList.toggle('visible', showArrow);
+    }
+    // Update section indicator label: "Contact" on contact panel, "About" otherwise
+    const secInd = document.getElementById('section-indicator');
+    if (secInd) {
+      if (idx === this._contactPanelIdx) {
+        secInd.textContent = 'Contact';
+      } else if (this._active) {
+        secInd.textContent = 'About';
+      }
+    }
     // Preload images for this panel AND the next — so they're decoded before arrival.
     this._preloadPanel(idx);
     this._preloadPanel(idx + 1);
@@ -1442,141 +1362,7 @@ class AboutContainer {
 
 
 /* ─────────────────────────────────────────────────────────────────────────
-   §6  CONTACT CONTAINER
-   ─────────────────────────────────────────────────────────────────────────
-   Root element: <section class="contact"> (plus the preceding personal-
-   statement section, which is part of the same scrollable region).
-
-   The contact section is a normal, scrollable section that lives below the
-   About scroll-lock stage. It is NOT a scroll-lock container itself — it
-   has no internal panels to advance through. Its sole jobs are:
-
-     enter()    — make the section visible / scroll it into view
-     exit()     — called when the user scrolls back up into About
-     onScroll() — only cares about upward scroll (hands back to About)
-
-   The contact + personal-statement area is rendered in normal document
-   flow. enter() uses window.scrollTo to reveal it; this is intentional
-   because the container system releases scroll-lock when ContactContainer
-   is active, allowing natural page scroll within this region.
-
-   ISOLATION CONTRACT
-   ──────────────────
-   ✓  Root query scoped to this._root (contact section)
-   ✓  No wheel / keydown / touch listeners (AppController owns those)
-   ✓  Communicates upward only via this._app.setSection()
-   ─────────────────────────────────────────────────────────────────────── */
-class ContactContainer {
-
-  constructor(app, prevSection = 'about') {
-    this._app     = app;
-    this._prevKey = prevSection;
-    this._root    = null;
-    this._active  = false;
-    // Track how far the user has scrolled past the contact top, so we know
-    // when an upward scroll should hand back to About vs just scroll up in page.
-    this._contactTop = 0;
-
-    // Native-scroll container — no internal slides, no inertia to absorb on entry.
-    // Tells AppController._activateDirect not to arm the post-entry settle window,
-    // which would otherwise freeze all scroll for LOCK_MS (950ms) after arriving.
-    this.needsEntranceSettle = false;
-  }
-
-  init(root) {
-    this._root = root;
-    // Cache contact top on resize
-    window.addEventListener('resize', () => { this._cacheTop(); }, { passive: true });
-  }
-
-  _cacheTop() {
-    if (this._root) {
-      // rAF ensures we read after any pending layout has flushed,
-      // so getBoundingClientRect() returns a stable value.
-      requestAnimationFrame(() => {
-        if (this._root) {
-          this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-        }
-      });
-    }
-  }
-
-  enter(fromDirection = 0) {
-    if (!this._root) return;
-    this._active = true;
-    document.body.classList.add('section-contact');
-    const top = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-    this._contactTop = top;
-
-    // Immediately jump to contact top so the ticker and spacer are never
-    // visible — even if the about-stage hasn't finished fading out yet.
-    window.scrollTo({ top, behavior: 'instant' });
-
-    // Re-cache twice: once after a short delay (covers most layout flushes)
-    // and once after a longer delay (covers mobile reflow of the about-spacer
-    // which AboutContainer.exit collapses to 0 — the layout change can shift
-    // the contact section's document position by several hundred px on mobile).
-    setTimeout(() => this._cacheTop(), 120);
-    setTimeout(() => this._cacheTop(), 500);
-  }
-
-  exit() {
-    if (!this._root) return;
-    this._active = false;
-    document.body.classList.remove('section-contact');
-    // Abort any in-flight smooth scroll so scrollY is deterministic before
-    // AboutContainer (or any other container) takes over. Without this, the
-    // continuing smooth scroll fires PageChrome's scroll listener with
-    // intermediate scrollY values that trip nativeScrollDirection incorrectly
-    // on the very next wheel event.
-    window.scrollTo({ top: window.scrollY, behavior: 'instant' });
-  }
-
-  /**
-   * nativeScrollDirection — called by AppController's wheel handler.
-   * Returns true for downward scroll (+1) so the browser can scroll the
-   * contact/statement/footer area naturally. Returns false for upward (-1)
-   * so we can intercept it and hand back to About when the user scrolls
-   * back up to the top of the contact region.
-   *
-   * @param {number} dir  +1 (down) | -1 (up)
-   * @returns {boolean}
-   */
-  nativeScrollDirection(dir) {
-    if (!this._active) return false;
-    // Always allow downward native scroll so footer is reachable.
-    if (dir === +1) return true;
-    if (dir === -1) {
-      // Lazy re-cache: if our cached top looks wrong (scrollY is far below
-      // where contactTop claims the section is), the about-spacer has probably
-      // shifted the layout since we last measured. Re-measure now so we don't
-      // permanently block the hand-back to About.
-      if (this._root && window.scrollY < this._contactTop - 200) {
-        this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
-      }
-      // Allow native upward scroll while the user is still scrolled below the
-      // contact entry point. Intercept only when they've scrolled back to
-      // within 80px of the top — that's when we hand back to About.
-      const atTop = window.scrollY <= this._contactTop + 80;
-      return !atTop;
-    }
-    return false;
-  }
-
-  onScroll(direction) {
-    if (!this._active) return;
-    // Reached only when nativeScrollDirection returned false —
-    // user is at the contact top and scrolled up.
-    // AppController's settle window will absorb inertia after the handoff.
-    if (direction === -1) {
-      this._app.setSection(this._prevKey, -1);
-    }
-  }
-}
-
-
-/* ─────────────────────────────────────────────────────────────────────────
-   §7  BOOTSTRAP
+   §6  BOOTSTRAP
    ─────────────────────────────────────────────────────────────────────────
    The ONLY block that:
      • instantiates all classes
@@ -1593,22 +1379,18 @@ class ContactContainer {
 
   const hero     = new Hero3DContainer(app,   /* next */ 'carousel');
   const carousel = new CarouselContainer(app, /* next */ 'about',    /* prev */ 'hero');
-  // FIX: was null — AboutContainer never handed off to contact
-  const about    = new AboutContainer(app,    /* next */ 'contact',  /* prev */ 'carousel');
-  const contact  = new ContactContainer(app,  /* prev */ 'about');
+  // About is now the terminal section — contact is embedded as its final panel.
+  const about    = new AboutContainer(app,    /* next */ null,        /* prev */ 'carousel');
 
   app.register('hero',     hero);
   app.register('carousel', carousel);
   app.register('about',    about);
-  app.register('contact',  contact);
 
   app.init(
     {
       hero:     document.querySelector('.hero'),
       carousel: document.querySelector('.projects'),
       about:    document.getElementById('about-stage'),
-      // Contact root is the <section class="contact"> element.
-      contact:  document.getElementById('contact'),
     },
     'hero'
   );
