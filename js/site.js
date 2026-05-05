@@ -1186,7 +1186,11 @@ class AboutContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 900; // about panel CSS: 0.85s transform + margin
     // Index of the contact panel (last panel) — set in init() once panels are counted
-    this._contactPanelIdx = -1;
+    this._contactPanelIdx  = -1;
+    // Index of the personal-statement panel (second-to-last) — YouTube iframe is
+    // injected lazily the first time this panel becomes active.
+    this._statementPanelIdx = -1;
+    this._iframeInjected    = false;
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1206,7 +1210,8 @@ class AboutContainer {
     this._N      = this._panels.length;
     // The last panel is the contact panel — track its index so we can
     // update the section indicator label and suppress its dot.
-    this._contactPanelIdx = this._N - 1;
+    this._contactPanelIdx   = this._N - 1;
+    this._statementPanelIdx = this._N - 2;
 
     if (!this._spacer || !this._N) {
       console.warn('[AboutContainer] Missing spacer or panels — check DOM.');
@@ -1302,6 +1307,30 @@ class AboutContainer {
         secInd.textContent = 'Contact';
       } else if (this._active) {
         secInd.textContent = 'About';
+      }
+    }
+    // Reveal contact panel content — .contact-inner carries .rev-stagger which is
+    // intentionally excluded from the global IntersectionObserver (it lives inside
+    // #about-stage). Drive the .in class here instead so the entrance animation fires
+    // when the contact panel becomes active, and resets when it leaves.
+    const contactPanel = this._panels[this._contactPanelIdx];
+    if (contactPanel) {
+      contactPanel.querySelectorAll('.rev-stagger').forEach(el => {
+        el.classList.toggle('in', idx === this._contactPanelIdx);
+      });
+    }
+    // Inject the YouTube iframe the first time panel 3 (personal statement) becomes
+    // active. Keeping it out of the DOM until then prevents the browser from
+    // initiating the YouTube connection (DNS, TLS, iframe JS) during earlier panel
+    // transitions, which was a primary contributor to sluggishness mid-slideshow.
+    if (idx >= this._statementPanelIdx && !this._iframeInjected) {
+      const stmtPanel = this._panels[this._statementPanelIdx];
+      const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
+      const placeholder = frameWrap?.querySelector('iframe[data-src]');
+      if (placeholder) {
+        placeholder.src = placeholder.dataset.src;
+        placeholder.removeAttribute('data-src');
+        this._iframeInjected = true;
       }
     }
     // Preload images for this panel AND the next — so they're decoded before arrival.
