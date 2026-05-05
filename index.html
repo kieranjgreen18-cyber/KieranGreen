@@ -1963,29 +1963,25 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .panel-contact .contact-wm { display: none; }
   .panel-contact .contact-inner {
     width: 100%;
-    padding: var(--s-6) var(--pad) var(--s-7);
+    /* bottom padding accounts for the pinned footer (~44px) + breathing room */
+    padding: var(--s-5) var(--pad) calc(var(--s-6) + 44px);
     display: flex;
     flex-direction: column;
-    gap: var(--s-4);
-    grid-template-columns: unset;
+    gap: var(--s-3);
   }
-  .panel-contact .contact-kicker { grid-column: unset; }
+  /* Kicker stays as-is — flex column ordering is kicker → heading → right */
   .panel-contact .contact-h {
-    font-size: clamp(56px, 13vw, 80px);
+    font-size: clamp(52px, 13vw, 80px);
     color: var(--c-primary);
-    grid-column: unset;
-    grid-row: unset;
   }
   .panel-contact .contact-right {
-    grid-column: unset;
-    grid-row: unset;
     border-left: none;
     padding-left: 0;
     gap: var(--s-3);
   }
-  .panel-contact .c-field { grid-template-columns: 1fr; gap: var(--s-1); }
-  .panel-contact .c-dl--primary { font-size: clamp(30px, 8vw, 46px); }
-  .panel-contact .c-soc { cursor: pointer; }
+  .panel-contact .c-field { grid-template-columns: 80px 1fr; gap: var(--s-2); }
+  .panel-contact .c-dl--primary { font-size: clamp(28px, 7.5vw, 44px); }
+  .panel-contact .c-soc { cursor: pointer; font-size: clamp(16px, 5vw, 24px); }
   .panel-contact .c-dl--primary { cursor: pointer; }
   /* Panel footer — mobile */
   .panel-footer { padding: var(--s-2) var(--pad); flex-direction: column; gap: 2px; align-items: center; text-align: center; }
@@ -1996,9 +1992,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .ch-title  { font-size: clamp(34px, 9.5vw, 52px); }
   .intro-name { font-size: clamp(38px, 10.5vw, 58px); }
   .t-statement { font-size: clamp(16px, 4.8vw, 24px); }
-  .panel-contact .contact-h { font-size: clamp(48px, 14vw, 72px); }
-  .panel-contact .c-soc { font-size: clamp(18px, 6vw, 28px); }
-  .panel-contact .c-dl--primary { font-size: clamp(26px, 7vw, 38px); }}
+  .panel-contact .contact-h { font-size: clamp(44px, 13.5vw, 64px); }
+  .panel-contact .c-soc { font-size: clamp(15px, 5.5vw, 22px); }
+  .panel-contact .c-dl--primary { font-size: clamp(24px, 7.5vw, 36px); }
+  .panel-contact .c-field { grid-template-columns: 72px 1fr; }}
 
 /* ═══════════════════════════════════════════════════════════════
    § ENHANCED MICRO-INTERACTIONS & AWWWARDS POLISH
@@ -2179,41 +2176,50 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 }
 .panel-contact .contact-inner {
   position: relative; z-index: 2;
-  padding: var(--s-7) var(--pad) var(--s-7);
-  width: 65%;
+  /* Use almost the full panel width — leave room for the bg image on the right edge */
+  width: min(100%, 1100px);
+  padding: 0 var(--pad);
+  /* Two columns: heading takes ~52%, links take ~48% */
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr;
-  column-gap: clamp(var(--s-5), 4vw, var(--s-8));
+  grid-template-columns: 52fr 48fr;
+  grid-template-rows: auto auto;
+  column-gap: clamp(var(--s-6), 5vw, var(--s-10));
   row-gap: var(--s-3);
-  align-items: start;
+  align-items: center;
 }
 .panel-contact .contact-kicker {
   display: flex; align-items: center; gap: var(--s-2);
   font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
-  grid-column: 1 / -1; /* spans both columns */
+  /* Span across both columns, sits above everything */
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin-bottom: var(--s-2);
 }
 .panel-contact .contact-kicker::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
+.panel-contact .contact-h {
+  font-family: var(--f-heading);
+  /* Fluid: big enough to feel monumental, small enough to never overflow the panel */
+  font-size: clamp(52px, 7.5vw, 120px);
+  font-weight: 100;
+  letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; color: var(--c-primary);
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+}
 .panel-contact .contact-h em { font-style: italic; color: var(--c-accent); font-weight: 100; }
+/* Right column: sub-copy + fields, vertically centred beside heading */
+.panel-contact .contact-right {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex; flex-direction: column; gap: var(--s-4);
+  align-self: center;
+  border-left: 1px solid var(--c-rule);
+  padding-left: clamp(var(--s-5), 4vw, var(--s-8));
+}
 .panel-contact .contact-sub {
   font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-text);
   color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open);
-}
-.panel-contact .contact-h {
-  font-family: var(--f-heading); font-size: clamp(56px, 8.5vw, 128px); font-weight: 100;
-  letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; color: var(--c-primary);
-  grid-column: 1; grid-row: 2;
-  align-self: center;
-}
-/* Right column: sub-copy + fields */
-.panel-contact .contact-right {
-  grid-column: 2; grid-row: 2;
-  display: flex; flex-direction: column; gap: var(--s-4);
-  justify-content: center;
-  padding-top: var(--s-1);
-  border-left: 1px solid var(--c-rule);
-  padding-left: clamp(var(--s-4), 3vw, var(--s-7));
 }
 .panel-contact .contact-fields { display: flex; flex-direction: column; gap: 0; }
 .panel-contact .c-field {
@@ -2928,6 +2934,7 @@ button:focus-visible {
       <div class="contact-wm" aria-hidden="true">Green</div>
       <div class="contact-inner rev-stagger">
         <p class="contact-kicker t-micro">Get in touch</p>
+        <h2 class="contact-h" id="contact-heading">Let's<br>build<br><em>something.</em></h2>
         <div class="contact-right">
           <p class="contact-sub t-body">Open to internships, collaborations, and freelance projects. Always drawn to interesting problems.</p>
           <div class="contact-fields">
@@ -2944,7 +2951,6 @@ button:focus-visible {
             </div>
           </div>
         </div>
-        <h2 class="contact-h" id="contact-heading">Let's<br>build<br><em>something.</em></h2>
       </div>
       <footer class="panel-footer" role="contentinfo" aria-label="Site footer">
         <div class="pf-logo">Kieran <em>Green</em> — Industrial Designer</div>
