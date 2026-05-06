@@ -2184,16 +2184,7 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
             Right col = sub-copy + links (bottom-aligned, matches heading base).
    Mobile:  single column, no image, content starts at top.
 ═══════════════════════════════════════════════════════════════ */
-@media (min-width: 769px) {
-.panel-contact {
-  position: absolute; inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  overflow: hidden;
-}
-
-/* Full-bleed atmospheric background — entire panel */
+/* ── Contact panel: typography & visual — all viewports ── */
 .panel-contact .contact-img {
   position: absolute; inset: 0;
   background-image: url('assets/images/sabrettahero.png');
@@ -2201,7 +2192,6 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   background-position: 65% center;
   opacity: .32;
   filter: saturate(.5) contrast(1.05);
-  /* Multi-axis vignette: strong fade from left + bottom, open on right */
   mask-image:
     linear-gradient(to right,  rgba(0,0,0,1) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.12) 68%, transparent 100%),
     linear-gradient(to top,    rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 30%, transparent 60%);
@@ -2211,16 +2201,12 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   mask-composite: intersect;
   -webkit-mask-composite: source-in;
 }
-
-/* Subtle teal glow — atmosphere behind the content */
 .panel-contact::before {
   content: '';
   position: absolute; left: -5%; bottom: -10%; width: 50%; height: 65%;
   background: radial-gradient(ellipse at 25% 85%, rgba(91,160,164,0.07) 0%, transparent 60%);
   pointer-events: none; z-index: 1;
 }
-
-/* Watermark — vertically centred, bleeds off right edge */
 .panel-contact .contact-wm {
   position: absolute; right: -3vw; top: 50%; transform: translateY(-50%);
   font-family: var(--f-heading); font-size: clamp(200px, 30vw, 440px); font-weight: 700;
@@ -2229,46 +2215,22 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   line-height: 1; letter-spacing: -.06em; text-transform: uppercase; white-space: nowrap;
   z-index: 1;
 }
-
-/* ── Inner grid — vertically centred in panel, full width ── */
 .panel-contact .contact-inner {
   position: relative; z-index: 2;
   width: 100%;
-  padding: clamp(var(--s-9), 12vh, var(--s-12)) var(--pad) clamp(var(--s-7), 8vh, var(--s-10));
   margin-bottom: 0;
-  /*
-   * 3 rows × 2 cols:
-   *   row 1 = kicker (left col only, right col is empty — provides top-rule anchor)
-   *   row 2 = heading (left) | sub-copy (right)
-   *   row 3 = empty (left) | fields (right)
-   * Both cols bottom-align so heading base and last field row are flush.
-   */
-  display: grid;
-  grid-template-columns: 52fr 48fr;
-  grid-template-rows: auto auto auto;
-  column-gap: clamp(var(--s-6), 5vw, var(--s-10));
-  row-gap: 0;
-  align-items: end;
 }
-
-/* Kicker — left col, row 1, tight above heading */
 .panel-contact .contact-kicker {
-  grid-column: 1; grid-row: 1;
   display: flex; align-items: center; gap: var(--s-2);
   font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
-  padding-bottom: var(--s-3);
 }
 .panel-contact .contact-kicker::before {
   content: ''; width: 20px; height: 1px; background: var(--c-accent); flex-shrink: 0;
 }
-
-/* Heading — left col, rows 2–3 (spans to fill height), bottom-aligned */
 .panel-contact .contact-h {
-  grid-column: 1; grid-row: 2 / 4;
-  align-self: end;
   font-family: var(--f-heading);
-  font-size: clamp(64px, 9.5vw, 148px);
+  font-size: clamp(52px, 13vw, 148px);
   font-weight: 100;
   letter-spacing: var(--ls-tight); line-height: 0.88; text-transform: uppercase; color: var(--c-primary);
 }
@@ -2276,21 +2238,9 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   font-style: italic; color: var(--c-accent); font-weight: 100;
   text-shadow: 0 0 60px rgba(91,160,164,0.20);
 }
-
-/* Sub-copy — right col, row 2 */
 .panel-contact .contact-sub {
-  grid-column: 2; grid-row: 2;
-  align-self: end;
   font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-text);
   color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open);
-  max-width: 38ch;
-  padding-bottom: var(--s-4);
-}
-
-/* Fields — right col, row 3 */
-.panel-contact .contact-right {
-  grid-column: 2; grid-row: 3;
-  align-self: end;
 }
 .panel-contact .contact-fields { display: flex; flex-direction: column; gap: 0; }
 .panel-contact .c-field {
@@ -2308,8 +2258,6 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent); opacity: .55;
 }
-
-/* Email & LinkedIn */
 .panel-contact .c-soc {
   font-family: var(--f-heading); font-size: clamp(18px, 2vw, 26px); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
@@ -2324,8 +2272,6 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 }
 .panel-contact .c-soc:hover { color: var(--c-accent); gap: var(--s-3); }
 .panel-contact .c-soc:hover::after { transform: scaleX(1); }
-
-/* CV Download — accent colour so it reads as the primary CTA */
 .panel-contact .c-dl--primary {
   font-family: var(--f-heading); font-size: clamp(24px, 2.8vw, 42px); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
@@ -2340,10 +2286,47 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 }
 .panel-contact .c-dl--primary:hover { color: var(--c-accent-hi); gap: var(--s-3); }
 .panel-contact .c-dl--primary:hover::after { transform: scaleX(1); }
-
 .panel-contact .c-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: center; }
 
-} /* end @media (min-width: 769px) — contact panel desktop rules */
+/* ── Contact panel: layout — desktop only ── */
+@media (min-width: 769px) {
+  .panel-contact {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    overflow: hidden;
+  }
+  .panel-contact .contact-inner {
+    padding: clamp(var(--s-9), 12vh, var(--s-12)) var(--pad) clamp(var(--s-7), 8vh, var(--s-10));
+    display: grid;
+    grid-template-columns: 52fr 48fr;
+    grid-template-rows: auto auto auto;
+    column-gap: clamp(var(--s-6), 5vw, var(--s-10));
+    row-gap: 0;
+    align-items: end;
+  }
+  .panel-contact .contact-kicker {
+    grid-column: 1; grid-row: 1;
+    padding-bottom: var(--s-3);
+  }
+  .panel-contact .contact-h {
+    grid-column: 1; grid-row: 2 / 4;
+    align-self: end;
+    font-size: clamp(64px, 9.5vw, 148px);
+  }
+  .panel-contact .contact-sub {
+    grid-column: 2; grid-row: 2;
+    align-self: end;
+    max-width: 38ch;
+    padding-bottom: var(--s-4);
+  }
+  .panel-contact .contact-right {
+    grid-column: 2; grid-row: 3;
+    align-self: end;
+  }
+  .panel-contact .c-field {
+    grid-template-columns: clamp(72px, 9vw, 110px) 1fr;
+  }
+} /* end desktop layout — contact panel */
 
 /* Panel footer — pinned to bottom of contact panel */
 .panel-footer {
