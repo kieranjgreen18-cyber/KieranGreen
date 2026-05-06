@@ -1965,12 +1965,13 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .panel-contact .contact-wm { display: none; }
   /* Override grid to flex column so items stack top-down */
   .panel-contact .contact-inner {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: unset !important;
     gap: var(--s-2);
     width: 100%;
     max-width: 100%;
-    padding: var(--s-6) var(--pad) calc(var(--s-6) + 44px);
+    padding: var(--s-6) var(--pad) calc(var(--s-6) + 44px) !important;
     margin-bottom: 0;
     overflow-x: hidden;
   }
