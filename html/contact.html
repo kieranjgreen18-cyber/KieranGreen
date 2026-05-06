@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Kieran Green · Industrial Designer</title>
+<meta name="description" content="Get in touch with Kieran Green — industrial designer open to internships, collaborations, and freelance projects.">
+<meta name="robots" content="noindex">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
+<meta name="theme-color" content="#080909">
+
+<!-- Fonts (local — same as main site) -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-webfont.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-webfont.woff2" crossorigin>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   § FONT FACES — same as main site
+═══════════════════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'D-DIN';
+  src: url('assets/fonts/d-din-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN.otf') format('opentype');
+  font-weight: 300 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-italic-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN-Italic.otf') format('opentype');
+  font-weight: 300 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN';
+  src: url('assets/fonts/d-din-bold-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-bold-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN-Bold.otf') format('opentype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-dincondensed-webfont.woff') format('woff'),
+       url('assets/fonts/D-DINCondensed.otf') format('opentype');
+  font-weight: 100 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'D-DIN Condensed';
+  src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-dincondensed-bold-webfont.woff') format('woff'),
+       url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   § DESIGN TOKENS — mirrored from main site
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --c-bg:         #080909;
+  --c-bg2:        #0d0e0e;
+  --c-surface:    rgba(255,255,255,0.032);
+  --c-surface2:   rgba(255,255,255,0.055);
+  --c-primary:    #edeeed;
+  --c-secondary:  #96a8aa;
+  --c-tertiary:   #5e7172;
+  --c-accent:     #5ba0a4;
+  --c-accent-hi:  #7ec8cc;
+  --c-accent-lo:  rgba(91,160,164,0.12);
+  --c-muted:      rgba(150,168,170,0.35);
+  --c-rule:       rgba(255,255,255,0.055);
+  --c-rule-hi:    rgba(255,255,255,0.10);
+  --c-error:      #e05c5c;
+  --c-success:    #4ade80;
+
+  --f-heading:   'D-DIN Condensed', sans-serif;
+  --f-body:      'D-DIN', sans-serif;
+
+  --t-display:   clamp(80px, 14vw, 200px);
+  --t-heading:   clamp(38px, 5.5vw, 72px);
+  --t-body:      17px;
+  --t-ui:        15px;
+  --t-meta:      13px;
+  --t-micro:     11px;
+
+  --lh-display:  0.86;
+  --lh-heading:  0.90;
+  --lh-text:     1.62;
+  --lh-body:     1.88;
+
+  --ls-tight:   -0.04em;
+  --ls-stencil:  0.20em;
+  --ls-open:     0.01em;
+
+  --s-1:    8px;  --s-2:   16px; --s-3:   24px;
+  --s-4:   32px;  --s-5:   40px; --s-6:   48px;
+  --s-7:   64px;  --s-8:   80px; --s-9:   96px;
+  --s-10: 120px;
+
+  --pad:     clamp(24px, 4.5vw, 56px);
+  --pad-sm:  clamp(16px, 3vw, 32px);
+  --max-w:   1500px;
+
+  --ease:    cubic-bezier(0.16, 1, 0.3, 1);
+  --snap:    cubic-bezier(0.77, 0, 0.18, 1);
+  --spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --dur-fast:  0.28s;
+  --dur-mid:   0.52s;
+  --dur-slow:  0.78s;
+  --dur-xl:    1.10s;
+
+  --shadow-sm:   0 2px 12px rgba(0,0,0,0.45);
+  --shadow-md:   0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);
+  --shadow-glow: 0 0 40px rgba(91,160,164,0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   § RESET & BASE
+═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--c-bg);
+  color: var(--c-primary);
+  font-family: var(--f-body);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+body.ready { opacity: 1; }
+:focus { outline: none; }
+:focus-visible { outline: 1.5px solid var(--c-accent); outline-offset: 4px; border-radius: 2px; }
+em { font-style: italic; color: var(--c-accent); }
+strong { font-weight: 700; color: var(--c-primary); }
+::selection { background: rgba(91,160,164,0.28); color: var(--c-primary); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--c-bg); }
+::-webkit-scrollbar-thumb { background: var(--c-tertiary); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-accent); }
+
+/* ── Screen reader only ── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* ── Grain overlay ── */
+#grain {
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+  opacity: 0.028;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   § NAV BAR
+═══════════════════════════════════════════════════════════════ */
+.cf-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-3) var(--pad);
+  background: linear-gradient(to bottom, rgba(8,9,9,0.92) 0%, transparent 100%);
+  backdrop-filter: blur(0px);
+  transition: backdrop-filter var(--dur-fast), background var(--dur-fast);
+}
+.cf-nav.scrolled {
+  background: rgba(8,9,9,0.88);
+  backdrop-filter: blur(32px) saturate(1.4);
+  border-bottom: 1px solid var(--c-rule);
+}
+.cf-nav-logo {
+  font-family: var(--f-heading);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  color: var(--c-secondary);
+  text-decoration: none;
+  opacity: 0.7;
+  transition: color var(--dur-fast), opacity var(--dur-fast);
+}
+.cf-nav-logo:hover { color: var(--c-accent); opacity: 1; }
+.cf-nav-back {
+  font-family: var(--f-heading);
+  font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-secondary); text-decoration: none;
+  display: inline-flex; align-items: center; gap: var(--s-1);
+  transition: color var(--dur-fast), gap var(--dur-fast) var(--ease);
+}
+.cf-nav-back svg { transition: transform var(--dur-fast) var(--ease); }
+.cf-nav-back:hover { color: var(--c-accent); gap: var(--s-2); }
+.cf-nav-back:hover svg { transform: translateX(-3px); }
+
+/* ═══════════════════════════════════════════════════════════════
+   § PAGE LAYOUT
+═══════════════════════════════════════════════════════════════ */
+.cf-page {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto;
+  position: relative;
+}
+
+/* ── Left panel — atmospheric header ── */
+.cf-left {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--s-10) var(--pad) var(--s-8);
+  overflow: hidden;
+  border-right: 1px solid var(--c-rule);
+  /* Sticky on large screens */
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+}
+
+/* Atmosphere */
+.cf-left-atmo {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.cf-left-atmo::before {
+  content: '';
+  position: absolute;
+  left: -15%; bottom: -10%;
+  width: 75%; height: 75%;
+  background: radial-gradient(
+    ellipse at 25% 85%,
+    rgba(91,160,164, 0.14) 0%,
+    rgba(91,160,164, 0.04) 40%,
+    transparent 65%
+  );
+}
+.cf-left-atmo::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(91,160,164,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91,160,164,0.028) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 90% 60% at 85% 15%, rgba(0,0,0,0.65) 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 85% 15%, rgba(0,0,0,0.65) 0%, transparent 75%);
+}
+
+/* Watermark */
+.cf-wm {
+  position: absolute;
+  right: -2vw; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--f-heading);
+  font-size: clamp(120px, 18vw, 280px);
+  font-weight: 700;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(91,160,164, 0.055);
+  pointer-events: none; user-select: none;
+  line-height: 1; letter-spacing: -.06em;
+  text-transform: uppercase; white-space: nowrap;
+}
+
+/* Left content */
+.cf-left-content { position: relative; z-index: 2; }
+
+.cf-eyebrow {
+  display: flex; align-items: center; gap: var(--s-2);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent);
+  margin-bottom: var(--s-3);
+  opacity: 0; transform: translateY(10px);
+  animation: revealUp var(--dur-slow) var(--ease) 0.2s forwards;
+}
+.cf-eyebrow::before {
+  content: ''; width: 20px; height: 1px;
+  background: var(--c-accent); flex-shrink: 0;
+}
+
+.cf-hero-h {
+  font-family: var(--f-heading);
+  font-size: clamp(60px, 8vw, 128px);
+  font-weight: 100;
+  letter-spacing: var(--ls-tight);
+  line-height: 0.88;
+  text-transform: uppercase;
+  color: var(--c-primary);
+  margin-bottom: var(--s-5);
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) 0.32s forwards;
+}
+.cf-hero-h em { font-style: italic; color: var(--c-accent); font-weight: 100; text-shadow: 0 0 60px rgba(91,160,164,.22); }
+
+.cf-hero-sub {
+  font-family: var(--f-body);
+  font-size: var(--t-ui); line-height: var(--lh-text);
+  color: var(--c-secondary);
+  max-width: 34ch;
+  margin-bottom: var(--s-7);
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) 0.44s forwards;
+}
+
+/* Quick links below copy */
+.cf-quick {
+  display: flex; flex-direction: column; gap: 0;
+  border-top: 1px solid var(--c-rule);
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) 0.56s forwards;
+}
+.cf-quick-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--c-rule);
+  text-decoration: none;
+  transition: padding-left var(--dur-fast) var(--ease), background var(--dur-fast);
+  border-radius: 2px;
+}
+.cf-quick-item:hover { padding-left: var(--s-2); background: var(--c-surface); }
+
+.cf-quick-label {
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); opacity: .55; min-width: clamp(72px, 8vw, 100px);
+}
+.cf-quick-value {
+  font-family: var(--f-heading); font-size: clamp(16px, 1.8vw, 22px); font-weight: 100;
+  letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-primary);
+  transition: color var(--dur-fast);
+}
+.cf-quick-item:hover .cf-quick-value { color: var(--c-accent); }
+.cf-quick-arrow {
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); opacity: .4;
+  transition: opacity var(--dur-fast), transform var(--dur-fast) var(--ease);
+}
+.cf-quick-item:hover .cf-quick-arrow { opacity: 1; transform: translateX(4px); }
+
+/* Availability indicator */
+.cf-avail {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--f-heading); font-size: clamp(11px, 1.1vw, 14px);
+  font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-secondary);
+  margin-top: var(--s-5);
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) 0.68s forwards;
+}
+.cf-avail-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #4ade80; flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(74,222,128,0.6);
+  animation: availPulse 2.4s ease-in-out infinite;
+}
+@keyframes availPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(74,222,128,0.6); }
+  50%       { opacity: 0.5; box-shadow: 0 0 12px rgba(74,222,128,0.22); }
+}
+
+/* ── Right panel — form ── */
+.cf-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--s-10) + 24px) var(--pad) var(--s-8);
+  min-height: 100dvh;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   § FORM
+═══════════════════════════════════════════════════════════════ */
+.cf-form-head {
+  margin-bottom: var(--s-6);
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) 0.24s forwards;
+}
+.cf-form-title {
+  font-family: var(--f-heading);
+  font-size: clamp(28px, 3.5vw, 52px);
+  font-weight: 100; letter-spacing: var(--ls-tight);
+  text-transform: uppercase; color: var(--c-primary);
+  line-height: 0.92;
+  margin-bottom: var(--s-2);
+}
+.cf-form-sub {
+  font-family: var(--f-body); font-size: var(--t-meta);
+  color: var(--c-secondary); line-height: var(--lh-text);
+  letter-spacing: 0.005em;
+}
+
+/* Form fields */
+.cf-form {
+  display: flex; flex-direction: column;
+  gap: var(--s-4);
+}
+
+.cf-field-group {
+  display: flex; flex-direction: column; gap: var(--s-4);
+}
+.cf-field-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3);
+}
+
+/* Individual field */
+.cf-field {
+  display: flex; flex-direction: column; gap: 6px;
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) var(--anim-delay, 0.3s) forwards;
+}
+
+.cf-label {
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); opacity: .55;
+  display: flex; align-items: center; gap: 6px;
+  transition: opacity var(--dur-fast);
+}
+.cf-field:focus-within .cf-label { opacity: 1; }
+.cf-label-req { opacity: 0.4; font-size: 10px; }
+
+/* Input / Textarea / Select base */
+.cf-input,
+.cf-textarea,
+.cf-select {
+  background: var(--c-surface);
+  border: 1px solid var(--c-rule);
+  border-radius: 2px;
+  color: var(--c-primary);
+  font-family: var(--f-body);
+  font-size: var(--t-ui);
+  line-height: var(--lh-text);
+  padding: 14px var(--s-2);
+  width: 100%;
+  transition:
+    border-color var(--dur-fast),
+    background var(--dur-fast),
+    box-shadow var(--dur-fast);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cf-input::placeholder,
+.cf-textarea::placeholder { color: var(--c-tertiary); }
+.cf-input:hover,
+.cf-textarea:hover,
+.cf-select:hover { border-color: var(--c-rule-hi); background: var(--c-surface2); }
+.cf-input:focus,
+.cf-textarea:focus,
+.cf-select:focus {
+  border-color: var(--c-accent);
+  background: rgba(91,160,164,0.05);
+  box-shadow: 0 0 0 3px rgba(91,160,164,0.10);
+}
+.cf-input.error,
+.cf-textarea.error,
+.cf-select.error {
+  border-color: var(--c-error);
+  box-shadow: 0 0 0 3px rgba(224,92,92,0.10);
+}
+
+.cf-textarea { resize: vertical; min-height: 140px; }
+
+/* Select wrapper — custom arrow */
+.cf-select-wrap { position: relative; }
+.cf-select { padding-right: 40px; cursor: pointer; }
+.cf-select-wrap::after {
+  content: '';
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  width: 8px; height: 5px;
+  background: var(--c-accent);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  opacity: .55;
+  pointer-events: none;
+  transition: opacity var(--dur-fast);
+}
+.cf-select-wrap:focus-within::after { opacity: 1; }
+.cf-select option { background: var(--c-bg2); color: var(--c-primary); }
+
+/* Inline error message */
+.cf-error-msg {
+  font-family: var(--f-body); font-size: var(--t-micro);
+  color: var(--c-error); letter-spacing: 0.02em;
+  height: 0; overflow: hidden;
+  transition: height var(--dur-fast);
+}
+.cf-error-msg.visible { height: 1.4em; }
+
+/* ── Checkbox row ── */
+.cf-checks {
+  display: flex; flex-direction: column; gap: var(--s-1);
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) 0.62s forwards;
+}
+.cf-checks-label {
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); opacity: .55;
+  margin-bottom: 4px;
+}
+.cf-check-row {
+  display: flex; flex-wrap: wrap; gap: var(--s-2);
+}
+.cf-check {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; user-select: none;
+}
+.cf-check input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px;
+  border: 1px solid var(--c-rule-hi);
+  border-radius: 2px;
+  background: var(--c-surface);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast);
+  position: relative;
+}
+.cf-check input[type="checkbox"]:checked {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+.cf-check input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute; top: 2px; left: 5px;
+  width: 4px; height: 8px;
+  border: 1.5px solid var(--c-bg);
+  border-top: none; border-left: none;
+  transform: rotate(42deg);
+}
+.cf-check input[type="checkbox"]:focus-visible {
+  outline: 1.5px solid var(--c-accent); outline-offset: 3px;
+}
+.cf-check-text {
+  font-family: var(--f-body); font-size: var(--t-meta);
+  color: var(--c-secondary); line-height: 1.3;
+  transition: color var(--dur-fast);
+}
+.cf-check:hover .cf-check-text { color: var(--c-primary); }
+
+/* ── Submit button ── */
+.cf-submit-wrap {
+  opacity: 0;
+  animation: revealUp var(--dur-slow) var(--ease) 0.74s forwards;
+}
+.cf-submit {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  font-family: var(--f-heading); font-size: clamp(18px, 2.2vw, 28px); font-weight: 100;
+  letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-bg);
+  background: var(--c-accent);
+  border: 1px solid var(--c-accent);
+  border-radius: 2px;
+  padding: 16px var(--s-5);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast), gap var(--dur-fast) var(--ease), border-color var(--dur-fast);
+  white-space: nowrap;
+}
+.cf-submit::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.55s var(--ease);
+}
+.cf-submit:hover::before { transform: translateX(100%); }
+.cf-submit:hover { background: var(--c-accent-hi); border-color: var(--c-accent-hi); gap: var(--s-3); }
+.cf-submit:active { transform: scale(0.99); }
+.cf-submit:disabled {
+  opacity: 0.5; cursor: not-allowed;
+  pointer-events: none;
+}
+.cf-submit .btn-arrow { transition: transform var(--dur-fast) var(--ease); }
+.cf-submit:hover .btn-arrow { transform: translateX(4px); }
+
+/* Loading spinner inside button */
+.cf-submit .btn-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(8,9,9,0.25);
+  border-top-color: var(--c-bg);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+.cf-submit.loading .btn-spinner { display: block; }
+.cf-submit.loading .btn-text,
+.cf-submit.loading .btn-arrow { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Note below button */
+.cf-note {
+  font-family: var(--f-body); font-size: var(--t-micro);
+  color: var(--c-muted); letter-spacing: 0.02em;
+  margin-top: var(--s-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   § SUCCESS STATE
+═══════════════════════════════════════════════════════════════ */
+.cf-success {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  animation: revealUp var(--dur-slow) var(--ease) forwards;
+}
+.cf-success.visible { display: flex; }
+
+.cf-success-mark {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-accent);
+  display: flex; align-items: center; justify-content: center;
+  animation: scaleIn 0.4s var(--spring) forwards;
+}
+@keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.cf-success-h {
+  font-family: var(--f-heading);
+  font-size: clamp(32px, 4vw, 56px);
+  font-weight: 100; letter-spacing: var(--ls-tight);
+  text-transform: uppercase; color: var(--c-primary);
+  line-height: 0.9;
+}
+.cf-success-h em { color: var(--c-accent); font-style: italic; }
+
+.cf-success-body {
+  font-family: var(--f-body); font-size: var(--t-ui);
+  color: var(--c-secondary); line-height: var(--lh-text);
+  max-width: 36ch;
+}
+
+.cf-success-back {
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); text-decoration: none;
+  display: inline-flex; align-items: center; gap: var(--s-1);
+  margin-top: var(--s-2);
+  transition: gap var(--dur-fast) var(--ease), color var(--dur-fast);
+}
+.cf-success-back:hover { gap: var(--s-2); color: var(--c-accent-hi); }
+
+/* ═══════════════════════════════════════════════════════════════
+   § PAGE FOOTER
+═══════════════════════════════════════════════════════════════ */
+.cf-footer {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-2) var(--pad);
+  border-top: 1px solid var(--c-rule);
+}
+.cf-footer-logo {
+  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-secondary); opacity: 0.55;
+}
+.cf-footer-logo em { font-style: italic; color: var(--c-accent); }
+.cf-footer-copy {
+  font-family: var(--f-heading); font-size: 9px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-muted); opacity: 0.55;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   § ANIMATIONS
+═══════════════════════════════════════════════════════════════ */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   § MOBILE — single column stack
+═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .cf-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .cf-left {
+    position: relative;
+    top: auto; height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--c-rule);
+    padding: calc(var(--s-9) + 24px) var(--pad-sm) var(--s-6);
+    min-height: 0;
+  }
+  .cf-wm {
+    font-size: clamp(100px, 32vw, 160px);
+    right: -4vw; top: 50%; transform: translateY(-50%);
+  }
+  .cf-hero-h { font-size: clamp(44px, 13vw, 72px); }
+  .cf-right {
+    padding: var(--s-6) var(--pad-sm) var(--s-7);
+    min-height: 0;
+  }
+  .cf-field-row { grid-template-columns: 1fr; }
+  .cf-footer { flex-direction: column; gap: var(--s-1); text-align: center; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Grain -->
+<div id="grain" aria-hidden="true"></div>
+
+<!-- Nav -->
+<nav class="cf-nav" id="cf-nav" aria-label="Site navigation">
+  <a href="index.html" class="cf-nav-logo" aria-label="Kieran Green — Back to portfolio">
+    Kieran <em style="font-style:italic;color:var(--c-accent)">Green</em>
+  </a>
+  <a href="index.html" class="cf-nav-back" aria-label="Back to portfolio">
+    <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="13" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <polyline points="4,2 1,5 4,8" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    Portfolio
+  </a>
+</nav>
+
+<!-- Main layout -->
+<div class="cf-page" id="main-content">
+
+  <!-- Left panel — hero copy -->
+  <aside class="cf-left" aria-label="Contact introduction">
+    <div class="cf-left-atmo" aria-hidden="true"></div>
+    <div class="cf-wm" aria-hidden="true">KG</div>
+
+    <div class="cf-left-content">
+      <p class="cf-eyebrow">Get in touch</p>
+      <h1 class="cf-hero-h">
+        Let's build<br><em>something.</em>
+      </h1>
+      <p class="cf-hero-sub">
+        Open to internships, collaborations, and freelance projects.
+        Always drawn to interesting problems.
+      </p>
+
+      <!-- Quick contact alternatives -->
+      <div class="cf-quick" role="list" aria-label="Alternative contact methods">
+        <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="cf-quick-item" role="listitem">
+          <span class="cf-quick-label">LinkedIn</span>
+          <span class="cf-quick-value">Connect →</span>
+          <span class="cf-quick-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a href="assets/downloads/KieranGreenRes.pdf" download class="cf-quick-item" role="listitem">
+          <span class="cf-quick-label">Resume</span>
+          <span class="cf-quick-value">Download CV</span>
+          <span class="cf-quick-arrow" aria-hidden="true">↓</span>
+        </a>
+      </div>
+
+      <p class="cf-avail" aria-label="Current availability status">
+        <span class="cf-avail-dot" aria-hidden="true"></span>
+        Available for internships
+      </p>
+    </div>
+  </aside>
+
+  <!-- Right panel — form -->
+  <main class="cf-right" aria-label="Contact form">
+
+    <!-- Form heading -->
+    <div class="cf-form-head">
+      <p class="cf-form-title">Send a message</p>
+      <p class="cf-form-sub">I'll get back to you within a day or two.</p>
+    </div>
+
+    <!-- Contact form -->
+    <form class="cf-form" id="cf-form" novalidate aria-label="Contact form">
+
+      <div class="cf-field-group">
+
+        <!-- Name + Email row -->
+        <div class="cf-field-row">
+          <div class="cf-field" style="--anim-delay: 0.32s">
+            <label for="cf-name" class="cf-label">
+              Name
+              <span class="cf-label-req" aria-label="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="cf-name"
+              name="name"
+              class="cf-input"
+              placeholder="Your name"
+              autocomplete="given-name"
+              required
+              aria-required="true"
+              aria-describedby="cf-name-err"
+            >
+            <span class="cf-error-msg" id="cf-name-err" role="alert" aria-live="polite"></span>
+          </div>
+
+          <div class="cf-field" style="--anim-delay: 0.40s">
+            <label for="cf-email" class="cf-label">
+              Email
+              <span class="cf-label-req" aria-label="required">*</span>
+            </label>
+            <input
+              type="email"
+              id="cf-email"
+              name="email"
+              class="cf-input"
+              placeholder="you@example.com"
+              autocomplete="email"
+              required
+              aria-required="true"
+              aria-describedby="cf-email-err"
+            >
+            <span class="cf-error-msg" id="cf-email-err" role="alert" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <!-- Subject / Enquiry type -->
+        <div class="cf-field" style="--anim-delay: 0.48s">
+          <label for="cf-type" class="cf-label">
+            Enquiry type
+            <span class="cf-label-req" aria-label="required">*</span>
+          </label>
+          <div class="cf-select-wrap">
+            <select
+              id="cf-type"
+              name="type"
+              class="cf-select"
+              required
+              aria-required="true"
+              aria-describedby="cf-type-err"
+            >
+              <option value="" disabled selected>Select one…</option>
+              <option value="internship">Internship opportunity</option>
+              <option value="freelance">Freelance project</option>
+              <option value="collaboration">Collaboration</option>
+              <option value="feedback">Portfolio feedback</option>
+              <option value="other">Something else</option>
+            </select>
+          </div>
+          <span class="cf-error-msg" id="cf-type-err" role="alert" aria-live="polite"></span>
+        </div>
+
+        <!-- Message -->
+        <div class="cf-field" style="--anim-delay: 0.56s">
+          <label for="cf-message" class="cf-label">
+            Message
+            <span class="cf-label-req" aria-label="required">*</span>
+          </label>
+          <textarea
+            id="cf-message"
+            name="message"
+            class="cf-textarea"
+            placeholder="Tell me about the project, timeline, or just say hello."
+            required
+            aria-required="true"
+            aria-describedby="cf-message-err"
+            rows="5"
+          ></textarea>
+          <span class="cf-error-msg" id="cf-message-err" role="alert" aria-live="polite"></span>
+        </div>
+
+      </div><!-- /.cf-field-group -->
+
+      <!-- Interest checkboxes -->
+      <div class="cf-checks">
+        <p class="cf-checks-label">Areas of interest</p>
+        <div class="cf-check-row" role="group" aria-label="Areas of interest">
+          <label class="cf-check">
+            <input type="checkbox" name="interest" value="cad">
+            <span class="cf-check-text">CAD / Modelling</span>
+          </label>
+          <label class="cf-check">
+            <input type="checkbox" name="interest" value="viz">
+            <span class="cf-check-text">Product Visualisation</span>
+          </label>
+          <label class="cf-check">
+            <input type="checkbox" name="interest" value="surface">
+            <span class="cf-check-text">Surface Development</span>
+          </label>
+          <label class="cf-check">
+            <input type="checkbox" name="interest" value="proto">
+            <span class="cf-check-text">Prototyping</span>
+          </label>
+          <label class="cf-check">
+            <input type="checkbox" name="interest" value="concept">
+            <span class="cf-check-text">Concept Design</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="cf-submit-wrap">
+        <button type="submit" class="cf-submit" id="cf-btn" aria-label="Send message">
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <span class="btn-text">Send message</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
+        </button>
+        <p class="cf-note">No spam. I reply personally.</p>
+      </div>
+
+    </form><!-- /#cf-form -->
+
+    <!-- Success state (shown after submit) -->
+    <div class="cf-success" id="cf-success" role="status" aria-live="polite" aria-atomic="true">
+      <div class="cf-success-mark" aria-hidden="true">
+        <svg width="20" height="15" viewBox="0 0 20 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="1,7 7,13 19,1" stroke="var(--c-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+      <h2 class="cf-success-h">
+        Message<br><em>sent.</em>
+      </h2>
+      <p class="cf-success-body">
+        Thanks for reaching out. I'll be in touch within a day or two.
+      </p>
+      <a href="index.html" class="cf-success-back">
+        ← Back to portfolio
+      </a>
+    </div>
+
+  </main><!-- /.cf-right -->
+
+  <!-- Footer -->
+  <footer class="cf-footer" role="contentinfo">
+    <div class="cf-footer-logo">Kieran <em>Green</em> — Industrial Designer</div>
+    <div class="cf-footer-copy">© <span id="copy-year"></span> — All rights reserved</div>
+  </footer>
+
+</div><!-- /.cf-page -->
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   Contact page JS — self-contained, no main site dependencies
+═══════════════════════════════════════════════════════════════ */
+'use strict';
+
+/* ── Ready fade-in ── */
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('ready');
+});
+
+/* ── Copyright year ── */
+const yearEl = document.getElementById('copy-year');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+/* ── Nav scroll state ── */
+const nav = document.getElementById('cf-nav');
+if (nav) {
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 20);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
+
+/* ── Form validation & submission ── */
+const form    = document.getElementById('cf-form');
+const btn     = document.getElementById('cf-btn');
+const success = document.getElementById('cf-success');
+
+/* Validation rules per field id */
+const rules = {
+  'cf-name':    { required: true, label: 'Name' },
+  'cf-email':   { required: true, email: true, label: 'Email' },
+  'cf-type':    { required: true, label: 'Enquiry type' },
+  'cf-message': { required: true, min: 10, label: 'Message' },
+};
+
+function validateField(id) {
+  const el  = document.getElementById(id);
+  const err = document.getElementById(`${id}-err`);
+  const rule = rules[id];
+  if (!el || !rule) return true;
+
+  let msg = '';
+  const val = el.value.trim();
+
+  if (rule.required && !val) {
+    msg = `${rule.label} is required.`;
+  } else if (rule.email && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+    msg = 'Please enter a valid email address.';
+  } else if (rule.min && val.length < rule.min) {
+    msg = `${rule.label} must be at least ${rule.min} characters.`;
+  }
+
+  const hasError = msg.length > 0;
+  el.classList.toggle('error', hasError);
+  if (err) {
+    err.textContent = msg;
+    err.classList.toggle('visible', hasError);
+  }
+  return !hasError;
+}
+
+/* Live validation on blur */
+Object.keys(rules).forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('blur', () => validateField(id));
+    el.addEventListener('input', () => {
+      if (el.classList.contains('error')) validateField(id);
+    });
+  }
+});
+
+/* Submit */
+if (form) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    /* Validate all fields */
+    const valid = Object.keys(rules).map(validateField).every(Boolean);
+    if (!valid) {
+      /* Focus the first error field */
+      const firstError = form.querySelector('.error');
+      if (firstError) firstError.focus();
+      return;
+    }
+
+    /* Loading state */
+    btn.disabled = true;
+    btn.classList.add('loading');
+
+    /* ── Submission — Formspree example ──────────────────────────────
+       Replace ACTION_URL with your endpoint, e.g.:
+         https://formspree.io/f/YOUR_ID
+       or swap the fetch for your own backend / EmailJS / Resend call.
+    ─────────────────────────────────────────────────────────────────── */
+    const ACTION_URL = 'https://formspree.io/f/YOUR_FORM_ID'; // ← replace
+
+    const data = new FormData(form);
+
+    /* Collect checkbox values into a comma-separated string */
+    const interests = [...form.querySelectorAll('input[name="interest"]:checked')]
+      .map(cb => cb.value).join(', ');
+    if (interests) data.set('interests', interests);
+    /* Remove individual checkbox entries so Formspree doesn't duplicate them */
+    data.delete('interest');
+
+    try {
+      const res = await fetch(ACTION_URL, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (res.ok) {
+        /* Success */
+        form.style.display = 'none';
+        const formHead = form.previousElementSibling;
+        if (formHead) formHead.style.display = 'none';
+        success.classList.add('visible');
+        success.focus();
+      } else {
+        /* Server error */
+        const json = await res.json().catch(() => ({}));
+        const msg = json?.errors?.[0]?.message || 'Something went wrong. Please try again.';
+        alert(msg); // fallback — swap for inline error banner if preferred
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    } catch {
+      /* Network error */
+      alert('Could not send the message. Please check your connection and try again.');
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  });
+}
+</script>
+
+</body>
+</html>
