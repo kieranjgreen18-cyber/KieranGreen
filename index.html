@@ -1386,12 +1386,22 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   align-items: center;
   z-index: var(--z-carousel); pointer-events: none;
   padding: 4px 0;
+  transition: opacity 0.4s var(--ease);
 }
 .prog-dot {
   width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
   transition: background .4s, transform .4s;
 }
 .prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
+
+/* Hide progress dots on the contact panel — it has no dot of its own
+   and the more-below arrow already served as its only indicator on the
+   preceding panel. Using :has() keeps this entirely in CSS with zero
+   JS changes and zero risk of touching other panels. */
+.about-stage:has([data-panel="5"].is-active) .prog-dots {
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* More-below indicator — aligned to dot column center */
 .about-more-below {
@@ -2818,6 +2828,8 @@ button:focus-visible {
   aria-label="About Kieran Green"
   aria-labelledby="about-h2"
 >
+  <!-- Screen-reader live region: AboutContainer updates this on each panel change -->
+  <div id="about-announcer" aria-live="polite" aria-atomic="true" class="sr-only"></div>
   <div class="stage-edge stage-edge-top" aria-hidden="true"></div>
   <div class="stage-edge stage-edge-bot" aria-hidden="true"></div>
   <div class="panels-host">
