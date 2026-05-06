@@ -197,12 +197,15 @@ class AppController {
         const now = performance.now();
         if (now >= this._settleUntil) this._fire(-1);
       }
-      // Left/Right arrows navigate the about carousel when it is engaged
+      // Left/Right arrows navigate the about carousel when it is engaged.
+      // Route through the fire path (settle window + transitioning guard)
+      // so key-repeat cannot double-fire a panel advance.
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         const about = this._containers.get('about');
         if (about?._active) {
           e.preventDefault();
-          about._advance(e.key === 'ArrowRight' ? 1 : -1);
+          const now = performance.now();
+          if (now >= this._settleUntil) this._fire(e.key === 'ArrowRight' ? 1 : -1);
         }
       }
       if (e.key === 'Escape') {
@@ -380,7 +383,9 @@ class AppController {
   /** Navigate directly to the contact panel (last About panel). */
   goToContactPanel() {
     const about = this._containers.get('about');
-    if (about) setTimeout(() => about.goToLastPanel(), 80);
+    // Wait for the section-change LOCK_MS to clear before jumping to the
+    // last panel, so the panel jump is never swallowed by the lock guard.
+    if (about) setTimeout(() => about.goToLastPanel(), LOCK_MS);
   }
 }
 
@@ -841,7 +846,7 @@ class Hero3DContainer {
   }
 
   async _onViewerLoad() {
-    await this._viewer.updateComplete;
+    try { await this._viewer.updateComplete; } catch(e) { /* non-fatal */ }
     this._viewer.jumpCameraToGoal();
     // Open the dismiss gate after the fadeUp animation has had time to play
     // so camera-change on init doesn't hide the hint before it appears.
@@ -1149,7 +1154,11 @@ class CarouselContainer {
     }
     if (next >= this._N) {
       this._transitioning = true;
-      this._app.setSection(this._nextKey, +1);
+      if (this._nextKey) {
+        this._app.setSection(this._nextKey, +1);
+      }
+      // Safety net: clear _transitioning after TRANS_MS in case setSection is
+      // blocked (e.g. LOCK_MS guard) and enter() never fires to reset it.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
       return;
     }
@@ -1199,6 +1208,7 @@ class AboutContainer {
     // injected lazily the first time this panel becomes active.
     this._statementPanelIdx = -1;
     this._iframeInjected    = false;
+    this._resizeTopTimer    = null; // debounce handle for _calcSpacerTop after resize
 
     this._onResize = () => {
       this._sizeSpacer();
