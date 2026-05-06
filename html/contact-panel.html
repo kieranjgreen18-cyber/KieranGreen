@@ -1,0 +1,425 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     CONTACT PANEL — Drop-in replacement for panel data-panel="5"
+     inside the About carousel (panel-contact).
+     
+     Key changes vs original:
+     • Email link now opens contact.html (internal) instead of external Behance form
+     • Full-bleed teal gradient atmosphere layer (no background image dependency)
+     • Monumental KG initials watermark (replaces "Green" — works without bg image)
+     • Two-column grid preserved; mobile collapses gracefully to single col
+     • Stagger reveal animations wired to .rev-stagger/.in (same as original)
+     • Footer preserved verbatim
+═══════════════════════════════════════════════════════════════ -->
+
+<article class="panel panel-contact" data-panel="5" aria-label="Contact Kieran Green">
+
+  <!-- Atmospheric layer: teal radial glow + noise grain — no image dependency -->
+  <div class="contact-atmo" aria-hidden="true">
+    <div class="contact-atmo-glow contact-atmo-glow--a"></div>
+    <div class="contact-atmo-glow contact-atmo-glow--b"></div>
+    <div class="contact-atmo-grid"></div>
+  </div>
+
+  <!-- Watermark initials — vertically centred, bleed off right -->
+  <div class="contact-wm" aria-hidden="true">KG</div>
+
+  <!-- Stagger-revealed inner content grid -->
+  <div class="contact-inner rev-stagger">
+
+    <!-- Kicker — row 1, left col -->
+    <p class="contact-kicker t-micro">Get in touch</p>
+
+    <!-- Monumental heading — rows 2–3, left col -->
+    <h2 class="contact-h" id="contact-heading">
+      Let's<br>build<br><em>something.</em>
+    </h2>
+
+    <!-- Sub-copy — row 2, right col -->
+    <p class="contact-sub t-body">
+      Open to internships, collaborations, and freelance projects.
+      Always drawn to interesting problems.
+    </p>
+
+    <!-- Fields — row 3, right col -->
+    <div class="contact-right">
+      <div class="contact-fields">
+
+        <!-- Contact row: Email (now internal) + LinkedIn -->
+        <div class="c-field">
+          <p class="c-field-label t-micro">Contact</p>
+          <div class="c-row">
+            <a href="contact.html" class="c-soc c-soc--email">
+              <span class="c-soc-icon" aria-hidden="true">
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="0.5" y="0.5" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1"/>
+                  <polyline points="0.5,0.5 7,5.5 13.5,0.5" stroke="currentColor" stroke-width="1" fill="none" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Email →
+            </a>
+            <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
+          </div>
+        </div>
+
+        <!-- Resume row -->
+        <div class="c-field c-field--cv">
+          <p class="c-field-label t-micro">Resume</p>
+          <a href="assets/downloads/KieranGreenRes.pdf" download class="c-dl c-dl--primary">Download CV →</a>
+        </div>
+
+        <!-- Availability pill — new addition -->
+        <div class="c-field c-field--avail">
+          <p class="c-field-label t-micro">Status</p>
+          <span class="c-avail">
+            <span class="c-avail-dot" aria-hidden="true"></span>
+            Available for internships
+          </span>
+        </div>
+
+      </div><!-- /.contact-fields -->
+    </div><!-- /.contact-right -->
+
+  </div><!-- /.contact-inner -->
+
+  <footer class="panel-footer" role="contentinfo" aria-label="Site footer">
+    <div class="pf-logo">Kieran <em>Green</em> — Industrial Designer</div>
+    <div class="pf-copy">© <span id="copy-year"></span> — All rights reserved</div>
+  </footer>
+
+</article>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CONTACT PANEL STYLES — Add these rules to your main <style>
+     block, replacing the existing § CONTACT PANEL section.
+     
+     Tokens referenced: all from :root (--c-*, --f-*, --t-*, --s-*,
+     --pad, --ease, --dur-*, --lh-*)
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   § CONTACT PANEL — Redesigned
+   Architecture:
+     • .panel-contact         absolute inset, flex col, justify end
+     • .contact-atmo          full-bleed atmosphere (no bg image)
+     • .contact-wm            initials watermark, bleeds right
+     • .contact-inner         3-row × 2-col grid, bottom-pinned
+       ├─ .contact-kicker     row 1 / col 1
+       ├─ .contact-h          rows 2–3 / col 1 (bottom-align)
+       ├─ .contact-sub        row 2 / col 2 (bottom-align)
+       └─ .contact-right      row 3 / col 2 (bottom-align)
+           └─ .contact-fields col of .c-field rows
+     • .panel-footer          absolute bottom, border-top rule
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Shell ─────────────────────────────────────────────────── */
+.panel-contact {
+  position: absolute; inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  background: var(--c-bg);
+}
+
+/* ── Atmosphere: teal radial + engineered grid ──────────────── */
+.contact-atmo {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 0;
+}
+
+/* Primary glow — large warm teal bloom, bottom-left origin */
+.contact-atmo-glow--a {
+  position: absolute;
+  left: -10%; bottom: -15%;
+  width: 70%; height: 80%;
+  background: radial-gradient(
+    ellipse at 20% 90%,
+    rgba(91,160,164, 0.13) 0%,
+    rgba(91,160,164, 0.05) 35%,
+    transparent 65%
+  );
+  filter: blur(1px);
+}
+
+/* Secondary glow — cooler accent, mid-right, keeps depth */
+.contact-atmo-glow--b {
+  position: absolute;
+  right: 5%; top: 15%;
+  width: 45%; height: 55%;
+  background: radial-gradient(
+    ellipse at 75% 30%,
+    rgba(91,160,164, 0.06) 0%,
+    transparent 60%
+  );
+}
+
+/* Subtle engineering grid — 80px tiles, very faint */
+.contact-atmo-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(91,160,164,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91,160,164,0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  /* Fade toward center-bottom so it doesn't compete with text */
+  mask-image: radial-gradient(ellipse 80% 70% at 80% 20%, rgba(0,0,0,0.8) 0%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 80% 20%, rgba(0,0,0,0.8) 0%, transparent 80%);
+}
+
+/* ── Watermark initials ─────────────────────────────────────── */
+.panel-contact .contact-wm {
+  position: absolute;
+  right: -2vw; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--f-heading);
+  font-size: clamp(180px, 28vw, 420px);
+  font-weight: 700;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(91,160,164, .055);
+  pointer-events: none; user-select: none;
+  line-height: 1;
+  letter-spacing: -.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+/* ── Inner content grid ─────────────────────────────────────── */
+.panel-contact .contact-inner {
+  position: relative; z-index: 2;
+  width: 100%;
+  padding: 0 var(--pad);
+  margin-bottom: clamp(var(--s-6), 5vh, var(--s-9));
+  display: grid;
+  grid-template-columns: 52fr 48fr;
+  grid-template-rows: auto auto auto;
+  column-gap: clamp(var(--s-6), 5vw, var(--s-10));
+  row-gap: 0;
+  align-items: end;
+}
+
+/* ── Kicker — row 1, col 1 ──────────────────────────────────── */
+.panel-contact .contact-kicker {
+  grid-column: 1; grid-row: 1;
+  display: flex; align-items: center; gap: var(--s-2);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
+  padding-bottom: var(--s-3);
+}
+.panel-contact .contact-kicker::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--c-accent);
+  flex-shrink: 0;
+}
+
+/* ── Heading — rows 2–3, col 1, bottom-aligned ──────────────── */
+.panel-contact .contact-h {
+  grid-column: 1; grid-row: 2 / 4;
+  align-self: end;
+  font-family: var(--f-heading);
+  font-size: clamp(64px, 9.5vw, 148px);
+  font-weight: 100;
+  letter-spacing: var(--ls-tight);
+  line-height: 0.88;
+  text-transform: uppercase;
+  color: var(--c-primary);
+}
+.panel-contact .contact-h em {
+  font-style: italic;
+  color: var(--c-accent);
+  font-weight: 100;
+  text-shadow: 0 0 60px rgba(91,160,164, 0.22);
+}
+
+/* ── Sub-copy — row 2, col 2, bottom-aligned ────────────────── */
+.panel-contact .contact-sub {
+  grid-column: 2; grid-row: 2;
+  align-self: end;
+  font-family: var(--f-body);
+  font-size: var(--t-ui);
+  line-height: var(--lh-text);
+  color: var(--c-secondary);
+  font-weight: 400;
+  letter-spacing: var(--ls-open);
+  max-width: 38ch;
+  padding-bottom: var(--s-4);
+}
+
+/* ── Right column — row 3, col 2 ───────────────────────────── */
+.panel-contact .contact-right { grid-column: 2; grid-row: 3; align-self: end; }
+.panel-contact .contact-fields { display: flex; flex-direction: column; gap: 0; }
+
+/* Field row — label + content, hover state */
+.panel-contact .c-field {
+  padding: clamp(var(--s-2), 1.5vh, var(--s-3)) 0;
+  border-bottom: 1px solid var(--c-rule);
+  display: grid;
+  grid-template-columns: clamp(72px, 9vw, 110px) 1fr;
+  gap: var(--s-3);
+  align-items: center;
+  transition: background var(--dur-fast) ease, padding-left var(--dur-fast) var(--ease);
+  border-radius: 2px;
+  padding-left: 0;
+}
+.panel-contact .c-field:hover { background: var(--c-surface); padding-left: var(--s-2); }
+.panel-contact .c-field:first-child { border-top: 1px solid var(--c-rule); }
+
+/* Field label — column 1 */
+.panel-contact .c-field-label {
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-accent); opacity: .55;
+}
+
+/* Contact link row */
+.panel-contact .c-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: center; }
+
+/* Social/contact links */
+.panel-contact .c-soc {
+  font-family: var(--f-heading); font-size: clamp(18px, 2vw, 26px); font-weight: 100;
+  letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-primary); text-decoration: none; cursor: none;
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  transition: color .25s, gap .3s var(--ease);
+  position: relative;
+}
+.panel-contact .c-soc-icon {
+  opacity: 0.45;
+  transition: opacity .25s;
+  display: inline-flex; align-items: center;
+}
+.panel-contact .c-soc:hover .c-soc-icon { opacity: 1; }
+.panel-contact .c-soc::after {
+  content: '';
+  position: absolute; bottom: -2px; left: 0;
+  width: 100%; height: 1px;
+  background: var(--c-accent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s var(--ease);
+}
+.panel-contact .c-soc:hover { color: var(--c-accent); gap: var(--s-3); }
+.panel-contact .c-soc:hover::after { transform: scaleX(1); }
+
+/* Download CV link */
+.panel-contact .c-dl--primary {
+  font-family: var(--f-heading); font-size: clamp(24px, 2.8vw, 42px); font-weight: 100;
+  letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-accent); text-decoration: none; cursor: none;
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  transition: color .25s, gap .3s var(--ease);
+  position: relative;
+}
+.panel-contact .c-dl--primary::after {
+  content: '';
+  position: absolute; bottom: -2px; left: 0;
+  width: 100%; height: 1px;
+  background: var(--c-accent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s var(--ease);
+}
+.panel-contact .c-dl--primary:hover { color: var(--c-accent-hi); gap: var(--s-3); }
+.panel-contact .c-dl--primary:hover::after { transform: scaleX(1); }
+
+/* ── Availability pill — new ────────────────────────────────── */
+.c-avail {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--f-heading); font-size: clamp(13px, 1.4vw, 18px);
+  font-weight: 100; letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-secondary);
+}
+.c-avail-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #4ade80; /* green — available */
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(74,222,128,0.6);
+  animation: availPulse 2.4s ease-in-out infinite;
+}
+@keyframes availPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(74,222,128,0.6); }
+  50%       { opacity: 0.55; box-shadow: 0 0 12px rgba(74,222,128,0.25); }
+}
+
+/* ── Panel footer ───────────────────────────────────────────── */
+.panel-footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: var(--s-2) var(--pad);
+  border-top: 1px solid var(--c-rule);
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 3;
+}
+.pf-logo {
+  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-secondary); opacity: 0.55;
+}
+.pf-logo em { font-style: italic; color: var(--c-accent); }
+.pf-copy {
+  font-family: var(--f-meta); font-size: 9px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: var(--c-muted); opacity: 0.55;
+}
+
+/* ── Light theme overrides ──────────────────────────────────── */
+@media (min-width: 769px) {
+  [data-theme="light"] .panel-contact { background: var(--c-bg); }
+  [data-theme="light"] .panel-contact .contact-h { color: var(--c-primary); }
+  [data-theme="light"] .panel-contact .contact-wm { -webkit-text-stroke: 1px rgba(91,160,164,.08); }
+  [data-theme="light"] .panel-contact .c-field:hover { background: rgba(8,9,9,.055); }
+  [data-theme="light"] .panel-contact .contact-atmo-grid {
+    background-image:
+      linear-gradient(rgba(91,160,164,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(91,160,164,0.04) 1px, transparent 1px);
+  }
+  [data-theme="light"] .panel-footer { border-top-color: var(--c-rule); }
+}
+
+/* ── Mobile: single-column, scrollable ─────────────────────── */
+@media (max-width: 768px) {
+  .panel-contact {
+    justify-content: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .panel-contact .contact-atmo-grid { display: none; }
+  .panel-contact .contact-wm {
+    font-size: clamp(120px, 36vw, 200px);
+    right: -4vw; top: auto; bottom: 20%;
+    transform: none;
+  }
+  .panel-contact .contact-inner {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    margin-top: clamp(72px, 14vh, 120px);
+    margin-bottom: calc(var(--s-9) + 40px); /* space for footer */
+    padding: 0 var(--pad-sm);
+    row-gap: 0;
+  }
+  .panel-contact .contact-kicker {
+    grid-column: 1; grid-row: 1;
+  }
+  .panel-contact .contact-h {
+    grid-column: 1; grid-row: 2;
+    font-size: clamp(52px, 14vw, 80px);
+    align-self: auto;
+    padding-bottom: var(--s-5);
+  }
+  .panel-contact .contact-sub {
+    grid-column: 1; grid-row: 3;
+    align-self: auto;
+    padding-bottom: var(--s-4);
+    max-width: 100%;
+  }
+  .panel-contact .contact-right {
+    grid-column: 1; grid-row: 4;
+    align-self: auto;
+  }
+  .panel-contact .c-soc,
+  .panel-contact .c-dl--primary {
+    cursor: auto; /* mobile: restore pointer cursor */
+  }
+  .panel-contact .c-row { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+  .panel-contact .c-dl--primary { font-size: clamp(22px, 7vw, 36px); }
+  .panel-contact .c-soc { font-size: clamp(16px, 5.5vw, 22px); }
+}
+</style>
