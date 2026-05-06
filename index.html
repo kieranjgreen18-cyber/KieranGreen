@@ -1951,50 +1951,25 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
 
-  /* Contact panel — mobile: single column, content centred in viewport */
+  /* Contact panel — mobile layout */
   .panel-contact {
     display: flex;
     flex-direction: column;
     justify-content: center;
     padding: 0;
     background: var(--c-bg);
-    overflow-x: hidden;
   }
-  .panel-contact::before { display: none; }
   .panel-contact .contact-img,
   .panel-contact .contact-wm { display: none; }
-  /* Override grid to flex column so items stack top-down */
   .panel-contact .contact-inner {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
     width: 100%;
-    max-width: 100%;
-    padding: var(--s-6) var(--pad) calc(var(--s-6) + 44px);
-    margin-bottom: 0;
-    overflow-x: hidden;
+    padding: var(--s-6) var(--pad) var(--s-5);
   }
-  /* Remove grid placement — they're now flex items stacking in DOM order:
-     kicker → heading → sub-copy → contact-right (fields) */
-  .panel-contact .contact-kicker,
-  .panel-contact .contact-h,
-  .panel-contact .contact-sub,
-  .panel-contact .contact-right {
-    grid-column: unset; grid-row: unset;
-    align-self: unset;
-  }
-  .panel-contact .contact-h {
-    font-size: clamp(52px, 13vw, 80px);
-    color: var(--c-primary);
-    padding-bottom: var(--s-1);
-  }
-  .panel-contact .contact-sub { padding-bottom: 0; max-width: 100%; }
-  .panel-contact .contact-right { margin-top: var(--s-1); width: 100%; max-width: 100%; }
-  .panel-contact .contact-fields { width: 100%; }
-  .panel-contact .c-field { grid-template-columns: 80px 1fr; gap: var(--s-2); width: 100%; }
-  .panel-contact .c-row { flex-wrap: wrap; max-width: 100%; gap: var(--s-2); }
-  .panel-contact .c-dl--primary { font-size: clamp(28px, 7.5vw, 44px); cursor: pointer; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-  .panel-contact .c-soc { cursor: pointer; font-size: clamp(16px, 5vw, 24px); max-width: 100%; display: inline-block; }
+  .panel-contact .contact-h { font-size: clamp(56px, 13vw, 80px); color: var(--c-primary); }
+  .panel-contact .c-field { grid-template-columns: 1fr; gap: var(--s-1); }
+  .panel-contact .c-dl--primary { font-size: clamp(30px, 8vw, 46px); }
+  .panel-contact .c-soc { cursor: pointer; }
+  .panel-contact .c-dl--primary { cursor: pointer; }
   /* Panel footer — mobile */
   .panel-footer { padding: var(--s-2) var(--pad); flex-direction: column; gap: 2px; align-items: center; text-align: center; }
 }
@@ -2004,10 +1979,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .ch-title  { font-size: clamp(34px, 9.5vw, 52px); }
   .intro-name { font-size: clamp(38px, 10.5vw, 58px); }
   .t-statement { font-size: clamp(16px, 4.8vw, 24px); }
-  .panel-contact .contact-h { font-size: clamp(44px, 13.5vw, 64px); }
-  .panel-contact .c-soc { font-size: clamp(15px, 5.5vw, 22px); }
-  .panel-contact .c-dl--primary { font-size: clamp(24px, 7.5vw, 36px); }
-  .panel-contact .c-field { grid-template-columns: 72px 1fr; }}
+  .panel-contact .contact-h { font-size: clamp(48px, 14vw, 72px); }
+  .panel-contact .c-soc { font-size: clamp(18px, 6vw, 28px); }
+  .panel-contact .c-dl--primary { font-size: clamp(26px, 7vw, 38px); }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    § ENHANCED MICRO-INTERACTIONS & AWWWARDS POLISH
@@ -2161,170 +2136,105 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 
 /* ═══════════════════════════════════════════════════════════════
    § CONTACT PANEL (embedded as the last About carousel slide)
-   Desktop: full-bleed bg image, content anchored bottom-left.
-            Left col = kicker + monumental heading (bottom-aligned).
-            Right col = sub-copy + links (bottom-aligned, matches heading base).
-   Mobile:  single column, no image, content starts at top.
+   The panel fills the fixed about-stage, same as all other panels.
+   On desktop: two-column layout. On mobile: single column, no image.
 ═══════════════════════════════════════════════════════════════ */
 .panel-contact {
   position: absolute; inset: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  align-items: center;
   overflow: hidden;
 }
-
-/* Full-bleed atmospheric background — entire panel */
 .panel-contact .contact-img {
-  position: absolute; inset: 0;
+  position: absolute; right: 0; top: 0; bottom: 0; width: 45%;
   background-image: url('assets/images/sabrettahero.png');
-  background-size: cover;
-  background-position: 65% center;
-  opacity: .32;
-  filter: saturate(.5) contrast(1.05);
-  /* Multi-axis vignette: strong fade from left + bottom, open on right */
-  mask-image:
-    linear-gradient(to right,  rgba(0,0,0,1) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.12) 68%, transparent 100%),
-    linear-gradient(to top,    rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 30%, transparent 60%);
-  -webkit-mask-image:
-    linear-gradient(to right,  rgba(0,0,0,1) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.12) 68%, transparent 100%),
-    linear-gradient(to top,    rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 30%, transparent 60%);
-  mask-composite: intersect;
-  -webkit-mask-composite: source-in;
+  background-size: cover; background-position: center;
+  opacity: .28;
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.8) 40%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.8) 40%);
+  filter: saturate(.5);
 }
-
-/* Subtle teal glow — atmosphere behind the content */
-.panel-contact::before {
-  content: '';
-  position: absolute; left: -5%; bottom: -10%; width: 50%; height: 65%;
-  background: radial-gradient(ellipse at 25% 85%, rgba(91,160,164,0.07) 0%, transparent 60%);
-  pointer-events: none; z-index: 1;
-}
-
-/* Watermark — vertically centred, bleeds off right edge */
 .panel-contact .contact-wm {
-  position: absolute; right: -3vw; top: 50%; transform: translateY(-50%);
-  font-family: var(--f-heading); font-size: clamp(200px, 30vw, 440px); font-weight: 700;
-  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.05);
+  position: absolute; right: -2vw; bottom: -4vh;
+  font-family: var(--f-heading); font-size: clamp(180px,28vw,380px); font-weight: 700;
+  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.06);
   pointer-events: none; user-select: none;
   line-height: 1; letter-spacing: -.06em; text-transform: uppercase; white-space: nowrap;
-  z-index: 1;
 }
-
-/* ── Inner grid — vertically centred in panel, full width ── */
 .panel-contact .contact-inner {
-  position: relative; z-index: 2;
-  width: 100%;
-  padding: clamp(var(--s-9), 12vh, var(--s-12)) var(--pad) clamp(var(--s-7), 8vh, var(--s-10));
-  margin-bottom: 0;
-  /*
-   * 3 rows × 2 cols:
-   *   row 1 = kicker (left col only, right col is empty — provides top-rule anchor)
-   *   row 2 = heading (left) | sub-copy (right)
-   *   row 3 = empty (left) | fields (right)
-   * Both cols bottom-align so heading base and last field row are flush.
-   */
-  display: grid;
-  grid-template-columns: 52fr 48fr;
-  grid-template-rows: auto auto auto;
-  column-gap: clamp(var(--s-6), 5vw, var(--s-10));
-  row-gap: 0;
-  align-items: end;
+  position: relative; z-index: 2; padding: var(--s-8) var(--pad);
+  width: 60%; display: flex; flex-direction: column; gap: var(--s-5);
 }
-
-/* Kicker — left col, row 1, tight above heading */
 .panel-contact .contact-kicker {
-  grid-column: 1; grid-row: 1;
   display: flex; align-items: center; gap: var(--s-2);
   font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
-  padding-bottom: var(--s-3);
 }
-.panel-contact .contact-kicker::before {
-  content: ''; width: 20px; height: 1px; background: var(--c-accent); flex-shrink: 0;
-}
-
-/* Heading — left col, rows 2–3 (spans to fill height), bottom-aligned */
+.panel-contact .contact-kicker::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); }
 .panel-contact .contact-h {
-  grid-column: 1; grid-row: 2 / 4;
-  align-self: end;
-  font-family: var(--f-heading);
-  font-size: clamp(64px, 9.5vw, 148px);
-  font-weight: 100;
-  letter-spacing: var(--ls-tight); line-height: 0.88; text-transform: uppercase; color: var(--c-primary);
+  font-family: var(--f-heading); font-size: clamp(72px, 11vw, 148px); font-weight: 100;
+  letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; color: var(--c-primary);
 }
-.panel-contact .contact-h em {
-  font-style: italic; color: var(--c-accent); font-weight: 100;
-  text-shadow: 0 0 60px rgba(91,160,164,0.20);
-}
-
-/* Sub-copy — right col, row 2 */
+.panel-contact .contact-h em { font-style: italic; color: var(--c-accent); font-weight: 100; }
 .panel-contact .contact-sub {
-  grid-column: 2; grid-row: 2;
-  align-self: end;
   font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-text);
-  color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open);
-  max-width: 38ch;
-  padding-bottom: var(--s-4);
-}
-
-/* Fields — right col, row 3 */
-.panel-contact .contact-right {
-  grid-column: 2; grid-row: 3;
-  align-self: end;
+  color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open); max-width: 390px;
 }
 .panel-contact .contact-fields { display: flex; flex-direction: column; gap: 0; }
 .panel-contact .c-field {
-  padding: clamp(var(--s-2), 1.5vh, var(--s-3)) 0;
-  border-bottom: 1px solid var(--c-rule);
-  display: grid; grid-template-columns: clamp(72px, 9vw, 110px) 1fr;
+  padding: var(--s-3) 0; border-bottom: 1px solid var(--c-rule);
+  display: grid; grid-template-columns: clamp(80px,10vw,120px) 1fr;
   gap: var(--s-3); align-items: center;
   transition: background var(--dur-fast) ease, padding-left var(--dur-fast) var(--ease);
-  border-radius: 2px; padding-left: 0;
+  border-radius: 2px;
+  padding-left: 0;
 }
-.panel-contact .c-field:hover { background: var(--c-surface); padding-left: var(--s-2); }
+.panel-contact .c-field:hover {
+  background: var(--c-surface);
+  padding-left: var(--s-2);
+}
 .panel-contact .c-field:first-child { border-top: 1px solid var(--c-rule); }
 .panel-contact .c-field-label {
   font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-accent); opacity: .55;
+  color: var(--c-accent); opacity: .6;
 }
-
-/* Email & LinkedIn */
+/* Email & LinkedIn — standard size */
 .panel-contact .c-soc {
-  font-family: var(--f-heading); font-size: clamp(18px, 2vw, 26px); font-weight: 100;
+  font-family: var(--f-heading); font-size: var(--t-subhead); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
   color: var(--c-primary); text-decoration: none; cursor: none;
   display: inline-flex; align-items: center; gap: var(--s-2);
-  transition: color .25s, gap .3s var(--ease); position: relative;
+  transition: color .25s, gap .3s var(--ease);
+  position: relative;
 }
 .panel-contact .c-soc::after {
-  content: ''; position: absolute; bottom: -2px; left: 0;
+  content: ''; position: absolute; bottom: -3px; left: 0;
   width: 100%; height: 1px; background: var(--c-accent);
-  transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s var(--ease);
 }
 .panel-contact .c-soc:hover { color: var(--c-accent); gap: var(--s-3); }
 .panel-contact .c-soc:hover::after { transform: scaleX(1); }
-
-/* CV Download — accent colour so it reads as the primary CTA */
+/* CV — larger than contact links, one step up the type scale */
 .panel-contact .c-dl--primary {
-  font-family: var(--f-heading); font-size: clamp(24px, 2.8vw, 42px); font-weight: 100;
+  font-family: var(--f-heading); font-size: clamp(28px, 3.2vw, 46px); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
-  color: var(--c-accent); text-decoration: none; cursor: none;
+  color: var(--c-primary); text-decoration: none; cursor: none;
   display: inline-flex; align-items: center; gap: var(--s-2);
-  transition: color .25s, gap .3s var(--ease); position: relative;
+  transition: color .25s, gap .3s var(--ease);
+  position: relative;
 }
 .panel-contact .c-dl--primary::after {
-  content: ''; position: absolute; bottom: -2px; left: 0;
+  content: ''; position: absolute; bottom: -3px; left: 0;
   width: 100%; height: 1px; background: var(--c-accent);
-  transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s var(--ease);
 }
-.panel-contact .c-dl--primary:hover { color: var(--c-accent-hi); gap: var(--s-3); }
+.panel-contact .c-dl--primary:hover { color: var(--c-accent); gap: var(--s-3); }
 .panel-contact .c-dl--primary:hover::after { transform: scaleX(1); }
-
 .panel-contact .c-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: center; }
-
-/* Panel footer — pinned to bottom of contact panel */
+/* Panel-footer — pinned to bottom of contact panel */
 .panel-footer {
   position: absolute; bottom: 0; left: 0; right: 0;
   padding: var(--s-2) var(--pad);
@@ -2962,8 +2872,9 @@ button:focus-visible {
       </div>
       <div class="stmt-video-row">
         <div class="stmt-video-frame">
+          <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
           <iframe
-            data-src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1"
+            src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1"
             title="Kieran Green — Personal Statement"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowfullscreen
@@ -2971,6 +2882,7 @@ button:focus-visible {
             referrerpolicy="strict-origin-when-cross-origin"
             sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
           ></iframe>
+          <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
         </div>
       </div>
     </article>
@@ -2981,21 +2893,19 @@ button:focus-visible {
       <div class="contact-wm" aria-hidden="true">Green</div>
       <div class="contact-inner rev-stagger">
         <p class="contact-kicker t-micro">Get in touch</p>
-        <h2 class="contact-h" id="contact-heading">Let’s<br>build<br><em>something.</em></h2>
+        <h2 class="contact-h" id="contact-heading">Let's<br>build<br><em>something.</em></h2>
         <p class="contact-sub t-body">Open to internships, collaborations, and freelance projects. Always drawn to interesting problems.</p>
-        <div class="contact-right">
-          <div class="contact-fields">
-            <div class="c-field">
-              <p class="c-field-label t-micro">Contact</p>
-              <div class="c-row">
-                <a href="html/contact.html" class="c-soc">Email →</a>
-                <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
-              </div>
+        <div class="contact-fields">
+          <div class="c-field">
+            <p class="c-field-label t-micro">Contact</p>
+            <div class="c-row">
+              <a href="https://kierangreen.myportfolio.com/contact" target="_blank" rel="noopener noreferrer" class="c-soc">Email →</a>
+              <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
             </div>
-            <div class="c-field c-field--cv">
-              <p class="c-field-label t-micro">Resume</p>
-              <a href="assets/downloads/KieranGreenRes.pdf" download class="c-dl c-dl--primary">Download CV →</a>
-            </div>
+          </div>
+          <div class="c-field c-field--cv">
+            <p class="c-field-label t-micro">Resume</p>
+            <a href="assets/downloads/KieranGreenRes.pdf" download class="c-dl c-dl--primary">Download CV →</a>
           </div>
         </div>
       </div>
