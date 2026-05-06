@@ -12,7 +12,10 @@
 
 <!-- Fonts (local — same as main site) -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-webfont.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-bold-webfont.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-webfont.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-bold-webfont.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-italic-webfont.woff2" crossorigin>
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -76,6 +79,8 @@
 
   --f-heading:   'D-DIN Condensed', sans-serif;
   --f-body:      'D-DIN', sans-serif;
+  --f-ui:        'D-DIN', sans-serif;
+  --f-meta:      'D-DIN Condensed', sans-serif;
 
   --t-display:   clamp(80px, 14vw, 200px);
   --t-heading:   clamp(38px, 5.5vw, 72px);
@@ -221,10 +226,8 @@ strong { font-weight: 700; color: var(--c-primary); }
   padding: var(--s-10) var(--pad) var(--s-8);
   overflow: hidden;
   border-right: 1px solid var(--c-rule);
-  /* Sticky on large screens */
-  position: sticky;
-  top: 0;
-  height: 100dvh;
+  grid-row: 1 / -1;
+  align-self: stretch;
 }
 
 /* Atmosphere */
@@ -656,7 +659,7 @@ strong { font-weight: 700; color: var(--c-primary); }
    § PAGE FOOTER
 ═══════════════════════════════════════════════════════════════ */
 .cf-footer {
-  grid-column: 1 / -1;
+  grid-column: 2 / 3;
   display: flex; align-items: center; justify-content: space-between;
   padding: var(--s-2) var(--pad);
   border-top: 1px solid var(--c-rule);
@@ -707,7 +710,7 @@ strong { font-weight: 700; color: var(--c-primary); }
     min-height: 0;
   }
   .cf-field-row { grid-template-columns: 1fr; }
-  .cf-footer { flex-direction: column; gap: var(--s-1); text-align: center; }
+  .cf-footer { grid-column: 1 / -1; flex-direction: column; gap: var(--s-1); text-align: center; }
 }
 </style>
 </head>
@@ -719,10 +722,10 @@ strong { font-weight: 700; color: var(--c-primary); }
 
 <!-- Nav -->
 <nav class="cf-nav" id="cf-nav" aria-label="Site navigation">
-  <a href="https://kieranjgreen18-cyber.github.io/KieranGreen/index.html" class="cf-nav-logo" aria-label="Kieran Green — Back to portfolio">
+  <a href="index.html" class="cf-nav-logo" aria-label="Kieran Green — Back to portfolio">
     Kieran <em style="font-style:italic;color:var(--c-accent)">Green</em>
   </a>
-  <a href="https://kieranjgreen18-cyber.github.io/KieranGreen/index.html" class="cf-nav-back" aria-label="Back to portfolio">
+  <a href="index.html" class="cf-nav-back" aria-label="Back to portfolio">
     <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <line x1="13" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
       <polyline points="4,2 1,5 4,8" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -740,8 +743,9 @@ strong { font-weight: 700; color: var(--c-primary); }
     <div class="cf-wm" aria-hidden="true">KG</div>
 
     <div class="cf-left-content">
+      <p class="cf-eyebrow">Get in touch</p>
       <h1 class="cf-hero-h">
-        Let's <br><em>connect.</em>
+        Let's build<br><em>something.</em>
       </h1>
       <p class="cf-hero-sub">
         Open to internships, collaborations, and freelance projects.
@@ -923,7 +927,7 @@ strong { font-weight: 700; color: var(--c-primary); }
       <p class="cf-success-body">
         Thanks for reaching out. I'll be in touch within a day or two.
       </p>
-      <a href="https://kieranjgreen18-cyber.github.io/KieranGreen/index.html" class="cf-success-back">
+      <a href="index.html" class="cf-success-back">
         ← Back to portfolio
       </a>
     </div>
@@ -1034,7 +1038,7 @@ if (form) {
          https://formspree.io/f/YOUR_ID
        or swap the fetch for your own backend / EmailJS / Resend call.
     ─────────────────────────────────────────────────────────────────── */
-    const ACTION_URL = 'https://formspree.io/f/xrejlkae'; // ← replace
+    const ACTION_URL = 'https://formspree.io/f/xrejlkae';
 
     const data = new FormData(form);
 
