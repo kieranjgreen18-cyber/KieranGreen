@@ -1951,13 +1951,14 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
 
-  /* Contact panel — mobile: single column, content from top */
+  /* Contact panel — mobile: single column, content centred in viewport */
   .panel-contact {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: center;
     padding: 0;
     background: var(--c-bg);
+    overflow-x: hidden;
   }
   .panel-contact::before { display: none; }
   .panel-contact .contact-img,
@@ -1968,8 +1969,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     flex-direction: column;
     gap: var(--s-2);
     width: 100%;
-    padding: var(--s-5) var(--pad) calc(var(--s-6) + 44px);
+    max-width: 100%;
+    padding: var(--s-6) var(--pad) calc(var(--s-6) + 44px);
     margin-bottom: 0;
+    overflow-x: hidden;
   }
   /* Remove grid placement — they're now flex items stacking in DOM order:
      kicker → heading → sub-copy → contact-right (fields) */
@@ -1986,10 +1989,12 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     padding-bottom: var(--s-1);
   }
   .panel-contact .contact-sub { padding-bottom: 0; max-width: 100%; }
-  .panel-contact .contact-right { margin-top: var(--s-1); }
-  .panel-contact .c-field { grid-template-columns: 80px 1fr; gap: var(--s-2); }
-  .panel-contact .c-dl--primary { font-size: clamp(28px, 7.5vw, 44px); cursor: pointer; }
-  .panel-contact .c-soc { cursor: pointer; font-size: clamp(16px, 5vw, 24px); }
+  .panel-contact .contact-right { margin-top: var(--s-1); width: 100%; max-width: 100%; }
+  .panel-contact .contact-fields { width: 100%; }
+  .panel-contact .c-field { grid-template-columns: 80px 1fr; gap: var(--s-2); width: 100%; }
+  .panel-contact .c-row { flex-wrap: wrap; max-width: 100%; gap: var(--s-2); }
+  .panel-contact .c-dl--primary { font-size: clamp(28px, 7.5vw, 44px); cursor: pointer; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .panel-contact .c-soc { cursor: pointer; font-size: clamp(16px, 5vw, 24px); max-width: 100%; display: inline-block; }
   /* Panel footer — mobile */
   .panel-footer { padding: var(--s-2) var(--pad); flex-direction: column; gap: 2px; align-items: center; text-align: center; }
 }
@@ -2206,12 +2211,12 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   z-index: 1;
 }
 
-/* ── Inner grid — bottom of panel, full width ── */
+/* ── Inner grid — vertically centred in panel, full width ── */
 .panel-contact .contact-inner {
   position: relative; z-index: 2;
   width: 100%;
-  padding: 0 var(--pad);
-  margin-bottom: clamp(var(--s-6), 5vh, var(--s-9));
+  padding: clamp(var(--s-9), 12vh, var(--s-12)) var(--pad) clamp(var(--s-7), 8vh, var(--s-10));
+  margin-bottom: 0;
   /*
    * 3 rows × 2 cols:
    *   row 1 = kicker (left col only, right col is empty — provides top-rule anchor)
@@ -2957,7 +2962,6 @@ button:focus-visible {
       </div>
       <div class="stmt-video-row">
         <div class="stmt-video-frame">
-          <div class="ps-film-bar ps-film-bar-top" aria-hidden="true"></div>
           <iframe
             data-src="https://www.youtube.com/embed/iNMBnFPR7Zg?rel=0&modestbranding=1"
             title="Kieran Green — Personal Statement"
@@ -2967,7 +2971,6 @@ button:focus-visible {
             referrerpolicy="strict-origin-when-cross-origin"
             sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
           ></iframe>
-          <div class="ps-film-bar ps-film-bar-bot" aria-hidden="true"></div>
         </div>
       </div>
     </article>
@@ -2985,7 +2988,7 @@ button:focus-visible {
             <div class="c-field">
               <p class="c-field-label t-micro">Contact</p>
               <div class="c-row">
-                <a href="https://kierangreen.myportfolio.com/contact" target="_blank" rel="noopener noreferrer" class="c-soc">Email →</a>
+                <a href="html/contact.html" class="c-soc">Email →</a>
                 <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
               </div>
             </div>
