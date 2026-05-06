@@ -335,12 +335,16 @@
 }
 
 /* ── Contact (now panel-contact inside About stage) ── */
-/* Background image — more visible on light, slightly more saturated */
-[data-theme="light"] .panel-contact .contact-img { opacity: .20; filter: saturate(.45); }
 /* Watermark slightly stronger so it reads as intentional, not faded */
-[data-theme="light"] .panel-contact .contact-wm { -webkit-text-stroke: 1px rgba(91,160,164,.10); }
+[data-theme="light"] .panel-contact .contact-wm { -webkit-text-stroke: 1px rgba(91,160,164,.08); }
 /* c-field hover — --c-surface on light is very faint; boost it */
 [data-theme="light"] .panel-contact .c-field:hover { background: rgba(8,9,9,.055); }
+/* Grid slightly more visible on light */
+[data-theme="light"] .panel-contact .contact-atmo-grid {
+  background-image:
+    linear-gradient(rgba(91,160,164,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91,160,164,0.04) 1px, transparent 1px);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    § RESET & BASE
@@ -1959,8 +1963,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     padding: 0;
     background: var(--c-bg);
   }
-  .panel-contact::before { display: none; }
-  .panel-contact .contact-img,
+  .panel-contact .contact-atmo-grid { display: none; }
   .panel-contact .contact-wm { display: none; }
   /* Override grid to flex column so items stack top-down */
   .panel-contact .contact-inner {
@@ -2156,10 +2159,10 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
 
 /* ═══════════════════════════════════════════════════════════════
    § CONTACT PANEL (embedded as the last About carousel slide)
-   Desktop: full-bleed bg image, content anchored bottom-left.
+   Desktop: atmospheric teal glow + grid, content anchored bottom-left.
             Left col = kicker + monumental heading (bottom-aligned).
             Right col = sub-copy + links (bottom-aligned, matches heading base).
-   Mobile:  single column, no image, content starts at top.
+   Mobile:  single column, content starts at top.
 ═══════════════════════════════════════════════════════════════ */
 .panel-contact {
   position: absolute; inset: 0;
@@ -2167,40 +2170,51 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
+  background: var(--c-bg);
 }
 
-/* Full-bleed atmospheric background — entire panel */
-.panel-contact .contact-img {
+/* ── Atmosphere: teal radial glow + engineering grid ── */
+.contact-atmo {
   position: absolute; inset: 0;
-  background-image: url('assets/images/sabrettahero.png');
-  background-size: cover;
-  background-position: 65% center;
-  opacity: .32;
-  filter: saturate(.5) contrast(1.05);
-  /* Multi-axis vignette: strong fade from left + bottom, open on right */
-  mask-image:
-    linear-gradient(to right,  rgba(0,0,0,1) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.12) 68%, transparent 100%),
-    linear-gradient(to top,    rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 30%, transparent 60%);
-  -webkit-mask-image:
-    linear-gradient(to right,  rgba(0,0,0,1) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.12) 68%, transparent 100%),
-    linear-gradient(to top,    rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 30%, transparent 60%);
-  mask-composite: intersect;
-  -webkit-mask-composite: source-in;
+  pointer-events: none; z-index: 0;
+}
+.contact-atmo-glow--a {
+  position: absolute;
+  left: -10%; bottom: -15%;
+  width: 70%; height: 80%;
+  background: radial-gradient(
+    ellipse at 20% 90%,
+    rgba(91,160,164, 0.13) 0%,
+    rgba(91,160,164, 0.05) 35%,
+    transparent 65%
+  );
+  filter: blur(1px);
+}
+.contact-atmo-glow--b {
+  position: absolute;
+  right: 5%; top: 15%;
+  width: 45%; height: 55%;
+  background: radial-gradient(
+    ellipse at 75% 30%,
+    rgba(91,160,164, 0.06) 0%,
+    transparent 60%
+  );
+}
+.contact-atmo-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(91,160,164,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91,160,164,0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 80% 70% at 80% 20%, rgba(0,0,0,0.8) 0%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 80% 20%, rgba(0,0,0,0.8) 0%, transparent 80%);
 }
 
-/* Subtle teal glow — atmosphere behind the content */
-.panel-contact::before {
-  content: '';
-  position: absolute; left: -5%; bottom: -10%; width: 50%; height: 65%;
-  background: radial-gradient(ellipse at 25% 85%, rgba(91,160,164,0.07) 0%, transparent 60%);
-  pointer-events: none; z-index: 1;
-}
-
-/* Watermark — vertically centred, bleeds off right edge */
+/* Watermark initials — vertically centred, bleeds off right edge */
 .panel-contact .contact-wm {
-  position: absolute; right: -3vw; top: 50%; transform: translateY(-50%);
-  font-family: var(--f-heading); font-size: clamp(200px, 30vw, 440px); font-weight: 700;
-  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.05);
+  position: absolute; right: -2vw; top: 50%; transform: translateY(-50%);
+  font-family: var(--f-heading); font-size: clamp(180px, 28vw, 420px); font-weight: 700;
+  color: transparent; -webkit-text-stroke: 1px rgba(91,160,164,.055);
   pointer-events: none; user-select: none;
   line-height: 1; letter-spacing: -.06em; text-transform: uppercase; white-space: nowrap;
   z-index: 1;
@@ -2337,6 +2351,25 @@ body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
   font-family: var(--f-meta); font-size: 9px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-muted);
   opacity: 0.55;
+}
+
+/* ── Availability pill ── */
+.c-avail {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--f-heading); font-size: clamp(13px, 1.4vw, 18px);
+  font-weight: 100; letter-spacing: var(--ls-tight); text-transform: uppercase;
+  color: var(--c-secondary);
+}
+.c-avail-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(74,222,128,0.6);
+  animation: availPulse 2.4s ease-in-out infinite;
+}
+@keyframes availPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(74,222,128,0.6); }
+  50%       { opacity: 0.55; box-shadow: 0 0 12px rgba(74,222,128,0.25); }
 }
 
 /* Desktop light mode: statement (panel 4) and contact (panel 5) use light bg */
@@ -2974,8 +3007,17 @@ button:focus-visible {
 
     <!-- Panel 5 — Contact (embedded as final About carousel slide) -->
     <article class="panel panel-contact" data-panel="5" aria-label="Contact Kieran Green">
-      <div class="contact-img" role="img" aria-label="Product visualization render of the Sabretta pen design"></div>
-      <div class="contact-wm" aria-hidden="true">Green</div>
+
+      <!-- Atmospheric layer: teal radial glow + engineering grid -->
+      <div class="contact-atmo" aria-hidden="true">
+        <div class="contact-atmo-glow contact-atmo-glow--a"></div>
+        <div class="contact-atmo-glow contact-atmo-glow--b"></div>
+        <div class="contact-atmo-grid"></div>
+      </div>
+
+      <!-- Watermark initials -->
+      <div class="contact-wm" aria-hidden="true">KG</div>
+
       <div class="contact-inner rev-stagger">
         <p class="contact-kicker t-micro">Get in touch</p>
         <h2 class="contact-h" id="contact-heading">Let’s<br>build<br><em>something.</em></h2>
@@ -2985,13 +3027,20 @@ button:focus-visible {
             <div class="c-field">
               <p class="c-field-label t-micro">Contact</p>
               <div class="c-row">
-                <a href="https://kierangreen.myportfolio.com/contact" target="_blank" rel="noopener noreferrer" class="c-soc">Email →</a>
+                <a href="contact.html" class="c-soc">Email →</a>
                 <a href="https://www.linkedin.com/in/kieran-green-" target="_blank" rel="noopener noreferrer" class="c-soc">LinkedIn →</a>
               </div>
             </div>
             <div class="c-field c-field--cv">
               <p class="c-field-label t-micro">Resume</p>
               <a href="assets/downloads/KieranGreenRes.pdf" download class="c-dl c-dl--primary">Download CV →</a>
+            </div>
+            <div class="c-field c-field--avail">
+              <p class="c-field-label t-micro">Status</p>
+              <span class="c-avail">
+                <span class="c-avail-dot" aria-hidden="true"></span>
+                Available for internships
+              </span>
             </div>
           </div>
         </div>
