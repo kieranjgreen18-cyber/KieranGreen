@@ -1968,31 +1968,46 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     display: flex !important;
     flex-direction: column !important;
     grid-template-columns: unset !important;
-    gap: var(--s-2);
+    /* Single gap value controls all vertical spacing between children —
+       no individual item margins or paddings should fight this */
+    gap: var(--s-3);
     width: 100%;
     max-width: 100%;
+    /* var(--pad) is the single left/right rail — everything aligns to it */
     padding: var(--s-6) var(--pad) calc(var(--s-6) + 44px) !important;
     margin-bottom: 0;
     overflow-x: hidden;
   }
-  /* Remove grid placement — they're now flex items stacking in DOM order:
-     kicker → heading → sub-copy → contact-right (fields) */
+  /* Strip all grid placement and individual spacing that would misalign
+     items relative to the flex column's single left rail */
   .panel-contact .contact-kicker,
   .panel-contact .contact-h,
   .panel-contact .contact-sub,
   .panel-contact .contact-right {
     grid-column: unset; grid-row: unset;
     align-self: unset;
+    margin: 0;
   }
+  /* Kill kicker's bottom padding — gap handles spacing */
+  .panel-contact .contact-kicker { padding-bottom: 0; }
   .panel-contact .contact-h {
     font-size: clamp(52px, 13vw, 80px);
     color: var(--c-primary);
-    padding-bottom: var(--s-1);
+    /* No extra padding — gap handles spacing above and below */
+    padding-bottom: 0;
   }
+  /* Kill sub-copy's bottom padding — gap handles it */
   .panel-contact .contact-sub { padding-bottom: 0; max-width: 100%; }
-  .panel-contact .contact-right { margin-top: var(--s-1); width: 100%; max-width: 100%; }
+  .panel-contact .contact-right { width: 100%; max-width: 100%; }
   .panel-contact .contact-fields { width: 100%; }
-  .panel-contact .c-field { grid-template-columns: 80px 1fr; gap: var(--s-2); width: 100%; }
+  /* Force field label column width — base clamp() rule comes later in cascade */
+  .panel-contact .c-field {
+    grid-template-columns: 72px 1fr !important;
+    gap: var(--s-2);
+    width: 100%;
+    /* No extra horizontal padding on the field itself — inner rail = contact-inner padding */
+    padding-left: 0 !important;
+  }
   .panel-contact .c-row { flex-wrap: wrap; max-width: 100%; gap: var(--s-2); }
   .panel-contact .c-dl--primary { font-size: clamp(28px, 7.5vw, 44px); cursor: pointer; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .panel-contact .c-soc { cursor: pointer; font-size: clamp(16px, 5vw, 24px); max-width: 100%; display: inline-block; }
@@ -2008,7 +2023,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .panel-contact .contact-h { font-size: clamp(44px, 13.5vw, 64px); }
   .panel-contact .c-soc { font-size: clamp(15px, 5.5vw, 22px); }
   .panel-contact .c-dl--primary { font-size: clamp(24px, 7.5vw, 36px); }
-  .panel-contact .c-field { grid-template-columns: 72px 1fr; }}
+  .panel-contact .c-field { grid-template-columns: 72px 1fr !important; }}
 
 /* ═══════════════════════════════════════════════════════════════
    § ENHANCED MICRO-INTERACTIONS & AWWWARDS POLISH
