@@ -8,12 +8,14 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="3D Printed Car — Kieran Green">
 <meta property="og:description" content="Surface modeling a Mini Clubman in Rhino 3D, then holding the result in your hands.">
-<meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniheroheader.png">
+<meta property="og:image" content="https://www.kieran-green.com/assets/images/miniheroheader.png">
+<meta property="og:url" content="https://www.kieran-green.com/html/project-car.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="3D Printed Car — Kieran Green">
 <meta name="twitter:description" content="Surface modeling a Mini Clubman in Rhino 3D, then holding the result in your hands.">
-<meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniheroheader.png">
+<meta name="twitter:image" content="https://www.kieran-green.com/assets/images/miniheroheader.png">
 
+<link rel="canonical" href="https://www.kieran-green.com/html/project-car.html">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 
 <link rel="preload" as="font" type="font/woff2" href="../assets/fonts/d-dincondensed-webfont.woff2" crossorigin>
@@ -383,7 +385,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 
 .hero-bg {
   position: absolute; inset: 0;
-  background-image: url('https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniheroheader.png');
+  background-image: url('../assets/images/miniheroheader.png');
   background-size: cover; background-position: center 30%;
   transform: scale(1.06); will-change: transform;
   transition: transform 8s ease;
@@ -798,7 +800,7 @@ strong { color: var(--c-primary); font-weight: 700; }
           <div>
             <div class="img-frame r-wide">
               <img
-                src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/minihero.png"
+                src="../assets/images/minihero.png"
                 alt="3D Printed Mini Clubman — front three-quarter view"
                 loading="lazy"
               >
@@ -811,7 +813,7 @@ strong { color: var(--c-primary); font-weight: 700; }
           <div>
             <div class="img-frame r-">
               <img
-                src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/minirearhero.png"
+                src="../assets/images/minirearhero.png"
                 alt="3D Printed Mini Clubman — rear three-quarter view"
                 loading="lazy"
               >
@@ -828,7 +830,7 @@ strong { color: var(--c-primary); font-weight: 700; }
       <div class="article-img rev">
         <div class="img-frame r-wide">
           <img
-            src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniprocess.png"
+            src="../assets/images/miniprocess.png"
             alt="3D Printed Mini Clubman — process"
             loading="lazy"
             style="object-position: center 30%;"
@@ -857,7 +859,7 @@ strong { color: var(--c-primary); font-weight: 700; }
       <div class="article-img rev">
         <div class="img-frame r-wide">
           <img
-            src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniearly.png"
+            src="../assets/images/miniearly.png"
             alt="3D Printed Mini Clubman — initial surfaces"
             loading="lazy"
             style="object-position: center 30%;"
@@ -879,7 +881,7 @@ strong { color: var(--c-primary); font-weight: 700; }
       <div class="article-img rev">
         <div class="img-frame r-wide">
           <img
-            src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/miniprocesscrop.png"
+            src="../assets/images/miniprocesscrop.png"
             alt="3D Printed Mini Clubman — surface model render"
             loading="lazy"
             style="object-position: center 30%;"
@@ -932,15 +934,22 @@ strong { color: var(--c-primary); font-weight: 700; }
   const curR = document.getElementById('cur-r');
   if (window.matchMedia('(pointer:fine)').matches) {
     let mx = window.innerWidth / 2, my = window.innerHeight / 2, rx = mx, ry = my;
+    let rafId = 0;
+    const loop = () => {
+      rafId = 0;
+      const rxN = rx + (mx - rx) * .1;
+      const ryN = ry + (my - ry) * .1;
+      const stillMoving = Math.abs(rxN - rx) > 0.08 || Math.abs(ryN - ry) > 0.08;
+      rx = stillMoving ? rxN : mx;
+      ry = stillMoving ? ryN : my;
+      curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
+      if (stillMoving) rafId = requestAnimationFrame(loop);
+    };
     document.addEventListener('mousemove', e => {
       mx = e.clientX; my = e.clientY;
       cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+      if (!rafId) rafId = requestAnimationFrame(loop);
     });
-    (function loop() {
-      rx += (mx - rx) * .1; ry += (my - ry) * .1;
-      curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
-      requestAnimationFrame(loop);
-    })();
     document.querySelectorAll('a, button').forEach(el => {
       el.addEventListener('mouseenter', () => {
         cur.style.width = '8px';

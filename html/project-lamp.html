@@ -8,13 +8,15 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Poul Henningsen Lamp — Kieran Green">
 <meta property="og:description" content="Exploring kinetic form and shade geometry — inspired by the PH lamp.">
-<meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/lamphero.png">
+<meta property="og:image" content="https://www.kieran-green.com/assets/images/lamphero.png">
+<meta property="og:url" content="https://www.kieran-green.com/html/project-lamp.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Poul Henningsen Lamp — Kieran Green">
 <meta name="twitter:description" content="Exploring kinetic form and shade geometry — inspired by the PH lamp.">
-<meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/lamphero.png">
+<meta name="twitter:image" content="https://www.kieran-green.com/assets/images/lamphero.png">
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230800'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
+<link rel="canonical" href="https://www.kieran-green.com/html/project-lamp.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 
 <link rel="preload" as="font" type="font/woff2" href="../assets/fonts/d-dincondensed-webfont.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="../assets/fonts/d-din-webfont.woff2" crossorigin>
@@ -213,7 +215,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 .hero { position: relative; height: 100svh; min-height: 480px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--pad) var(--s-8); }
 .hero-bg {
   position: absolute; inset: 0;
-  background-image: url('https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/lamphero.png');
+  background-image: url('../assets/images/lamphero.png');
   background-size: cover; background-position: center 20%;
   transform: scale(1.06); will-change: transform; transition: transform 8s ease;
 }
@@ -379,7 +381,7 @@ strong { color: var(--c-primary); font-weight: 700; }
       <div class="article-img rev">
         <div class="img-frame r-wide">
           <img
-            src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/lamponsurface.jpg"
+            src="../assets/images/lamponsurface.jpg"
             alt="Lamp on table"
             loading="lazy"
             style="object-position: center 20%;"
@@ -406,15 +408,15 @@ strong { color: var(--c-primary); font-weight: 700; }
         <div class="carousel">
           <div class="carousel-track" id="carousel-track">
             <div class="card active" data-project="0">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/ideationlamp.png" alt="Lamp Ideation">
+              <img src="../assets/images/ideationlamp.png" alt="Lamp Ideation">
               <div class="card-info"><div class="card-num">01 — 2025</div></div>
             </div>
             <div class="card" data-project="1">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/ideationlamp2.jpg" alt="Lamp Ideation 2">
+              <img src="../assets/images/ideationlamp2.jpg" alt="Lamp Ideation 2">
               <div class="card-info"><div class="card-num">02 — 2025</div></div>
             </div>
             <div class="card" data-project="2">
-              <img src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/Chande lonp.png" alt="Chande lonp" style="object-position:center 30%;">
+              <img src="../assets/images/Chande lonp.png" alt="Chandelier Lamp — Concept Sketch" style="object-position:center 30%;">
               <div class="card-info"><div class="card-num">03 — 2025</div></div>
             </div>
           </div>
@@ -483,11 +485,25 @@ strong { color: var(--c-primary); font-weight: 700; }
   const curR = document.getElementById('cur-r');
   if (window.matchMedia('(pointer:fine)').matches) {
     let mx = window.innerWidth / 2, my = window.innerHeight / 2, rx = mx, ry = my;
-    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx + 'px'; cur.style.top = my + 'px'; });
-    (function loop() { rx += (mx - rx) * .1; ry += (my - ry) * .1; curR.style.left = rx + 'px'; curR.style.top = ry + 'px'; requestAnimationFrame(loop); })();
+    let rafId = 0;
+    const loop = () => {
+      rafId = 0;
+      const rxN = rx + (mx - rx) * .1;
+      const ryN = ry + (my - ry) * .1;
+      const stillMoving = Math.abs(rxN - rx) > 0.08 || Math.abs(ryN - ry) > 0.08;
+      rx = stillMoving ? rxN : mx;
+      ry = stillMoving ? ryN : my;
+      curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
+      if (stillMoving) rafId = requestAnimationFrame(loop);
+    };
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+      if (!rafId) rafId = requestAnimationFrame(loop);
+    });
     document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => { cur.style.width = '8px'; curR.style.width = '48px'; curR.style.height = '48px'; curR.style.setProperty('--bc', 'rgba(1,160,164,.7)'); });
-      el.addEventListener('mouseleave', () => { cur.style.width = '16px'; curR.style.width = '24px'; curR.style.height = '24px'; curR.style.setProperty('--bc', 'rgba(1,160,164,.5)'); });
+      el.addEventListener('mouseenter', () => { cur.style.width = '8px'; curR.style.width = '48px'; curR.style.height = '48px'; curR.style.setProperty('--bc', 'rgba(91,160,164,.7)'); });
+      el.addEventListener('mouseleave', () => { cur.style.width = '16px'; curR.style.width = '24px'; curR.style.height = '24px'; curR.style.setProperty('--bc', 'rgba(91,160,164,.5)'); });
     });
     document.addEventListener('mouseleave', () => { cur.style.opacity = '0'; curR.style.opacity = '0'; });
     document.addEventListener('mouseenter', () => { cur.style.opacity = '1'; curR.style.opacity = '1'; });

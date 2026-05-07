@@ -8,13 +8,14 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Sabretta Pen — Kieran Green">
 <meta property="og:description" content="What if a ballpoint pen could be sexy? Form drawn from 1930s roadsters, animated and directed into a product film.">
-<meta property="og:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/sabrettahero.png">
-<meta property="og:url" content="https://kieranjgreen18-cyber.github.io/KieranGreen/html/project-pen.html">
+<meta property="og:image" content="https://www.kieran-green.com/assets/images/sabrettahero.png">
+<meta property="og:url" content="https://www.kieran-green.com/html/project-pen.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Sabretta Pen — Kieran Green">
 <meta name="twitter:description" content="What if a ballpoint pen could be sexy? Form drawn from 1930s roadsters, animated and directed into a product film.">
-<meta name="twitter:image" content="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/images/sabrettahero.png">
+<meta name="twitter:image" content="https://www.kieran-green.com/assets/images/sabrettahero.png">
 
+<link rel="canonical" href="https://www.kieran-green.com/html/project-pen.html">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080909'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='300' fill='%235ba0a4'>K</text></svg>">
 
 <link rel="preload" as="font" type="font/woff2" href="../assets/fonts/d-dincondensed-webfont.woff2" crossorigin>
@@ -984,7 +985,7 @@ strong { color: var(--c-primary); font-weight: 700; }
       
 <model-viewer
   id="pen-viewer"
-  src="https://kieranjgreen18-cyber.github.io/KieranGreen/assets/models/sabrettapen.glb"
+  src="../assets/models/sabrettapen.glb"
   alt="Sabretta Pen — interactive 3D model, drag to rotate"
   camera-controls
   auto-rotate
@@ -1165,8 +1166,11 @@ strong { color: var(--c-primary); font-weight: 700; }
             Sabretta demonstrates how even the most common objects can be rethought through form and interaction. <br> This approach can be applied to everyday products to create stronger differentiation and a more intentional user experience without increasing complexity. <br> A functional prototype with matching pen stand is currently in development.
           </p>
 
-             <!-- IMAGE 02 — cinematic crop -->
-<div class="article-img rev">
+        </div><!-- /copy-section -->
+      </div><!-- /case-copy -->
+
+      <!-- IMAGE 03 — pen holder prototype -->
+      <div class="article-img rev">
         <div class="img-frame r-wide">
           <img
             src="../assets/images/penholder.png"
@@ -1181,7 +1185,6 @@ strong { color: var(--c-primary); font-weight: 700; }
         </div>
       </div>
 
-       
       <!-- PULL QUOTE -->
       <blockquote class="pull-quote rev" aria-label="Project quote">
         <p class="pull-quote-text">What if a ballpoint pen could be <br><em>sexy?</em></p>
@@ -1245,7 +1248,7 @@ strong { color: var(--c-primary); font-weight: 700; }
 
     /* Snap camera on load */
     penViewer.addEventListener('load', async () => {
-      await penViewer.updateComplete;
+      try { await penViewer.updateComplete; } catch(e) { /* non-fatal */ }
       penViewer.jumpCameraToGoal();
       /* All 5 materials are correctly baked in the GLB — no JS overrides needed.
          [3] Physically Based = red paint, roughness=0.21, clearcoat=1.0 (baked) ✓
@@ -1409,15 +1412,22 @@ strong { color: var(--c-primary); font-weight: 700; }
   const curR = document.getElementById('cur-r');
   if (window.matchMedia('(pointer:fine)').matches) {
     let mx = window.innerWidth / 2, my = window.innerHeight / 2, rx = mx, ry = my;
+    let rafId = 0;
+    const loop = () => {
+      rafId = 0;
+      const rxN = rx + (mx - rx) * .1;
+      const ryN = ry + (my - ry) * .1;
+      const stillMoving = Math.abs(rxN - rx) > 0.08 || Math.abs(ryN - ry) > 0.08;
+      rx = stillMoving ? rxN : mx;
+      ry = stillMoving ? ryN : my;
+      curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
+      if (stillMoving) rafId = requestAnimationFrame(loop);
+    };
     document.addEventListener('mousemove', e => {
       mx = e.clientX; my = e.clientY;
       cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+      if (!rafId) rafId = requestAnimationFrame(loop);
     });
-    (function loop() {
-      rx += (mx - rx) * .1; ry += (my - ry) * .1;
-      curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
-      requestAnimationFrame(loop);
-    })();
     document.querySelectorAll('a, button').forEach(el => {
       el.addEventListener('mouseenter', () => {
         cur.style.width = '8px';

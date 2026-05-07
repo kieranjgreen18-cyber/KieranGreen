@@ -1015,6 +1015,20 @@ Object.keys(rules).forEach(id => {
   }
 });
 
+/* Inline error banner helper */
+function showFormError(msg) {
+  let banner = document.getElementById('cf-form-error');
+  if (!banner) {
+    banner = document.createElement('p');
+    banner.id = 'cf-form-error';
+    banner.setAttribute('role', 'alert');
+    banner.setAttribute('aria-live', 'assertive');
+    banner.style.cssText = 'font-family:var(--f-body);font-size:var(--t-micro);color:var(--c-error);letter-spacing:.02em;margin-top:var(--s-2);';
+    btn.parentElement.after(banner);
+  }
+  banner.textContent = msg;
+}
+
 /* Submit */
 if (form) {
   form.addEventListener('submit', async (e) => {
@@ -1067,13 +1081,13 @@ if (form) {
         /* Server error */
         const json = await res.json().catch(() => ({}));
         const msg = json?.errors?.[0]?.message || 'Something went wrong. Please try again.';
-        alert(msg); // fallback — swap for inline error banner if preferred
+        showFormError(msg);
         btn.disabled = false;
         btn.classList.remove('loading');
       }
     } catch {
       /* Network error */
-      alert('Could not send the message. Please check your connection and try again.');
+      showFormError('Could not send the message. Please check your connection and try again.');
       btn.disabled = false;
       btn.classList.remove('loading');
     }
