@@ -77,9 +77,6 @@
      means the file is already in the browser cache when the element upgrades.
      crossorigin is required because model-viewer uses a Worker to parse the GLB. -->
 <link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin>
-<!-- Preconnect to modelviewer.dev so the HDR environment fetch has a warm
-     connection — avoids a cold DNS + TLS round-trip blocking the first render. -->
-<link rel="preconnect" href="https://modelviewer.dev" crossorigin>
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -2579,7 +2576,7 @@ button:focus-visible {
     auto-rotate
     auto-rotate-delay="0"
     rotation-per-second="3deg"
-    skybox-image="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr"
+    skybox-image="https://kieran-green.com/assets/images/spruit_sunrise_1k_HDR.hdr"
     skybox-height="1.2m"
     shadow-intensity="2.0"
     shadow-softness="0.7"
