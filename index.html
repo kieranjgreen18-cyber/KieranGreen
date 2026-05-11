@@ -285,6 +285,7 @@
    against the dark images. Pin text to the dark-mode light values. ── */
 [data-theme="light"] .projects .proj-title,
 [data-theme="light"] .projects .proj-counter,
+[data-theme="light"] .projects .proj-counter-chevron,
 [data-theme="light"] .projects .proj-swipe-hint,
 [data-theme="light"] .projects .sc-cur { color: #edeeed; }
 [data-theme="light"] .projects .proj-desc { color: rgba(237,238,237,0.75); }
@@ -1075,12 +1076,23 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 /* Slide counter */
 .proj-counter {
   position: absolute; bottom: var(--pad); left: 50%; transform: translateX(-50%);
-  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  font-family: var(--f-heading); font-size: 16px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(91,160,164,.35); display: flex; align-items: center; gap: 4px;
+  color: rgba(91,160,164,.5); display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
-.sc-cur { color: rgba(91,160,164,.65); }
-.sc-sep { margin: 0 1px; }
+.proj-counter-nums { display: flex; align-items: center; gap: 4px; }
+.sc-cur { color: rgba(91,160,164,.85); }
+.sc-sep { margin: 0 2px; }
+.proj-counter-chevron {
+  display: block; width: 14px; height: 9px;
+  animation: counterChevron 1.8s ease-in-out infinite;
+  color: rgba(91,160,164,.65);
+}
+.proj-counter-chevron.hide { opacity: 0; }
+@keyframes counterChevron {
+  0%, 100% { transform: translateY(0); opacity: .5; }
+  50%       { transform: translateY(4px); opacity: 1; }
+}
 
 /* Arrow CTA */
 .proj-open {
@@ -1098,34 +1110,102 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .proj-open:hover { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-bg); }
 .proj[data-pos="active"] .proj-open { opacity: 1; }
 
-/* Mobile swipe hint — sits between tags and the slide counter */
-.proj-swipe-hint {
+/* Mobile swipe hint — hidden (replaced by dog-ear tab) */
+.proj-swipe-hint { display: none !important; }
+
+/* ── Dog-ear next-project tab — bottom-right corner of carousel ── */
+#c-dog-ear {
+  position: fixed;
+  bottom: 0; right: 0;
+  width: 110px; height: 110px;
+  z-index: var(--z-overlay);
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .5s var(--ease), transform .3s var(--ease);
+  overflow: hidden;
+}
+#c-dog-ear.visible { opacity: 1; }
+#c-dog-ear:hover { transform: scale(1.06); }
+.dog-ear-triangle {
+  position: absolute; bottom: 0; right: 0;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 0 0 110px 110px;
+  border-color: transparent transparent transparent transparent;
+  /* filled by SVG overlay instead */
+}
+.dog-ear-svg {
+  position: absolute; bottom: 0; right: 0;
+  width: 110px; height: 110px;
+  pointer-events: none;
+}
+/* Dog-ear label text */
+.dog-ear-label {
+  position: absolute; bottom: 18px; right: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transform: rotate(0deg);
+  pointer-events: none; z-index: 2;
+}
+.dog-ear-label-text {
+  font-family: var(--f-heading); font-size: 9px; font-weight: 700;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--c-bg); writing-mode: vertical-rl;
+  text-orientation: mixed; transform: rotate(180deg);
+  line-height: 1; white-space: nowrap;
+}
+.dog-ear-label-icon {
+  color: var(--c-bg);
+  animation: dogEarBounce 1.6s ease-in-out infinite;
+}
+@keyframes dogEarBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(3px); }
+}
+/* Last slide: tab signals section exit — different label */
+#c-dog-ear.is-last .dog-ear-label-text { content: ''; }
+
+/* ── Hero mobile swipe hint — one-time, bottom strip ── */
+#hero-mobile-hint {
+  display: none; /* shown only on coarse pointer below */
   position: absolute;
-  /* counter is at bottom: var(--pad). hint sits just above it with room for counter height ~20px */
-  bottom: calc(var(--pad) + 28px);
-  left: 50%; transform: translateX(-50%);
+  bottom: 0; left: 0; right: 0;
+  height: var(--s-7); /* 64px — same as hero-text bottom offset so they don't overlap */
+  align-items: center; justify-content: center; gap: var(--s-2);
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
-  color: var(--c-secondary); opacity: .68;
-  display: none; align-items: center; gap: var(--s-2);
-  pointer-events: none; white-space: nowrap;
+  color: var(--c-secondary); opacity: 0;
+  pointer-events: none; z-index: var(--z-text);
+  transition: opacity .6s var(--ease);
 }
+#hero-mobile-hint.visible { opacity: .72; }
+#hero-mobile-hint.gone    { opacity: 0; pointer-events: none; transition: opacity .4s ease; }
+.hmh-icon { flex-shrink: 0; }
 
 /* Carousel dot nav — right rail */
 #c-dots {
   position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
-  z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 10px;
+  z-index: var(--z-overlay); display: flex; flex-direction: column; gap: 12px;
   pointer-events: none; opacity: 0; transition: opacity .4s;
   align-items: center;
   padding: 4px 0;
 }
-.c-dot-wrap { display: flex; align-items: center; justify-content: center; }
-.c-dot {
-  width: 4px; height: 4px; border-radius: 50%;
-  background: rgba(91,160,164,.28); display: block;
-  transition: background .3s, transform .3s;
+.c-dot-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  cursor: pointer; pointer-events: auto;
+  position: relative;
 }
-.c-dot-wrap.on .c-dot { background: var(--c-accent); transform: scale(1.7); }
+.c-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(91,160,164,.55); display: block;
+  transition: background .3s, transform .3s, box-shadow .3s;
+}
+.c-dot-wrap.on .c-dot {
+  background: var(--c-accent);
+  transform: scale(2);
+  box-shadow: 0 0 0 3px rgba(91,160,164,.18);
+}
 
 /* Next-section arrow — aligned to dot column center */
 .c-next-arrow {
@@ -1421,17 +1501,17 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 
 /* About scroll hint */
 .about-scroll-hint {
-  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
-  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
-  color: var(--c-secondary); opacity: .62;
+  color: var(--c-secondary); opacity: .72;
   pointer-events: none; z-index: var(--z-carousel);
   transition: opacity var(--dur-mid) var(--ease);
 }
 .about-scroll-hint.hide { opacity: 0; }
 .hint-line {
-  width: 1px; height: 48px;
+  width: 1px; height: 40px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
 }
 
@@ -1544,13 +1624,15 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .nav-drawer a { cursor: pointer; }
   .proj { cursor: pointer; }
   .c-link, .c-soc, .c-dl { cursor: pointer; }
-  .proj-swipe-hint { display: flex; }
+  /* swipe hint replaced by dog-ear tab */
   .proj[data-pos="active"] .proj-open  { opacity: 1; }
   .proj[data-pos="active"] .proj-title .ch { opacity: 1; transform: translateY(0); }
   /* Body text and tags are hover-only on desktop; on touch show them
      directly on the active slide since hover doesn't exist */
   .proj[data-pos="active"] .proj-desc { opacity: .75; transform: translateY(0); }
   .proj[data-pos="active"] .proj-tags { opacity: 1; }
+  /* Show hero mobile hint on touch devices */
+  #hero-mobile-hint { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -2650,9 +2732,13 @@ button:focus-visible {
     <span class="t-micro" style="opacity:.4;">Try refreshing the page</span>
   </div>
 
-</section>
+  <!-- Hero mobile swipe hint — touch devices only, one-time -->
+  <div id="hero-mobile-hint" aria-hidden="true">
+    <svg class="hmh-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="1" x2="6" y2="13"/><polyline points="2,9 6,13 10,9"/></svg>
+    Swipe up to explore
+  </div>
 
-<!-- Skills ticker -->
+</section>
 <div class="ticker" aria-hidden="true">
   <div class="t-track" id="t-track">
     <div class="t-item" style="opacity:.7;color:var(--c-accent);padding-left:var(--s-6)"><span class="t-dot"></span>KG·IDes·2025</div>
@@ -2695,7 +2781,10 @@ button:focus-visible {
       <div class="proj-veil"       aria-hidden="true"></div>
       <div class="proj-line"       aria-hidden="true"></div>
       <div class="proj-ghost"      aria-hidden="true">01</div>
-      <div class="proj-counter"    aria-hidden="true"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>05</span></div>
+      <div class="proj-counter" aria-hidden="true">
+        <div class="proj-counter-nums"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>05</span></div>
+        <svg class="proj-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="proj-swipe-hint" aria-hidden="true">
         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.75;flex-shrink:0"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="5 9 12 2 19 9"/><polyline points="5 15 12 22 19 15"/></svg>
         Swipe to navigate
@@ -2725,7 +2814,10 @@ button:focus-visible {
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">02</div>
-      <div class="proj-counter" aria-hidden="true"><span class="sc-cur">02</span><span class="sc-sep">/</span><span>05</span></div>
+      <div class="proj-counter" aria-hidden="true">
+        <div class="proj-counter-nums"><span class="sc-cur">02</span><span class="sc-sep">/</span><span>05</span></div>
+        <svg class="proj-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="proj-text">
         <div class="proj-num t-micro">Feb 2025</div>
         <h2 class="proj-title t-title">Sabretta Pen</h2>
@@ -2751,7 +2843,10 @@ button:focus-visible {
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">03</div>
-      <div class="proj-counter" aria-hidden="true"><span class="sc-cur">03</span><span class="sc-sep">/</span><span>05</span></div>
+      <div class="proj-counter" aria-hidden="true">
+        <div class="proj-counter-nums"><span class="sc-cur">03</span><span class="sc-sep">/</span><span>05</span></div>
+        <svg class="proj-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="proj-text">
         <div class="proj-num t-micro">2025</div>
         <h2 class="proj-title t-title">Myth In Motion</h2>
@@ -2777,7 +2872,10 @@ button:focus-visible {
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">04</div>
-      <div class="proj-counter" aria-hidden="true"><span class="sc-cur">04</span><span class="sc-sep">/</span><span>05</span></div>
+      <div class="proj-counter" aria-hidden="true">
+        <div class="proj-counter-nums"><span class="sc-cur">04</span><span class="sc-sep">/</span><span>05</span></div>
+        <svg class="proj-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="proj-text">
         <div class="proj-num t-micro">Apr 2025</div>
         <h2 class="proj-title t-title">Poul Henningsen Lamp</h2>
@@ -2801,7 +2899,10 @@ button:focus-visible {
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost proj-ghost--protected" aria-hidden="true">05</div>
-      <div class="proj-counter" aria-hidden="true"><span class="sc-cur">05</span><span class="sc-sep">/</span><span>05</span></div>
+      <div class="proj-counter" aria-hidden="true">
+        <div class="proj-counter-nums"><span class="sc-cur">05</span><span class="sc-sep">/</span><span>05</span></div>
+        <svg class="proj-counter-chevron hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="proj-text">
         <div class="proj-num t-micro" style="display:flex;align-items:center;gap:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;opacity:.7"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -2821,9 +2922,25 @@ button:focus-visible {
     </a>
 
   </div>
-</section>
 
-<div class="projects-spacer" id="projects-spacer" aria-hidden="true"></div>
+  <!-- Dog-ear next-project tab — bottom-right corner affordance (managed by JS) -->
+  <div id="c-dog-ear" aria-hidden="true">
+    <svg class="dog-ear-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110">
+      <defs>
+        <linearGradient id="dog-ear-grad" x1="110" y1="110" x2="0" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#5ba0a4"/>
+          <stop offset="100%" stop-color="#7ec8cc"/>
+        </linearGradient>
+      </defs>
+      <polygon points="110,0 110,110 0,110" fill="url(#dog-ear-grad)"/>
+    </svg>
+    <div class="dog-ear-label">
+      <svg class="dog-ear-label-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="#080909" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 6,7 11,1"/></svg>
+      <span class="dog-ear-label-text" id="dog-ear-text">Next</span>
+    </div>
+  </div>
+
+</section>
 
 <!-- ═══════════════════════════════════════════════════════════
      ABOUT — Scroll-lock panel engine
