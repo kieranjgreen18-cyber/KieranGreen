@@ -860,31 +860,6 @@ class Hero3DContainer {
       this._dismissHint();
     }, 18000);
 
-    const model = this._viewer.model;
-    if (!model?.materials?.length) return;
-    const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
-    const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
-    let bodyFound = false;
-    model.materials.forEach((mat, i) => {
-      const name = mat.name || '';
-      if (skipRe.test(name)) return;
-      const pbr = mat.pbrMetallicRoughness;
-      if (!pbr) return;
-      if (bodyRe.test(name) || (!bodyFound && i === 0)) {
-        bodyFound = true;
-        pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
-        pbr.setMetallicFactor(0.0);
-        pbr.setRoughnessFactor(0.36);
-        if (mat.extensions?.KHR_materials_clearcoat) {
-          mat.extensions.KHR_materials_clearcoat.clearcoatFactor          = 1.0;
-          mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
-        }
-      } else {
-        pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
-        pbr.setMetallicFactor(0.3);
-        pbr.setRoughnessFactor(0.55);
-      }
-    });
   }
 
   _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
