@@ -795,6 +795,22 @@ class Hero3DContainer {
       this._viewer.setAttribute('auto-rotate', '');
     }
     requestAnimationFrame(() => this._revealHero());
+    // Mobile swipe hint — show once per session on touch devices
+    if (window.matchMedia('(pointer:coarse)').matches) {
+      const mobileHint = document.getElementById('hero-mobile-hint');
+      const alreadySeen = (() => { try { return sessionStorage.getItem('heroHintSeen'); } catch(e) { return null; } })();
+      if (mobileHint && !alreadySeen) {
+        setTimeout(() => {
+          if (!this._active) return;
+          mobileHint.classList.add('visible');
+          setTimeout(() => {
+            mobileHint.classList.remove('visible');
+            mobileHint.classList.add('gone');
+            try { sessionStorage.setItem('heroHintSeen', '1'); } catch(e) {}
+          }, 3000);
+        }, 1200);
+      }
+    }
   }
 
   exit() {
@@ -826,6 +842,9 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
+    // Dismiss mobile hint immediately if still visible
+    const mobileHint = document.getElementById('hero-mobile-hint');
+    if (mobileHint) { mobileHint.classList.remove('visible'); mobileHint.classList.add('gone'); }
   }
 
   onScroll(direction) {
@@ -939,6 +958,9 @@ class CarouselContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
     this._nextArrow     = null; // c-next-arrow element
+    this._dogEar        = null; // dog-ear tab element
+    this._dogEarText    = null; // dog-ear text label
+    this._dogEarDismissed = false; // one-time teach: hide after first advance
     this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
 
     this._onResize = () => {
@@ -992,6 +1014,16 @@ class CarouselContainer {
       const lbl   = document.createElement('span'); lbl.className = 'c-dot-label sr-only'; lbl.textContent = label;
       const dot   = document.createElement('span'); dot.className = 'c-dot';
       wrap.appendChild(lbl); wrap.appendChild(dot);
+      // Click-to-navigate: jump directly to this project
+      wrap.addEventListener('click', () => {
+        if (!this._active || this._transitioning) return;
+        const dir = i - this._activeIdx;
+        if (dir === 0) return;
+        this._transitioning = true;
+        this._activeIdx = i;
+        this._setPositions(this._activeIdx, true);
+        setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
+      });
       this._dotsEl.appendChild(wrap);
       this._dotWraps.push(wrap);
     });
@@ -1009,6 +1041,21 @@ class CarouselContainer {
     arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none"><line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
     if (this._dotsEl) this._dotsEl.appendChild(arrowEl);
     this._nextArrow = arrowEl;
+
+    // Dog-ear tab — lives in the projects section HTML, manage via JS
+    this._dogEar     = document.getElementById('c-dog-ear');
+    this._dogEarText = document.getElementById('dog-ear-text');
+    if (this._dogEar) {
+      this._dogEar.addEventListener('click', () => {
+        if (!this._active) return;
+        // On last slide, advance to next section; otherwise advance carousel
+        if (this._activeIdx >= this._N - 1) {
+          this._app.setSection(this._nextKey, +1);
+        } else {
+          this._advance(+1);
+        }
+      });
+    }
     if (!window.matchMedia('(pointer:coarse)').matches) {
       const rectCache = new WeakMap(); // avoids hanging non-standard properties on DOM nodes
       this._projs.forEach(proj => {
@@ -1048,6 +1095,12 @@ class CarouselContainer {
     this._root.style.visibility = 'visible';
     this._root.classList.add('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
+    // Reset dog-ear dismiss state so it re-teaches on re-entry
+    this._dogEarDismissed = false;
+    if (this._dogEar) {
+      this._dogEar.classList.remove('is-last');
+      this._dogEar.classList.add('visible');
+    }
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => {
       this._setPositions(this._activeIdx, true);
@@ -1071,6 +1124,7 @@ class CarouselContainer {
     this._root.classList.remove('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '0';
     if (this._nextArrow) this._nextArrow.classList.remove('visible');
+    if (this._dogEar)   this._dogEar.classList.remove('visible');
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 400);
   }
 
@@ -1109,6 +1163,22 @@ class CarouselContainer {
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
     // Show next-section arrow only on the last slide
     if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
+    // Dog-ear: update label for last slide, dismiss after first successful advance
+    if (this._dogEar) {
+      const isLast = idx === this._N - 1;
+      this._dogEar.classList.toggle('is-last', isLast);
+      if (this._dogEarText) {
+        this._dogEarText.textContent = isLast ? 'About' : 'Next';
+      }
+      // One-time teach: hide after first advance (animate = true signals a real advance)
+      if (animate && !this._dogEarDismissed) {
+        this._dogEarDismissed = true;
+        // Small delay so the user sees the tab disappear after the advance lands
+        setTimeout(() => {
+          if (this._dogEar) this._dogEar.classList.remove('visible');
+        }, 900);
+      }
+    }
   }
 
   _advance(dir) {
