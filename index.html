@@ -286,6 +286,7 @@
 [data-theme="light"] .projects .proj-title,
 [data-theme="light"] .projects .proj-counter,
 [data-theme="light"] .projects .proj-counter-chevron,
+[data-theme="light"] .projects .proj-swipe-hint,
 [data-theme="light"] .projects .sc-cur { color: #edeeed; }
 [data-theme="light"] .projects .proj-desc { color: rgba(237,238,237,0.75); }
 [data-theme="light"] .projects .proj-open { color: #edeeed; }
@@ -550,17 +551,24 @@ body.cur-proj  #cur-r::after  { border-color: rgba(91,160,164,.25); }
 body.cur-click #cur   { opacity: .55; }
 body.cur-click #cur-r { width: 16px; height: 16px; }
 
-/* Section indicator — vertical, left rail */
+/* Section indicator — removed in favour of nav active state */
 #section-indicator {
-  position: fixed; left: var(--s-3); top: 50%; transform: translateY(-50%) rotate(180deg);
-  z-index: var(--z-overlay); writing-mode: vertical-rl;
-  font-family: var(--f-meta); font-size: 8px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(91,160,164,.28); pointer-events: none;
-  opacity: 0; transition: opacity var(--dur-mid) var(--ease);
+  display: none !important;
 }
-#section-indicator.visible { opacity: 1; }
-#section-indicator.stage-hidden { opacity: 0 !important; }
+
+/* Nav active state — highlights the link for the section currently in view.
+   JS sets body[data-section] and body[data-about-panel].
+   About section: highlight "About" by default; switch to "Contact" on the final panel. */
+body[data-section="carousel"] .n-links a[href="#work"],
+body[data-section="about"]:not([data-about-panel="contact"]) .n-links a[href="#about"],
+body[data-section="about"][data-about-panel="contact"]       .n-links a[href="#contact"] {
+  color: var(--c-primary);
+}
+body[data-section="carousel"] .n-links a[href="#work"]::after,
+body[data-section="about"]:not([data-about-panel="contact"]) .n-links a[href="#about"]::after,
+body[data-section="about"][data-about-panel="contact"]       .n-links a[href="#contact"]::after {
+  transform: scaleX(1);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    § NAVIGATION
@@ -818,19 +826,34 @@ model-viewer#mini-viewer {
   will-change: transform, opacity;
 }
 
-/* Scroll hint — bottom centre, fixed so it resolves against the viewport
-   Styled to match the about-scroll-hint exactly; hidden on mobile */
-.hero-scroll {
+/* Hero counter — replaces old scroll hint. Bottom-centre, matches proj-counter style.
+   Shows "Scroll" on all slides except the last hero "slide" (single hero),
+   where it shows "Next Section". Since hero has no carousel, JS controls
+   visibility. The element fades out on scroll just like the old hint. */
+.hero-counter {
   position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   z-index: var(--z-raised);
-  display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
-  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: var(--c-secondary); opacity: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.5);
+  opacity: 0; pointer-events: none;
   transition: opacity var(--dur-slow) var(--ease) 0.95s;
-  pointer-events: none;
 }
-.hero-scroll.is-revealed { opacity: .62; }
+.hero-counter.is-revealed { opacity: .72; }
+.hero-counter.hide { opacity: 0 !important; transition-duration: .4s !important; }
+.hero-counter-label {
+  color: rgba(91,160,164,.85);
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+}
+.hero-counter-chevron {
+  display: block; width: 14px; height: 9px;
+  animation: counterChevron 1.8s ease-in-out infinite;
+  color: rgba(91,160,164,.65);
+}
+/* hero-scroll kept as no-op so JS refs don't break */
+.hero-scroll { display: none !important; }
 .hero-scroll-line {
   width: 1px; height: 48px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
@@ -846,6 +869,9 @@ model-viewer#mini-viewer {
 .model-label-br {
   bottom: var(--s-2); right: var(--s-3); text-align: right;
 }
+
+/* Mobile 360 badge — only shown on mobile (injected by JS, hidden on desktop) */
+.hero-mobile-360 { display: none; }
 
 /* Drag affordance — top right of model viewer with standard padding */
 .model-hint {
@@ -1080,6 +1106,8 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   color: rgba(91,160,164,.5); display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
 .proj-counter-nums { display: flex; align-items: center; gap: 4px; }
+/* "Next Section" label on the last slide — single span, inherits .sc-cur colour */
+.proj-counter-next { white-space: nowrap; }
 .sc-cur { color: rgba(91,160,164,.85); }
 .sc-sep { margin: 0 2px; }
 .proj-counter-chevron {
@@ -1109,46 +1137,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .proj-open:hover { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-bg); }
 .proj[data-pos="active"] .proj-open { opacity: 1; }
 
-/* ── Dog-ear projects tab — bottom-left corner of hero ── */
-#c-dog-ear {
-  position: fixed;
-  bottom: 0; left: 0;
-  width: 120px; height: 120px;
-  z-index: var(--z-overlay);
-  pointer-events: auto;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity .5s var(--ease), transform .3s var(--ease);
-  overflow: hidden;
-}
-#c-dog-ear.visible { opacity: 1; }
-#c-dog-ear:hover { transform: scale(1.06); transform-origin: bottom left; }
-.dog-ear-svg {
-  position: absolute; bottom: 0; left: 0;
-  width: 120px; height: 120px;
-  pointer-events: none;
-}
-/* Dog-ear label — sits in the lower-left triangle zone */
-.dog-ear-label {
-  position: absolute; bottom: 14px; left: 10px;
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  pointer-events: none; z-index: 2;
-}
-.dog-ear-label-text {
-  font-family: var(--f-heading); font-size: 9px; font-weight: 700;
-  letter-spacing: .2em; text-transform: uppercase;
-  color: #080909; writing-mode: vertical-rl;
-  text-orientation: mixed; transform: rotate(180deg);
-  line-height: 1; white-space: nowrap;
-}
-.dog-ear-label-icon {
-  color: #080909;
-  animation: dogEarBounce 1.6s ease-in-out infinite;
-}
-@keyframes dogEarBounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(3px); }
-}
+/* Mobile swipe hint — hidden on desktop */
+.proj-swipe-hint { display: none !important; }
+
+/* Dog-ear removed */
 
 /* ── Hero mobile swipe hint — one-time, bottom strip ── */
 #hero-mobile-hint {
@@ -1189,7 +1181,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .c-dot-wrap.on .c-dot {
   background: var(--c-accent);
   transform: scale(2);
-  box-shadow: 0 0 0 3px rgba(91,160,164,.18), 0 0 5px rgba(91,160,164,.50);
+  box-shadow: 0 0 0 3px rgba(91,160,164,.18);
 }
 
 /* Next-section arrow — aligned to dot column center */
@@ -1441,42 +1433,73 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
-/* About progress dots — match #c-dots style exactly */
+/* About progress dots — desktop: exact mirror of #c-dots (project carousel style).
+   Mobile: hidden (replaced by the about-counter indicator). */
 .about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 12px;
   align-items: center;
-  z-index: var(--z-carousel); pointer-events: none;
+  z-index: calc(var(--z-stage) + 10); /* above panels-host vignette */
+  pointer-events: none;
   padding: 4px 0;
   transition: opacity 0.4s var(--ease);
 }
+/* Desktop dot style — matches project carousel c-dot */
 .prog-dot {
-  width: 18px; height: 18px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; pointer-events: auto;
-  position: relative;
-}
-.prog-dot::after {
-  content: '';
-  display: block;
   width: 5px; height: 5px; border-radius: 50%;
   background: rgba(91,160,164,.55);
-  transition: background .4s, transform .4s, box-shadow .4s;
+  transition: background .3s, transform .3s, box-shadow .3s;
+  display: block;
 }
-.prog-dot.on::after {
+.prog-dot.on {
   background: var(--c-accent);
   transform: scale(2);
-  box-shadow: 0 0 0 3px rgba(91,160,164,.18);
+  box-shadow: 0 0 6px rgba(91,160,164,0.55);
 }
 
-/* Hide progress dots on the contact panel — it has no dot of its own
-   and the more-below arrow already served as its only indicator on the
-   preceding panel. Using :has() keeps this entirely in CSS with zero
-   JS changes and zero risk of touching other panels. */
+/* Hide progress dots on the contact panel */
 .about-stage:has([data-panel="5"].is-active) .prog-dots {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ── About counter — chevron + N/N indicator, same style as proj-counter ──
+   Shown on ALL platforms. Positioned bottom-centre of the about stage.
+   On 5/5 it reads "Next Section" instead of "5/5". */
+.about-counter {
+  position: absolute; bottom: var(--pad); left: 50%; transform: translateX(-50%);
+  font-family: var(--f-heading); font-size: 16px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.5);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  z-index: calc(var(--z-stage) + 10); /* must be above panels-host::after vignette (z-stage=200) */
+  pointer-events: none;
+}
+.about-counter-nums { display: flex; align-items: center; gap: 4px; }
+.ac-cur { color: rgba(91,160,164,.85); }
+.ac-sep { margin: 0 2px; }
+.about-counter-chevron {
+  display: block; width: 14px; height: 9px;
+  animation: counterChevron 1.8s ease-in-out infinite;
+  color: rgba(91,160,164,.65);
+}
+.about-counter-chevron.hide { opacity: 0; pointer-events: none; }
+/* On contact panel (5/5) show "Next Section" text, hide numeric counter */
+.about-counter-next-label {
+  display: none;
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.65);
+  animation: counterChevron 1.8s ease-in-out infinite; /* reuse pulse */
+}
+/* JS toggles .is-last on .about-counter when on final panel */
+.about-counter.is-last .about-counter-nums { display: none; }
+.about-counter.is-last .about-counter-next-label { display: block; }
+.about-counter.is-last .about-counter-chevron { display: block; animation: counterChevron 1.8s ease-in-out infinite; }
+
+/* Light mode overrides for about-counter (about stage is always dark, so pin colours) */
+[data-theme="light"] .about-counter { color: rgba(91,160,164,.5); }
+[data-theme="light"] .about-counter .ac-cur { color: rgba(91,160,164,.85); }
 
 /* More-below indicator — aligned to dot column center */
 .about-more-below {
@@ -1497,17 +1520,8 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   50%       { transform: translateY(5px); opacity: 1; }
 }
 
-/* About scroll hint */
-.about-scroll-hint {
-  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
-  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: var(--c-secondary); opacity: .72;
-  pointer-events: none; z-index: var(--z-carousel);
-  transition: opacity var(--dur-mid) var(--ease);
-}
-.about-scroll-hint.hide { opacity: 0; }
+/* About scroll hint — hidden; replaced by .about-counter */
+.about-scroll-hint { display: none !important; }
 .hint-line {
   width: 1px; height: 40px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
@@ -1622,7 +1636,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .nav-drawer a { cursor: pointer; }
   .proj { cursor: pointer; }
   .c-link, .c-soc, .c-dl { cursor: pointer; }
-  /* swipe hint replaced by dog-ear tab */
+  /* swipe hint hidden on mobile */
   .proj[data-pos="active"] .proj-open  { opacity: 1; }
   .proj[data-pos="active"] .proj-title .ch { opacity: 1; transform: translateY(0); }
   /* Body text and tags are hover-only on desktop; on touch show them
@@ -1676,10 +1690,41 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   /* Hero */
   .hero-text { max-width: 88vw; bottom: var(--s-7); }
   .hero-h1   { font-size: clamp(54px, 14vw, 88px); }
-  .hero-scroll { display: none; }
   .hero-coords { display: none; }
   .model-label-br { display: none; }
   .model-hint { display: none; }
+
+  /* 360 drag icon — mobile hero, sits responsively below the navbar */
+  .hero-mobile-360 {
+    display: flex;
+    position: absolute;
+    top: calc(60px + var(--s-3)); /* nav height + breathing room */
+    right: var(--pad);
+    z-index: var(--z-raised);
+    align-items: center; gap: 7px;
+    font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+    letter-spacing: var(--ls-stencil); text-transform: uppercase;
+    color: rgba(91,160,164,0.75);
+    white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity var(--dur-mid) var(--ease) 1.3s;
+  }
+  .hero-mobile-360.is-revealed { opacity: 1; }
+  .hero-mobile-360.hidden { opacity: 0 !important; transition-duration: .8s !important; }
+  .hero-mobile-360-badge {
+    position: relative; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .hero-mobile-360-ring {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    color: var(--c-accent);
+    animation: hintSpin 8s linear infinite;
+  }
+  .hero-mobile-360-label {
+    position: relative; z-index: 1;
+    font-family: var(--f-heading); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.04em; color: rgba(91,160,164,0.85);
+  }
   .hero-vignette {
     background:
       linear-gradient(to right,  rgba(8,9,9,0.97) 0%, rgba(8,9,9,0.75) 28%, rgba(8,9,9,0.25) 58%, transparent 78%),
@@ -2012,8 +2057,8 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .stmt-kicker    { margin-bottom: var(--s-4); }
   .stmt-text      { font-size: clamp(16px, 5vw, 24px); line-height: 1.65; }
 
-  /* Progress dots */
-  .prog-dots { right: var(--s-2); gap: 8px; }
+  /* Progress dots — hidden on mobile (about-counter handles navigation feedback) */
+  .prog-dots { display: none !important; }
 
   /* About stage — always dark on mobile (image-forward design) */
   [data-theme="light"] .about-stage { background: #080909; }
@@ -2028,12 +2073,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     background: var(--c-bg);
   }
 
-  /* Progress dots — mobile light mode: replace harsh opaque gradient with
-     a gentle radial-softened fade that doesn't compete with the dots visually */
-  [data-theme="light"] .prog-dots {
-    background:
-      radial-gradient(ellipse 64px 120px at center, rgba(237,238,237,0.72) 0%, rgba(237,238,237,0.40) 40%, transparent 100%);
-  }
+  /* Progress dots light mode — removed (dots hidden on mobile) */
 
   /* Personal statement */
   .personal-statement-inner { padding: var(--s-8) var(--pad); }
@@ -2465,6 +2505,14 @@ footer::before {
   pointer-events: none;
 }
 
+
+/* Prog-dot glow — consolidated in base .prog-dot.on rule above */
+
+/* ── C-dot glow when active ── */
+.c-dot-wrap.on .c-dot {
+  box-shadow: 0 0 5px rgba(91,160,164,0.50);
+}
+
 /* ── Hint line enhanced pulse ── */
 @keyframes hintPulse {
   0%   { opacity: 0.38; transform: scaleY(1) translateY(0); }
@@ -2498,8 +2546,22 @@ footer::before {
   -webkit-text-stroke: 1px rgba(91,160,164,0.14);
 }
 
-/* ── Hero scroll hint: matches about-scroll-hint — hide on scroll ── */
-.hero-scroll.hide { opacity: 0 !important; }
+/* Hero counter hide — JS adds .hide to fade it out on scroll */
+.hero-counter.hide { opacity: 0 !important; transition-duration: .4s !important; }
+
+/* ── Mobile: swipe hint entry + fade animations ── */
+@keyframes swipeReveal {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 0.68; transform: translateX(-50%) translateY(0); }
+}
+@keyframes swipeHintFade {
+  0%   { opacity: 0.68; }
+  70%  { opacity: 0.68; }
+  100% { opacity: 0; }
+}
+.proj-swipe-hint {
+  animation: swipeReveal 0.5s var(--ease) 0.4s both, swipeHintFade 2.5s ease 1s forwards;
+}
 
 /* ── About scroll hint: only first panel ── */
 /* (transition consolidated into .about-scroll-hint base rule above) */
@@ -2675,10 +2737,22 @@ button:focus-visible {
     </div>
   </div>
 
-  <!-- Scroll hint — bottom centre, matches about-scroll-hint style -->
-  <div class="hero-scroll" id="hero-scroll" aria-hidden="true" role="presentation">
-    <div class="hero-scroll-line"></div>
-    <span>Scroll</span>
+  <!-- Hero counter — replaces old scroll hint. Shows "Scroll" with animated chevron. -->
+  <div class="hero-counter" id="hero-counter" aria-hidden="true" role="presentation">
+    <span class="hero-counter-label">Scroll</span>
+    <svg class="hero-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+  </div>
+
+  <!-- Mobile 360° drag affordance — sits below navbar on touch devices -->
+  <div class="hero-mobile-360" id="hero-mobile-360" aria-hidden="true">
+    <div class="hero-mobile-360-badge" aria-hidden="true">
+      <svg class="hero-mobile-360-ring" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="15" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"/>
+        <path d="M25 6 L28 10 L22 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span class="hero-mobile-360-label">360°</span>
+    </div>
+    Drag to rotate
   </div>
 
   <!-- Model metadata -->
@@ -2703,37 +2777,6 @@ button:focus-visible {
   <div class="model-error" id="model-error" role="alert" aria-live="assertive">
     <span class="t-micro">Model unavailable</span>
     <span class="t-micro" style="opacity:.4;">Try refreshing the page</span>
-  </div>
-
-  <!-- Dog-ear projects tab — bottom-left corner of hero (managed by JS) -->
-  <div id="c-dog-ear" aria-hidden="true">
-    <svg class="dog-ear-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-      <defs>
-        <linearGradient id="dog-ear-grad" x1="0" y1="120" x2="120" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#5ba0a4"/>
-          <stop offset="100%" stop-color="#7ec8cc"/>
-        </linearGradient>
-      </defs>
-      <!-- Bottom-left triangle: corner at 0,120 -->
-      <polygon points="0,0 0,120 120,120" fill="url(#dog-ear-grad)"/>
-      <!-- CAD crosshair reticle icon, centred at ~42,80 (lower-left zone of triangle) -->
-      <!-- Horizontal arm -->
-      <line x1="28" y1="80" x2="56" y2="80" stroke="#080909" stroke-width="1.4" stroke-linecap="round"/>
-      <!-- Centre gap (overdraw with gradient colour to punch hole) -->
-      <line x1="40" y1="80" x2="44" y2="80" stroke="#5ba0a4" stroke-width="1.6"/>
-      <!-- Vertical arm -->
-      <line x1="42" y1="66" x2="42" y2="94" stroke="#080909" stroke-width="1.4" stroke-linecap="round"/>
-      <!-- Centre gap vertical -->
-      <line x1="42" y1="78" x2="42" y2="82" stroke="#5ba0a4" stroke-width="1.6"/>
-      <!-- Top-left corner bracket -->
-      <polyline points="33,71 33,67 37,67" stroke="#080909" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      <!-- Bottom-right corner bracket -->
-      <polyline points="47,93 51,93 51,89" stroke="#080909" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    </svg>
-    <div class="dog-ear-label">
-      <span class="dog-ear-label-text" id="dog-ear-text">Projects</span>
-      <svg class="dog-ear-label-icon" xmlns="http://www.w3.org/2000/svg" width="10" height="7" viewBox="0 0 10 7" fill="none" stroke="#080909" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 5,6 9,1"/></svg>
-    </div>
   </div>
 
   <!-- Hero mobile swipe hint — touch devices only, one-time -->
@@ -2788,6 +2831,10 @@ button:focus-visible {
       <div class="proj-counter" aria-hidden="true">
         <div class="proj-counter-nums"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>05</span></div>
         <svg class="proj-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
+      <div class="proj-swipe-hint" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.75;flex-shrink:0"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="5 9 12 2 19 9"/><polyline points="5 15 12 22 19 15"/></svg>
+        Swipe to navigate
       </div>
       <div class="proj-text">
         <div class="proj-num t-micro">Mar 2025</div>
@@ -2900,8 +2947,8 @@ button:focus-visible {
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost proj-ghost--protected" aria-hidden="true">05</div>
       <div class="proj-counter" aria-hidden="true">
-        <div class="proj-counter-nums"><span class="sc-cur">05</span><span class="sc-sep">/</span><span>05</span></div>
-        <svg class="proj-counter-chevron hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+        <div class="proj-counter-nums proj-counter-next"><span class="sc-cur">Next Section</span></div>
+        <svg class="proj-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
       </div>
       <div class="proj-text">
         <div class="proj-num t-micro" style="display:flex;align-items:center;gap:8px;">
@@ -2922,6 +2969,7 @@ button:focus-visible {
     </a>
 
   </div>
+
 
 </section>
 
@@ -3127,26 +3175,24 @@ button:focus-visible {
       </footer>
     </article>
 
-    <!-- Progress dots (5 panels — contact panel has no dot, uses the arrow) -->
+    <!-- Progress dots — desktop only, project carousel style -->
     <nav class="prog-dots" aria-label="About section progress">
-      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 1"></div>
-      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 2"></div>
-      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 3"></div>
-      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 4"></div>
-      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 5"></div>
-      <!-- More-below chevron — shown on final panel -->
-      <div class="about-more-below" id="about-more-below" aria-hidden="true">
-        <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none">
-          <line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-          <polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </svg>
-      </div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
     </nav>
 
-    <!-- Scroll hint -->
-    <div class="about-scroll-hint" id="about-scroll-hint" aria-hidden="true">
-      <div class="hint-line"></div>
-      <span>Scroll</span>
+    <!-- About counter — chevron + N/5 indicator on all platforms.
+         Shows "Next Section" + chevron on the final panel (5/5). -->
+    <div class="about-counter" id="about-counter" aria-hidden="true">
+      <div class="about-counter-nums">
+        <span class="ac-cur" id="ac-cur">1</span><span class="ac-sep">/</span><span>6</span>
+      </div>
+      <span class="about-counter-next-label">Next Section</span>
+      <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
     </div>
 
   </div>
