@@ -708,6 +708,8 @@ class Hero3DContainer {
     this._hintReady   = false;
     this._rotateTimer = null;
     this._hintTimer   = null;  // tracks the 18s auto-dismiss timer so it can be cancelled
+    this._dogEar      = null;  // dog-ear tab element (bottom-left of hero)
+    this._dogEarDismissed = false; // one-time teach — hide after first scroll advance
     this._t0y         = 0;
     this._t0x         = 0;
     this._tScrolling  = null;
@@ -771,6 +773,15 @@ class Hero3DContainer {
 
     this._root.style.visibility = 'hidden';
     this._root.style.opacity    = '0';
+
+    // Dog-ear tab — fixed bottom-left, click advances to projects
+    this._dogEar = document.getElementById('c-dog-ear');
+    if (this._dogEar) {
+      this._dogEar.addEventListener('click', () => {
+        if (!this._active) return;
+        this._app.setSection(this._nextKey, +1);
+      });
+    }
   }
 
   enter() {
@@ -795,6 +806,30 @@ class Hero3DContainer {
       this._viewer.setAttribute('auto-rotate', '');
     }
     requestAnimationFrame(() => this._revealHero());
+    // Dog-ear — show after hero text reveal completes (~1s)
+    this._dogEarDismissed = false;
+    if (this._dogEar) {
+      this._dogEar.classList.remove('visible');
+      setTimeout(() => {
+        if (this._active && !this._dogEarDismissed) this._dogEar.classList.add('visible');
+      }, 1100);
+    }
+    // Mobile swipe hint — show once per session on touch devices
+    if (window.matchMedia('(pointer:coarse)').matches) {
+      const mobileHint = document.getElementById('hero-mobile-hint');
+      const alreadySeen = (() => { try { return sessionStorage.getItem('heroHintSeen'); } catch(e) { return null; } })();
+      if (mobileHint && !alreadySeen) {
+        setTimeout(() => {
+          if (!this._active) return;
+          mobileHint.classList.add('visible');
+          setTimeout(() => {
+            mobileHint.classList.remove('visible');
+            mobileHint.classList.add('gone');
+            try { sessionStorage.setItem('heroHintSeen', '1'); } catch(e) {}
+          }, 3000);
+        }, 1200);
+      }
+    }
   }
 
   exit() {
@@ -826,11 +861,22 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
+    // Dismiss dog-ear and mobile hint immediately if still visible
+    if (this._dogEar) this._dogEar.classList.remove('visible');
+    const mobileHint = document.getElementById('hero-mobile-hint');
+    if (mobileHint) { mobileHint.classList.remove('visible'); mobileHint.classList.add('gone'); }
   }
 
   onScroll(direction) {
     if (!this._active) return;
-    if (direction === +1) this._app.setSection(this._nextKey, +1);
+    if (direction === +1) {
+      // One-time dismiss: dog-ear taught its lesson, hide it as we leave
+      if (this._dogEar && !this._dogEarDismissed) {
+        this._dogEarDismissed = true;
+        this._dogEar.classList.remove('visible');
+      }
+      this._app.setSection(this._nextKey, +1);
+    }
   }
 
   _revealHero() {
@@ -860,31 +906,6 @@ class Hero3DContainer {
       this._dismissHint();
     }, 18000);
 
-    const model = this._viewer.model;
-    if (!model?.materials?.length) return;
-    const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
-    const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
-    let bodyFound = false;
-    model.materials.forEach((mat, i) => {
-      const name = mat.name || '';
-      if (skipRe.test(name)) return;
-      const pbr = mat.pbrMetallicRoughness;
-      if (!pbr) return;
-      if (bodyRe.test(name) || (!bodyFound && i === 0)) {
-        bodyFound = true;
-        pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
-        pbr.setMetallicFactor(0.0);
-        pbr.setRoughnessFactor(0.36);
-        if (mat.extensions?.KHR_materials_clearcoat) {
-          mat.extensions.KHR_materials_clearcoat.clearcoatFactor          = 1.0;
-          mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
-        }
-      } else {
-        pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
-        pbr.setMetallicFactor(0.3);
-        pbr.setRoughnessFactor(0.55);
-      }
-    });
   }
 
   _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
@@ -1017,6 +1038,16 @@ class CarouselContainer {
       const lbl   = document.createElement('span'); lbl.className = 'c-dot-label sr-only'; lbl.textContent = label;
       const dot   = document.createElement('span'); dot.className = 'c-dot';
       wrap.appendChild(lbl); wrap.appendChild(dot);
+      // Click-to-navigate: jump directly to this project
+      wrap.addEventListener('click', () => {
+        if (!this._active || this._transitioning) return;
+        const dir = i - this._activeIdx;
+        if (dir === 0) return;
+        this._transitioning = true;
+        this._activeIdx = i;
+        this._setPositions(this._activeIdx, true);
+        setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
+      });
       this._dotsEl.appendChild(wrap);
       this._dotWraps.push(wrap);
     });
@@ -1230,6 +1261,19 @@ class AboutContainer {
     // update the section indicator label and suppress its dot.
     this._contactPanelIdx   = this._N - 1;
     this._statementPanelIdx = this._N - 2;
+
+    // Click-to-navigate on about dots (keyboard accessible too)
+    this._dots.forEach((dot, i) => {
+      const navigate = () => {
+        if (!this._active || this._transitioning || i === this._activeIdx) return;
+        this._transitioning = true;
+        this._activeIdx = i;
+        this._setPanel(this._activeIdx);
+        setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
+      };
+      dot.addEventListener('click', navigate);
+      dot.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(); } });
+    });
 
     if (!this._spacer || !this._N) {
       console.warn('[AboutContainer] Missing spacer or panels — check DOM.');
