@@ -214,14 +214,21 @@ class AppController {
       }
     });
 
-    let _ty0 = 0, _tx0 = 0, _tTime0 = 0;
+    let _ty0 = 0, _tx0 = 0, _tTime0 = 0, _tIsRotateZone = false;
     window.addEventListener('touchstart', (e) => {
       _ty0 = e.touches[0].clientY;
       _tx0 = e.touches[0].clientX;
       _tTime0 = performance.now();
       this._touchLastDir = 0; // reset mid-gesture direction tracking on new touch
+      // Track if this touch started in the hero rotate zone (left half on mobile)
+      _tIsRotateZone = false;
+      if (this._activeKey === 'hero' && window.matchMedia('(pointer:coarse)').matches) {
+        _tIsRotateZone = _tx0 < window.innerWidth / 2;
+      }
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
+      // If in hero rotate zone, let model-viewer handle it — don't treat as scroll
+      if (_tIsRotateZone) return;
       const currentY = e.touches[0].clientY;
       const currentX = e.touches[0].clientX;
       const dy = Math.abs(currentY - _ty0);
@@ -249,6 +256,8 @@ class AppController {
       }
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
+      // Ignore if this was a rotate-zone touch (handled by model-viewer)
+      if (_tIsRotateZone) { _tIsRotateZone = false; return; }
       const dy     = _ty0 - e.changedTouches[0].clientY;
       const dx     = Math.abs(e.changedTouches[0].clientX - _tx0);
       const dt     = Math.max(1, performance.now() - _tTime0);
@@ -655,6 +664,13 @@ class PageChrome {
     // Drive body[data-section] so CSS can show/hide section-specific UI
     // (e.g. the nav availability badge which should only appear on hero).
     document.body.dataset.section = key;
+    // Update nav section label — shows current section on hover
+    const navLabel = document.getElementById('n-section-label');
+    if (navLabel) {
+      const labelMap = { hero: '', carousel: 'Projects', about: 'About' };
+      navLabel.textContent = labelMap[key] ?? '';
+    }
+    // Legacy section indicator (now hidden via CSS, but keep update for backwards compat)
     if (!this._secInd) return;
     const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About' };
     const label = labelMap[key];
@@ -711,6 +727,9 @@ class Hero3DContainer {
     this._t0y         = 0;
     this._t0x         = 0;
     this._tScrolling  = null;
+    // Mobile touch zone tracking
+    this._touchIsRotate  = false; // true = left-half touch (rotate model), false = right-half (scroll)
+    this._touchStartX    = 0;
 
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
@@ -858,7 +877,13 @@ class Hero3DContainer {
       .forEach(el => el?.classList.add('is-revealed'));
   }
 
-  _onViewerCameraChange() { this._dismissHint(); }
+  _onViewerCameraChange(e) {
+    // Only dismiss hint on genuine user interaction (drag), not on auto-rotate
+    // camera-change events which fire continuously during the idle spin.
+    if (e && e.detail && e.detail.source === 'user-interaction') {
+      this._dismissHint();
+    }
+  }
   _onViewerError() {
     if (this._errorEl) this._errorEl.classList.add('visible');
     console.warn('[Hero3DContainer] model-viewer error:', this._viewer?.src);
@@ -870,21 +895,23 @@ class Hero3DContainer {
     // Open the dismiss gate after the fadeUp animation has had time to play
     // so camera-change on init doesn't hide the hint before it appears.
     setTimeout(() => { this._hintReady = true; }, 1800);
-    // Auto-dismiss after 18s — tracked so exit() can cancel it.
-    if (this._hintTimer) clearTimeout(this._hintTimer);
-    this._hintTimer = setTimeout(() => {
-      this._hintTimer = null;
-      if (!this._active) return; // navigated away — don't touch DOM
-      this._hintReady = true;
-      this._dismissHint();
-    }, 18000);
-
+    // No auto-dismiss timer — hint stays until the user actually drags the model.
+    if (this._hintTimer) { clearTimeout(this._hintTimer); this._hintTimer = null; }
   }
 
   _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
   _onMouseUp()     { this._scheduleRotateResume(); }
   _onMouseLeave()  { this._scheduleRotateResume(); }
-  _onTouchStart()  { this._viewer?.removeAttribute('auto-rotate'); }
+  _onTouchStart(e) {
+    // On mobile, only treat left-half touches as rotation gestures.
+    // Right-half touches are scroll gestures — don't stop auto-rotate or dismiss hint.
+    if (window.matchMedia('(pointer:coarse)').matches) {
+      const x = e?.touches?.[0]?.clientX ?? 0;
+      if (x >= window.innerWidth / 2) return; // right half = scroll zone, ignore
+    }
+    this._viewer?.removeAttribute('auto-rotate');
+    this._dismissHint();
+  }
   _onTouchEnd()    { this._scheduleRotateResume(); }
 
   _scheduleRotateResume() {
@@ -910,7 +937,21 @@ class Hero3DContainer {
 
   _onRootTouchStart(e) {
     if (e.touches.length === 1) {
-      this._t0y = e.touches[0].clientY; this._t0x = e.touches[0].clientX; this._tScrolling = null;
+      this._t0y = e.touches[0].clientY;
+      this._t0x = e.touches[0].clientX;
+      this._tScrolling = null;
+      // Mobile touch zone: left half = rotate model, right half = scroll
+      if (window.matchMedia('(pointer:coarse)').matches) {
+        this._touchStartX    = e.touches[0].clientX;
+        this._touchIsRotate  = this._touchStartX < window.innerWidth / 2;
+        if (this._touchIsRotate) {
+          // Let model-viewer handle this touch — stop it from being a scroll
+          // by NOT calling preventDefault in touchmove (model-viewer needs the event).
+          // We need to tell AppController not to scroll: set a flag.
+          this._viewer?.removeAttribute('auto-rotate');
+          this._dismissHint();
+        }
+      }
     }
   }
 
@@ -918,16 +959,24 @@ class Hero3DContainer {
     if (!this._active || e.touches.length !== 1) return;
     const dy = this._t0y - e.touches[0].clientY;
     const dx = this._t0x - e.touches[0].clientX;
+    // On mobile, left half touches are for model rotation — pass through to model-viewer
+    if (window.matchMedia('(pointer:coarse)').matches && this._touchIsRotate) {
+      // Don't preventDefault — let model-viewer's internal touch handler rotate the model
+      // But DO prevent the global AppController from treating this as a scroll:
+      // We stop propagation so AppController's touchmove handler doesn't see it.
+      // Note: AppController uses window listeners, so we stop here at the root level.
+      // Actually we need to swallow the event from AppController's perspective.
+      // The cleanest way: don't preventDefault (lets model-viewer rotate), 
+      // but call stopPropagation so AppController window listener doesn't see it.
+      e.stopPropagation();
+      return;
+    }
     if (this._tScrolling === null) {
       if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
       this._tScrolling = Math.abs(dy) > Math.abs(dx) * 1.4;
     }
     if (this._tScrolling) {
       e.preventDefault();
-      // Don't call this.onScroll() directly — AppController's touchend
-      // handler owns the dispatch for touch events.
-      // NOTE: do NOT reset _t0y/_t0x here — the origin must remain fixed
-      // so AppController.touchend can measure total swipe displacement.
     }
   }
 }
@@ -1379,6 +1428,38 @@ class AboutContainer {
         secInd.textContent = 'Contact';
       } else if (this._active) {
         secInd.textContent = 'About';
+      }
+    }
+    // Update about counter indicator
+    const counter = document.getElementById('about-counter');
+    if (counter) {
+      const curEl    = counter.querySelector('.ac-cur');
+      const chevron  = counter.querySelector('.about-counter-chevron');
+      const sepEl    = counter.querySelector('.ac-sep');
+      const totEl    = counter.querySelector('.ac-total');
+      const isContact       = idx === this._contactPanelIdx;           // panel 5
+      const isStatementPanel = idx === this._N - 2;                     // panel 4 = 5/5
+      // Total displayed panels = N-1 (panels 0..4, not counting contact)
+      const displayTotal = this._N - 1;
+
+      if (isContact) {
+        // Contact panel: CSS :has hides counter, but keep DOM consistent
+        if (curEl)  curEl.textContent = 'Next Section';
+        if (sepEl)  sepEl.style.display = 'none';
+        if (totEl)  totEl.style.display = 'none';
+        if (chevron) chevron.classList.add('hide');
+      } else if (isStatementPanel) {
+        // Last navigable About panel — show "Next Section" instead of "5/5"
+        if (curEl)  curEl.textContent = 'Next Section';
+        if (sepEl)  sepEl.style.display = 'none';
+        if (totEl)  totEl.style.display = 'none';
+        if (chevron) chevron.classList.add('hide');
+      } else {
+        // Normal panels: show N/Total
+        if (sepEl)  sepEl.style.display = '';
+        if (totEl)  { totEl.style.display = ''; totEl.textContent = displayTotal; }
+        if (curEl)  curEl.textContent = idx + 1;
+        if (chevron) chevron.classList.remove('hide');
       }
     }
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
