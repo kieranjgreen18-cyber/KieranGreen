@@ -551,17 +551,25 @@ body.cur-proj  #cur-r::after  { border-color: rgba(91,160,164,.25); }
 body.cur-click #cur   { opacity: .55; }
 body.cur-click #cur-r { width: 16px; height: 16px; }
 
-/* Section indicator — vertical, left rail */
-#section-indicator {
-  position: fixed; left: var(--s-3); top: 50%; transform: translateY(-50%) rotate(180deg);
-  z-index: var(--z-overlay); writing-mode: vertical-rl;
-  font-family: var(--f-meta); font-size: 8px; font-weight: 700;
+/* Section indicator — hidden (replaced by nav hover label) */
+#section-indicator { display: none !important; }
+
+/* Nav section label — shows current section on hover in the nav */
+.n-section-label {
+  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(91,160,164,.28); pointer-events: none;
-  opacity: 0; transition: opacity var(--dur-mid) var(--ease);
+  color: var(--c-accent); opacity: 0;
+  transition: opacity var(--dur-mid) var(--ease);
+  white-space: nowrap; pointer-events: none;
+  position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
 }
-#section-indicator.visible { opacity: 1; }
-#section-indicator.stage-hidden { opacity: 0 !important; }
+nav#nav:hover .n-section-label,
+nav#nav:focus-within .n-section-label { opacity: 0.6; }
+/* Don't show on hero — nav links context is sufficient there */
+body[data-section="hero"] .n-section-label { opacity: 0 !important; }
+/* On non-hero sections, dim nav links slightly */
+body:not([data-section="hero"]) .n-links a { color: var(--c-tertiary); }
+body:not([data-section="hero"]) .n-links a:hover { color: var(--c-primary); }
 
 /* ═══════════════════════════════════════════════════════════════
    § NAVIGATION
@@ -602,6 +610,7 @@ nav#nav.scrolled {
 .n-links {
   display: flex; align-items: center; gap: var(--s-4);
   opacity: 0; animation: fd .6s var(--ease) .12s forwards;
+  position: relative;
 }
 .n-links a {
   font-family: var(--f-heading); font-size: 14px; font-weight: 700;
@@ -819,22 +828,23 @@ model-viewer#mini-viewer {
   will-change: transform, opacity;
 }
 
-/* Scroll hint — bottom centre, fixed so it resolves against the viewport
-   Styled to match the about-scroll-hint exactly; hidden on mobile */
+/* Hero counter indicator — replaces old scroll hint, matches proj-counter style */
 .hero-scroll {
-  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: var(--pad); left: 50%; transform: translateX(-50%);
   z-index: var(--z-raised);
-  display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
-  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: var(--c-secondary); opacity: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-family: var(--f-heading); font-size: 16px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.5); opacity: 0;
   transition: opacity var(--dur-slow) var(--ease) 0.95s;
   pointer-events: none;
 }
-.hero-scroll.is-revealed { opacity: .62; }
-.hero-scroll-line {
-  width: 1px; height: 48px;
-  background: linear-gradient(to bottom, var(--c-secondary), transparent);
+.hero-scroll.is-revealed { opacity: 1; }
+.hero-scroll-label { color: rgba(91,160,164,.85); }
+.hero-scroll-chevron {
+  display: block; width: 14px; height: 9px;
+  animation: counterChevron 1.8s ease-in-out infinite;
+  color: rgba(91,160,164,.65);
 }
 
 /* Model metadata label */
@@ -1113,57 +1123,8 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 /* Mobile swipe hint — hidden (replaced by dog-ear tab) */
 .proj-swipe-hint { display: none !important; }
 
-/* ── Dog-ear next-project tab — bottom-right corner of carousel ── */
-#c-dog-ear {
-  position: fixed;
-  bottom: 0; right: 0;
-  width: 110px; height: 110px;
-  z-index: var(--z-overlay);
-  pointer-events: auto;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity .5s var(--ease), transform .3s var(--ease);
-  overflow: hidden;
-}
-#c-dog-ear.visible { opacity: 1; }
-#c-dog-ear:hover { transform: scale(1.06); }
-.dog-ear-triangle {
-  position: absolute; bottom: 0; right: 0;
-  width: 0; height: 0;
-  border-style: solid;
-  border-width: 0 0 110px 110px;
-  border-color: transparent transparent transparent transparent;
-  /* filled by SVG overlay instead */
-}
-.dog-ear-svg {
-  position: absolute; bottom: 0; right: 0;
-  width: 110px; height: 110px;
-  pointer-events: none;
-}
-/* Dog-ear label text */
-.dog-ear-label {
-  position: absolute; bottom: 18px; right: 6px;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  transform: rotate(0deg);
-  pointer-events: none; z-index: 2;
-}
-.dog-ear-label-text {
-  font-family: var(--f-heading); font-size: 9px; font-weight: 700;
-  letter-spacing: .2em; text-transform: uppercase;
-  color: var(--c-bg); writing-mode: vertical-rl;
-  text-orientation: mixed; transform: rotate(180deg);
-  line-height: 1; white-space: nowrap;
-}
-.dog-ear-label-icon {
-  color: var(--c-bg);
-  animation: dogEarBounce 1.6s ease-in-out infinite;
-}
-@keyframes dogEarBounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(3px); }
-}
-/* Last slide: tab signals section exit — different label */
-#c-dog-ear.is-last .dog-ear-label-text { content: ''; }
+/* ── Dog-ear — hidden (replaced by counter indicator) ── */
+#c-dog-ear { display: none !important; }
 
 /* ── Hero mobile swipe hint — one-time, bottom strip ── */
 #hero-mobile-hint {
@@ -1456,35 +1417,29 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
-/* About progress dots — exact mirror of #c-dots */
+/* About progress dots — hidden on all breakpoints (replaced by about-counter) */
 .about-stage .prog-dots {
-  position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 10px;
-  align-items: center;
-  z-index: var(--z-carousel); pointer-events: none;
-  padding: 4px 0;
-  transition: opacity 0.4s var(--ease);
+  display: none !important;
 }
 .prog-dot {
-  width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
-  transition: background .4s, transform .4s;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(91,160,164,.55); display: block;
+  transition: background .3s, transform .3s, box-shadow .3s;
 }
-.prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
-
-/* Hide progress dots on the contact panel — it has no dot of its own
-   and the more-below arrow already served as its only indicator on the
-   preceding panel. Using :has() keeps this entirely in CSS with zero
-   JS changes and zero risk of touching other panels. */
-.about-stage:has([data-panel="5"].is-active) .prog-dots {
-  opacity: 0;
-  pointer-events: none;
+.prog-dot.on {
+  background: var(--c-accent);
+  transform: scale(2);
+  box-shadow: 0 0 6px rgba(91,160,164,0.55);
 }
 
-/* More-below indicator — aligned to dot column center */
+/* (prog-dots always hidden — no per-panel override needed) */
+
+/* More-below indicator — absolute sibling of about-counter, right rail */
 .about-more-below {
-  align-self: center;
-  margin-top: 6px;
+  position: absolute; right: 20px; bottom: calc(var(--pad) + 28px);
+  display: flex; flex-direction: column; align-items: center;
   color: var(--c-accent);
+  z-index: calc(var(--z-stage) + 10);
   opacity: 0; pointer-events: none;
   transition: opacity 0.5s var(--ease);
 }
@@ -1499,20 +1454,35 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   50%       { transform: translateY(5px); opacity: 1; }
 }
 
-/* About scroll hint */
-.about-scroll-hint {
-  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: var(--s-1);
-  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: var(--c-secondary); opacity: .72;
-  pointer-events: none; z-index: var(--z-carousel);
-  transition: opacity var(--dur-mid) var(--ease);
-}
-.about-scroll-hint.hide { opacity: 0; }
+/* About scroll hint — hidden (replaced by counter indicator) */
+.about-scroll-hint { display: none !important; }
 .hint-line {
   width: 1px; height: 40px;
   background: linear-gradient(to bottom, var(--c-secondary), transparent);
+}
+
+/* About counter indicator — same style as proj-counter, shown on all platforms */
+.about-counter {
+  position: absolute; bottom: var(--pad); left: 50%; transform: translateX(-50%);
+  font-family: var(--f-heading); font-size: 16px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.5); display: flex; flex-direction: column; align-items: center; gap: 6px;
+  z-index: calc(var(--z-stage) + 10); pointer-events: none;
+  transition: opacity 0.4s var(--ease);
+}
+.about-counter-nums { display: flex; align-items: center; gap: 4px; }
+.about-counter .ac-cur { color: rgba(91,160,164,.85); }
+.about-counter .ac-sep { margin: 0 2px; }
+.about-counter-chevron {
+  display: block; width: 14px; height: 9px;
+  animation: counterChevron 1.8s ease-in-out infinite;
+  color: rgba(91,160,164,.65);
+}
+.about-counter-chevron.hide { opacity: 0; }
+/* Hide about counter on contact panel */
+.about-stage:has([data-panel="5"].is-active) .about-counter {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1646,6 +1616,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .hero-h1 .word, .n-logo, .n-links, .n-right { opacity: 1 !important; transform: none !important; }
   .hero-eyebrow-line { width: var(--s-4) !important; }
   .hero-sub, .hero-avail { opacity: 1 !important; }
+  .hero-scroll-chevron { animation: none !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1678,10 +1649,8 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   /* Hero */
   .hero-text { max-width: 88vw; bottom: var(--s-7); }
   .hero-h1   { font-size: clamp(54px, 14vw, 88px); }
-  .hero-scroll { display: none; }
   .hero-coords { display: none; }
   .model-label-br { display: none; }
-  .model-hint { display: none; }
   .hero-vignette {
     background:
       linear-gradient(to right,  rgba(8,9,9,0.97) 0%, rgba(8,9,9,0.75) 28%, rgba(8,9,9,0.25) 58%, transparent 78%),
@@ -2014,8 +1983,9 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   .stmt-kicker    { margin-bottom: var(--s-4); }
   .stmt-text      { font-size: clamp(16px, 5vw, 24px); line-height: 1.65; }
 
-  /* Progress dots */
-  .prog-dots { right: var(--s-2); gap: 8px; }
+  /* Progress dots — hidden on mobile (replaced by counter indicator) */
+  .prog-dots { display: none !important; }
+  #c-dots { display: none !important; }
 
   /* About stage — always dark on mobile (image-forward design) */
   [data-theme="light"] .about-stage { background: #080909; }
@@ -2028,13 +1998,6 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   [data-theme="light"] .panel-statement,
   [data-theme="light"] .panel-contact {
     background: var(--c-bg);
-  }
-
-  /* Progress dots — mobile light mode: replace harsh opaque gradient with
-     a gentle radial-softened fade that doesn't compete with the dots visually */
-  [data-theme="light"] .prog-dots {
-    background:
-      radial-gradient(ellipse 64px 120px at center, rgba(237,238,237,0.72) 0%, rgba(237,238,237,0.40) 40%, transparent 100%);
   }
 
   /* Personal statement */
@@ -2468,11 +2431,6 @@ footer::before {
 }
 
 
-/* ── Prog-dot glow when active ── */
-.prog-dot.on {
-  box-shadow: 0 0 6px rgba(91,160,164,0.55);
-}
-
 /* ── C-dot glow when active ── */
 .c-dot-wrap.on .c-dot {
   box-shadow: 0 0 5px rgba(91,160,164,0.50);
@@ -2484,7 +2442,7 @@ footer::before {
   50%  { opacity: 0.88; transform: scaleY(0.55) translateY(8px); }
   100% { opacity: 0.38; transform: scaleY(1) translateY(0); }
 }
-.hint-line, .hero-scroll-line {
+.hint-line {
   animation: hintPulse 2.2s ease infinite;
 }
 
@@ -2511,7 +2469,7 @@ footer::before {
   -webkit-text-stroke: 1px rgba(91,160,164,0.14);
 }
 
-/* ── Hero scroll hint: matches about-scroll-hint — hide on scroll ── */
+/* ── Hero scroll indicator: hide on scroll ── */
 .hero-scroll.hide { opacity: 0 !important; }
 
 /* ── Mobile: swipe hint entry + fade animations ── */
@@ -2623,6 +2581,7 @@ button:focus-visible {
     <a href="#work">Projects</a>
     <a href="#about">About</a>
     <a href="#contact">Contact</a>
+    <span class="n-section-label" id="n-section-label" aria-hidden="true"></span>
   </div>
   <div class="n-right">
     <div class="n-avail" aria-label="Currently available for work">
@@ -2702,10 +2661,10 @@ button:focus-visible {
     </div>
   </div>
 
-  <!-- Scroll hint — bottom centre, matches about-scroll-hint style -->
+  <!-- Scroll indicator — bottom centre, counter style -->
   <div class="hero-scroll" id="hero-scroll" aria-hidden="true" role="presentation">
-    <div class="hero-scroll-line"></div>
-    <span>Scroll</span>
+    <span class="hero-scroll-label">Scroll</span>
+    <svg class="hero-scroll-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
   </div>
 
   <!-- Model metadata -->
@@ -2900,7 +2859,7 @@ button:focus-visible {
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost proj-ghost--protected" aria-hidden="true">05</div>
       <div class="proj-counter" aria-hidden="true">
-        <div class="proj-counter-nums"><span class="sc-cur">05</span><span class="sc-sep">/</span><span>05</span></div>
+        <div class="proj-counter-nums"><span class="sc-cur">Next Section</span></div>
         <svg class="proj-counter-chevron hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
       </div>
       <div class="proj-text">
@@ -3144,29 +3103,39 @@ button:focus-visible {
       </footer>
     </article>
 
-    <!-- Progress dots (5 panels — contact panel has no dot, uses the arrow) -->
-    <nav class="prog-dots" aria-label="About section progress">
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <!-- More-below chevron — shown on final panel -->
-      <div class="about-more-below" id="about-more-below" aria-hidden="true">
-        <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none">
-          <line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-          <polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </svg>
-      </div>
-    </nav>
-
     <!-- Scroll hint -->
     <div class="about-scroll-hint" id="about-scroll-hint" aria-hidden="true">
       <div class="hint-line"></div>
       <span>Scroll</span>
     </div>
 
+  </div><!-- end panels-host -->
+
+  <!-- Progress dots — hidden (replaced by about-counter); kept for JS dot queries -->
+  <nav class="prog-dots" aria-label="About section progress" aria-hidden="true">
+    <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+    <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+    <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+    <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+    <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+  </nav>
+
+  <!-- More-below chevron — outside prog-dots so it shows even though prog-dots is hidden -->
+  <div class="about-more-below" id="about-more-below" aria-hidden="true">
+    <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none">
+      <line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
   </div>
+
+  <!-- About counter indicator — outside panels-host to avoid vignette z-index overlap -->
+  <div class="about-counter" id="about-counter" aria-hidden="true">
+    <div class="about-counter-nums">
+      <span class="ac-cur">1</span><span class="ac-sep">/</span><span class="ac-total">5</span>
+    </div>
+    <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+  </div>
+
 </section>
 
 <!-- SEO summary — screen-reader and crawler only -->
