@@ -286,7 +286,6 @@
 [data-theme="light"] .projects .proj-title,
 [data-theme="light"] .projects .proj-counter,
 [data-theme="light"] .projects .proj-counter-chevron,
-[data-theme="light"] .projects .proj-swipe-hint,
 [data-theme="light"] .projects .sc-cur { color: #edeeed; }
 [data-theme="light"] .projects .proj-desc { color: rgba(237,238,237,0.75); }
 [data-theme="light"] .projects .proj-open { color: #edeeed; }
@@ -1110,14 +1109,11 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .proj-open:hover { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-bg); }
 .proj[data-pos="active"] .proj-open { opacity: 1; }
 
-/* Mobile swipe hint — hidden (replaced by dog-ear tab) */
-.proj-swipe-hint { display: none !important; }
-
-/* ── Dog-ear next-project tab — bottom-right corner of carousel ── */
+/* ── Dog-ear projects tab — bottom-left corner of hero ── */
 #c-dog-ear {
   position: fixed;
-  bottom: 0; right: 0;
-  width: 110px; height: 110px;
+  bottom: 0; left: 0;
+  width: 120px; height: 120px;
   z-index: var(--z-overlay);
   pointer-events: auto;
   cursor: pointer;
@@ -1126,44 +1122,33 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   overflow: hidden;
 }
 #c-dog-ear.visible { opacity: 1; }
-#c-dog-ear:hover { transform: scale(1.06); }
-.dog-ear-triangle {
-  position: absolute; bottom: 0; right: 0;
-  width: 0; height: 0;
-  border-style: solid;
-  border-width: 0 0 110px 110px;
-  border-color: transparent transparent transparent transparent;
-  /* filled by SVG overlay instead */
-}
+#c-dog-ear:hover { transform: scale(1.06); transform-origin: bottom left; }
 .dog-ear-svg {
-  position: absolute; bottom: 0; right: 0;
-  width: 110px; height: 110px;
+  position: absolute; bottom: 0; left: 0;
+  width: 120px; height: 120px;
   pointer-events: none;
 }
-/* Dog-ear label text */
+/* Dog-ear label — sits in the lower-left triangle zone */
 .dog-ear-label {
-  position: absolute; bottom: 18px; right: 6px;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  transform: rotate(0deg);
+  position: absolute; bottom: 14px; left: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
   pointer-events: none; z-index: 2;
 }
 .dog-ear-label-text {
   font-family: var(--f-heading); font-size: 9px; font-weight: 700;
   letter-spacing: .2em; text-transform: uppercase;
-  color: var(--c-bg); writing-mode: vertical-rl;
+  color: #080909; writing-mode: vertical-rl;
   text-orientation: mixed; transform: rotate(180deg);
   line-height: 1; white-space: nowrap;
 }
 .dog-ear-label-icon {
-  color: var(--c-bg);
+  color: #080909;
   animation: dogEarBounce 1.6s ease-in-out infinite;
 }
 @keyframes dogEarBounce {
   0%, 100% { transform: translateY(0); }
   50%       { transform: translateY(3px); }
 }
-/* Last slide: tab signals section exit — different label */
-#c-dog-ear.is-last .dog-ear-label-text { content: ''; }
 
 /* ── Hero mobile swipe hint — one-time, bottom strip ── */
 #hero-mobile-hint {
@@ -1204,7 +1189,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .c-dot-wrap.on .c-dot {
   background: var(--c-accent);
   transform: scale(2);
-  box-shadow: 0 0 0 3px rgba(91,160,164,.18);
+  box-shadow: 0 0 0 3px rgba(91,160,164,.18), 0 0 5px rgba(91,160,164,.50);
 }
 
 /* Next-section arrow — aligned to dot column center */
@@ -1456,20 +1441,33 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 .panel.is-active .stmt-text { opacity: 1; transform: none; }
 
-/* About progress dots — exact mirror of #c-dots */
+/* About progress dots — match #c-dots style exactly */
 .about-stage .prog-dots {
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; flex-direction: column; gap: 12px;
   align-items: center;
   z-index: var(--z-carousel); pointer-events: none;
   padding: 4px 0;
   transition: opacity 0.4s var(--ease);
 }
 .prog-dot {
-  width: 4px; height: 4px; border-radius: 50%; background: var(--c-muted);
-  transition: background .4s, transform .4s;
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; pointer-events: auto;
+  position: relative;
 }
-.prog-dot.on { background: var(--c-accent); transform: scale(1.8); }
+.prog-dot::after {
+  content: '';
+  display: block;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(91,160,164,.55);
+  transition: background .4s, transform .4s, box-shadow .4s;
+}
+.prog-dot.on::after {
+  background: var(--c-accent);
+  transform: scale(2);
+  box-shadow: 0 0 0 3px rgba(91,160,164,.18);
+}
 
 /* Hide progress dots on the contact panel — it has no dot of its own
    and the more-below arrow already served as its only indicator on the
@@ -2467,17 +2465,6 @@ footer::before {
   pointer-events: none;
 }
 
-
-/* ── Prog-dot glow when active ── */
-.prog-dot.on {
-  box-shadow: 0 0 6px rgba(91,160,164,0.55);
-}
-
-/* ── C-dot glow when active ── */
-.c-dot-wrap.on .c-dot {
-  box-shadow: 0 0 5px rgba(91,160,164,0.50);
-}
-
 /* ── Hint line enhanced pulse ── */
 @keyframes hintPulse {
   0%   { opacity: 0.38; transform: scaleY(1) translateY(0); }
@@ -2513,20 +2500,6 @@ footer::before {
 
 /* ── Hero scroll hint: matches about-scroll-hint — hide on scroll ── */
 .hero-scroll.hide { opacity: 0 !important; }
-
-/* ── Mobile: swipe hint entry + fade animations ── */
-@keyframes swipeReveal {
-  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
-  to   { opacity: 0.68; transform: translateX(-50%) translateY(0); }
-}
-@keyframes swipeHintFade {
-  0%   { opacity: 0.68; }
-  70%  { opacity: 0.68; }
-  100% { opacity: 0; }
-}
-.proj-swipe-hint {
-  animation: swipeReveal 0.5s var(--ease) 0.4s both, swipeHintFade 2.5s ease 1s forwards;
-}
 
 /* ── About scroll hint: only first panel ── */
 /* (transition consolidated into .about-scroll-hint base rule above) */
@@ -2732,6 +2705,37 @@ button:focus-visible {
     <span class="t-micro" style="opacity:.4;">Try refreshing the page</span>
   </div>
 
+  <!-- Dog-ear projects tab — bottom-left corner of hero (managed by JS) -->
+  <div id="c-dog-ear" aria-hidden="true">
+    <svg class="dog-ear-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+      <defs>
+        <linearGradient id="dog-ear-grad" x1="0" y1="120" x2="120" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#5ba0a4"/>
+          <stop offset="100%" stop-color="#7ec8cc"/>
+        </linearGradient>
+      </defs>
+      <!-- Bottom-left triangle: corner at 0,120 -->
+      <polygon points="0,0 0,120 120,120" fill="url(#dog-ear-grad)"/>
+      <!-- CAD crosshair reticle icon, centred at ~42,80 (lower-left zone of triangle) -->
+      <!-- Horizontal arm -->
+      <line x1="28" y1="80" x2="56" y2="80" stroke="#080909" stroke-width="1.4" stroke-linecap="round"/>
+      <!-- Centre gap (overdraw with gradient colour to punch hole) -->
+      <line x1="40" y1="80" x2="44" y2="80" stroke="#5ba0a4" stroke-width="1.6"/>
+      <!-- Vertical arm -->
+      <line x1="42" y1="66" x2="42" y2="94" stroke="#080909" stroke-width="1.4" stroke-linecap="round"/>
+      <!-- Centre gap vertical -->
+      <line x1="42" y1="78" x2="42" y2="82" stroke="#5ba0a4" stroke-width="1.6"/>
+      <!-- Top-left corner bracket -->
+      <polyline points="33,71 33,67 37,67" stroke="#080909" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <!-- Bottom-right corner bracket -->
+      <polyline points="47,93 51,93 51,89" stroke="#080909" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <div class="dog-ear-label">
+      <span class="dog-ear-label-text" id="dog-ear-text">Projects</span>
+      <svg class="dog-ear-label-icon" xmlns="http://www.w3.org/2000/svg" width="10" height="7" viewBox="0 0 10 7" fill="none" stroke="#080909" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 5,6 9,1"/></svg>
+    </div>
+  </div>
+
   <!-- Hero mobile swipe hint — touch devices only, one-time -->
   <div id="hero-mobile-hint" aria-hidden="true">
     <svg class="hmh-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="1" x2="6" y2="13"/><polyline points="2,9 6,13 10,9"/></svg>
@@ -2784,10 +2788,6 @@ button:focus-visible {
       <div class="proj-counter" aria-hidden="true">
         <div class="proj-counter-nums"><span class="sc-cur">01</span><span class="sc-sep">/</span><span>05</span></div>
         <svg class="proj-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
-      </div>
-      <div class="proj-swipe-hint" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.75;flex-shrink:0"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="5 9 12 2 19 9"/><polyline points="5 15 12 22 19 15"/></svg>
-        Swipe to navigate
       </div>
       <div class="proj-text">
         <div class="proj-num t-micro">Mar 2025</div>
@@ -2921,23 +2921,6 @@ button:focus-visible {
       </div>
     </a>
 
-  </div>
-
-  <!-- Dog-ear next-project tab — bottom-right corner affordance (managed by JS) -->
-  <div id="c-dog-ear" aria-hidden="true">
-    <svg class="dog-ear-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110">
-      <defs>
-        <linearGradient id="dog-ear-grad" x1="110" y1="110" x2="0" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#5ba0a4"/>
-          <stop offset="100%" stop-color="#7ec8cc"/>
-        </linearGradient>
-      </defs>
-      <polygon points="110,0 110,110 0,110" fill="url(#dog-ear-grad)"/>
-    </svg>
-    <div class="dog-ear-label">
-      <svg class="dog-ear-label-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="#080909" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 6,7 11,1"/></svg>
-      <span class="dog-ear-label-text" id="dog-ear-text">Next</span>
-    </div>
   </div>
 
 </section>
@@ -3146,11 +3129,11 @@ button:focus-visible {
 
     <!-- Progress dots (5 panels — contact panel has no dot, uses the arrow) -->
     <nav class="prog-dots" aria-label="About section progress">
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 1"></div>
+      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 2"></div>
+      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 3"></div>
+      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 4"></div>
+      <div class="prog-dot" role="button" tabindex="0" aria-label="Go to panel 5"></div>
       <!-- More-below chevron — shown on final panel -->
       <div class="about-more-below" id="about-more-below" aria-hidden="true">
         <svg class="more-below-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none">
