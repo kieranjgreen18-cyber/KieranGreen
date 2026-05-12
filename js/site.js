@@ -616,12 +616,12 @@ class PageChrome {
       logo.addEventListener('focus', () => { if (!scrambling) scramble(); });
     }
 
-    // ── Nav scrolled + hero scroll hint ───────────────────────────────
-    const heroScrollEl = document.getElementById('hero-scroll');
+    // ── Nav scrolled + hero counter hide on scroll ─────────────────────
+    const heroCounterEl = document.getElementById('hero-counter');
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
-      if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
+      if (heroCounterEl) heroCounterEl.classList.toggle('hide', y > 60);
     }, { passive: true });
 
     // ── Resize ─────────────────────────────────────────────────────────
@@ -648,20 +648,16 @@ class PageChrome {
 
   /**
    * Called by AppController._activateDirect whenever the active section changes.
-   * Updates body[data-section] and the section indicator label.
+   * Sets body[data-section] so CSS nav active-state rules fire correctly.
+   * The vertical section-indicator element has been removed — the navbar
+   * now serves as the active-section indicator via CSS attribute selectors.
    * @param {string} sectionKey  'hero' | 'carousel' | 'about'
    */
   notifySection(key) {
-    // Drive body[data-section] so CSS can show/hide section-specific UI
-    // (e.g. the nav availability badge which should only appear on hero).
     document.body.dataset.section = key;
-    if (!this._secInd) return;
-    const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About' };
-    const label = labelMap[key];
-    if (label) {
-      this._secInd.textContent = label;
-      this._secInd.classList.toggle('visible', key !== 'hero');
-    }
+    // Clear about-panel marker when we leave the about section so stale
+    // data-about-panel="contact" cannot affect nav highlighting on other sections.
+    if (key !== 'about') delete document.body.dataset.aboutPanel;
   }
 
   // Cursor state is expressed as body classes so CSS owns all appearance.
@@ -708,8 +704,6 @@ class Hero3DContainer {
     this._hintReady   = false;
     this._rotateTimer = null;
     this._hintTimer   = null;  // tracks the 18s auto-dismiss timer so it can be cancelled
-    this._dogEar      = null;  // dog-ear tab element (bottom-left of hero)
-    this._dogEarDismissed = false; // one-time teach — hide after first scroll advance
     this._t0y         = 0;
     this._t0x         = 0;
     this._tScrolling  = null;
@@ -728,14 +722,16 @@ class Hero3DContainer {
   }
 
   init(root) {
-    this._root       = root;
-    this._viewer     = root.querySelector('model-viewer');
-    this._heroText   = root.querySelector('#hero-text');
-    this._heroScroll = root.querySelector('#hero-scroll');
-    this._modelLabel = root.querySelector('#model-label');
-    this._modelHint  = root.querySelector('#model-hint');
-    this._errorEl    = root.querySelector('#model-error');
-    this._nav        = document.getElementById('nav'); // documented exception
+    this._root        = root;
+    this._viewer      = root.querySelector('model-viewer');
+    this._heroText    = root.querySelector('#hero-text');
+    this._heroCounter = root.querySelector('#hero-counter');   // replaces hero-scroll
+    this._heroScroll  = this._heroCounter;                     // keep alias so legacy refs are safe
+    this._mobile360   = root.querySelector('#hero-mobile-360'); // mobile 360 badge
+    this._modelLabel  = root.querySelector('#model-label');
+    this._modelHint   = root.querySelector('#model-hint');
+    this._errorEl     = root.querySelector('#model-error');
+    this._nav         = document.getElementById('nav'); // documented exception
 
     // ── Model-viewer preload: warm the HDR environment cache as soon as
     //    the container inits. The GLB is preloaded via <link rel="preload">
@@ -773,15 +769,6 @@ class Hero3DContainer {
 
     this._root.style.visibility = 'hidden';
     this._root.style.opacity    = '0';
-
-    // Dog-ear tab — fixed bottom-left, click advances to projects
-    this._dogEar = document.getElementById('c-dog-ear');
-    if (this._dogEar) {
-      this._dogEar.addEventListener('click', () => {
-        if (!this._active) return;
-        this._app.setSection(this._nextKey, +1);
-      });
-    }
   }
 
   enter() {
@@ -795,41 +782,17 @@ class Hero3DContainer {
     this._root.style.visibility = 'visible';
     this._root.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1)';
     this._root.style.opacity    = '1';
-    // Clear any inline opacity set by the scroll listener so the CSS transition plays correctly
-    if (this._heroScroll) this._heroScroll.style.opacity = '';
+    // Clear any inline opacity and hide-class set by the scroll listener so the CSS transition plays correctly
+    if (this._heroCounter) { this._heroCounter.style.opacity = ''; this._heroCounter.classList.remove('hide'); }
     // Force a clean re-reveal: strip classes first so re-adding them in the
     // next frame always triggers the entrance transition even on re-entry.
-    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
+    [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
     // Re-enable auto-rotate (was removed on exit to prevent GPU thrash)
     if (this._viewer) {
       this._viewer.setAttribute('auto-rotate', '');
     }
     requestAnimationFrame(() => this._revealHero());
-    // Dog-ear — show after hero text reveal completes (~1s)
-    this._dogEarDismissed = false;
-    if (this._dogEar) {
-      this._dogEar.classList.remove('visible');
-      setTimeout(() => {
-        if (this._active && !this._dogEarDismissed) this._dogEar.classList.add('visible');
-      }, 1100);
-    }
-    // Mobile swipe hint — show once per session on touch devices
-    if (window.matchMedia('(pointer:coarse)').matches) {
-      const mobileHint = document.getElementById('hero-mobile-hint');
-      const alreadySeen = (() => { try { return sessionStorage.getItem('heroHintSeen'); } catch(e) { return null; } })();
-      if (mobileHint && !alreadySeen) {
-        setTimeout(() => {
-          if (!this._active) return;
-          mobileHint.classList.add('visible');
-          setTimeout(() => {
-            mobileHint.classList.remove('visible');
-            mobileHint.classList.add('gone');
-            try { sessionStorage.setItem('heroHintSeen', '1'); } catch(e) {}
-          }, 3000);
-        }, 1200);
-      }
-    }
   }
 
   exit() {
@@ -844,7 +807,7 @@ class Hero3DContainer {
     this._root.style.transition = 'opacity 0.4s ease';
     this._root.style.opacity    = '0';
     // Strip reveal classes so re-entering Hero re-plays the entrance animation.
-    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
+    [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
     // Pause model-viewer on mobile to prevent GPU/state thrash when
     // the user scrolls away and back repeatedly. Pausing stops the render
@@ -861,27 +824,16 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
-    // Dismiss dog-ear and mobile hint immediately if still visible
-    if (this._dogEar) this._dogEar.classList.remove('visible');
-    const mobileHint = document.getElementById('hero-mobile-hint');
-    if (mobileHint) { mobileHint.classList.remove('visible'); mobileHint.classList.add('gone'); }
   }
 
   onScroll(direction) {
     if (!this._active) return;
-    if (direction === +1) {
-      // One-time dismiss: dog-ear taught its lesson, hide it as we leave
-      if (this._dogEar && !this._dogEarDismissed) {
-        this._dogEarDismissed = true;
-        this._dogEar.classList.remove('visible');
-      }
-      this._app.setSection(this._nextKey, +1);
-    }
+    if (direction === +1) this._app.setSection(this._nextKey, +1);
   }
 
   _revealHero() {
     if (!this._active) return;
-    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
+    [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.add('is-revealed'));
   }
 
@@ -906,6 +858,31 @@ class Hero3DContainer {
       this._dismissHint();
     }, 18000);
 
+    const model = this._viewer.model;
+    if (!model?.materials?.length) return;
+    const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
+    const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
+    let bodyFound = false;
+    model.materials.forEach((mat, i) => {
+      const name = mat.name || '';
+      if (skipRe.test(name)) return;
+      const pbr = mat.pbrMetallicRoughness;
+      if (!pbr) return;
+      if (bodyRe.test(name) || (!bodyFound && i === 0)) {
+        bodyFound = true;
+        pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
+        pbr.setMetallicFactor(0.0);
+        pbr.setRoughnessFactor(0.36);
+        if (mat.extensions?.KHR_materials_clearcoat) {
+          mat.extensions.KHR_materials_clearcoat.clearcoatFactor          = 1.0;
+          mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
+        }
+      } else {
+        pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
+        pbr.setMetallicFactor(0.3);
+        pbr.setRoughnessFactor(0.55);
+      }
+    });
   }
 
   _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
@@ -1038,16 +1015,6 @@ class CarouselContainer {
       const lbl   = document.createElement('span'); lbl.className = 'c-dot-label sr-only'; lbl.textContent = label;
       const dot   = document.createElement('span'); dot.className = 'c-dot';
       wrap.appendChild(lbl); wrap.appendChild(dot);
-      // Click-to-navigate: jump directly to this project
-      wrap.addEventListener('click', () => {
-        if (!this._active || this._transitioning) return;
-        const dir = i - this._activeIdx;
-        if (dir === 0) return;
-        this._transitioning = true;
-        this._activeIdx = i;
-        this._setPositions(this._activeIdx, true);
-        setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
-      });
       this._dotsEl.appendChild(wrap);
       this._dotWraps.push(wrap);
     });
@@ -1226,6 +1193,9 @@ class AboutContainer {
     this._dots    = [];
     this._hint    = null;
     this._moreBelow = null;
+    // About counter elements
+    this._aboutCounter = null;
+    this._acCur        = null;
     this._N       = 0;
     this._active        = false;
     this._activeIdx     = 0;
@@ -1251,29 +1221,17 @@ class AboutContainer {
   init(root) {
     this._root   = root;
     this._spacer = document.querySelector('.about-spacer'); // documented exception
-    this._moreBelow = document.getElementById('about-more-below'); // documented exception
 
     this._panels = Array.from(root.querySelectorAll('[data-panel]'));
     this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
-    this._hint   = root.querySelector('#about-scroll-hint');
+    this._hint   = null; // about-scroll-hint removed — about-counter replaces it
+    this._aboutCounter = root.querySelector('#about-counter');
+    this._acCur        = root.querySelector('#ac-cur');
     this._N      = this._panels.length;
     // The last panel is the contact panel — track its index so we can
     // update the section indicator label and suppress its dot.
     this._contactPanelIdx   = this._N - 1;
     this._statementPanelIdx = this._N - 2;
-
-    // Click-to-navigate on about dots (keyboard accessible too)
-    this._dots.forEach((dot, i) => {
-      const navigate = () => {
-        if (!this._active || this._transitioning || i === this._activeIdx) return;
-        this._transitioning = true;
-        this._activeIdx = i;
-        this._setPanel(this._activeIdx);
-        setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
-      };
-      dot.addEventListener('click', navigate);
-      dot.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(); } });
-    });
 
     if (!this._spacer || !this._N) {
       console.warn('[AboutContainer] Missing spacer or panels — check DOM.');
@@ -1360,26 +1318,18 @@ class AboutContainer {
       const label = this._panels[idx]?.getAttribute('aria-label') || '';
       announcer.textContent = label;
     }
-    // Only drive dots for the non-contact panels (contact panel has no dot —
-    // it uses the more-below arrow as its indicator instead).
+    // Drive progress dots (desktop — mobile hides them via CSS)
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
-    if (this._hint) this._hint.classList.toggle('hide', idx > 0);
-    // Show "more below" chevron on the panel BEFORE the contact panel (statement)
-    // — this signals there's one more slide (contact) without giving contact its own dot.
-    // Hide it on the contact panel itself (nothing below).
-    if (this._moreBelow) {
-      const showArrow = idx === this._N - 2; // second-to-last = statement panel
-      this._moreBelow.classList.toggle('visible', showArrow);
-    }
-    // Update section indicator label: "Contact" on contact panel, "About" otherwise
-    const secInd = document.getElementById('section-indicator');
-    if (secInd) {
-      if (idx === this._contactPanelIdx) {
-        secInd.textContent = 'Contact';
-      } else if (this._active) {
-        secInd.textContent = 'About';
-      }
-    }
+
+    // Drive about-counter: N/5 label, toggle is-last on final panel
+    const isLast = idx === this._contactPanelIdx;
+    if (this._acCur) this._acCur.textContent = String(idx + 1);
+    if (this._aboutCounter) this._aboutCounter.classList.toggle('is-last', isLast);
+
+    // Drive body[data-about-panel] so CSS nav active rules can differentiate
+    // the contact panel (highlights "Contact" nav link) from other about panels.
+    document.body.dataset.aboutPanel = isLast ? 'contact' : 'about';
+
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
     // intentionally excluded from the global IntersectionObserver (it lives inside
     // #about-stage). Drive the .in class here instead so the entrance animation fires
