@@ -214,21 +214,14 @@ class AppController {
       }
     });
 
-    let _ty0 = 0, _tx0 = 0, _tTime0 = 0, _tIsRotateZone = false;
+    let _ty0 = 0, _tx0 = 0, _tTime0 = 0;
     window.addEventListener('touchstart', (e) => {
       _ty0 = e.touches[0].clientY;
       _tx0 = e.touches[0].clientX;
       _tTime0 = performance.now();
       this._touchLastDir = 0; // reset mid-gesture direction tracking on new touch
-      // Track if this touch started in the hero rotate zone (left half on mobile)
-      _tIsRotateZone = false;
-      if (this._activeKey === 'hero' && window.matchMedia('(pointer:coarse)').matches) {
-        _tIsRotateZone = _tx0 < window.innerWidth / 2;
-      }
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
-      // If in hero rotate zone, let model-viewer handle it — don't treat as scroll
-      if (_tIsRotateZone) return;
       const currentY = e.touches[0].clientY;
       const currentX = e.touches[0].clientX;
       const dy = Math.abs(currentY - _ty0);
@@ -256,8 +249,6 @@ class AppController {
       }
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
-      // Ignore if this was a rotate-zone touch (handled by model-viewer)
-      if (_tIsRotateZone) { _tIsRotateZone = false; return; }
       const dy     = _ty0 - e.changedTouches[0].clientY;
       const dx     = Math.abs(e.changedTouches[0].clientX - _tx0);
       const dt     = Math.max(1, performance.now() - _tTime0);
@@ -664,13 +655,6 @@ class PageChrome {
     // Drive body[data-section] so CSS can show/hide section-specific UI
     // (e.g. the nav availability badge which should only appear on hero).
     document.body.dataset.section = key;
-    // Update nav section label — shows current section on hover
-    const navLabel = document.getElementById('n-section-label');
-    if (navLabel) {
-      const labelMap = { hero: '', carousel: 'Projects', about: 'About' };
-      navLabel.textContent = labelMap[key] ?? '';
-    }
-    // Legacy section indicator (now hidden via CSS, but keep update for backwards compat)
     if (!this._secInd) return;
     const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About' };
     const label = labelMap[key];
@@ -727,9 +711,6 @@ class Hero3DContainer {
     this._t0y         = 0;
     this._t0x         = 0;
     this._tScrolling  = null;
-    // Mobile touch zone tracking
-    this._touchIsRotate  = false; // true = left-half touch (rotate model), false = right-half (scroll)
-    this._touchStartX    = 0;
 
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
@@ -814,22 +795,6 @@ class Hero3DContainer {
       this._viewer.setAttribute('auto-rotate', '');
     }
     requestAnimationFrame(() => this._revealHero());
-    // Mobile swipe hint — show once per session on touch devices
-    if (window.matchMedia('(pointer:coarse)').matches) {
-      const mobileHint = document.getElementById('hero-mobile-hint');
-      const alreadySeen = (() => { try { return sessionStorage.getItem('heroHintSeen'); } catch(e) { return null; } })();
-      if (mobileHint && !alreadySeen) {
-        setTimeout(() => {
-          if (!this._active) return;
-          mobileHint.classList.add('visible');
-          setTimeout(() => {
-            mobileHint.classList.remove('visible');
-            mobileHint.classList.add('gone');
-            try { sessionStorage.setItem('heroHintSeen', '1'); } catch(e) {}
-          }, 3000);
-        }, 1200);
-      }
-    }
   }
 
   exit() {
@@ -861,9 +826,6 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
-    // Dismiss mobile hint immediately if still visible
-    const mobileHint = document.getElementById('hero-mobile-hint');
-    if (mobileHint) { mobileHint.classList.remove('visible'); mobileHint.classList.add('gone'); }
   }
 
   onScroll(direction) {
@@ -877,13 +839,7 @@ class Hero3DContainer {
       .forEach(el => el?.classList.add('is-revealed'));
   }
 
-  _onViewerCameraChange(e) {
-    // Only dismiss hint on genuine user interaction (drag), not on auto-rotate
-    // camera-change events which fire continuously during the idle spin.
-    if (e && e.detail && e.detail.source === 'user-interaction') {
-      this._dismissHint();
-    }
-  }
+  _onViewerCameraChange() { this._dismissHint(); }
   _onViewerError() {
     if (this._errorEl) this._errorEl.classList.add('visible');
     console.warn('[Hero3DContainer] model-viewer error:', this._viewer?.src);
@@ -895,23 +851,46 @@ class Hero3DContainer {
     // Open the dismiss gate after the fadeUp animation has had time to play
     // so camera-change on init doesn't hide the hint before it appears.
     setTimeout(() => { this._hintReady = true; }, 1800);
-    // No auto-dismiss timer — hint stays until the user actually drags the model.
-    if (this._hintTimer) { clearTimeout(this._hintTimer); this._hintTimer = null; }
+    // Auto-dismiss after 18s — tracked so exit() can cancel it.
+    if (this._hintTimer) clearTimeout(this._hintTimer);
+    this._hintTimer = setTimeout(() => {
+      this._hintTimer = null;
+      if (!this._active) return; // navigated away — don't touch DOM
+      this._hintReady = true;
+      this._dismissHint();
+    }, 18000);
+
+    const model = this._viewer.model;
+    if (!model?.materials?.length) return;
+    const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
+    const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
+    let bodyFound = false;
+    model.materials.forEach((mat, i) => {
+      const name = mat.name || '';
+      if (skipRe.test(name)) return;
+      const pbr = mat.pbrMetallicRoughness;
+      if (!pbr) return;
+      if (bodyRe.test(name) || (!bodyFound && i === 0)) {
+        bodyFound = true;
+        pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
+        pbr.setMetallicFactor(0.0);
+        pbr.setRoughnessFactor(0.36);
+        if (mat.extensions?.KHR_materials_clearcoat) {
+          mat.extensions.KHR_materials_clearcoat.clearcoatFactor          = 1.0;
+          mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
+        }
+      } else {
+        pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
+        pbr.setMetallicFactor(0.3);
+        pbr.setRoughnessFactor(0.55);
+      }
+    });
   }
 
   _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
   _onMouseUp()     { this._scheduleRotateResume(); }
   _onMouseLeave()  { this._scheduleRotateResume(); }
-  _onTouchStart(e) {
-    // On mobile, only treat left-half touches as rotation gestures.
-    // Right-half touches are scroll gestures — don't stop auto-rotate or dismiss hint.
-    if (window.matchMedia('(pointer:coarse)').matches) {
-      const x = e?.touches?.[0]?.clientX ?? 0;
-      if (x >= window.innerWidth / 2) return; // right half = scroll zone, ignore
-    }
-    this._viewer?.removeAttribute('auto-rotate');
-    this._dismissHint();
-  }
+  _onTouchStart()  { this._viewer?.removeAttribute('auto-rotate'); }
   _onTouchEnd()    { this._scheduleRotateResume(); }
 
   _scheduleRotateResume() {
@@ -937,21 +916,7 @@ class Hero3DContainer {
 
   _onRootTouchStart(e) {
     if (e.touches.length === 1) {
-      this._t0y = e.touches[0].clientY;
-      this._t0x = e.touches[0].clientX;
-      this._tScrolling = null;
-      // Mobile touch zone: left half = rotate model, right half = scroll
-      if (window.matchMedia('(pointer:coarse)').matches) {
-        this._touchStartX    = e.touches[0].clientX;
-        this._touchIsRotate  = this._touchStartX < window.innerWidth / 2;
-        if (this._touchIsRotate) {
-          // Let model-viewer handle this touch — stop it from being a scroll
-          // by NOT calling preventDefault in touchmove (model-viewer needs the event).
-          // We need to tell AppController not to scroll: set a flag.
-          this._viewer?.removeAttribute('auto-rotate');
-          this._dismissHint();
-        }
-      }
+      this._t0y = e.touches[0].clientY; this._t0x = e.touches[0].clientX; this._tScrolling = null;
     }
   }
 
@@ -959,24 +924,16 @@ class Hero3DContainer {
     if (!this._active || e.touches.length !== 1) return;
     const dy = this._t0y - e.touches[0].clientY;
     const dx = this._t0x - e.touches[0].clientX;
-    // On mobile, left half touches are for model rotation — pass through to model-viewer
-    if (window.matchMedia('(pointer:coarse)').matches && this._touchIsRotate) {
-      // Don't preventDefault — let model-viewer's internal touch handler rotate the model
-      // But DO prevent the global AppController from treating this as a scroll:
-      // We stop propagation so AppController's touchmove handler doesn't see it.
-      // Note: AppController uses window listeners, so we stop here at the root level.
-      // Actually we need to swallow the event from AppController's perspective.
-      // The cleanest way: don't preventDefault (lets model-viewer rotate), 
-      // but call stopPropagation so AppController window listener doesn't see it.
-      e.stopPropagation();
-      return;
-    }
     if (this._tScrolling === null) {
       if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
       this._tScrolling = Math.abs(dy) > Math.abs(dx) * 1.4;
     }
     if (this._tScrolling) {
       e.preventDefault();
+      // Don't call this.onScroll() directly — AppController's touchend
+      // handler owns the dispatch for touch events.
+      // NOTE: do NOT reset _t0y/_t0x here — the origin must remain fixed
+      // so AppController.touchend can measure total swipe displacement.
     }
   }
 }
@@ -1007,9 +964,6 @@ class CarouselContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
     this._nextArrow     = null; // c-next-arrow element
-    this._dogEar        = null; // dog-ear tab element
-    this._dogEarText    = null; // dog-ear text label
-    this._dogEarDismissed = false; // one-time teach: hide after first advance
     this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
 
     this._onResize = () => {
@@ -1063,16 +1017,6 @@ class CarouselContainer {
       const lbl   = document.createElement('span'); lbl.className = 'c-dot-label sr-only'; lbl.textContent = label;
       const dot   = document.createElement('span'); dot.className = 'c-dot';
       wrap.appendChild(lbl); wrap.appendChild(dot);
-      // Click-to-navigate: jump directly to this project
-      wrap.addEventListener('click', () => {
-        if (!this._active || this._transitioning) return;
-        const dir = i - this._activeIdx;
-        if (dir === 0) return;
-        this._transitioning = true;
-        this._activeIdx = i;
-        this._setPositions(this._activeIdx, true);
-        setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
-      });
       this._dotsEl.appendChild(wrap);
       this._dotWraps.push(wrap);
     });
@@ -1090,21 +1034,6 @@ class CarouselContainer {
     arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none"><line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
     if (this._dotsEl) this._dotsEl.appendChild(arrowEl);
     this._nextArrow = arrowEl;
-
-    // Dog-ear tab — lives in the projects section HTML, manage via JS
-    this._dogEar     = document.getElementById('c-dog-ear');
-    this._dogEarText = document.getElementById('dog-ear-text');
-    if (this._dogEar) {
-      this._dogEar.addEventListener('click', () => {
-        if (!this._active) return;
-        // On last slide, advance to next section; otherwise advance carousel
-        if (this._activeIdx >= this._N - 1) {
-          this._app.setSection(this._nextKey, +1);
-        } else {
-          this._advance(+1);
-        }
-      });
-    }
     if (!window.matchMedia('(pointer:coarse)').matches) {
       const rectCache = new WeakMap(); // avoids hanging non-standard properties on DOM nodes
       this._projs.forEach(proj => {
@@ -1144,12 +1073,6 @@ class CarouselContainer {
     this._root.style.visibility = 'visible';
     this._root.classList.add('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
-    // Reset dog-ear dismiss state so it re-teaches on re-entry
-    this._dogEarDismissed = false;
-    if (this._dogEar) {
-      this._dogEar.classList.remove('is-last');
-      this._dogEar.classList.add('visible');
-    }
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => {
       this._setPositions(this._activeIdx, true);
@@ -1173,7 +1096,6 @@ class CarouselContainer {
     this._root.classList.remove('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '0';
     if (this._nextArrow) this._nextArrow.classList.remove('visible');
-    if (this._dogEar)   this._dogEar.classList.remove('visible');
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 400);
   }
 
@@ -1212,22 +1134,6 @@ class CarouselContainer {
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
     // Show next-section arrow only on the last slide
     if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
-    // Dog-ear: update label for last slide, dismiss after first successful advance
-    if (this._dogEar) {
-      const isLast = idx === this._N - 1;
-      this._dogEar.classList.toggle('is-last', isLast);
-      if (this._dogEarText) {
-        this._dogEarText.textContent = isLast ? 'About' : 'Next';
-      }
-      // One-time teach: hide after first advance (animate = true signals a real advance)
-      if (animate && !this._dogEarDismissed) {
-        this._dogEarDismissed = true;
-        // Small delay so the user sees the tab disappear after the advance lands
-        setTimeout(() => {
-          if (this._dogEar) this._dogEar.classList.remove('visible');
-        }, 900);
-      }
-    }
   }
 
   _advance(dir) {
@@ -1428,38 +1334,6 @@ class AboutContainer {
         secInd.textContent = 'Contact';
       } else if (this._active) {
         secInd.textContent = 'About';
-      }
-    }
-    // Update about counter indicator
-    const counter = document.getElementById('about-counter');
-    if (counter) {
-      const curEl    = counter.querySelector('.ac-cur');
-      const chevron  = counter.querySelector('.about-counter-chevron');
-      const sepEl    = counter.querySelector('.ac-sep');
-      const totEl    = counter.querySelector('.ac-total');
-      const isContact       = idx === this._contactPanelIdx;           // panel 5
-      const isStatementPanel = idx === this._N - 2;                     // panel 4 = 5/5
-      // Total displayed panels = N-1 (panels 0..4, not counting contact)
-      const displayTotal = this._N - 1;
-
-      if (isContact) {
-        // Contact panel: CSS :has hides counter, but keep DOM consistent
-        if (curEl)  curEl.textContent = 'Next Section';
-        if (sepEl)  sepEl.style.display = 'none';
-        if (totEl)  totEl.style.display = 'none';
-        if (chevron) chevron.classList.add('hide');
-      } else if (isStatementPanel) {
-        // Last navigable About panel — show "Next Section" instead of "5/5"
-        if (curEl)  curEl.textContent = 'Next Section';
-        if (sepEl)  sepEl.style.display = 'none';
-        if (totEl)  totEl.style.display = 'none';
-        if (chevron) chevron.classList.add('hide');
-      } else {
-        // Normal panels: show N/Total
-        if (sepEl)  sepEl.style.display = '';
-        if (totEl)  { totEl.style.display = ''; totEl.textContent = displayTotal; }
-        if (curEl)  curEl.textContent = idx + 1;
-        if (chevron) chevron.classList.remove('hide');
       }
     }
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
