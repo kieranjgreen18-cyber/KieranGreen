@@ -77,6 +77,7 @@
      means the file is already in the browser cache when the element upgrades.
      crossorigin is required because model-viewer uses a Worker to parse the GLB. -->
 <link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin>
+<link rel="preload" as="fetch" href="assets/models/minisite.usdz" crossorigin>
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -2612,6 +2613,7 @@ button:focus-visible {
   <model-viewer
     id="mini-viewer"
     src="assets/models/minisite.glb"
+    ios-src="assets/models/minisite.usdz"
     alt="Interactive 3D model of Kieran Green's Mini Clubman, fully surface modeled in Rhino 3D — drag to rotate"
     camera-controls
     auto-rotate
