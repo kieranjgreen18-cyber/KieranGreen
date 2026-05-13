@@ -1195,7 +1195,7 @@ class AboutContainer {
     this._spacer = document.querySelector('.about-spacer'); // documented exception
 
     this._panels = Array.from(root.querySelectorAll('[data-panel]'));
-    this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
+    this._dots   = Array.from(root.querySelectorAll('.prog-dot-wrap'));
     this._hint   = null;
     this._N      = this._panels.length;
     // The last panel is the contact panel — track its index so we can
