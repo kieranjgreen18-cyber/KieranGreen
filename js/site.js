@@ -469,9 +469,19 @@ class PageChrome {
     });
 
     // ── Document-level mouse ───────────────────────────────────────────
+    // Cursor dot (#cur): update via transform on every mousemove.
+    // Using transform keeps the write on the compositor thread — no layout.
+    // A one-level RAF gate prevents >1 style write per frame on high-Hz mice.
+    let _curPendingX = 0, _curPendingY = 0, _curRafId = 0;
     document.addEventListener('mousemove', e => {
       this._mx = e.clientX; this._my = e.clientY;
-      if (this._cur) { this._cur.style.left = `${e.clientX}px`; this._cur.style.top = `${e.clientY}px`; }
+      _curPendingX = e.clientX; _curPendingY = e.clientY;
+      if (!_curRafId) {
+        _curRafId = requestAnimationFrame(() => {
+          _curRafId = 0;
+          if (this._cur) this._cur.style.transform = `translate(calc(${_curPendingX}px - 50%), calc(${_curPendingY}px - 50%))`;
+        });
+      }
     });
     document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
     document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
@@ -484,14 +494,25 @@ class PageChrome {
       if (this._curR) this._curR.style.opacity = '1';
     });
 
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => { this._inLink = true;  this._apply(); });
-      el.addEventListener('mouseleave', () => { this._inLink = false; this._apply(); });
-    });
-    document.querySelectorAll('.proj').forEach(el => {
-      el.addEventListener('mouseenter', () => { this._inProj = true;  this._apply(); });
-      el.addEventListener('mouseleave', () => { this._inProj = false; this._apply(); });
-    });
+    // Cursor state via event delegation — one pair of listeners on document
+    // instead of one pair per <a>, <button>, and .proj element.
+    // mouseover/mouseout bubble, so checking the closest ancestor is sufficient.
+    document.addEventListener('mouseover', e => {
+      const overLink = !!e.target.closest('a, button');
+      const overProj = !overLink && !!e.target.closest('.proj');
+      if (overLink !== this._inLink || overProj !== this._inProj) {
+        this._inLink = overLink; this._inProj = overProj; this._apply();
+      }
+    }, { passive: true });
+    document.addEventListener('mouseout', e => {
+      // Only clear when leaving the document entirely or moving to a non-matching element
+      const toEl = e.relatedTarget;
+      const stillLink = toEl ? !!toEl.closest('a, button') : false;
+      const stillProj = !stillLink && (toEl ? !!toEl.closest('.proj') : false);
+      if (stillLink !== this._inLink || stillProj !== this._inProj) {
+        this._inLink = stillLink; this._inProj = stillProj; this._apply();
+      }
+    }, { passive: true });
 
     // Cursor follower — position tracking only.
     // Width/height/appearance are owned entirely by CSS via body classes.
@@ -508,8 +529,7 @@ class PageChrome {
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
         if (this._curR) {
-          this._curR.style.left = `${this._rx}px`;
-          this._curR.style.top  = `${this._ry}px`;
+          this._curR.style.transform = `translate(calc(${this._rx}px - 50%), calc(${this._ry}px - 50%))`;
         }
         // Only continue while the follower is catching up; goes fully idle otherwise.
         if (stillMoving) rafId = requestAnimationFrame(loop);
@@ -600,17 +620,25 @@ class PageChrome {
     const logoLast = logo && logo.querySelector('.logo-last');
     const CHARS    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
     let scrambling = false;
+    // Logo scramble — rAF loop instead of setInterval so it syncs to the
+    // display refresh rate and doesn't compete with the browser's scheduler.
     if (logo && logoLast) {
       const scramble = () => {
         if (scrambling) return; scrambling = true;
         let iter = 0; const TARGET = 'Green';
-        const iv = setInterval(() => {
+        // ~38fps equivalent: advance iter by 0.38 per frame (≈26ms at 60fps).
+        // The rAF loop replaces setInterval(fn, 26) to stay in sync with vsync.
+        const tick = () => {
           logoLast.textContent = TARGET.split('').map((c, i) =>
             i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
           ).join('');
-          if (Math.floor(iter) >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
-          iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
-        }, 26);
+          if (Math.floor(iter) >= TARGET.length) {
+            logoLast.textContent = 'Green'; scrambling = false; return;
+          }
+          iter += 0.38;
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
       };
       logo.addEventListener('mouseenter', scramble);
       logo.addEventListener('focus', () => { if (!scrambling) scramble(); });
@@ -618,10 +646,19 @@ class PageChrome {
 
     // ── Nav scrolled + hero counter hide on scroll ─────────────────────
     const heroCounterEl = document.getElementById('hero-counter');
+    let _lastScrolled = false, _lastHide = false;
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
-      if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
-      if (heroCounterEl) heroCounterEl.classList.toggle('hide', y > 60);
+      const scrolled = y > 40;
+      const hide     = y > 60;
+      if (this._navEl && scrolled !== _lastScrolled) {
+        this._navEl.classList.toggle('scrolled', scrolled);
+        _lastScrolled = scrolled;
+      }
+      if (heroCounterEl && hide !== _lastHide) {
+        heroCounterEl.classList.toggle('hide', hide);
+        _lastHide = hide;
+      }
     }, { passive: true });
 
     // ── Resize ─────────────────────────────────────────────────────────
@@ -930,6 +967,7 @@ class CarouselContainer {
     this._dotWraps = [];
     this._projs    = [];
     this._N        = 0;
+    this._projChars = []; // cached per-slide .ch NodeLists, populated in init()
     this._active        = false;
     this._activeIdx     = 0;
     this._transitioning = false;
@@ -966,6 +1004,9 @@ class CarouselContainer {
         title.appendChild(s);
       });
     });
+    // Cache per-slide .ch arrays now that the spans exist — avoids a
+    // querySelectorAll on every _setPositions call during navigation.
+    this._projChars = this._projs.map(p => Array.from(p.querySelectorAll('.proj-title .ch')));
 
     // Dot nav — reuse the static #c-dots already in the HTML (documented exception).
     // The HTML has a placeholder <nav id="c-dots"> for z-index stacking; we
@@ -1088,12 +1129,13 @@ class CarouselContainer {
   _setPositions(idx, animate) {
     this._projs.forEach((p, i) => {
       const delta = i - idx;
+      const chars = this._projChars[i] || [];
       if      (delta < -1)   p.dataset.pos = 'far-above';
       else if (delta === -1) p.dataset.pos = 'prev';
       else if (delta === 0) {
         p.dataset.pos = 'active';
         if (animate) {
-          p.querySelectorAll('.proj-title .ch').forEach((s, ci) => {
+          chars.forEach((s, ci) => {
             s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
           });
         }
@@ -1101,7 +1143,7 @@ class CarouselContainer {
       else if (delta === 1) p.dataset.pos = 'next';
       else                  p.dataset.pos = 'far-below';
       if (delta !== 0) {
-        p.querySelectorAll('.proj-title .ch').forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
+        chars.forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
