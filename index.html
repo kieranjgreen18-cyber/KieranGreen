@@ -271,11 +271,6 @@
 /* Cursor reticle centre-gap uses --c-bg which adapts, but bg shadow of reticle needs to be light */
 [data-theme="light"] #cur::before { background: var(--c-bg); }
 
-/* ── Ticker ── */
-[data-theme="light"] .ticker { background: rgba(0,0,0,.04); }
-[data-theme="light"] .ticker::before { background: linear-gradient(to right, var(--c-bg), transparent); }
-[data-theme="light"] .ticker::after  { background: linear-gradient(to left,  var(--c-bg), transparent); }
-
 /* ── Grain ── */
 [data-theme="light"] #grain { opacity: .02; }
 
@@ -568,6 +563,12 @@ body[data-section="carousel"] .n-links a[href="#work"]::after,
 body[data-section="about"]:not([data-about-panel="contact"]) .n-links a[href="#about"]::after,
 body[data-section="about"][data-about-panel="contact"]       .n-links a[href="#contact"]::after {
   transform: scaleX(1);
+}
+/* Mobile drawer active state — mirrors desktop nav active rules */
+body[data-section="carousel"] .nav-drawer a[href="#work"],
+body[data-section="about"]:not([data-about-panel="contact"]) .nav-drawer a[href="#about"],
+body[data-section="about"][data-about-panel="contact"]       .nav-drawer a[href="#contact"] {
+  color: var(--c-accent);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -922,39 +923,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 .model-error.visible { display: flex; }
 
-/* ═══════════════════════════════════════════════════════════════
-   § TICKER
-═══════════════════════════════════════════════════════════════ */
-.ticker {
-  overflow: hidden; padding: var(--s-2) 0;
-  background: rgba(255,255,255,.04);
-  border-top: 1px solid var(--c-rule-hi); border-bottom: 1px solid var(--c-rule-hi);
-  position: relative; z-index: var(--z-raised);
-  flex-shrink: 0; /* don't let ticker crush in flex containers */
-}
-.ticker::before, .ticker::after {
-  content: ''; position: absolute; top: 0; bottom: 0;
-  width: var(--s-9); z-index: 2; pointer-events: none;
-}
-.ticker::before { left: 0;  background: linear-gradient(to right, var(--c-bg), transparent); }
-.ticker::after  { right: 0; background: linear-gradient(to left,  var(--c-bg), transparent); }
-.t-track {
-  display: flex; width: max-content;
-  animation: tick 60s linear infinite;
-  will-change: transform;
-  transform: translateZ(0); /* promote to compositor layer */
-}
-.t-item {
-  display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-4);
-  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-primary); opacity: .38; white-space: nowrap;
-  transition: opacity .28s;
-}
-.t-item:hover { opacity: .75;
-}
-.t-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--c-accent); opacity: .8; flex-shrink: 0; }
-@keyframes tick { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
 
 /* ═══════════════════════════════════════════════════════════════
    § PROJECTS CAROUSEL — fixed fullscreen scroll-lock
@@ -1648,7 +1617,6 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     transition-duration: .01ms !important;
   }
   #grain { display: none; }
-  .t-track { animation: none !important; }
   .hero-text, .hero-scroll, .model-label, .model-hint, .hero-coords,
   .hero-h1 .word, .n-logo, .n-links, .n-right { opacity: 1 !important; transform: none !important; }
   .hero-eyebrow-line { width: var(--s-4) !important; }
@@ -2162,9 +2130,6 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .about-stage:not(.engaged) .more-below-arrow,
 body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: paused; }
 
-/* Pause ticker when not on the projects/carousel section — saves a compositor layer */
-body:not([data-section="carousel"]) .t-track { animation-play-state: paused; }
-
 /* ── Project slide: image parallax depth ── */
 .proj[data-pos="active"] .proj-img {
   transform: scale(1.0);
@@ -2617,7 +2582,6 @@ button:focus-visible {
    and breaks fixed/absolute z-index children within overlays. */
 .proj           { contain: layout; }
 .panel          { contain: layout; }
-.ticker         { contain: layout style; }
 
 </style>
 </head>
@@ -2781,30 +2745,7 @@ button:focus-visible {
   </div>
 
 </section>
-<div class="ticker" aria-hidden="true">
-  <div class="t-track" id="t-track">
-    <div class="t-item" style="opacity:.7;color:var(--c-accent);padding-left:var(--s-6)"><span class="t-dot"></span>KG·IDes·2025</div>
-    <div class="t-item"><span class="t-dot"></span>Rhino 3D</div>
-    <div class="t-item"><span class="t-dot"></span>Keyshot</div>
-    <div class="t-item"><span class="t-dot"></span>FDM Prototyping</div>
-    <div class="t-item"><span class="t-dot"></span>Surface Modeling</div>
-    <div class="t-item"><span class="t-dot"></span>Form Development</div>
-    <div class="t-item"><span class="t-dot"></span>Product Visualization</div>
-    <div class="t-item"><span class="t-dot"></span>Premiere Pro</div>
-    <div class="t-item"><span class="t-dot"></span>CAD Modeling</div>
-    <div class="t-item"><span class="t-dot"></span>SubD Modeling</div>
-    <div class="t-item" style="opacity:.7;color:var(--c-accent);"><span class="t-dot"></span>KG·IDes·2025</div>
-    <div class="t-item"><span class="t-dot"></span>Rhino 3D</div>
-    <div class="t-item"><span class="t-dot"></span>Keyshot</div>
-    <div class="t-item"><span class="t-dot"></span>FDM Prototyping</div>
-    <div class="t-item"><span class="t-dot"></span>Surface Modeling</div>
-    <div class="t-item"><span class="t-dot"></span>Form Development</div>
-    <div class="t-item"><span class="t-dot"></span>Product Visualization</div>
-    <div class="t-item"><span class="t-dot"></span>Premiere Pro</div>
-    <div class="t-item"><span class="t-dot"></span>CAD Modeling</div>
-    <div class="t-item"><span class="t-dot"></span>SubD Modeling</div>
-  </div>
-</div>
+
 
 <!-- ═══════════════════════════════════════════════════════════
      PROJECTS CAROUSEL
@@ -3132,8 +3073,8 @@ button:focus-visible {
 
     <!-- Panel 4 — Personal Statement (final slide) -->
     <article class="panel panel-statement" data-panel="4" aria-label="About: Personal Statement">
-      <div class="about-counter" aria-hidden="true">
-        <div class="about-counter-nums"><span class="ac-cur">5</span><span class="ac-sep">/</span><span>5</span></div>
+      <div class="about-counter about-counter--last" aria-hidden="true">
+        <span class="about-counter-next-label">Next Page</span>
         <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
       </div>
       <div class="stmt-wm" aria-hidden="true">KG</div>
@@ -3162,10 +3103,6 @@ button:focus-visible {
 
     <!-- Panel 5 — Contact (embedded as final About carousel slide) -->
     <article class="panel panel-contact" data-panel="5" aria-label="Contact Kieran Green">
-      <div class="about-counter about-counter--last" aria-hidden="true">
-        <span class="about-counter-next-label">Next Section</span>
-        <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
-      </div>
       <div class="contact-img" role="img" aria-label="Product visualization render of the Sabretta pen design"></div>
       <div class="contact-wm" aria-hidden="true">Green</div>
       <div class="contact-inner rev-stagger">
