@@ -1193,9 +1193,6 @@ class AboutContainer {
     this._dots    = [];
     this._hint    = null;
     this._moreBelow = null;
-    // About counter elements
-    this._aboutCounter = null;
-    this._acCur        = null;
     this._N       = 0;
     this._active        = false;
     this._activeIdx     = 0;
@@ -1224,9 +1221,7 @@ class AboutContainer {
 
     this._panels = Array.from(root.querySelectorAll('[data-panel]'));
     this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
-    this._hint   = null; // about-scroll-hint removed — about-counter replaces it
-    this._aboutCounter = root.querySelector('#about-counter');
-    this._acCur        = root.querySelector('#ac-cur');
+    this._hint   = null;
     this._N      = this._panels.length;
     // The last panel is the contact panel — track its index so we can
     // update the section indicator label and suppress its dot.
@@ -1284,6 +1279,7 @@ class AboutContainer {
   }
 
   onScroll(direction) {
+    console.log('[About] onScroll — active:', this._active, 'transitioning:', this._transitioning, 'dir:', direction);
     if (!this._active) return;
     this._advance(direction);
   }
@@ -1321,13 +1317,9 @@ class AboutContainer {
     // Drive progress dots (desktop — mobile hides them via CSS)
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
 
-    // Drive about-counter: N/5 label, toggle is-last on final panel
-    const isLast = idx === this._contactPanelIdx;
-    if (this._acCur) this._acCur.textContent = String(idx + 1);
-    if (this._aboutCounter) this._aboutCounter.classList.toggle('is-last', isLast);
-
     // Drive body[data-about-panel] so CSS nav active rules can differentiate
     // the contact panel (highlights "Contact" nav link) from other about panels.
+    const isLast = idx === this._contactPanelIdx;
     document.body.dataset.aboutPanel = isLast ? 'contact' : 'about';
 
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
