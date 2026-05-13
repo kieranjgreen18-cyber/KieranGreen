@@ -416,18 +416,18 @@ strong { color: var(--c-primary); font-weight: 700; }
   font-family: var(--f-body); font-size: var(--t-ui);
   font-weight: 400; letter-spacing: var(--ls-open); line-height: var(--lh-text);
 }
-/* Role: label — accent labels */
+/* Role: label — accent labels (slightly elevated from micro for interactive use) */
 .t-label {
-  font-family: var(--f-meta); font-size: var(--t-micro);
+  font-family: var(--f-meta); font-size: 12px;
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent);
 }
-/* Role: meta — metadata, dates */
+/* Role: meta — metadata, dates (larger, lighter weight to read as secondary info) */
 .t-meta {
   font-family: var(--f-meta); font-size: var(--t-meta);
-  font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  font-weight: 400; letter-spacing: var(--ls-open); text-transform: uppercase;
 }
-/* Role: caption — smallest text */
+/* Role: caption — smallest text, true micro-copy */
 .t-micro {
   font-family: var(--f-meta); font-size: var(--t-micro);
   font-weight: 700; letter-spacing: var(--ls-stencil); text-transform: uppercase;
@@ -771,7 +771,7 @@ model-viewer#mini-viewer {
 /* Eyebrow line */
 .hero-eyebrow {
   display: flex; align-items: center; gap: var(--s-2);
-  margin-bottom: var(--s-4);
+  margin-bottom: var(--s-3);
   font-family: var(--f-meta); font-size: var(--t-micro); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: var(--c-accent);
@@ -1035,8 +1035,8 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 
 /* Description — reveals on hover */
 .proj-desc {
-  font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-body);
-  color: var(--c-primary); font-weight: 400; letter-spacing: var(--ls-open);
+  font-family: var(--f-body); font-size: var(--t-body); line-height: var(--lh-body);
+  color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open);
   opacity: 0; transform: translateY(var(--s-2));
   transition: opacity .55s var(--ease) .05s, transform .55s var(--ease) .05s;
   max-width: 340px; margin-bottom: var(--s-4);
@@ -1363,7 +1363,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .panel.is-active .tline:nth-child(2) .tword { transform: translateY(0); opacity: 1; transition-delay: .20s; }
 .panel.is-active .tline:nth-child(3) .tword { transform: translateY(0); opacity: 1; transition-delay: .32s; }
 .ch-body {
-  max-width: 460px; color: var(--c-secondary);
+  max-width: var(--max-w-text); color: var(--c-secondary);
   opacity: 0; transform: translateY(16px);
   transition: opacity 0.75s var(--ease) .44s, transform 0.75s var(--ease) .44s;
 }
@@ -1425,14 +1425,19 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   padding: 4px 0;
   transition: opacity 0.4s var(--ease);
 }
-/* Desktop dot style — matches project carousel c-dot */
+/* Wrapper — exact copy of .c-dot-wrap */
+.prog-dot-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  position: relative;
+}
+/* Inner dot — exact copy of .c-dot */
 .prog-dot {
   width: 5px; height: 5px; border-radius: 50%;
-  background: rgba(91,160,164,.55);
+  background: rgba(91,160,164,.55); display: block;
   transition: background .3s, transform .3s, box-shadow .3s;
-  display: block;
 }
-.prog-dot.on {
+.prog-dot-wrap.on .prog-dot {
   background: var(--c-accent);
   transform: scale(2);
   box-shadow: 0 0 0 3px rgba(91,160,164,.18);
@@ -2347,7 +2352,7 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
   text-shadow: 0 0 60px rgba(91,160,164,0.20);
 }
 .panel-contact .contact-sub {
-  font-family: var(--f-body); font-size: var(--t-ui); line-height: var(--lh-text);
+  font-family: var(--f-body); font-size: var(--t-body); line-height: var(--lh-body);
   color: var(--c-secondary); font-weight: 400; letter-spacing: var(--ls-open);
 }
 .panel-contact .contact-fields { display: flex; flex-direction: column; gap: 0; }
@@ -2394,7 +2399,7 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 }
 .panel-contact .c-dl--primary:hover { color: var(--c-accent-hi); gap: var(--s-3); }
 .panel-contact .c-dl--primary:hover::after { transform: scaleX(1); }
-.panel-contact .c-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: center; }
+.panel-contact .c-row { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
 
 /* ── Contact panel: layout — desktop only ── */
 @media (min-width: 769px) {
@@ -2445,13 +2450,13 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
   z-index: 3;
 }
 .pf-logo {
-  font-family: var(--f-heading); font-size: 10px; font-weight: 700;
+  font-family: var(--f-heading); font-size: var(--t-nano); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-secondary);
   opacity: 0.55;
 }
 .pf-logo em { font-style: italic; color: var(--c-accent); }
 .pf-copy {
-  font-family: var(--f-meta); font-size: 9px; font-weight: 700;
+  font-family: var(--f-meta); font-size: var(--t-nano); font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-muted);
   opacity: 0.55;
 }
@@ -2478,10 +2483,9 @@ footer::before {
 }
 
 
-/* Prog-dot glow — consolidated in base .prog-dot.on rule above */
-
-/* ── C-dot glow when active ── */
-.c-dot-wrap.on .c-dot {
+/* ── Dot glow when active — carousel and about ── */
+.c-dot-wrap.on .c-dot,
+.prog-dot-wrap.on .prog-dot {
   box-shadow: 0 0 5px rgba(91,160,164,0.50);
 }
 
@@ -2541,7 +2545,7 @@ footer::before {
 /* ── Keyboard focus ring enhancement ── */
 a:focus-visible,
 button:focus-visible {
-  outline: 1.5px solid var(--c-accent);
+  outline: 2px solid var(--c-accent);
   outline-offset: 4px;
   border-radius: 2px;
 }
@@ -3157,12 +3161,12 @@ model-viewer    { isolation: isolate; }
 
     <!-- Progress dots — desktop only, project carousel style -->
     <nav class="prog-dots" aria-label="About section progress">
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
-      <div class="prog-dot" role="presentation" aria-hidden="true"></div>
+      <div class="prog-dot-wrap" role="presentation" aria-hidden="true"><span class="prog-dot"></span></div>
+      <div class="prog-dot-wrap" role="presentation" aria-hidden="true"><span class="prog-dot"></span></div>
+      <div class="prog-dot-wrap" role="presentation" aria-hidden="true"><span class="prog-dot"></span></div>
+      <div class="prog-dot-wrap" role="presentation" aria-hidden="true"><span class="prog-dot"></span></div>
+      <div class="prog-dot-wrap" role="presentation" aria-hidden="true"><span class="prog-dot"></span></div>
+      <div class="prog-dot-wrap" role="presentation" aria-hidden="true"><span class="prog-dot"></span></div>
     </nav>
 
   </div>
