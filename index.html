@@ -1454,7 +1454,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .prog-dot.on {
   background: var(--c-accent);
   transform: scale(2);
-  box-shadow: 0 0 6px rgba(91,160,164,0.55);
+  box-shadow: 0 0 0 3px rgba(91,160,164,.18);
 }
 
 /* Hide progress dots on the contact panel */
@@ -1464,15 +1464,15 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 
 /* ── About counter — chevron + N/N indicator, same style as proj-counter ──
-   Shown on ALL platforms. Positioned bottom-centre of the about stage.
-   On 5/5 it reads "Next Section" instead of "5/5". */
+   Now lives inside each .panel (matches carousel's per-slide static counter).
+   Positioned bottom-centre of the panel. */
 .about-counter {
   position: absolute; bottom: var(--pad); left: 50%; transform: translateX(-50%);
   font-family: var(--f-heading); font-size: 16px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: rgba(91,160,164,.5);
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  z-index: calc(var(--z-stage) + 10); /* must be above panels-host::after vignette (z-stage=200) */
+  z-index: calc(var(--z-stage) + 10);
   pointer-events: none;
 }
 .about-counter-nums { display: flex; align-items: center; gap: 4px; }
@@ -1483,19 +1483,14 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   animation: counterChevron 1.8s ease-in-out infinite;
   color: rgba(91,160,164,.65);
 }
-.about-counter-chevron.hide { opacity: 0; pointer-events: none; }
-/* On contact panel (5/5) show "Next Section" text, hide numeric counter */
+/* "Next Section" label on the contact panel */
 .about-counter-next-label {
-  display: none;
+  display: block;
   font-family: var(--f-heading); font-size: 13px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
   color: rgba(91,160,164,.65);
-  animation: counterChevron 1.8s ease-in-out infinite; /* reuse pulse */
+  animation: counterChevron 1.8s ease-in-out infinite;
 }
-/* JS toggles .is-last on .about-counter when on final panel */
-.about-counter.is-last .about-counter-nums { display: none; }
-.about-counter.is-last .about-counter-next-label { display: block; }
-.about-counter.is-last .about-counter-chevron { display: block; animation: counterChevron 1.8s ease-in-out infinite; }
 
 /* Light mode overrides for about-counter (about stage is always dark, so pin colours) */
 [data-theme="light"] .about-counter { color: rgba(91,160,164,.5); }
@@ -2999,6 +2994,10 @@ button:focus-visible {
 
     <!-- Panel 0 — Intro / Portrait -->
     <article class="panel panel-intro" data-panel="0" aria-label="About: Introduction — Kieran Green">
+      <div class="about-counter" aria-hidden="true">
+        <div class="about-counter-nums"><span class="ac-cur">1</span><span class="ac-sep">/</span><span>5</span></div>
+        <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="col-left">
         <div class="intro-portrait-wrap">
           <!-- Panel 0 is the first visible panel — load eagerly -->
@@ -3021,6 +3020,10 @@ button:focus-visible {
 
     <!-- Panel 1 — The Engine Bay -->
     <article class="panel" data-panel="1" aria-label="About: Chapter 01 — Origin, The Engine Bay">
+      <div class="about-counter" aria-hidden="true">
+        <div class="about-counter-nums"><span class="ac-cur">2</span><span class="ac-sep">/</span><span>5</span></div>
+        <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">01</div>
         <div class="col-top">
@@ -3055,6 +3058,10 @@ button:focus-visible {
 
     <!-- Panel 2 — The Shop Floor -->
     <article class="panel" data-panel="2" aria-label="About: Chapter 02 — Experience, The Shop Floor">
+      <div class="about-counter" aria-hidden="true">
+        <div class="about-counter-nums"><span class="ac-cur">3</span><span class="ac-sep">/</span><span>5</span></div>
+        <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">02</div>
         <div class="col-top">
@@ -3088,6 +3095,10 @@ button:focus-visible {
 
     <!-- Panel 3 — The Practice Room -->
     <article class="panel" data-panel="3" aria-label="About: Chapter 03 — Instinct, The Practice Room">
+      <div class="about-counter" aria-hidden="true">
+        <div class="about-counter-nums"><span class="ac-cur">4</span><span class="ac-sep">/</span><span>5</span></div>
+        <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="col-left">
         <div class="ghost-num" aria-hidden="true">03</div>
         <div class="col-top">
@@ -3121,6 +3132,10 @@ button:focus-visible {
 
     <!-- Panel 4 — Personal Statement (final slide) -->
     <article class="panel panel-statement" data-panel="4" aria-label="About: Personal Statement">
+      <div class="about-counter" aria-hidden="true">
+        <div class="about-counter-nums"><span class="ac-cur">5</span><span class="ac-sep">/</span><span>5</span></div>
+        <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="stmt-wm" aria-hidden="true">KG</div>
       <div class="stmt-wrap">
         <p class="stmt-kicker t-label">Manifesto</p>
@@ -3147,6 +3162,10 @@ button:focus-visible {
 
     <!-- Panel 5 — Contact (embedded as final About carousel slide) -->
     <article class="panel panel-contact" data-panel="5" aria-label="Contact Kieran Green">
+      <div class="about-counter about-counter--last" aria-hidden="true">
+        <span class="about-counter-next-label">Next Section</span>
+        <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+      </div>
       <div class="contact-img" role="img" aria-label="Product visualization render of the Sabretta pen design"></div>
       <div class="contact-wm" aria-hidden="true">Green</div>
       <div class="contact-inner rev-stagger">
@@ -3184,16 +3203,6 @@ button:focus-visible {
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
       <div class="prog-dot" role="presentation" aria-hidden="true"></div>
     </nav>
-
-    <!-- About counter — chevron + N/5 indicator on all platforms.
-         Shows "Next Section" + chevron on the final panel (5/5). -->
-    <div class="about-counter" id="about-counter" aria-hidden="true">
-      <div class="about-counter-nums">
-        <span class="ac-cur" id="ac-cur">1</span><span class="ac-sep">/</span><span>6</span>
-      </div>
-      <span class="about-counter-next-label">Next Section</span>
-      <svg class="about-counter-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
-    </div>
 
   </div>
 </section>
