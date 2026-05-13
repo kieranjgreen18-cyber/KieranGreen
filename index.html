@@ -60,23 +60,30 @@
 <meta name="theme-color" content="#080909" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#edeeed" media="(prefers-color-scheme: light)">
 
-<!-- 3D Model Viewer -->
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<!-- DNS prefetch for third-party resources loaded early -->
+<link rel="dns-prefetch" href="https://ajax.googleapis.com">
+<link rel="preconnect" href="https://ajax.googleapis.com" crossorigin>
+
+<!-- 3D Model Viewer — loaded as a high-priority module so the custom element
+     is defined before the hero section upgrades. Version pinned to 4.0.0 which
+     includes perf improvements for WebGL context management on mobile. -->
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
 <!-- Font preloads -->
-<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-webfont.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-webfont.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-webfont.woff2" crossorigin fetchpriority="high">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-webfont.woff2" crossorigin fetchpriority="high">
 <!-- Preconnect for third-party image hosts so DNS + TLS is ready before images are needed -->
 <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
 <!-- Preload the first About panel images (panel 0 / intro portrait, saab) so they
      don't pop in when the About stage first becomes active -->
-<link rel="preload" as="image" href="assets/images/portrait.JPEG">
-<link rel="preload" as="image" href="assets/images/saab.jpg">
+<link rel="preload" as="image" href="assets/images/portrait.JPEG" fetchpriority="low">
+<link rel="preload" as="image" href="assets/images/saab.jpg" fetchpriority="low">
 <!-- Preload the 3D model GLB — the single biggest contributor to model-viewer
      pop-in on first visit. Fetching it in parallel with the model-viewer script
      means the file is already in the browser cache when the element upgrades.
-     crossorigin is required because model-viewer uses a Worker to parse the GLB. -->
-<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin>
+     crossorigin is required because model-viewer uses a Worker to parse the GLB.
+     fetchpriority=high ensures this races with the model-viewer script itself. -->
+<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin fetchpriority="high">
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -249,7 +256,8 @@
 [data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.90) 0%, transparent 100%); }
 [data-theme="light"] nav.scrolled {
   background: rgba(237,238,237,0.94);
-  backdrop-filter: blur(32px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
   border-bottom: 1px solid rgba(8,9,9,0.10);
 }
 /* Nav links and logo — ensure they read against the light nav bg */
@@ -259,7 +267,8 @@
 /* Nav drawer — dark overlay becomes light panel */
 [data-theme="light"] .nav-drawer {
   background: rgba(237,238,237,.98);
-  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
 }
 [data-theme="light"] .nav-drawer a { color: var(--c-secondary); }
 [data-theme="light"] .nav-drawer a:hover { color: var(--c-accent); }
@@ -582,12 +591,13 @@ nav#nav {
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
   padding: var(--s-3) var(--pad);
   background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
-  transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), backdrop-filter var(--dur-mid), border-color var(--dur-mid);
+  transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), border-color var(--dur-mid);
 }
 nav#nav.scrolled {
   padding: var(--s-2) var(--pad);
   background: rgba(8,9,9,.90);
-  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
   border-bottom: 1px solid var(--c-rule);
 }
 
@@ -692,7 +702,8 @@ body.menu-open { overflow: hidden; }
 .nav-drawer {
   position: fixed; inset: 0; z-index: calc(var(--z-nav) - 1);
   background: rgba(8,9,9,.98);
-  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: var(--s-3);
   transform: translateY(-100%);
@@ -715,6 +726,7 @@ body.menu-open .nav-drawer { transform: translateY(0); pointer-events: auto; }
   position: relative;
   min-height: 100svh;
   overflow: hidden;
+  contain: paint;
 }
 
 model-viewer#mini-viewer {
@@ -2583,6 +2595,17 @@ button:focus-visible {
 .proj           { contain: layout; }
 .panel          { contain: layout; }
 
+/* Promote hero vignette and overlay elements to their own compositor layers.
+   These fade in/out on every section transition — promoting them prevents
+   paint invalidations from bubbling up to the hero background. */
+.hero-vignette  { will-change: opacity; }
+#veil           { will-change: clip-path; }
+
+/* model-viewer canvas: hint the browser it is a GPU-composited surface.
+   Avoids the canvas being torn out of the compositing tree on low-memory
+   devices when other composited layers (nav blur, vignette) force a flush. */
+model-viewer    { isolation: isolate; }
+
 </style>
 </head>
 <body>
@@ -2655,8 +2678,8 @@ button:focus-visible {
     environment-image="neutral"
     skybox-image="assets/images/151_hdrmaps_com_free_4K.hdr"
     skybox-height="1.2m"
-    shadow-intensity="2.0"
-    shadow-softness="0.7"
+    shadow-intensity="1.6"
+    shadow-softness="0.6"
     exposure="0.9"
     camera-orbit="-20deg 92deg 50%"
     min-camera-orbit="auto 84deg auto"
@@ -2670,6 +2693,7 @@ button:focus-visible {
     loading="eager"
     tone-mapping="commerce"
     reveal="auto"
+    performance="high"
   ></model-viewer>
 
   <div class="hero-vignette" aria-hidden="true"></div>
@@ -3160,6 +3184,6 @@ button:focus-visible {
 
 </main>
 
-<script src="js/site.js"></script>
+<script src="js/site.js" defer></script>
 </body>
 </html>
