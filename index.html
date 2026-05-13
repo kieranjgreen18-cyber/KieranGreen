@@ -461,6 +461,7 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #grain::after {
   content: ''; position: absolute; inset: -10%;
   width: 120%; height: 120%;
+  will-change: opacity;
 }
 #grain::before {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='4' seed='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
@@ -498,11 +499,9 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 /* Horizontal arm */
 #cur {
   position: fixed; z-index: var(--z-veil); pointer-events: none;
-  /* Anchored to origin — JS writes transform:translate(x - 50%, y - 50%)
-     keeping updates on the compositor thread (no layout). */
-  top: 0; left: 0;
   width: 16px; height: 1px;
   background: var(--c-accent);
+  transform: translate(-50%, -50%);
   will-change: transform;
   transition: opacity var(--dur-fast) var(--ease);
 }
@@ -525,9 +524,8 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 /* Corner bracket — lazy follower */
 #cur-r {
   position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
-  /* Anchored to origin — JS writes full transform with centering baked in. */
-  top: 0; left: 0;
   width: 24px; height: 24px;
+  transform: translate(-50%, -50%);
   will-change: transform;
   transition: width var(--dur-mid) var(--ease),
               height var(--dur-mid) var(--ease),
@@ -918,17 +916,9 @@ model-viewer#mini-viewer {
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: 0.04em; color: rgba(91,160,164,0.85);
 }
-/* Pause animations when their section is not active — saves GPU ticker overhead */
+/* Pause ripple animations when hero is not the active section to save GPU */
 body:not([data-section="hero"]) .hero-avail-dot::after,
-body:not([data-section="hero"]) .n-avail-dot::after,
-body:not([data-section="hero"]) .model-360-ring,
-body:not([data-section="hero"]) .hero-mobile-360-ring { animation-play-state: paused; }
-body:not([data-section="hero"]) .hero-counter-chevron { animation-play-state: paused; }
-body:not([data-section="carousel"]) .proj-counter-chevron,
-body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: paused; }
-/* About chevrons — pause when about is not active */
-body:not([data-section="about"]) .about-counter-chevron,
-body:not([data-section="about"]) .about-counter-next-label { animation-play-state: paused; }
+body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paused; }
 
 /* 360° ring spin — used by model-360-ring */
 @keyframes hintSpin {
