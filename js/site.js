@@ -181,7 +181,7 @@ class AppController {
         _tpTimes[this._tpHead]  = now;
         _tpDeltas[this._tpHead] = raw;
         this._tpHead = (this._tpHead + 1) % _TP_BUF_SIZE;
-        if (this._tpCount < this._tpBuf.length) this._tpCount++;
+        if (this._tpCount < _TP_BUF_SIZE) this._tpCount++;
 
         // Net displacement across entries still within the rolling window
         let net = 0;
