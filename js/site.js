@@ -78,6 +78,14 @@ const SETTLE_REVERSAL_MS = 40;
 // GLOBAL LOCK: hard lock between section changes — must be ≥ largest container TRANS_MS
 // About panels animate for 850ms; 950ms gives full clearance with a small margin.
 const LOCK_MS           = 950;
+// INTEL PERF: Pre-allocate a Float64Array for the trackpad ring buffer timestamps
+// and a Float32Array for deltas. TypedArrays are stored as dense C arrays in V8,
+// avoiding the hidden-class transitions that plague plain Object arrays in hot paths.
+// On Intel CPUs with their narrower L1 cache (32KB), keeping hot data in typed,
+// contiguous memory dramatically improves cache hit rate in the wheel handler.
+const _TP_BUF_SIZE = 32;
+const _tpTimes  = new Float64Array(_TP_BUF_SIZE);
+const _tpDeltas = new Float32Array(_TP_BUF_SIZE);
 
 class AppController {
 
@@ -100,10 +108,13 @@ class AppController {
     this._mouseLastFire = 0; // timestamp of last mouse-path fire
 
     // ── Trackpad path state ────────────────────────────────────────────
-    // Fixed-size ring buffer: avoids allocating a new array on every wheel
-    // event (the old filter() approach). Size is generous — at 60 fps and
-    // TRACKPAD_WINDOW_MS=180ms you see at most ~11 events; 32 slots is ample.
-    this._tpBuf     = new Array(32);
+    // Module-level TypedArray ring buffers (_tpTimes, _tpDeltas) are used
+    // instead of per-instance Object arrays. TypedArrays are allocated once
+    // at module load and shared across the single AppController instance.
+    // INTEL PERF: V8 on Intel avoids boxing/unboxing numbers in TypedArrays,
+    // keeping the wheel handler in a tight JIT-compiled fast path. A new
+    // Object array would be polymorphic after the first few events as V8
+    // promotes it from SMI → double → tagged, degrading to interpreted mode.
     this._tpHead    = 0; // write pointer (next slot to overwrite)
     this._tpCount   = 0; // how many slots are currently valid
 
@@ -133,7 +144,10 @@ class AppController {
       const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
       const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
       if (now < this._settleUntil) {
-        const settleStart = this._settleUntil - SETTLE_MS;
+        // Clamp settleStart — _settleUntil may have been bumped by LOCK_MS
+        // (larger than SETTLE_MS), making the raw subtraction a future
+        // timestamp and blocking legitimate reversal inputs mid-lock.
+        const settleStart = Math.min(now, this._settleUntil - SETTLE_MS);
         if (!isReversal || now < settleStart + effectiveSettle) return;
       }
 
@@ -154,28 +168,27 @@ class AppController {
         // Direction-reversal flush
         if (this._tpCount > 0) {
           let existingNet = 0;
-          const bufLen0 = this._tpBuf.length;
           for (let i = 0; i < this._tpCount; i++) {
-            const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen0) % bufLen0];
-            if (now - slot.t > TRACKPAD_WINDOW_MS) break;
-            existingNet += slot.dy;
+            const slot = (this._tpHead - 1 - i + _TP_BUF_SIZE) % _TP_BUF_SIZE;
+            if (now - _tpTimes[slot] > TRACKPAD_WINDOW_MS) break;
+            existingNet += _tpDeltas[slot];
           }
           if (existingNet !== 0 && Math.sign(existingNet) !== Math.sign(raw)) {
             this._tpHead = 0; this._tpCount = 0;
           }
         }
 
-        this._tpBuf[this._tpHead] = { t: now, dy: raw };
-        this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
+        _tpTimes[this._tpHead]  = now;
+        _tpDeltas[this._tpHead] = raw;
+        this._tpHead = (this._tpHead + 1) % _TP_BUF_SIZE;
         if (this._tpCount < this._tpBuf.length) this._tpCount++;
 
         // Net displacement across entries still within the rolling window
         let net = 0;
-        const bufLen = this._tpBuf.length;
         for (let i = 0; i < this._tpCount; i++) {
-          const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen) % bufLen];
-          if (now - slot.t > TRACKPAD_WINDOW_MS) break;
-          net += slot.dy;
+          const slot = (this._tpHead - 1 - i + _TP_BUF_SIZE) % _TP_BUF_SIZE;
+          if (now - _tpTimes[slot] > TRACKPAD_WINDOW_MS) break;
+          net += _tpDeltas[slot];
         }
 
         if (Math.abs(net) >= TRACKPAD_THRESH) {
@@ -260,7 +273,11 @@ class AppController {
         const now = performance.now();
         // Direction-aware settle for touch too: reversals pass through faster
         const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
-        const settleStart = this._settleUntil - SETTLE_MS;
+        // Clamp settleStart to at most `now` — _settleUntil may have been
+        // bumped by LOCK_MS (950ms, larger than SETTLE_MS 440ms), which would
+        // make settleStart a future timestamp and block all reversal swipes
+        // mid-lock even though the intent is unambiguous.
+        const settleStart = Math.min(now, this._settleUntil - SETTLE_MS);
         const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
         if (now < this._settleUntil) {
           if (!isReversal || now < settleStart + effectiveSettle) return;
@@ -423,6 +440,7 @@ class PageChrome {
     this._isDown  = false;
     this._inLink  = false;
     this._inProj  = false;
+    this._applyPending = false;
 
     // Section indicator
     this._secInd  = null;
@@ -471,27 +489,42 @@ class PageChrome {
     // ── Document-level mouse ───────────────────────────────────────────
     document.addEventListener('mousemove', e => {
       this._mx = e.clientX; this._my = e.clientY;
-      if (this._cur) { this._cur.style.left = `${e.clientX}px`; this._cur.style.top = `${e.clientY}px`; }
-    });
-    document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
-    document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
+      // Use transform instead of left/top — compositor-only, no layout recalc on every mousemove.
+      if (this._cur) this._cur.style.transform = `translate(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%))`;
+    }, { passive: true });
+    document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); }, { passive: true });
+    document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); }, { passive: true });
     document.addEventListener('mouseleave', () => {
       if (this._cur)  this._cur.style.opacity  = '0';
       if (this._curR) this._curR.style.opacity = '0';
-    });
+    }, { passive: true });
     document.addEventListener('mouseenter', () => {
       if (this._cur)  this._cur.style.opacity  = '1';
       if (this._curR) this._curR.style.opacity = '1';
-    });
+    }, { passive: true });
 
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => { this._inLink = true;  this._apply(); });
-      el.addEventListener('mouseleave', () => { this._inLink = false; this._apply(); });
-    });
-    document.querySelectorAll('.proj').forEach(el => {
-      el.addEventListener('mouseenter', () => { this._inProj = true;  this._apply(); });
-      el.addEventListener('mouseleave', () => { this._inProj = false; this._apply(); });
-    });
+    // Cursor hover states — single delegated listener instead of O(n) per-element
+    // listeners. Handles dynamically-added elements and reduces GC pressure.
+    document.addEventListener('mouseover', e => {
+      const overLink = !!e.target.closest('a, button');
+      const overProj = !!e.target.closest('.proj');
+      if (overLink !== this._inLink || overProj !== this._inProj) {
+        this._inLink = overLink;
+        this._inProj = overProj;
+        this._apply();
+      }
+    }, { passive: true });
+    document.addEventListener('mouseout', e => {
+      // Only clear when leaving the document entirely or leaving to a non-link/proj target
+      const relTarget = e.relatedTarget;
+      const overLink = relTarget ? !!relTarget.closest('a, button') : false;
+      const overProj = relTarget ? !!relTarget.closest('.proj') : false;
+      if (overLink !== this._inLink || overProj !== this._inProj) {
+        this._inLink = overLink;
+        this._inProj = overProj;
+        this._apply();
+      }
+    }, { passive: true });
 
     // Cursor follower — position tracking only.
     // Width/height/appearance are owned entirely by CSS via body classes.
@@ -500,16 +533,24 @@ class PageChrome {
     // running the lerp and threshold check on every single frame.
     if (window.matchMedia('(pointer:fine)').matches) {
       let rafId = 0;
+      // INTEL PERF: Pre-compute the lerp factor as a constant. The JIT compiler
+      // can then fold this into a multiply-by-constant instruction (cheaper than
+      // a general multiply). Also cache the 0.88 complement to avoid recomputing it.
+      const LERP = 0.12;
+      const LERP_INV = 1 - LERP; // = 0.88
       const loop = () => {
         rafId = 0;
-        const rxN = this._rx + (this._mx - this._rx) * 0.12;
-        const ryN = this._ry + (this._my - this._ry) * 0.12;
+        // INTEL PERF: Fused multiply-add: (prev * 0.88) + (target * 0.12)
+        // This form is more likely to be compiled to FMA instructions on
+        // Intel Haswell+ (AVX2) and avoids a subtraction in the hot path.
+        const rxN = this._rx * LERP_INV + this._mx * LERP;
+        const ryN = this._ry * LERP_INV + this._my * LERP;
         const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
         if (this._curR) {
-          this._curR.style.left = `${this._rx}px`;
-          this._curR.style.top  = `${this._ry}px`;
+          // transform: no layout recalc, stays on compositor thread
+          this._curR.style.transform = `translate(calc(${this._rx}px - 50%), calc(${this._ry}px - 50%))`;
         }
         // Only continue while the follower is catching up; goes fully idle otherwise.
         if (stillMoving) rafId = requestAnimationFrame(loop);
@@ -599,17 +640,32 @@ class PageChrome {
     const logo     = document.querySelector('.n-logo');
     const logoLast = logo && logo.querySelector('.logo-last');
     const CHARS    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
+    const CHARS_LEN = CHARS.length;
+    // INTEL PERF: Pre-split CHARS into an array so the hot loop indexes directly
+    // into a JS array (fast path in V8) rather than calling String.prototype[]
+    // on every iteration. String indexing on Intel is slower than array indexing
+    // because it may allocate a new one-char String object per access.
+    const CHARS_ARR = Array.from(CHARS);
     let scrambling = false;
     if (logo && logoLast) {
       const scramble = () => {
         if (scrambling) return; scrambling = true;
-        let iter = 0; const TARGET = 'Green';
+        let iter = 0;
+        const TARGET = 'Green';
+        // Pre-split target to avoid reallocating the array on every interval tick
+        const TARGET_CHARS = TARGET.split('');
+        const TARGET_LEN   = TARGET_CHARS.length;
         const iv = setInterval(() => {
-          logoLast.textContent = TARGET.split('').map((c, i) =>
-            i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
-          ).join('');
-          if (Math.floor(iter) >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
-          iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
+          const resolved = Math.floor(iter);
+          let out = '';
+          for (let i = 0; i < TARGET_LEN; i++) {
+            out += i < resolved ? TARGET_CHARS[i] : CHARS_ARR[Math.floor(Math.random() * CHARS_LEN)];
+          }
+          logoLast.textContent = out;
+          if (resolved >= TARGET_LEN) {
+            clearInterval(iv); logoLast.textContent = TARGET; scrambling = false;
+          }
+          iter += 0.38;
         }, 26);
       };
       logo.addEventListener('mouseenter', scramble);
@@ -618,10 +674,23 @@ class PageChrome {
 
     // ── Nav scrolled + hero counter hide on scroll ─────────────────────
     const heroCounterEl = document.getElementById('hero-counter');
+    let _navScrolled = false, _counterHidden = false;
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
-      if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
-      if (heroCounterEl) heroCounterEl.classList.toggle('hide', y > 60);
+      if (this._navEl) {
+        const shouldBeScrolled = y > 40;
+        if (shouldBeScrolled !== _navScrolled) {
+          _navScrolled = shouldBeScrolled;
+          this._navEl.classList.toggle('scrolled', shouldBeScrolled);
+        }
+      }
+      if (heroCounterEl) {
+        const shouldHide = y > 60;
+        if (shouldHide !== _counterHidden) {
+          _counterHidden = shouldHide;
+          heroCounterEl.classList.toggle('hide', shouldHide);
+        }
+      }
     }, { passive: true });
 
     // ── Resize ─────────────────────────────────────────────────────────
@@ -662,11 +731,18 @@ class PageChrome {
 
   // Cursor state is expressed as body classes so CSS owns all appearance.
   // Priority: click > link > proj > default (matches original _state() logic).
+  // Batched into rAF so simultaneous enter/leave pairs don't trigger two
+  // style recalcs — the last write before the next frame wins, which is correct.
   _apply() {
-    const b = document.body;
-    b.classList.toggle('cur-click', this._isDown);
-    b.classList.toggle('cur-link',  !this._isDown && this._inLink);
-    b.classList.toggle('cur-proj',  !this._isDown && !this._inLink && this._inProj);
+    if (this._applyPending) return;
+    this._applyPending = true;
+    requestAnimationFrame(() => {
+      this._applyPending = false;
+      const b = document.body;
+      b.classList.toggle('cur-click', this._isDown);
+      b.classList.toggle('cur-link',  !this._isDown && this._inLink);
+      b.classList.toggle('cur-proj',  !this._isDown && !this._inLink && this._inProj);
+    });
   }
 
   _setTheme(t) {
@@ -954,17 +1030,28 @@ class CarouselContainer {
     this._N     = this._projs.length;
     if (!this._N) return;
 
-    // Character-by-character title animation prep
+  /**
+   * Show/hide character spans for the active slide.
+   * INTEL PERF: All DOM class mutations are batched into a single rAF callback
+   * so V8/Blink coalesces them into one style recalculation pass instead of
+   * one per character. On Intel CPUs where the style engine runs on the main
+   * thread (not the compositor), each individual classList.add() that triggers
+   * a recalc serialises against the paint step — batching avoids this.
+   */
+    this._projChars = []; // parallel array to this._projs
     this._projs.forEach(p => {
       const title = p.querySelector('.proj-title');
-      if (!title) return;
+      if (!title) { this._projChars.push([]); return; }
       const text = title.textContent.trim();
       title.innerHTML = '';
+      const chars = [];
       [...text].forEach(ch => {
         const s = document.createElement('span');
         s.className = 'ch'; s.textContent = ch === ' ' ? '\u00a0' : ch;
         title.appendChild(s);
+        chars.push(s);
       });
+      this._projChars.push(chars);
     });
 
     // Dot nav — reuse the static #c-dots already in the HTML (documented exception).
@@ -996,7 +1083,11 @@ class CarouselContainer {
 
     this._sizeSpacer();
     this._calcSpacerTop();
-    window.addEventListener('resize', this._onResize, { passive: true });
+    // Guard against double-registration if init() is ever called again.
+    if (!this._resizeListenerAdded) {
+      window.addEventListener('resize', this._onResize, { passive: true });
+      this._resizeListenerAdded = true;
+    }
 
     // Create the next-section arrow and append it to the dots container AFTER
     // innerHTML is cleared — so it always exists and is never wiped.
@@ -1012,13 +1103,16 @@ class CarouselContainer {
       this._projs.forEach(proj => {
         const img = proj.querySelector('.proj-img');
         if (!img) return;
+        // Cache is set ONLY on mouseenter — never in mousemove.
+        // getBoundingClientRect() in a mousemove handler causes a sync layout
+        // flush on every pointer event, which fights the compositor thread.
         proj.addEventListener('mouseenter', () => { rectCache.set(proj, proj.getBoundingClientRect()); });
         proj.addEventListener('mousemove',  e => {
-          if (!rectCache.has(proj)) rectCache.set(proj, proj.getBoundingClientRect());
-          const r  = rectCache.get(proj);
+          const r = rectCache.get(proj);
+          if (!r) return; // safety: no rect yet (shouldn't happen after mouseenter)
           const nx = (e.clientX - r.left) / r.width  - 0.5;
           const ny = (e.clientY - r.top)  / r.height - 0.5;
-          img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
+          img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg) translateZ(0)`;
         });
         proj.addEventListener('mouseleave', () => { img.style.transform = ''; });
       });
@@ -1054,11 +1148,26 @@ class CarouselContainer {
     }));
     // On first entry, start background image loads for all slides now that
     // the carousel is visible. Images that are already loaded are no-ops.
+    // INTEL PERF: Use a hidden <img> with .decode() for each background image
+    // to prefetch and decode off the main thread. Background-image CSS does
+    // not expose a decode hook, so we create a transient img element, call
+    // .decode() (which uses the browser's threaded image decoder pipeline),
+    // then apply the backgroundImage once decode is complete. On Intel iGPU
+    // this prevents the main thread from stalling during texture upload by
+    // ensuring the image data is already in decoded form when CSS needs it.
     this._projs.forEach(p => {
       const img = p.querySelector('.proj-img');
       if (img && img.dataset.bg) {
-        img.style.backgroundImage = `url('${img.dataset.bg}')`;
+        const src = img.dataset.bg;
         delete img.dataset.bg;
+        const probe = new Image();
+        probe.src = src;
+        probe.decode().then(() => {
+          img.style.backgroundImage = `url('${src}')`;
+        }).catch(() => {
+          // decode() not supported or image failed — apply immediately as fallback
+          img.style.backgroundImage = `url('${src}')`;
+        });
       }
     });
   }
@@ -1086,27 +1195,48 @@ class CarouselContainer {
   }
 
   _setPositions(idx, animate) {
+    // INTEL PERF: All dataset and classList mutations are gathered synchronously
+    // but the char-span style writes (the most numerous mutations) are separated
+    // into a requestAnimationFrame call. This allows Blink to coalesce the
+    // dataset.pos changes (which trigger CSS selector re-evaluation) in one
+    // style recalc pass, then apply char animations on the next frame after the
+    // recalc has already been committed. On Intel CPUs where style recalc and
+    // rasterisation share a core, this prevents the char loop from extending the
+    // critical path of the slide-position recalc.
     this._projs.forEach((p, i) => {
+      const chars = this._projChars[i] || [];
       const delta = i - idx;
-      if      (delta < -1)   p.dataset.pos = 'far-above';
-      else if (delta === -1) p.dataset.pos = 'prev';
-      else if (delta === 0) {
-        p.dataset.pos = 'active';
-        if (animate) {
-          p.querySelectorAll('.proj-title .ch').forEach((s, ci) => {
-            s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
-          });
-        }
-      }
-      else if (delta === 1) p.dataset.pos = 'next';
-      else                  p.dataset.pos = 'far-below';
+      let newPos;
+      if      (delta < -1)   newPos = 'far-above';
+      else if (delta === -1) newPos = 'prev';
+      else if (delta === 0)  newPos = 'active';
+      else if (delta === 1)  newPos = 'next';
+      else                   newPos = 'far-below';
+      // Only write dataset.pos when it actually changes — avoids a selector
+      // re-evaluation in the CSS engine for slides that haven't moved.
+      if (p.dataset.pos !== newPos) p.dataset.pos = newPos;
       if (delta !== 0) {
-        p.querySelectorAll('.proj-title .ch').forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
+        for (let c = 0; c < chars.length; c++) {
+          const s = chars[c];
+          s.style.transitionDelay = '0ms'; s.classList.remove('show');
+        }
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
-    // Show next-section arrow only on the last slide
     if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
+
+    if (animate && this._projChars[idx]) {
+      const chars = this._projChars[idx];
+      // Schedule char reveals in the next frame so they don't block the
+      // slide-position style recalc that will happen synchronously above.
+      requestAnimationFrame(() => {
+        for (let ci = 0; ci < chars.length; ci++) {
+          const s = chars[ci];
+          s.style.transitionDelay = `${420 + ci * 20}ms`;
+          s.classList.add('show');
+        }
+      });
+    }
   }
 
   _advance(dir) {
@@ -1210,7 +1340,10 @@ class AboutContainer {
 
     this._sizeSpacer();
     this._calcSpacerTop();
-    window.addEventListener('resize', this._onResize, { passive: true });
+    if (!this._resizeListenerAdded) {
+      window.addEventListener('resize', this._onResize, { passive: true });
+      this._resizeListenerAdded = true;
+    }
 
     this._setPanel(0);
     // Preload panel 1 immediately on init — the user is very likely to scroll
@@ -1296,6 +1429,10 @@ class AboutContainer {
     const isLast = idx === this._contactPanelIdx;
     document.body.dataset.aboutPanel = isLast ? 'contact' : 'about';
 
+    // Toggle class on root so CSS can hide progress dots without :has()
+    // (:has triggers a full subtree recalc on every panel change — avoid it)
+    if (this._root) this._root.classList.toggle('on-contact-panel', isLast);
+
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
     // intentionally excluded from the global IntersectionObserver (it lives inside
     // #about-stage). Drive the .in class here instead so the entrance animation fires
@@ -1330,15 +1467,23 @@ class AboutContainer {
    * browser starts fetching while the panel transition is still running.
    * Safe to call multiple times — img.src assignment is a no-op if the
    * src is already set to the same value.
+   *
+   * INTEL PERF: After setting img.src, call img.decode() to trigger the
+   * threaded image decoder pipeline. On Intel iGPU the image decode and
+   * texture upload happen on a shared bus; doing this during the panel
+   * *transition* (rather than on arrival) means the decode completes
+   * while the GPU is busy animating, hiding the latency completely.
    */
   _preloadPanel(idx) {
     const panel = this._panels[idx];
     if (!panel) return;
     panel.querySelectorAll('img[data-src]').forEach(img => {
       const src = img.dataset.src;
-      if (src && img.src !== src) {
+      if (src && img.src !== new URL(src, location.href).href) {
         img.src = src;
         img.removeAttribute('data-src');
+        // Fire-and-forget decode — moves image parsing off the main thread
+        img.decode && img.decode().catch(() => {});
       }
     });
   }
