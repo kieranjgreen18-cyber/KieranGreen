@@ -84,10 +84,6 @@
      crossorigin is required because model-viewer uses a Worker to parse the GLB.
      fetchpriority=high ensures this races with the model-viewer script itself. -->
 <link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin fetchpriority="high">
-<!-- Preload the KTX2 environment map. The KTX2 format uploads to GPU directly
-     without CPU decode (unlike the raw .hdr), typically 4–8 MB vs 40–80 MB.
-     This is the primary fix for Intel/Coffee Lake stutter on first load. -->
-<link rel="preload" as="fetch" href="assets/images/151_hdrmaps_com_free_4K.ktx2" crossorigin fetchpriority="low">
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -2679,16 +2675,16 @@ model-viewer    { isolation: isolate; }
     id="mini-viewer"
     src="assets/models/minisite.glb"
     alt="Interactive 3D model of Kieran Green's Mini Clubman, fully surface modeled in Rhino 3D — drag to rotate"
-    poster="assets/images/miniheroheader.png"
     camera-controls
     auto-rotate
     auto-rotate-delay="0"
     rotation-per-second="3deg"
     environment-image="neutral"
-    skybox-image="assets/images/151_hdrmaps_com_free_4K.ktx2"
+    data-ktx2-skybox="assets/images/151_hdrmaps_com_free_4K.ktx2"
+    data-ktx2-basis-url="https://cdn.jsdelivr.net/npm/three@0.176.0/examples/jsm/libs/basis/"
     skybox-height="1.2m"
     shadow-intensity="1.6"
-    shadow-softness="0.3"
+    shadow-softness="0.6"
     exposure="0.9"
     camera-orbit="-20deg 92deg 50%"
     min-camera-orbit="auto 84deg auto"
@@ -2702,6 +2698,7 @@ model-viewer    { isolation: isolate; }
     loading="eager"
     tone-mapping="commerce"
     reveal="auto"
+    performance="normal"
   ></model-viewer>
 
   <div class="hero-vignette" aria-hidden="true"></div>
@@ -3192,6 +3189,7 @@ model-viewer    { isolation: isolate; }
 
 </main>
 
+<script type="module" src="js/ktx2-skybox.js"></script>
 <script src="js/site.js" defer></script>
 </body>
 </html>
