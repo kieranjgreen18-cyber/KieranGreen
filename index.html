@@ -63,57 +63,65 @@
 <!-- DNS prefetch for third-party resources loaded early -->
 <link rel="dns-prefetch" href="https://ajax.googleapis.com">
 <link rel="preconnect" href="https://ajax.googleapis.com" crossorigin>
-<!-- Preconnect for third-party image hosts so DNS + TLS is ready before images are needed -->
-<link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
 
-<!-- GLB preload — starts fetching in parallel with the model-viewer script.
-     crossorigin required because model-viewer uses a Worker to parse the GLB.
-     fetchpriority=high so it races with the script download. -->
-<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin fetchpriority="high">
-
-<!-- 3D Model Viewer — must come before font preloads so the custom element
-     is registered as early as possible. type="module" is deferred by default
-     but still needs to be parsed before the hero section upgrades. -->
+<!-- 3D Model Viewer — loaded as a high-priority module so the custom element
+     is defined before the hero section upgrades. Version pinned to 4.0.0 which
+     includes perf improvements for WebGL context management on mobile. -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
 <!-- Font preloads -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-webfont.woff2" crossorigin fetchpriority="high">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-webfont.woff2" crossorigin fetchpriority="high">
-
-<!-- Preload the first About panel images at low priority -->
+<!-- Preconnect for third-party image hosts so DNS + TLS is ready before images are needed -->
+<link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+<!-- Preload the first About panel images (panel 0 / intro portrait, saab) so they
+     don't pop in when the About stage first becomes active -->
 <link rel="preload" as="image" href="assets/images/portrait.JPEG" fetchpriority="low">
 <link rel="preload" as="image" href="assets/images/saab.jpg" fetchpriority="low">
+<!-- Preload the 3D model GLB — the single biggest contributor to model-viewer
+     pop-in on first visit. Fetching it in parallel with the model-viewer script
+     means the file is already in the browser cache when the element upgrades.
+     crossorigin is required because model-viewer uses a Worker to parse the GLB.
+     fetchpriority=high ensures this races with the model-viewer script itself. -->
+<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin fetchpriority="high">
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
    § FONT FACES
-   Only woff2 listed — all evergreen browsers support it.
-   Removing woff/otf fallbacks prevents the parser from queuing
-   unnecessary conditional resource hints and keeps rule specificity clean.
 ═══════════════════════════════════════════════════════════════ */
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/d-din-webfont.woff2') format('woff2');
+  src: url('assets/fonts/d-din-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN.otf') format('opentype');
   font-weight: 300 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2');
+  src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-italic-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN-Italic.otf') format('opentype');
   font-weight: 300 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/d-din-bold-webfont.woff2') format('woff2');
+  src: url('assets/fonts/d-din-bold-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-din-bold-webfont.woff') format('woff'),
+       url('assets/fonts/D-DIN-Bold.otf') format('opentype');
   font-weight: 700; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
-  src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2');
+  src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-dincondensed-webfont.woff') format('woff'),
+       url('assets/fonts/D-DINCondensed.otf') format('opentype');
   font-weight: 100 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
-  src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2');
+  src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2'),
+       url('assets/fonts/d-dincondensed-bold-webfont.woff') format('woff'),
+       url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
@@ -363,18 +371,6 @@ img { display: block; max-width: 100%; height: auto; }
 em { font-style: italic; color: var(--c-accent); }
 strong { color: var(--c-primary); font-weight: 700; }
 
-/* INTEL PERF: `text-rendering: optimizeSpeed` disables ligature and kerning
-   lookups on large display text (headings). Intel's font rasterizer processes
-   these on the main thread; skipping them on large glyphs saves ~0.3ms per
-   heading element painted. `geometricPrecision` is left on body text where
-   sub-pixel positioning matters for readability at small sizes. */
-.t-display, .t-title, .t-heading, .t-chapter {
-  text-rendering: optimizeSpeed;
-}
-.t-body, .t-ui, .t-label, .t-micro {
-  text-rendering: geometricPrecision;
-}
-
 /* ── Screen reader only ── */
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0;
@@ -597,11 +593,6 @@ nav#nav {
 nav#nav.scrolled {
   padding: var(--s-2) var(--pad);
   background: rgba(8,9,9,.90);
-  /* INTEL PERF: backdrop-filter on Intel iGPU is extremely expensive because
-     the blur requires reading back from the compositor and re-rasterising.
-     Ensure this only triggers on the scrolled state (not on every scroll event).
-     The `.scrolled` class is toggled with a boolean guard in JS so the style
-     recalc only fires once per threshold crossing, not on every pixel. */
   -webkit-backdrop-filter: blur(20px) saturate(1.6);
   backdrop-filter: blur(20px) saturate(1.6);
   border-bottom: 1px solid var(--c-rule);
@@ -732,11 +723,7 @@ body.menu-open .nav-drawer { transform: translateY(0); pointer-events: auto; }
   position: relative;
   min-height: 100svh;
   overflow: hidden;
-  /* layout + paint containment: prevents model-viewer layout recalcs from
-     propagating to the document. `size` is intentionally excluded — the hero
-     uses min-height:100svh which requires the browser to resolve its size
-     against the viewport, and size containment would break that. */
-  contain: layout paint;
+  contain: paint;
 }
 
 model-viewer#mini-viewer {
@@ -745,10 +732,6 @@ model-viewer#mini-viewer {
   --progress-bar-color: transparent;
   --progress-mask: transparent;
   background: var(--c-bg);
-  /* Hint to the compositor that this element paints independently.
-     On Intel iGPU, isolating the WebGL surface prevents style invalidations
-     in the DOM from triggering a composite of the entire page. */
-  isolation: isolate;
 }
 
 /* Vignette gradient — left-weighted for text legibility */
@@ -934,18 +917,6 @@ model-viewer#mini-viewer {
 body:not([data-section="hero"]) .hero-avail-dot::after,
 body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paused; }
 
-/* INTEL iGPU PERF: Pause the hero chevron + 360-ring spin animations when
-   the hero is not active. Each CSS animation that runs while the element is
-   invisible still schedules a compositor frame on Intel iGPU because the
-   element remains in the layer tree. Pausing them drops the GPU frame rate
-   request from 60fps to 0fps for off-screen content. */
-body:not([data-section="hero"]) .hero-counter-chevron,
-body:not([data-section="hero"]) .model-360-ring { animation-play-state: paused; }
-
-/* Same for carousel bounce arrow — pause when not in carousel section */
-body:not([data-section="carousel"]) .proj-counter-chevron,
-body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: paused; }
-
 /* 360° ring spin — used by model-360-ring */
 @keyframes hintSpin {
   from { transform: rotate(0deg); }
@@ -971,11 +942,7 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 .projects {
   position: fixed; inset: 0; z-index: var(--z-carousel);
   pointer-events: none; visibility: hidden;
-  /* `strict` = layout + style + paint + size. Tells the browser these sections
-     are fully self-contained — layout changes inside cannot affect the rest of
-     the document, which prevents cross-section style recalcs on Intel CPUs
-     where the style engine is often the bottleneck. */
-  contain: strict;
+  contain: layout style paint;
   touch-action: none;
 }
 .projects.carousel-active { pointer-events: auto; visibility: visible; }
@@ -986,11 +953,6 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
   position: absolute; inset: 0; height: 100%;
   overflow: hidden; cursor: none;
   display: block; text-decoration: none;
-  /* `paint` containment per slide — the browser won't rasterize content of
-     slides whose paint bounds are outside the viewport. On Intel iGPU where
-     VRAM is shared with system RAM, this directly reduces texture memory
-     pressure and prevents bandwidth stalls during transitions. */
-  contain: paint;
   /* No global will-change — we promote selectively below */
   transition: transform 0.68s var(--snap);
   transform: translateY(100%) translateZ(0);
@@ -1011,16 +973,10 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
   background-size: cover; background-position: center;
   transform: scale(1.06) translateZ(0);
   filter: saturate(.68) brightness(.52);
-  /* INTEL iGPU PERF: Separate `transition` properties ensure the browser
-     can handle transform and filter on independent raster tasks.
-     Combined shorthand `transition: transform filter` forces both onto a
-     single composite step — on Intel iGPU this serialises the two GPU ops
-     onto one tile and causes a stall on Xe/UHD hardware.
-     Explicit separate declarations allow the browser's compositor scheduler
-     to overlap them where possible. */
-  transition-property: transform, filter;
-  transition-duration: 1.15s, 1.15s;
-  transition-timing-function: var(--ease), ease;
+  /* Separate transform and filter onto own transitions so the browser can
+     promote them to independent compositor layers — critical on Intel iGPU
+     where combined filter+transform forces a single expensive texture upload. */
+  transition: transform 1.15s var(--ease), filter 1.15s ease;
   /* Promote only on the active slide to keep GPU layer count low */
 }
 .proj[data-pos="active"] .proj-img { will-change: transform, filter; }
@@ -1248,8 +1204,7 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
   pointer-events: none; visibility: hidden;
   opacity: 0;
   transition: opacity 0.35s var(--ease), visibility 0s linear 0.35s;
-  /* `strict` containment — see .projects comment above */
-  contain: strict;
+  contain: layout style paint;
   touch-action: none;
 }
 .about-stage.engaged {
@@ -1558,15 +1513,63 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 
 /* ═══════════════════════════════════════════════════════════════
    § PERSONAL STATEMENT VIDEO
-   Note: The standalone .personal-statement section was replaced by
-   the panel-statement slide inside the About stage. The rules for
-   .personal-statement, .personal-statement-inner, .ps-text-col,
-   .ps-eyebrow, .ps-heading, .ps-body, .ps-video-col, .ps-video-frame,
-   .ps-film-bar, and .ps-film-meta have been removed — they added
-   ~50 parsed CSSOM rules for elements that no longer exist in the DOM.
-   The .stmt-video-frame and iframe rules used inside the About panel
-   are defined above in § ABOUT.
 ═══════════════════════════════════════════════════════════════ */
+.personal-statement {
+  position: relative; background: var(--c-bg);
+  border-top: 1px solid var(--c-rule); overflow: hidden;
+}
+.personal-statement-inner {
+  max-width: var(--max-w); margin: 0 auto;
+  padding: var(--s-10) var(--pad);
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: var(--s-7); align-items: center;
+}
+.ps-text-col { display: flex; flex-direction: column; gap: var(--s-5); }
+.ps-eyebrow {
+  display: flex; align-items: center; gap: var(--s-2);
+  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
+}
+.ps-eyebrow::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); flex-shrink: 0; }
+.ps-heading {
+  font-family: var(--f-heading); font-size: clamp(48px, 7vw, 96px);
+  font-weight: 100; letter-spacing: var(--ls-tight); line-height: .92;
+  text-transform: uppercase; color: var(--c-primary);
+}
+.ps-heading em { font-style: italic; color: var(--c-accent); font-weight: 100; }
+.ps-body { color: var(--c-secondary); max-width: 440px; }
+.ps-video-col { position: relative; }
+.ps-video-frame {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  background: var(--c-bg); overflow: hidden;
+  border: 1px solid var(--c-rule); cursor: none;
+  box-shadow: var(--shadow-lg);
+}
+.ps-video-frame::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(91,160,164,0.04) 0%, transparent 60%);
+  pointer-events: none; z-index: 2;
+}
+.ps-video-frame iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block;
+}
+.ps-film-bar {
+  position: absolute; left: 0; right: 0;
+  height: clamp(20px, 3vw, 40px); background: var(--c-bg); z-index: 4; pointer-events: none;
+}
+.ps-film-bar-top { top: 0; }
+.ps-film-bar-bot { bottom: 0; }
+.ps-film-meta {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: clamp(20px, 3vw, 40px); z-index: 5; pointer-events: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--s-3);
+}
+.ps-film-meta span {
+  font-family: var(--f-heading); font-size: 9px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.4);
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Old standalone .contact section removed — contact is now panel-contact
@@ -1645,7 +1648,10 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .proj-text { width: 55%; }
-  /* .personal-statement-inner rule removed — section replaced by About panel */
+  .personal-statement-inner { grid-template-columns: 1fr; gap: var(--s-6); }
+  .ps-text-col { text-align: center; align-items: center; }
+  .ps-eyebrow { justify-content: center; }
+  .ps-body { max-width: 560px; }
 }
 
 @media (max-width: 768px) {
@@ -2052,8 +2058,8 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 
   /* Progress dots light mode — removed (dots hidden on mobile) */
 
-  /* Personal statement — rule kept for legacy; section replaced by About panel */
-  /* .personal-statement-inner { padding: var(--s-8) var(--pad); } */
+  /* Personal statement */
+  .personal-statement-inner { padding: var(--s-8) var(--pad); }
 
   /* Contact panel — mobile: single column, content centred in viewport */
   .panel-contact {
