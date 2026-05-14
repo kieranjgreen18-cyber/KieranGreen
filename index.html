@@ -91,37 +91,27 @@
 ═══════════════════════════════════════════════════════════════ */
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/d-din-webfont.woff2') format('woff2'),
-       url('assets/fonts/d-din-webfont.woff') format('woff'),
-       url('assets/fonts/D-DIN.otf') format('opentype');
+  src: url('assets/fonts/d-din-webfont.woff2') format('woff2');
   font-weight: 300 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2'),
-       url('assets/fonts/d-din-italic-webfont.woff') format('woff'),
-       url('assets/fonts/D-DIN-Italic.otf') format('opentype');
+  src: url('assets/fonts/d-din-italic-webfont.woff2') format('woff2');
   font-weight: 300 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN';
-  src: url('assets/fonts/d-din-bold-webfont.woff2') format('woff2'),
-       url('assets/fonts/d-din-bold-webfont.woff') format('woff'),
-       url('assets/fonts/D-DIN-Bold.otf') format('opentype');
+  src: url('assets/fonts/d-din-bold-webfont.woff2') format('woff2');
   font-weight: 700; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
-  src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2'),
-       url('assets/fonts/d-dincondensed-webfont.woff') format('woff'),
-       url('assets/fonts/D-DINCondensed.otf') format('opentype');
+  src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2');
   font-weight: 100 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
-  src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2'),
-       url('assets/fonts/d-dincondensed-bold-webfont.woff') format('woff'),
-       url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
+  src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2');
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
@@ -919,6 +909,11 @@ model-viewer#mini-viewer {
 /* Pause ripple animations when hero is not the active section to save GPU */
 body:not([data-section="hero"]) .hero-avail-dot::after,
 body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paused; }
+/* Pause hero-only animations when not on hero */
+body:not([data-section="hero"]) .hero-counter-chevron,
+body:not([data-section="hero"]) .model-360-ring { animation-play-state: paused; }
+/* Pause carousel-only animations when not on carousel */
+body:not([data-section="carousel"]) .proj-counter-chevron { animation-play-state: paused; }
 
 /* 360° ring spin — used by model-360-ring */
 @keyframes hintSpin {
@@ -942,10 +937,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 ═══════════════════════════════════════════════════════════════ */
 .projects-spacer { pointer-events: none; }
 
-.projects {
-  position: fixed; inset: 0; z-index: var(--z-carousel);
-  pointer-events: none; visibility: hidden;
-  contain: layout style paint;
+  contain: strict;
   touch-action: none;
 }
 .projects.carousel-active { pointer-events: auto; visibility: visible; }
@@ -1202,7 +1194,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   pointer-events: none; visibility: hidden;
   opacity: 0;
   transition: opacity 0.35s var(--ease), visibility 0s linear 0.35s;
-  contain: layout style paint;
+  contain: strict;
   touch-action: none;
 }
 .about-stage.engaged {
