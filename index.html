@@ -66,28 +66,23 @@
 <!-- Preconnect for third-party image hosts so DNS + TLS is ready before images are needed -->
 <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
 
-<!-- Font preloads — fonts are render-blocking; fetch these before everything else -->
+<!-- GLB preload — starts fetching in parallel with the model-viewer script.
+     crossorigin required because model-viewer uses a Worker to parse the GLB.
+     fetchpriority=high so it races with the script download. -->
+<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin fetchpriority="high">
+
+<!-- 3D Model Viewer — must come before font preloads so the custom element
+     is registered as early as possible. type="module" is deferred by default
+     but still needs to be parsed before the hero section upgrades. -->
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+
+<!-- Font preloads -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-dincondensed-webfont.woff2" crossorigin fetchpriority="high">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/d-din-webfont.woff2" crossorigin fetchpriority="high">
 
-<!-- GLB preload — must race with the model-viewer script so it's in cache when
-     the custom element upgrades. crossorigin required for Worker parsing.
-     fetchpriority=high so the browser scheduler treats it as critical. -->
-<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin fetchpriority="high">
-
-<!-- Preload the first About panel images at low priority — avoids pop-in
-     without competing with GLB/fonts for bandwidth on first paint. -->
+<!-- Preload the first About panel images at low priority -->
 <link rel="preload" as="image" href="assets/images/portrait.JPEG" fetchpriority="low">
 <link rel="preload" as="image" href="assets/images/saab.jpg" fetchpriority="low">
-
-<!-- 3D Model Viewer — deferred to after font/GLB fetches begin so it doesn't
-     starve the preload scanner. `defer` on a module = same as default async
-     behaviour but we keep `type="module"` since model-viewer requires it.
-     PERF NOTE for Intel iGPU: model-viewer 4.x uses a SharedArrayBuffer-backed
-     Worker for GLB parsing; ensure COOP/COEP headers are set on the server so
-     the SAB path activates (avoids main-thread GLB decode that hammers Intel
-     single-core turbo). -->
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -737,11 +732,11 @@ body.menu-open .nav-drawer { transform: translateY(0); pointer-events: auto; }
   position: relative;
   min-height: 100svh;
   overflow: hidden;
-  /* `strict` containment: layout + style + paint + size.
-     Prevents model-viewer WebGL repaints from triggering document-level
-     style recalculations — the single biggest CPU stall source on Intel
-     integrated graphics where the GPU and CPU share memory bandwidth. */
-  contain: strict;
+  /* layout + paint containment: prevents model-viewer layout recalcs from
+     propagating to the document. `size` is intentionally excluded — the hero
+     uses min-height:100svh which requires the browser to resolve its size
+     against the viewport, and size containment would break that. */
+  contain: layout paint;
 }
 
 model-viewer#mini-viewer {
