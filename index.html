@@ -2680,8 +2680,7 @@ model-viewer    { isolation: isolate; }
     auto-rotate-delay="0"
     rotation-per-second="3deg"
     environment-image="neutral"
-    data-ktx2-skybox="assets/images/151_hdrmaps_com_free_4K.ktx2"
-    data-ktx2-basis-url="https://cdn.jsdelivr.net/npm/three@0.176.0/examples/jsm/libs/basis/"
+    skybox-image="assets/images/151_hdrmaps_com_free_4K.hdr"
     skybox-height="1.2m"
     shadow-intensity="1.6"
     shadow-softness="0.6"
@@ -2698,7 +2697,7 @@ model-viewer    { isolation: isolate; }
     loading="eager"
     tone-mapping="commerce"
     reveal="auto"
-    performance="normal"
+    performance="high"
   ></model-viewer>
 
   <div class="hero-vignette" aria-hidden="true"></div>
@@ -3189,7 +3188,6 @@ model-viewer    { isolation: isolate; }
 
 </main>
 
-<script type="module" src="js/ktx2-skybox.js"></script>
 <script src="js/site.js" defer></script>
 </body>
 </html>
