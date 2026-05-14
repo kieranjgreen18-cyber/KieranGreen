@@ -740,13 +740,13 @@ class Hero3DContainer {
     //    being in-cache before model-viewer requests them, significantly
     //    reducing the "white box" pop-in on first visit.
     if (this._viewer) {
-      // Warm the cache for whichever environment asset is in use.
-      // KTX2 is loaded by ktx2-skybox.js via its own loader — just cache-prime it here.
-      const envAsset = this._viewer.dataset.ktx2Skybox
-                    || this._viewer.getAttribute('skybox-image');
-      if (envAsset) {
+      const hdr = this._viewer.getAttribute('skybox-image');
+      if (hdr) {
+        // Low-priority background fetch — won't block any critical resources.
+        // 'no-cors' is used because modelviewer.dev doesn't send CORS headers
+        // for the HDR; we only need to warm the cache, not read the response.
         try {
-          fetch(envAsset, { mode: 'no-cors', priority: 'low' }).catch(() => {});
+          fetch(hdr, { mode: 'no-cors', priority: 'low' }).catch(() => {});
         } catch (e) { /* ignore — purely opportunistic */ }
       }
     }
