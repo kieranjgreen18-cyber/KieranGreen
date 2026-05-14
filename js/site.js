@@ -78,14 +78,6 @@ const SETTLE_REVERSAL_MS = 40;
 // GLOBAL LOCK: hard lock between section changes — must be ≥ largest container TRANS_MS
 // About panels animate for 850ms; 950ms gives full clearance with a small margin.
 const LOCK_MS           = 950;
-// INTEL PERF: Pre-allocate a Float64Array for the trackpad ring buffer timestamps
-// and a Float32Array for deltas. TypedArrays are stored as dense C arrays in V8,
-// avoiding the hidden-class transitions that plague plain Object arrays in hot paths.
-// On Intel CPUs with their narrower L1 cache (32KB), keeping hot data in typed,
-// contiguous memory dramatically improves cache hit rate in the wheel handler.
-const _TP_BUF_SIZE = 32;
-const _tpTimes  = new Float64Array(_TP_BUF_SIZE);
-const _tpDeltas = new Float32Array(_TP_BUF_SIZE);
 
 class AppController {
 
@@ -108,13 +100,10 @@ class AppController {
     this._mouseLastFire = 0; // timestamp of last mouse-path fire
 
     // ── Trackpad path state ────────────────────────────────────────────
-    // Module-level TypedArray ring buffers (_tpTimes, _tpDeltas) are used
-    // instead of per-instance Object arrays. TypedArrays are allocated once
-    // at module load and shared across the single AppController instance.
-    // INTEL PERF: V8 on Intel avoids boxing/unboxing numbers in TypedArrays,
-    // keeping the wheel handler in a tight JIT-compiled fast path. A new
-    // Object array would be polymorphic after the first few events as V8
-    // promotes it from SMI → double → tagged, degrading to interpreted mode.
+    // Fixed-size ring buffer: avoids allocating a new array on every wheel
+    // event (the old filter() approach). Size is generous — at 60 fps and
+    // TRACKPAD_WINDOW_MS=180ms you see at most ~11 events; 32 slots is ample.
+    this._tpBuf     = new Array(32);
     this._tpHead    = 0; // write pointer (next slot to overwrite)
     this._tpCount   = 0; // how many slots are currently valid
 
@@ -144,10 +133,7 @@ class AppController {
       const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
       const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
       if (now < this._settleUntil) {
-        // Clamp settleStart — _settleUntil may have been bumped by LOCK_MS
-        // (larger than SETTLE_MS), making the raw subtraction a future
-        // timestamp and blocking legitimate reversal inputs mid-lock.
-        const settleStart = Math.min(now, this._settleUntil - SETTLE_MS);
+        const settleStart = this._settleUntil - SETTLE_MS;
         if (!isReversal || now < settleStart + effectiveSettle) return;
       }
 
@@ -168,27 +154,28 @@ class AppController {
         // Direction-reversal flush
         if (this._tpCount > 0) {
           let existingNet = 0;
+          const bufLen0 = this._tpBuf.length;
           for (let i = 0; i < this._tpCount; i++) {
-            const slot = (this._tpHead - 1 - i + _TP_BUF_SIZE) % _TP_BUF_SIZE;
-            if (now - _tpTimes[slot] > TRACKPAD_WINDOW_MS) break;
-            existingNet += _tpDeltas[slot];
+            const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen0) % bufLen0];
+            if (now - slot.t > TRACKPAD_WINDOW_MS) break;
+            existingNet += slot.dy;
           }
           if (existingNet !== 0 && Math.sign(existingNet) !== Math.sign(raw)) {
             this._tpHead = 0; this._tpCount = 0;
           }
         }
 
-        _tpTimes[this._tpHead]  = now;
-        _tpDeltas[this._tpHead] = raw;
-        this._tpHead = (this._tpHead + 1) % _TP_BUF_SIZE;
-        if (this._tpCount < _TP_BUF_SIZE) this._tpCount++;
+        this._tpBuf[this._tpHead] = { t: now, dy: raw };
+        this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
+        if (this._tpCount < this._tpBuf.length) this._tpCount++;
 
         // Net displacement across entries still within the rolling window
         let net = 0;
+        const bufLen = this._tpBuf.length;
         for (let i = 0; i < this._tpCount; i++) {
-          const slot = (this._tpHead - 1 - i + _TP_BUF_SIZE) % _TP_BUF_SIZE;
-          if (now - _tpTimes[slot] > TRACKPAD_WINDOW_MS) break;
-          net += _tpDeltas[slot];
+          const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen) % bufLen];
+          if (now - slot.t > TRACKPAD_WINDOW_MS) break;
+          net += slot.dy;
         }
 
         if (Math.abs(net) >= TRACKPAD_THRESH) {
@@ -273,11 +260,7 @@ class AppController {
         const now = performance.now();
         // Direction-aware settle for touch too: reversals pass through faster
         const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
-        // Clamp settleStart to at most `now` — _settleUntil may have been
-        // bumped by LOCK_MS (950ms, larger than SETTLE_MS 440ms), which would
-        // make settleStart a future timestamp and block all reversal swipes
-        // mid-lock even though the intent is unambiguous.
-        const settleStart = Math.min(now, this._settleUntil - SETTLE_MS);
+        const settleStart = this._settleUntil - SETTLE_MS;
         const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
         if (now < this._settleUntil) {
           if (!isReversal || now < settleStart + effectiveSettle) return;
@@ -503,28 +486,14 @@ class PageChrome {
       if (this._curR) this._curR.style.opacity = '1';
     }, { passive: true });
 
-    // Cursor hover states — single delegated listener instead of O(n) per-element
-    // listeners. Handles dynamically-added elements and reduces GC pressure.
-    document.addEventListener('mouseover', e => {
-      const overLink = !!e.target.closest('a, button');
-      const overProj = !!e.target.closest('.proj');
-      if (overLink !== this._inLink || overProj !== this._inProj) {
-        this._inLink = overLink;
-        this._inProj = overProj;
-        this._apply();
-      }
-    }, { passive: true });
-    document.addEventListener('mouseout', e => {
-      // Only clear when leaving the document entirely or leaving to a non-link/proj target
-      const relTarget = e.relatedTarget;
-      const overLink = relTarget ? !!relTarget.closest('a, button') : false;
-      const overProj = relTarget ? !!relTarget.closest('.proj') : false;
-      if (overLink !== this._inLink || overProj !== this._inProj) {
-        this._inLink = overLink;
-        this._inProj = overProj;
-        this._apply();
-      }
-    }, { passive: true });
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => { this._inLink = true;  this._apply(); });
+      el.addEventListener('mouseleave', () => { this._inLink = false; this._apply(); });
+    });
+    document.querySelectorAll('.proj').forEach(el => {
+      el.addEventListener('mouseenter', () => { this._inProj = true;  this._apply(); });
+      el.addEventListener('mouseleave', () => { this._inProj = false; this._apply(); });
+    });
 
     // Cursor follower — position tracking only.
     // Width/height/appearance are owned entirely by CSS via body classes.
@@ -533,18 +502,10 @@ class PageChrome {
     // running the lerp and threshold check on every single frame.
     if (window.matchMedia('(pointer:fine)').matches) {
       let rafId = 0;
-      // INTEL PERF: Pre-compute the lerp factor as a constant. The JIT compiler
-      // can then fold this into a multiply-by-constant instruction (cheaper than
-      // a general multiply). Also cache the 0.88 complement to avoid recomputing it.
-      const LERP = 0.12;
-      const LERP_INV = 1 - LERP; // = 0.88
       const loop = () => {
         rafId = 0;
-        // INTEL PERF: Fused multiply-add: (prev * 0.88) + (target * 0.12)
-        // This form is more likely to be compiled to FMA instructions on
-        // Intel Haswell+ (AVX2) and avoids a subtraction in the hot path.
-        const rxN = this._rx * LERP_INV + this._mx * LERP;
-        const ryN = this._ry * LERP_INV + this._my * LERP;
+        const rxN = this._rx + (this._mx - this._rx) * 0.12;
+        const ryN = this._ry + (this._my - this._ry) * 0.12;
         const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
@@ -641,11 +602,6 @@ class PageChrome {
     const logoLast = logo && logo.querySelector('.logo-last');
     const CHARS    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
     const CHARS_LEN = CHARS.length;
-    // INTEL PERF: Pre-split CHARS into an array so the hot loop indexes directly
-    // into a JS array (fast path in V8) rather than calling String.prototype[]
-    // on every iteration. String indexing on Intel is slower than array indexing
-    // because it may allocate a new one-char String object per access.
-    const CHARS_ARR = Array.from(CHARS);
     let scrambling = false;
     if (logo && logoLast) {
       const scramble = () => {
@@ -659,7 +615,7 @@ class PageChrome {
           const resolved = Math.floor(iter);
           let out = '';
           for (let i = 0; i < TARGET_LEN; i++) {
-            out += i < resolved ? TARGET_CHARS[i] : CHARS_ARR[Math.floor(Math.random() * CHARS_LEN)];
+            out += i < resolved ? TARGET_CHARS[i] : CHARS[Math.floor(Math.random() * CHARS_LEN)];
           }
           logoLast.textContent = out;
           if (resolved >= TARGET_LEN) {
@@ -729,6 +685,8 @@ class PageChrome {
     if (key !== 'about') delete document.body.dataset.aboutPanel;
   }
 
+  // Cursor state is expressed as body classes so CSS owns all appearance.
+  // Priority: click > link > proj > default (matches original _state() logic).
   // Cursor state is expressed as body classes so CSS owns all appearance.
   // Priority: click > link > proj > default (matches original _state() logic).
   // Batched into rAF so simultaneous enter/leave pairs don't trigger two
@@ -1030,14 +988,9 @@ class CarouselContainer {
     this._N     = this._projs.length;
     if (!this._N) return;
 
-  /**
-   * Show/hide character spans for the active slide.
-   * INTEL PERF: All DOM class mutations are batched into a single rAF callback
-   * so V8/Blink coalesces them into one style recalculation pass instead of
-   * one per character. On Intel CPUs where the style engine runs on the main
-   * thread (not the compositor), each individual classList.add() that triggers
-   * a recalc serialises against the paint step — batching avoids this.
-   */
+    // Character-by-character title animation prep
+    // Cache the char spans per project so _setPositions never calls
+    // querySelectorAll on every advance — just reads pre-built arrays.
     this._projChars = []; // parallel array to this._projs
     this._projs.forEach(p => {
       const title = p.querySelector('.proj-title');
@@ -1083,11 +1036,7 @@ class CarouselContainer {
 
     this._sizeSpacer();
     this._calcSpacerTop();
-    // Guard against double-registration if init() is ever called again.
-    if (!this._resizeListenerAdded) {
-      window.addEventListener('resize', this._onResize, { passive: true });
-      this._resizeListenerAdded = true;
-    }
+    window.addEventListener('resize', this._onResize, { passive: true });
 
     // Create the next-section arrow and append it to the dots container AFTER
     // innerHTML is cleared — so it always exists and is never wiped.
@@ -1148,26 +1097,11 @@ class CarouselContainer {
     }));
     // On first entry, start background image loads for all slides now that
     // the carousel is visible. Images that are already loaded are no-ops.
-    // INTEL PERF: Use a hidden <img> with .decode() for each background image
-    // to prefetch and decode off the main thread. Background-image CSS does
-    // not expose a decode hook, so we create a transient img element, call
-    // .decode() (which uses the browser's threaded image decoder pipeline),
-    // then apply the backgroundImage once decode is complete. On Intel iGPU
-    // this prevents the main thread from stalling during texture upload by
-    // ensuring the image data is already in decoded form when CSS needs it.
     this._projs.forEach(p => {
       const img = p.querySelector('.proj-img');
       if (img && img.dataset.bg) {
-        const src = img.dataset.bg;
+        img.style.backgroundImage = `url('${img.dataset.bg}')`;
         delete img.dataset.bg;
-        const probe = new Image();
-        probe.src = src;
-        probe.decode().then(() => {
-          img.style.backgroundImage = `url('${src}')`;
-        }).catch(() => {
-          // decode() not supported or image failed — apply immediately as fallback
-          img.style.backgroundImage = `url('${src}')`;
-        });
       }
     });
   }
@@ -1195,48 +1129,28 @@ class CarouselContainer {
   }
 
   _setPositions(idx, animate) {
-    // INTEL PERF: All dataset and classList mutations are gathered synchronously
-    // but the char-span style writes (the most numerous mutations) are separated
-    // into a requestAnimationFrame call. This allows Blink to coalesce the
-    // dataset.pos changes (which trigger CSS selector re-evaluation) in one
-    // style recalc pass, then apply char animations on the next frame after the
-    // recalc has already been committed. On Intel CPUs where style recalc and
-    // rasterisation share a core, this prevents the char loop from extending the
-    // critical path of the slide-position recalc.
     this._projs.forEach((p, i) => {
       const chars = this._projChars[i] || [];
       const delta = i - idx;
-      let newPos;
-      if      (delta < -1)   newPos = 'far-above';
-      else if (delta === -1) newPos = 'prev';
-      else if (delta === 0)  newPos = 'active';
-      else if (delta === 1)  newPos = 'next';
-      else                   newPos = 'far-below';
-      // Only write dataset.pos when it actually changes — avoids a selector
-      // re-evaluation in the CSS engine for slides that haven't moved.
-      if (p.dataset.pos !== newPos) p.dataset.pos = newPos;
-      if (delta !== 0) {
-        for (let c = 0; c < chars.length; c++) {
-          const s = chars[c];
-          s.style.transitionDelay = '0ms'; s.classList.remove('show');
+      if      (delta < -1)   p.dataset.pos = 'far-above';
+      else if (delta === -1) p.dataset.pos = 'prev';
+      else if (delta === 0) {
+        p.dataset.pos = 'active';
+        if (animate) {
+          chars.forEach((s, ci) => {
+            s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
+          });
         }
+      }
+      else if (delta === 1) p.dataset.pos = 'next';
+      else                  p.dataset.pos = 'far-below';
+      if (delta !== 0) {
+        chars.forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
+    // Show next-section arrow only on the last slide
     if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
-
-    if (animate && this._projChars[idx]) {
-      const chars = this._projChars[idx];
-      // Schedule char reveals in the next frame so they don't block the
-      // slide-position style recalc that will happen synchronously above.
-      requestAnimationFrame(() => {
-        for (let ci = 0; ci < chars.length; ci++) {
-          const s = chars[ci];
-          s.style.transitionDelay = `${420 + ci * 20}ms`;
-          s.classList.add('show');
-        }
-      });
-    }
   }
 
   _advance(dir) {
@@ -1340,10 +1254,7 @@ class AboutContainer {
 
     this._sizeSpacer();
     this._calcSpacerTop();
-    if (!this._resizeListenerAdded) {
-      window.addEventListener('resize', this._onResize, { passive: true });
-      this._resizeListenerAdded = true;
-    }
+    window.addEventListener('resize', this._onResize, { passive: true });
 
     this._setPanel(0);
     // Preload panel 1 immediately on init — the user is very likely to scroll
@@ -1467,23 +1378,15 @@ class AboutContainer {
    * browser starts fetching while the panel transition is still running.
    * Safe to call multiple times — img.src assignment is a no-op if the
    * src is already set to the same value.
-   *
-   * INTEL PERF: After setting img.src, call img.decode() to trigger the
-   * threaded image decoder pipeline. On Intel iGPU the image decode and
-   * texture upload happen on a shared bus; doing this during the panel
-   * *transition* (rather than on arrival) means the decode completes
-   * while the GPU is busy animating, hiding the latency completely.
    */
   _preloadPanel(idx) {
     const panel = this._panels[idx];
     if (!panel) return;
     panel.querySelectorAll('img[data-src]').forEach(img => {
       const src = img.dataset.src;
-      if (src && img.src !== new URL(src, location.href).href) {
+      if (src && img.src !== src) {
         img.src = src;
         img.removeAttribute('data-src');
-        // Fire-and-forget decode — moves image parsing off the main thread
-        img.decode && img.decode().catch(() => {});
       }
     });
   }
