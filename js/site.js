@@ -733,20 +733,48 @@ class Hero3DContainer {
     this._errorEl     = root.querySelector('#model-error');
     this._nav         = document.getElementById('nav'); // documented exception
 
-    // ── Model-viewer preload: warm the HDR environment cache as soon as
+    // ── GPU capability detection — downgrade shadow quality on weak/Intel GPUs.
+    //    We probe via WebGL renderer string. Intel integrated / 9th-gen Coffee
+    //    Lake desktop GPUs hit a real bottleneck with PCF shadow sampling at
+    //    softness > 0.3; dropping to 0 (hard shadows, single sample) halves the
+    //    shadow render cost and is visually imperceptible at this camera FOV.
+    //    Apple Silicon / AMD / NVIDIA are left at the authored 0.3 value.
+    if (this._viewer) {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+        if (gl) {
+          const ext = gl.getExtension('WEBGL_debug_renderer_info');
+          if (ext) {
+            const renderer = (gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || '').toLowerCase();
+            const isWeakGPU = /intel|mesa|llvmpipe|swiftshader|software/.test(renderer)
+                           && !/iris xe|arc |a7[0-9][0-9]|a5[0-9][0-9]/.test(renderer);
+            if (isWeakGPU) {
+              this._viewer.setAttribute('shadow-softness', '0');
+              // Also nudge shadow intensity down slightly on integrated GPUs —
+              // the shadow map is cheaper and the visual result is still good.
+              this._viewer.setAttribute('shadow-intensity', '1.2');
+            }
+          }
+          // Clean up the probe canvas — don't hold a WebGL context we don't need.
+          const loseCtx = gl.getExtension('WEBGL_lose_context');
+          if (loseCtx) loseCtx.loseContext();
+        }
+      } catch(e) { /* non-fatal — authored values remain */ }
+    }
+
+    // ── Model-viewer preload: warm the KTX2/HDR environment cache as soon as
     //    the container inits. The GLB is preloaded via <link rel="preload">
-    //    in <head>; the HDR has no standard preload type so we use a no-op
-    //    fetch() here. Both are relatively large assets and benefit from
+    //    in <head>; the environment map has no standard preload type so we use
+    //    a no-op fetch() here. Both are relatively large assets and benefit from
     //    being in-cache before model-viewer requests them, significantly
     //    reducing the "white box" pop-in on first visit.
     if (this._viewer) {
-      const hdr = this._viewer.getAttribute('skybox-image');
-      if (hdr) {
+      const envMap = this._viewer.getAttribute('skybox-image');
+      if (envMap) {
         // Low-priority background fetch — won't block any critical resources.
-        // 'no-cors' is used because modelviewer.dev doesn't send CORS headers
-        // for the HDR; we only need to warm the cache, not read the response.
         try {
-          fetch(hdr, { mode: 'no-cors', priority: 'low' }).catch(() => {});
+          fetch(envMap, { mode: 'no-cors', priority: 'low' }).catch(() => {});
         } catch (e) { /* ignore — purely opportunistic */ }
       }
     }
