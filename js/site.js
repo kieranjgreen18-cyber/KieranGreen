@@ -423,7 +423,6 @@ class PageChrome {
     this._isDown  = false;
     this._inLink  = false;
     this._inProj  = false;
-    this._applyPending = false;
 
     // Section indicator
     this._secInd  = null;
@@ -472,19 +471,18 @@ class PageChrome {
     // ── Document-level mouse ───────────────────────────────────────────
     document.addEventListener('mousemove', e => {
       this._mx = e.clientX; this._my = e.clientY;
-      // Use transform instead of left/top — compositor-only, no layout recalc on every mousemove.
-      if (this._cur) this._cur.style.transform = `translate(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%))`;
-    }, { passive: true });
-    document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); }, { passive: true });
-    document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); }, { passive: true });
+      if (this._cur) { this._cur.style.left = `${e.clientX}px`; this._cur.style.top = `${e.clientY}px`; }
+    });
+    document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
+    document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
     document.addEventListener('mouseleave', () => {
       if (this._cur)  this._cur.style.opacity  = '0';
       if (this._curR) this._curR.style.opacity = '0';
-    }, { passive: true });
+    });
     document.addEventListener('mouseenter', () => {
       if (this._cur)  this._cur.style.opacity  = '1';
       if (this._curR) this._curR.style.opacity = '1';
-    }, { passive: true });
+    });
 
     document.querySelectorAll('a, button').forEach(el => {
       el.addEventListener('mouseenter', () => { this._inLink = true;  this._apply(); });
@@ -510,8 +508,8 @@ class PageChrome {
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
         if (this._curR) {
-          // transform: no layout recalc, stays on compositor thread
-          this._curR.style.transform = `translate(calc(${this._rx}px - 50%), calc(${this._ry}px - 50%))`;
+          this._curR.style.left = `${this._rx}px`;
+          this._curR.style.top  = `${this._ry}px`;
         }
         // Only continue while the follower is catching up; goes fully idle otherwise.
         if (stillMoving) rafId = requestAnimationFrame(loop);
@@ -601,27 +599,17 @@ class PageChrome {
     const logo     = document.querySelector('.n-logo');
     const logoLast = logo && logo.querySelector('.logo-last');
     const CHARS    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
-    const CHARS_LEN = CHARS.length;
     let scrambling = false;
     if (logo && logoLast) {
       const scramble = () => {
         if (scrambling) return; scrambling = true;
-        let iter = 0;
-        const TARGET = 'Green';
-        // Pre-split target to avoid reallocating the array on every interval tick
-        const TARGET_CHARS = TARGET.split('');
-        const TARGET_LEN   = TARGET_CHARS.length;
+        let iter = 0; const TARGET = 'Green';
         const iv = setInterval(() => {
-          const resolved = Math.floor(iter);
-          let out = '';
-          for (let i = 0; i < TARGET_LEN; i++) {
-            out += i < resolved ? TARGET_CHARS[i] : CHARS[Math.floor(Math.random() * CHARS_LEN)];
-          }
-          logoLast.textContent = out;
-          if (resolved >= TARGET_LEN) {
-            clearInterval(iv); logoLast.textContent = TARGET; scrambling = false;
-          }
-          iter += 0.38;
+          logoLast.textContent = TARGET.split('').map((c, i) =>
+            i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
+          ).join('');
+          if (Math.floor(iter) >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
+          iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
         }, 26);
       };
       logo.addEventListener('mouseenter', scramble);
@@ -630,23 +618,10 @@ class PageChrome {
 
     // ── Nav scrolled + hero counter hide on scroll ─────────────────────
     const heroCounterEl = document.getElementById('hero-counter');
-    let _navScrolled = false, _counterHidden = false;
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
-      if (this._navEl) {
-        const shouldBeScrolled = y > 40;
-        if (shouldBeScrolled !== _navScrolled) {
-          _navScrolled = shouldBeScrolled;
-          this._navEl.classList.toggle('scrolled', shouldBeScrolled);
-        }
-      }
-      if (heroCounterEl) {
-        const shouldHide = y > 60;
-        if (shouldHide !== _counterHidden) {
-          _counterHidden = shouldHide;
-          heroCounterEl.classList.toggle('hide', shouldHide);
-        }
-      }
+      if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
+      if (heroCounterEl) heroCounterEl.classList.toggle('hide', y > 60);
     }, { passive: true });
 
     // ── Resize ─────────────────────────────────────────────────────────
@@ -687,20 +662,11 @@ class PageChrome {
 
   // Cursor state is expressed as body classes so CSS owns all appearance.
   // Priority: click > link > proj > default (matches original _state() logic).
-  // Cursor state is expressed as body classes so CSS owns all appearance.
-  // Priority: click > link > proj > default (matches original _state() logic).
-  // Batched into rAF so simultaneous enter/leave pairs don't trigger two
-  // style recalcs — the last write before the next frame wins, which is correct.
   _apply() {
-    if (this._applyPending) return;
-    this._applyPending = true;
-    requestAnimationFrame(() => {
-      this._applyPending = false;
-      const b = document.body;
-      b.classList.toggle('cur-click', this._isDown);
-      b.classList.toggle('cur-link',  !this._isDown && this._inLink);
-      b.classList.toggle('cur-proj',  !this._isDown && !this._inLink && this._inProj);
-    });
+    const b = document.body;
+    b.classList.toggle('cur-click', this._isDown);
+    b.classList.toggle('cur-link',  !this._isDown && this._inLink);
+    b.classList.toggle('cur-proj',  !this._isDown && !this._inLink && this._inProj);
   }
 
   _setTheme(t) {
@@ -989,22 +955,16 @@ class CarouselContainer {
     if (!this._N) return;
 
     // Character-by-character title animation prep
-    // Cache the char spans per project so _setPositions never calls
-    // querySelectorAll on every advance — just reads pre-built arrays.
-    this._projChars = []; // parallel array to this._projs
     this._projs.forEach(p => {
       const title = p.querySelector('.proj-title');
-      if (!title) { this._projChars.push([]); return; }
+      if (!title) return;
       const text = title.textContent.trim();
       title.innerHTML = '';
-      const chars = [];
       [...text].forEach(ch => {
         const s = document.createElement('span');
         s.className = 'ch'; s.textContent = ch === ' ' ? '\u00a0' : ch;
         title.appendChild(s);
-        chars.push(s);
       });
-      this._projChars.push(chars);
     });
 
     // Dot nav — reuse the static #c-dots already in the HTML (documented exception).
@@ -1052,16 +1012,13 @@ class CarouselContainer {
       this._projs.forEach(proj => {
         const img = proj.querySelector('.proj-img');
         if (!img) return;
-        // Cache is set ONLY on mouseenter — never in mousemove.
-        // getBoundingClientRect() in a mousemove handler causes a sync layout
-        // flush on every pointer event, which fights the compositor thread.
         proj.addEventListener('mouseenter', () => { rectCache.set(proj, proj.getBoundingClientRect()); });
         proj.addEventListener('mousemove',  e => {
-          const r = rectCache.get(proj);
-          if (!r) return; // safety: no rect yet (shouldn't happen after mouseenter)
+          if (!rectCache.has(proj)) rectCache.set(proj, proj.getBoundingClientRect());
+          const r  = rectCache.get(proj);
           const nx = (e.clientX - r.left) / r.width  - 0.5;
           const ny = (e.clientY - r.top)  / r.height - 0.5;
-          img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg) translateZ(0)`;
+          img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
         });
         proj.addEventListener('mouseleave', () => { img.style.transform = ''; });
       });
@@ -1130,14 +1087,13 @@ class CarouselContainer {
 
   _setPositions(idx, animate) {
     this._projs.forEach((p, i) => {
-      const chars = this._projChars[i] || [];
       const delta = i - idx;
       if      (delta < -1)   p.dataset.pos = 'far-above';
       else if (delta === -1) p.dataset.pos = 'prev';
       else if (delta === 0) {
         p.dataset.pos = 'active';
         if (animate) {
-          chars.forEach((s, ci) => {
+          p.querySelectorAll('.proj-title .ch').forEach((s, ci) => {
             s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
           });
         }
@@ -1145,7 +1101,7 @@ class CarouselContainer {
       else if (delta === 1) p.dataset.pos = 'next';
       else                  p.dataset.pos = 'far-below';
       if (delta !== 0) {
-        chars.forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
+        p.querySelectorAll('.proj-title .ch').forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
@@ -1339,10 +1295,6 @@ class AboutContainer {
     // the contact panel (highlights "Contact" nav link) from other about panels.
     const isLast = idx === this._contactPanelIdx;
     document.body.dataset.aboutPanel = isLast ? 'contact' : 'about';
-
-    // Toggle class on root so CSS can hide progress dots without :has()
-    // (:has triggers a full subtree recalc on every panel change — avoid it)
-    if (this._root) this._root.classList.toggle('on-contact-panel', isLast);
 
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
     // intentionally excluded from the global IntersectionObserver (it lives inside
