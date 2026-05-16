@@ -798,8 +798,11 @@ class Hero3DContainer {
     // Reset hint state so re-entry always shows the 360° hint again
     this._hintDone  = false;
     this._hintReady = false;
-    if (this._nav) this._nav.classList.remove('scrolled');
+    // scrollTo first — layout is still clean here, no prior writes to flush.
+    // Moving it before the classList write avoids a forced layout caused by
+    // the browser needing to resolve the new style before computing scroll position.
     window.scrollTo({ top: 0, behavior: 'instant' });
+    if (this._nav) this._nav.classList.remove('scrolled');
     this._root.style.visibility = 'visible';
     this._root.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1)';
     this._root.style.opacity    = '1';
@@ -1111,7 +1114,9 @@ class CarouselContainer {
     });
 
     this._sizeSpacer();
-    this._calcSpacerTop();
+    // Defer the rect read to a rAF so it doesn't immediately follow the height
+    // write above — getBoundingClientRect() after a style write forces layout.
+    requestAnimationFrame(() => this._calcSpacerTop());
     window.addEventListener('resize', this._onResize, { passive: true });
 
     // Create the next-section arrow and append it to the dots container AFTER
@@ -1329,7 +1334,9 @@ class AboutContainer {
     }
 
     this._sizeSpacer();
-    this._calcSpacerTop();
+    // Defer the rect read to a rAF so it doesn't immediately follow the height
+    // write above — getBoundingClientRect() after a style write forces layout.
+    requestAnimationFrame(() => this._calcSpacerTop());
     window.addEventListener('resize', this._onResize, { passive: true });
 
     this._setPanel(0);
@@ -1345,9 +1352,10 @@ class AboutContainer {
     // Restore spacer height before engaging so layout is correct when the
     // stage becomes visible (was collapsed to 0 on exit to prevent gap).
     this._sizeSpacer();
-    // Cache spacerTop synchronously with the current layout — this gives a
-    // usable value immediately, even before the double-rAF resolves.
-    this._calcSpacerTop();
+    // Do NOT read getBoundingClientRect() here — _sizeSpacer() just wrote
+    // a new height, so reading immediately forces a synchronous layout flush.
+    // The double-rAF below re-caches _spacerTop after paint; that value is
+    // what actually gets used for scroll-position calculations during the session.
     // Arrive on last panel when scrolling back up from below.
     // Any other direction (including direct nav = 0) resets to first panel.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
