@@ -708,6 +708,26 @@ class Hero3DContainer {
     this._t0x         = 0;
     this._tScrolling  = null;
 
+    // ── FPS monitor state ──────────────────────────────────────────────
+    // Measures frame rate while the hero is active. If FPS stays below
+    // FPS_THRESHOLD for FPS_STRIKE_COUNT consecutive measurement windows,
+    // the model-viewer is replaced with the static miniheroheader.png fallback.
+    this._FPS_THRESHOLD   = 15;   // fps; below this triggers the degraded path
+    this._FPS_WINDOW_MS   = 1000; // ms per measurement bucket
+    this._FPS_STRIKE_COUNT= 3;    // consecutive low-fps windows before degrading
+    this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes can count —
+                                  // gives the GLB + HDR time to finish loading
+                                  // without the initial asset-load GPU spike
+                                  // falsely triggering degradation.
+    this._fpsRafId        = 0;    // requestAnimationFrame handle
+    this._fpsFrameCount   = 0;    // frames counted in current window
+    this._fpsWindowStart  = 0;    // timestamp of current window start
+    this._fpsEnterTime    = 0;    // performance.now() when enter() last ran
+    this._fpsStrikes      = 0;    // consecutive low-fps window count
+    this._fpsDegraded     = false;// true once we've swapped to the static fallback
+    this._fpsFallbackEl   = null; // the <img> fallback element (created lazily)
+    this._fpsMeasure      = this._fpsMeasure.bind(this);
+
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
     this._onViewerLoad         = this._onViewerLoad.bind(this);
@@ -789,9 +809,18 @@ class Hero3DContainer {
     [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
     // Re-enable auto-rotate (was removed on exit to prevent GPU thrash)
-    if (this._viewer) {
+    if (this._viewer && !this._fpsDegraded) {
       this._viewer.setAttribute('auto-rotate', '');
     }
+    // Start (or restart) the FPS monitor for this visit to the hero section.
+    // Reset strike counter on re-entry so a brief visit to another section
+    // doesn't carry over stale low-fps strikes.
+    this._fpsStrikes     = 0;
+    this._fpsFrameCount  = 0;
+    this._fpsEnterTime   = performance.now();
+    this._fpsWindowStart = this._fpsEnterTime;
+    if (this._fpsRafId) { cancelAnimationFrame(this._fpsRafId); this._fpsRafId = 0; }
+    if (!this._fpsDegraded) this._fpsRafId = requestAnimationFrame(this._fpsMeasure);
     requestAnimationFrame(() => this._revealHero());
   }
 
@@ -824,6 +853,8 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
+    // Stop the FPS loop — no need to measure while the hero is off-screen.
+    if (this._fpsRafId) { cancelAnimationFrame(this._fpsRafId); this._fpsRafId = 0; }
   }
 
   onScroll(direction) {
@@ -875,6 +906,90 @@ class Hero3DContainer {
     if (!this._hintReady || this._hintDone) return;
     this._hintDone = true;
     this._modelHint?.classList.add('hidden');
+  }
+
+  /**
+   * RAF loop that counts frames per second while the hero is active.
+   * Runs one bucket at a time (FPS_WINDOW_MS). If the measured FPS for a
+   * bucket is below FPS_THRESHOLD, a strike is recorded. Once
+   * FPS_STRIKE_COUNT consecutive strikes accumulate the viewer is degraded.
+   *
+   * A startup grace period (FPS_GRACE_MS from enter()) is enforced so that
+   * the initial asset-load GPU spike — GLB parsing, HDR decode, shader
+   * compilation — cannot falsely trigger degradation before the model has
+   * had a chance to settle into its steady-state frame rate.
+   */
+  _fpsMeasure(ts) {
+    if (!this._active) { this._fpsRafId = 0; return; }
+    this._fpsFrameCount++;
+    const elapsed = ts - this._fpsWindowStart;
+    if (elapsed >= this._FPS_WINDOW_MS) {
+      // Only evaluate the bucket if we are past the startup grace period.
+      // Buckets during the grace window are silently discarded — frame count
+      // and window start are simply reset so the first real bucket begins
+      // immediately after the grace period ends.
+      const sinceEnter = ts - this._fpsEnterTime;
+      if (sinceEnter >= this._FPS_GRACE_MS) {
+        const fps = (this._fpsFrameCount / elapsed) * 1000;
+        if (fps < this._FPS_THRESHOLD) {
+          this._fpsStrikes++;
+          if (this._fpsStrikes >= this._FPS_STRIKE_COUNT) {
+            this._fpsRafId = 0;
+            this._fpsDegrade();
+            return; // stop the loop — degraded path takes over
+          }
+        } else {
+          this._fpsStrikes = 0; // reset on a good window
+        }
+      }
+      // Start the next bucket regardless of whether this one was evaluated.
+      this._fpsFrameCount  = 0;
+      this._fpsWindowStart = ts;
+    }
+    this._fpsRafId = requestAnimationFrame(this._fpsMeasure);
+  }
+
+  /**
+   * Swap out the model-viewer for a static fallback image.
+   * Called once when sustained low FPS is detected while the hero is active.
+   */
+  _fpsDegrade() {
+    if (this._fpsDegraded) return;
+    this._fpsDegraded = true;
+
+    // Disable the model-viewer: stop its render loop, hide it visually.
+    if (this._viewer) {
+      this._viewer.removeAttribute('auto-rotate');
+      // Disconnect camera-change listener so it can't fire after removal.
+      this._viewer.removeEventListener('camera-change', this._onViewerCameraChange);
+      this._viewer.style.display = 'none';
+      // Destroy the WebGL context by clearing the src — this releases GPU memory.
+      try { this._viewer.src = ''; } catch(e) { /* non-fatal */ }
+    }
+
+    // Hide hint / label UI elements that only make sense with the 3D model.
+    if (this._modelLabel) this._modelLabel.style.display = 'none';
+    if (this._modelHint)  this._modelHint.style.display  = 'none';
+    const mobile360 = this._root?.querySelector('#hero-mobile-360');
+    if (mobile360) mobile360.style.display = 'none';
+
+    // Build and insert the static fallback <img> if it doesn't exist yet.
+    if (!this._fpsFallbackEl) {
+      const img = document.createElement('img');
+      img.src      = 'assets/images/miniheroheader.png';
+      img.alt      = 'Kieran Green — Industrial Designer hero image';
+      img.className = 'hero-fps-fallback';
+      // Insert before the vignette overlay so the vignette still renders on top.
+      const vignette = this._root?.querySelector('.hero-vignette');
+      if (vignette) {
+        this._root.insertBefore(img, vignette);
+      } else {
+        this._root?.appendChild(img);
+      }
+      this._fpsFallbackEl = img;
+    } else {
+      this._fpsFallbackEl.style.display = '';
+    }
   }
 
   _onRootWheel(e) {
