@@ -76,7 +76,7 @@
 <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
 <!-- Preload the first About panel images (panel 0 / intro portrait, saab) so they
      don't pop in when the About stage first becomes active -->
-<link rel="preload" as="image" href="assets/images/portrait.JPEG" fetchpriority="low">
+<link rel="preload" as="image" href="assets/images/portrait.webp" fetchpriority="low">
 <link rel="preload" as="image" href="assets/images/saab.webp" fetchpriority="low">
 <!-- Preload the 3D model GLB — the single biggest contributor to model-viewer
      pop-in on first visit. Fetching it in parallel with the model-viewer script
@@ -2984,7 +2984,7 @@ model-viewer    { isolation: isolate; }
       <div class="col-left">
         <div class="intro-portrait-wrap">
           <!-- Panel 0 is the first visible panel — load eagerly -->
-          <img src="assets/images/portrait.JPEG" alt="Portrait of Kieran Green, industrial designer" loading="eager" decoding="async">
+          <img src="assets/images/portrait.webp" alt="Portrait of Kieran Green, industrial designer" loading="eager" decoding="async">
         </div>
         <div class="intro-portrait-vignette" aria-hidden="true"></div>
       </div>
