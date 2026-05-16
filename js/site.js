@@ -463,8 +463,9 @@ class PageChrome {
         veil.style.transition = 'none';
         veil.style.clipPath = 'inset(0 100% 0 0)';
         veil.style.pointerEvents = 'none';
-        void veil.offsetWidth;
-        requestAnimationFrame(() => { if (veil) { veil.style.transition = ''; } });
+        // Use a double-rAF instead of offsetWidth to flush styles without
+        // forcing a synchronous layout read mid-script.
+        requestAnimationFrame(() => requestAnimationFrame(() => { if (veil) { veil.style.transition = ''; } }));
       }
     });
 
@@ -1129,13 +1130,15 @@ class CarouselContainer {
         if (!img) return;
         proj.addEventListener('mouseenter', () => { rectCache.set(proj, proj.getBoundingClientRect()); });
         proj.addEventListener('mousemove',  e => {
-          if (!rectCache.has(proj)) rectCache.set(proj, proj.getBoundingClientRect());
+          // Cache is always populated by mouseenter before mousemove fires,
+          // so no fallback getBoundingClientRect() read is needed here.
           const r  = rectCache.get(proj);
+          if (!r) return;
           const nx = (e.clientX - r.left) / r.width  - 0.5;
           const ny = (e.clientY - r.top)  / r.height - 0.5;
           img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
         });
-        proj.addEventListener('mouseleave', () => { img.style.transform = ''; });
+        proj.addEventListener('mouseleave', () => { rectCache.delete(proj); img.style.transform = ''; });
       });
     }
 
@@ -1157,12 +1160,14 @@ class CarouselContainer {
     this._transitioning  = true;
     this._lastAdvanceAt  = 0;
     this._lastAdvDir     = 0;
-    this._calcSpacerTop();
     this._root.style.visibility = 'visible';
     this._root.classList.add('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      // Read geometry after styles have been applied and painted so this
+      // getBoundingClientRect() call does not force a synchronous layout.
+      this._calcSpacerTop();
       this._setPositions(this._activeIdx, true);
       // Release lock AFTER positions are applied so the first advance is always clean.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
