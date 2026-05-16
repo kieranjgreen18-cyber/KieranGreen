@@ -77,7 +77,7 @@
 <!-- Preload the first About panel images (panel 0 / intro portrait, saab) so they
      don't pop in when the About stage first becomes active -->
 <link rel="preload" as="image" href="assets/images/portrait.JPEG" fetchpriority="low">
-<link rel="preload" as="image" href="assets/images/saab.jpg" fetchpriority="low">
+<link rel="preload" as="image" href="assets/images/saab.webp" fetchpriority="low">
 <!-- Preload the 3D model GLB — the single biggest contributor to model-viewer
      pop-in on first visit. Fetching it in parallel with the model-viewer script
      means the file is already in the browser cache when the element upgrades.
@@ -3013,7 +3013,7 @@ model-viewer    { isolation: isolate; }
           <div class="photo-gallery" aria-hidden="true">
             <div class="photo-frame pf-main">
               <!-- data-src: loaded by AboutContainer._preloadPanel() before panel activates -->
-              <img data-src="assets/images/saab.jpg" alt="Rebuilding the Saab engine bay — stripped-down, everything deliberate" decoding="async">
+              <img data-src="assets/images/saab.webp" alt="Rebuilding the Saab engine bay — stripped-down, everything deliberate" decoding="async">
             </div>
             <div class="photo-frame pf-accent">
               <img data-src="assets/images/engineblock.jpg" alt="Engine bay detail — machined metal components" decoding="async">
