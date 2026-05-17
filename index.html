@@ -997,13 +997,24 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   position: absolute; inset: 0;
   background-size: cover; background-position: center;
   transform: scale(1.06);
-  filter: saturate(.68) brightness(.52);
-  transition: transform 1.15s var(--ease), filter 1.15s ease;
-  /* No permanent will-change — 4 slide images on GPU simultaneously is expensive.
-     Browser promotes on demand when transition fires. */
+  /* filter: removed — filter on a background-image element forces a repaint
+     on every frame that anything on the page changes (cursor, animations etc).
+     Darkening is now handled by a ::after overlay using opacity, which is
+     compositor-only and costs nothing at rest. */
+  transition: transform 1.15s var(--ease);
 }
-.proj[data-pos="active"] .proj-img { will-change: transform, filter; }
-.proj:hover .proj-img { transform: scale(1.01); filter: saturate(.92) brightness(.7); }
+/* Dark + desaturate overlay — replaces filter. opacity transition is compositor-only. */
+.proj-img::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(8,9,9,.55);
+  mix-blend-mode: multiply;
+  opacity: 1;
+  transition: opacity 1.15s ease;
+}
+.proj[data-pos=\"active\"] .proj-img { will-change: transform; }
+.proj:hover .proj-img { transform: scale(1.01); }
+.proj:hover .proj-img::after { opacity: 0.18; }
 
 /* Directional gradient veil */
 .proj:nth-child(odd)  .proj-veil { position: absolute; inset: 0; background: linear-gradient(to right, rgba(8,9,9,.95) 0%, rgba(8,9,9,.6) 42%, transparent 72%); }
@@ -2183,23 +2194,20 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
   background-size: cover;
   background-position: center 40%;
   opacity: 1 !important;
-  /* Start heavily desaturated/dark so the gradient veil reads cleanly over it */
-  filter: saturate(.28) brightness(.55) !important;
-  /* Include transform so the base .proj:hover scale(1.01) rule transitions
-     smoothly instead of snapping — the !important on this declaration was
-     overriding the combined transform+filter transition on .proj-img, leaving
-     transform without a transition and causing the jump on hover. */
-  transition: filter 1.15s ease, transform 1.15s var(--ease) !important;
+  /* filter removed — replaced by ::after overlay on .proj-img for consistency */
+  transition: transform 1.15s var(--ease) !important;
 }
-/* Suppress the base scale nudge — the protected slide has no photo to
-   subtly zoom so the 1.01 scale just looks like a glitch. Keep filter only. */
+/* Protected slide resting overlay — heavier dark than the base .proj-img::after */
+.proj-img--protected::after {
+  background: rgba(4,5,5,.72);
+  opacity: 1;
+}
+/* Suppress the base scale nudge — stays at resting scale on hover */
 .proj--protected:hover .proj-img--protected {
-  transform: scale(1.06) !important; /* stay at resting scale */
-  filter: saturate(.48) brightness(.72) !important;
+  transform: scale(1.06) !important;
 }
-.proj[data-pos="active"].proj--protected .proj-img--protected {
-  filter: saturate(.48) brightness(.72) !important;
-}
+.proj--protected:hover .proj-img--protected::after { opacity: 0.52; }
+.proj[data-pos="active"].proj--protected .proj-img--protected::after { opacity: 0.52; }
 /* Protected slide veil — slide 05 is nth-child(odd), text sits left, so gradient fades from left */
 .proj--protected .proj-veil,
 .proj--protected:nth-child(odd) .proj-veil {
