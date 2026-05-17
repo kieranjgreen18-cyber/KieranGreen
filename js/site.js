@@ -812,8 +812,9 @@ class Hero3DContainer {
     // next frame always triggers the entrance transition even on re-entry.
     [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
-    // Re-enable auto-rotate (was removed on exit to prevent GPU thrash)
+    // Re-enable auto-rotate and resume the render loop (was paused on exit).
     if (this._viewer && !this._fpsDegraded) {
+      try { this._viewer.play(); } catch(e) { /* non-fatal */ }
       this._viewer.setAttribute('auto-rotate', '');
     }
     // Start (or restart) the FPS monitor for this visit to the hero section.
@@ -842,13 +843,13 @@ class Hero3DContainer {
     // Strip reveal classes so re-entering Hero re-plays the entrance animation.
     [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
-    // Pause model-viewer on mobile to prevent GPU/state thrash when
-    // the user scrolls away and back repeatedly. Pausing stops the render
-    // loop and prevents the auto-rotate from accumulating delta while hidden.
+    // Pause model-viewer when offscreen to stop the GPU render loop entirely.
+    // pauseAllAnimations() halts the internal rAF loop; removing auto-rotate
+    // prevents delta accumulation. On mobile we also reset the camera so
+    // re-entry always shows the correct angle.
     if (this._viewer) {
       this._viewer.removeAttribute('auto-rotate');
-      // On mobile, also reset camera to default orbit so re-entry always
-      // shows the model from the correct angle after extended interaction.
+      try { this._viewer.pauseAllAnimations(); } catch(e) { /* non-fatal */ }
       if (window.matchMedia('(pointer: coarse)').matches) {
         try {
           this._viewer.cameraOrbit = '-20deg 92deg 50%';
