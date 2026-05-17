@@ -971,21 +971,30 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   touch-action: none;
 }
 .projects.carousel-active { pointer-events: auto; visibility: visible; }
-.proj-track { position: absolute; inset: 0; }
+/* overflow:hidden here clips the proj-ghost bleed and proj-img scale(1.06)
+   overhang at the track level. This is a non-promoted element so it doesn't
+   create the forced-rasterization cost that overflow:hidden on each .proj did. */
+.proj-track { position: absolute; inset: 0; overflow: hidden; }
 
 /* Individual project slide */
 .proj {
   position: absolute; inset: 0; height: 100%;
-  overflow: hidden; cursor: none;
+  /* overflow:hidden removed — it combined with will-change:transform to force
+     the browser to rasterize the entire slide (including the giant proj-ghost
+     text) into a GPU texture for every promoted layer (active + prev + next).
+     Clipping is now delegated to child elements that actually need it. */
+  cursor: none;
   display: block; text-decoration: none;
   /* No global will-change — we promote selectively below */
   transition: transform 0.68s var(--snap);
   transform: translateY(100%) translateZ(0);
 }
-/* Promote only the slides that are animating or about to animate */
-.proj[data-pos="active"],
-.proj[data-pos="prev"],
-.proj[data-pos="next"] { will-change: transform; }
+/* Promote only the active slide as a compositor layer.
+   prev/next were previously promoted here too, but that kept 3 large GPU
+   textures alive simultaneously and ran counterChevron animations on
+   off-screen layers. The browser will still animate prev/next correctly
+   on the transition frame — it promotes on demand. */
+.proj[data-pos="active"] { will-change: transform; }
 .proj[data-pos="far-above"] { transform: translateY(-200%) translateZ(0); visibility: hidden; transition: none !important; }
 .proj[data-pos="prev"]      { transform: translateY(-100%) translateZ(0); }
 .proj[data-pos="active"]    { transform: translateY(0) translateZ(0); }
@@ -1003,11 +1012,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
      compositor-only and costs nothing at rest. */
   transition: transform 1.15s var(--ease);
 }
-/* Dark overlay — compositor-only opacity transition.
-   mix-blend-mode removed: it forces the compositor to blend against all
-   layers below (including the model-viewer WebGL canvas), breaking layer
-   isolation and causing a full-composite repaint on every frame while the
-   slide is animating. The rgba background alone provides equivalent darkening. */
+/* Dark overlay — compositor-friendly opacity transition.
+   mix-blend-mode:multiply removed: it prevented the compositor from isolating
+   the carousel layer, forcing a cross-layer composite on every frame against
+   everything below (including the model-viewer WebGL canvas). */
 .proj-img::after {
   content: '';
   position: absolute; inset: 0;
@@ -1133,6 +1141,11 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   color: rgba(91,160,164,.65);
 }
 .proj-counter-chevron.hide { opacity: 0; }
+/* Pause the animation on slides that are off-screen — saves a compositor
+   wakeup every frame on layers that the user can't see */
+.proj:not([data-pos="active"]) .proj-counter-chevron {
+  animation-play-state: paused;
+}
 @keyframes counterChevron {
   0%, 100% { transform: translateY(0); opacity: .5; }
   50%       { transform: translateY(4px); opacity: 1; }
@@ -2853,7 +2866,8 @@ model-viewer    { isolation: isolate; }
        aria-label="Sabretta Pen — ballpoint pen design inspired by 1930s roadster fenders, modeled and animated in Rhino 3D and Keyshot, 2025"
        style="background:#08090a;">
       <div class="proj-img" role="img" aria-label="Sabretta pen product visualization render"
-           style="background-image:url('assets/images/sabrettahero.png');background-position:center 40%;"></div>
+           data-bg="assets/images/sabrettahero.png"
+           style="background-position:center 40%;"></div>
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">02</div>
