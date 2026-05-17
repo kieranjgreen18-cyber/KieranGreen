@@ -461,7 +461,7 @@ class PageChrome {
     window.addEventListener('pageshow', (e) => {
       if (e.persisted && veil) {
         veil.style.transition = 'none';
-        veil.style.clipPath = 'inset(0 100% 0 0)';
+        veil.style.transform = 'translateX(-100%)';
         veil.style.pointerEvents = 'none';
         // Use a double-rAF instead of offsetWidth to flush styles without
         // forcing a synchronous layout read mid-script.
@@ -488,13 +488,20 @@ class PageChrome {
       if (this._curR) this._curR.style.opacity = '1';
     });
 
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => { this._inLink = true;  this._apply(); });
-      el.addEventListener('mouseleave', () => { this._inLink = false; this._apply(); });
+    // Single delegated listeners instead of one per element — same outcome,
+    // no per-element allocation at init time, and automatically covers any
+    // anchors or buttons added to the DOM after init.
+    // mouseover/mouseout bubble; we check relatedTarget to avoid toggling
+    // the flag when moving between children of the same link or proj card.
+    document.addEventListener('mouseover', e => {
+      if (e.target.closest('a, button')) { this._inLink = true;  this._apply(); }
+      if (e.target.closest('.proj'))     { this._inProj = true;  this._apply(); }
     });
-    document.querySelectorAll('.proj').forEach(el => {
-      el.addEventListener('mouseenter', () => { this._inProj = true;  this._apply(); });
-      el.addEventListener('mouseleave', () => { this._inProj = false; this._apply(); });
+    document.addEventListener('mouseout', e => {
+      const link = e.target.closest('a, button');
+      if (link && !link.contains(e.relatedTarget)) { this._inLink = false; this._apply(); }
+      const proj = e.target.closest('.proj');
+      if (proj && !proj.contains(e.relatedTarget)) { this._inProj = false; this._apply(); }
     });
 
     // Cursor follower — position tracking only.
@@ -612,14 +619,32 @@ class PageChrome {
     if (logo && logoLast) {
       const scramble = () => {
         if (scrambling) return; scrambling = true;
-        let iter = 0; const TARGET = 'Green';
-        const iv = setInterval(() => {
+        let iter = 0;
+        const TARGET   = 'Green';
+        // Advance iter by this amount per frame. Calibrated against a ~60fps
+        // display — 0.38 per frame at 60fps resolves one letter roughly every
+        // 2-3 frames, matching the original 26ms setInterval cadence without
+        // drifting or firing mid-frame.
+        const STEP     = 0.38;
+        let lastTs     = 0;
+        const tick = (ts) => {
+          // Cap delta so a long frame (tab switch, GC pause) doesn't skip
+          // multiple letters at once — max one frame's worth of advance.
+          const dt = Math.min(ts - lastTs, 32);
+          lastTs   = ts;
+          // Scale step by actual elapsed time so it's frame-rate independent.
+          iter += STEP * (dt / 16.67);
           logoLast.textContent = TARGET.split('').map((c, i) =>
             i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
           ).join('');
-          if (Math.floor(iter) >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
-          iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
-        }, 26);
+          if (Math.floor(iter) >= TARGET.length) {
+            logoLast.textContent = TARGET;
+            scrambling = false;
+            return; // stop the loop
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
       };
       logo.addEventListener('mouseenter', scramble);
       logo.addEventListener('focus', () => { if (!scrambling) scramble(); });
@@ -1147,6 +1172,7 @@ class CarouselContainer {
         const img = proj.querySelector('.proj-img');
         if (!img) return;
         proj.addEventListener('mouseenter', () => { rectCache.set(proj, proj.getBoundingClientRect()); });
+        let tiltRafId = 0;
         proj.addEventListener('mousemove',  e => {
           // Cache is always populated by mouseenter before mousemove fires,
           // so no fallback getBoundingClientRect() read is needed here.
@@ -1154,9 +1180,18 @@ class CarouselContainer {
           if (!r) return;
           const nx = (e.clientX - r.left) / r.width  - 0.5;
           const ny = (e.clientY - r.top)  / r.height - 0.5;
-          img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
+          // Batch the style write into a rAF — mousemove fires faster than
+          // display refresh on high-DPI trackpads, so cap at one write per frame.
+          if (!tiltRafId) tiltRafId = requestAnimationFrame(() => {
+            tiltRafId = 0;
+            img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
+          });
         });
-        proj.addEventListener('mouseleave', () => { rectCache.delete(proj); img.style.transform = ''; });
+        proj.addEventListener('mouseleave', () => {
+          rectCache.delete(proj);
+          if (tiltRafId) { cancelAnimationFrame(tiltRafId); tiltRafId = 0; }
+          img.style.transform = '';
+        });
       });
     }
 
