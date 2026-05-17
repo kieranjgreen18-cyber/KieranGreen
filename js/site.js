@@ -1225,15 +1225,16 @@ class CarouselContainer {
       // Release lock AFTER positions are applied so the first advance is always clean.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
     }));
-    // On first entry, start background image loads for all slides now that
-    // the carousel is visible. Images that are already loaded are no-ops.
-    this._projs.forEach(p => {
-      const img = p.querySelector('.proj-img');
-      if (img && img.dataset.bg) {
-        img.style.backgroundImage = `url('${img.dataset.bg}')`;
-        delete img.dataset.bg;
-      }
-    });
+    // Slides 1 and 2 have their images inlined in HTML (no data-bg) so they
+    // are already painted. Trigger remaining slides progressively: start the
+    // next slide's fetch immediately, then defer the rest to idle so they
+    // never compete with the active entrance animation.
+    this._preloadBg(this._activeIdx + 1);
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => { for (let i = this._activeIdx + 2; i < this._N; i++) this._preloadBg(i); }, { timeout: 1500 });
+    } else {
+      setTimeout(() => { for (let i = this._activeIdx + 2; i < this._N; i++) this._preloadBg(i); }, 800);
+    }
   }
 
   exit() {
@@ -1282,6 +1283,20 @@ class CarouselContainer {
     if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
   }
 
+  /**
+   * Flush data-bg → backgroundImage on a single slide.
+   * Safe to call repeatedly — no-op if already set or out of range.
+   */
+  _preloadBg(idx) {
+    const proj = this._projs[idx];
+    if (!proj) return;
+    const img = proj.querySelector('.proj-img');
+    if (img && img.dataset.bg) {
+      img.style.backgroundImage = `url('${img.dataset.bg}')`;
+      delete img.dataset.bg;
+    }
+  }
+
   _advance(dir) {
     if (this._transitioning) return;
     const now = performance.now();
@@ -1313,6 +1328,11 @@ class CarouselContainer {
     this._lastAdvDir    = dir;
     this._activeIdx     = next;
     this._setPositions(this._activeIdx, true);
+    // Pre-fetch the slide after the one we just landed on so it's ready
+    // before the user gets there. Running after _setPositions is intentional —
+    // the active slide's compositor work is already scheduled, so this fetch
+    // starts during the quiet period of the transition.
+    this._preloadBg(this._activeIdx + dir);
     setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
   }
 }
