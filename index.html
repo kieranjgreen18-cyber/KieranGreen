@@ -1003,12 +1003,15 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
      compositor-only and costs nothing at rest. */
   transition: transform 1.15s var(--ease);
 }
-/* Dark + desaturate overlay — replaces filter. opacity transition is compositor-only. */
+/* Dark overlay — compositor-only opacity transition.
+   mix-blend-mode removed: it forces the compositor to blend against all
+   layers below (including the model-viewer WebGL canvas), breaking layer
+   isolation and causing a full-composite repaint on every frame while the
+   slide is animating. The rgba background alone provides equivalent darkening. */
 .proj-img::after {
   content: '';
   position: absolute; inset: 0;
   background: rgba(8,9,9,.55);
-  mix-blend-mode: multiply;
   opacity: 1;
   transition: opacity 1.15s ease;
 }
@@ -2850,8 +2853,7 @@ model-viewer    { isolation: isolate; }
        aria-label="Sabretta Pen — ballpoint pen design inspired by 1930s roadster fenders, modeled and animated in Rhino 3D and Keyshot, 2025"
        style="background:#08090a;">
       <div class="proj-img" role="img" aria-label="Sabretta pen product visualization render"
-           data-bg="assets/images/sabrettahero.png"
-           style="background-position:center 40%;"></div>
+           style="background-image:url('assets/images/sabrettahero.png');background-position:center 40%;"></div>
       <div class="proj-veil"  aria-hidden="true"></div>
       <div class="proj-line"  aria-hidden="true"></div>
       <div class="proj-ghost" aria-hidden="true">02</div>
