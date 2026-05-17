@@ -471,8 +471,11 @@ class PageChrome {
 
     // ── Document-level mouse ───────────────────────────────────────────
     document.addEventListener('mousemove', e => {
+      // Only store raw position — DOM writes happen inside the rAF loop below.
+      // Writing style.left/top directly here (outside rAF) caused the dot to
+      // update at arbitrary points mid-frame, fighting model-viewer's render
+      // loop and producing visible jitter.
       this._mx = e.clientX; this._my = e.clientY;
-      if (this._cur) { this._cur.style.left = `${e.clientX}px`; this._cur.style.top = `${e.clientY}px`; }
     });
     document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
     document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
@@ -503,6 +506,12 @@ class PageChrome {
       let rafId = 0;
       const loop = () => {
         rafId = 0;
+        // Move the dot at exact mouse position, in sync with the display
+        // refresh — same frame as the ring lerp, no mid-frame style fights.
+        if (this._cur) {
+          this._cur.style.left = `${this._mx}px`;
+          this._cur.style.top  = `${this._my}px`;
+        }
         const rxN = this._rx + (this._mx - this._rx) * 0.12;
         const ryN = this._ry + (this._my - this._ry) * 0.12;
         const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
@@ -512,7 +521,6 @@ class PageChrome {
           this._curR.style.left = `${this._rx}px`;
           this._curR.style.top  = `${this._ry}px`;
         }
-        // Only continue while the follower is catching up; goes fully idle otherwise.
         if (stillMoving) rafId = requestAnimationFrame(loop);
       };
       document.addEventListener('mousemove', () => {
@@ -709,25 +717,25 @@ class Hero3DContainer {
     this._t0x         = 0;
     this._tScrolling  = null;
 
-    // ── FPS monitor state ──────────────────────────────────────────────
-    // Measures frame rate while the hero is active. If FPS stays below
-    // FPS_THRESHOLD for FPS_STRIKE_COUNT consecutive measurement windows,
-    // the model-viewer is replaced with the static miniheroheader.png fallback.
-    this._FPS_THRESHOLD   = 15;   // fps; below this triggers the degraded path
-    this._FPS_WINDOW_MS   = 1000; // ms per measurement bucket
-    this._FPS_STRIKE_COUNT= 3;    // consecutive low-fps windows before degrading
-    this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes can count —
-                                  // gives the GLB + HDR time to finish loading
-                                  // without the initial asset-load GPU spike
-                                  // falsely triggering degradation.
-    this._fpsRafId        = 0;    // requestAnimationFrame handle
-    this._fpsFrameCount   = 0;    // frames counted in current window
-    this._fpsWindowStart  = 0;    // timestamp of current window start
-    this._fpsEnterTime    = 0;    // performance.now() when enter() last ran
-    this._fpsStrikes      = 0;    // consecutive low-fps window count
-    this._fpsDegraded     = false;// true once we've swapped to the static fallback
+    // ── Performance monitor state ──────────────────────────────────────
+    // Watches for long tasks (main-thread blocks ≥ 50 ms) using
+    // PerformanceObserver instead of a rAF loop, so there is no second
+    // render loop competing with model-viewer for frame budget.
+    // FPS_STRIKE_COUNT consecutive long tasks after the grace period
+    // triggers the static fallback.
+    this._FPS_THRESHOLD   = 15;   // unused by PerformanceObserver path; kept for reference
+    this._FPS_WINDOW_MS   = 1000; // unused by PerformanceObserver path; kept for reference
+    this._FPS_STRIKE_COUNT= 3;    // long-task strikes before degrading
+    this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes count
+    this._fpsRafId        = 0;    // no longer used; kept so exit() cancel is a no-op
+    this._fpsFrameCount   = 0;    // no longer used
+    this._fpsWindowStart  = 0;    // no longer used
+    this._fpsEnterTime    = 0;    // set in enter() to enforce grace period
+    this._fpsStrikes      = 0;    // consecutive long-task count
+    this._fpsDegraded     = false;// true once swapped to static fallback
     this._fpsFallbackEl   = null; // the <img> fallback element (created lazily)
-    this._fpsMeasure      = this._fpsMeasure.bind(this);
+    this._fpsObserver     = null; // PerformanceObserver handle
+    this._fpsMeasure      = this._fpsMeasure.bind(this); // kept so enter() call is a no-op
 
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
@@ -817,15 +825,13 @@ class Hero3DContainer {
       try { this._viewer.play(); } catch(e) { /* non-fatal */ }
       this._viewer.setAttribute('auto-rotate', '');
     }
-    // Start (or restart) the FPS monitor for this visit to the hero section.
+    // Start (or restart) the performance observer for this visit.
     // Reset strike counter on re-entry so a brief visit to another section
-    // doesn't carry over stale low-fps strikes.
+    // doesn't carry over stale strikes.
     this._fpsStrikes     = 0;
-    this._fpsFrameCount  = 0;
     this._fpsEnterTime   = performance.now();
-    this._fpsWindowStart = this._fpsEnterTime;
-    if (this._fpsRafId) { cancelAnimationFrame(this._fpsRafId); this._fpsRafId = 0; }
-    if (!this._fpsDegraded) this._fpsRafId = requestAnimationFrame(this._fpsMeasure);
+    this._stopFpsObserver();
+    if (!this._fpsDegraded) this._fpsMeasure();
     requestAnimationFrame(() => this._revealHero());
   }
 
@@ -858,8 +864,8 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
-    // Stop the FPS loop — no need to measure while the hero is off-screen.
-    if (this._fpsRafId) { cancelAnimationFrame(this._fpsRafId); this._fpsRafId = 0; }
+    // Stop the performance observer — no need to watch while hero is offscreen.
+    this._stopFpsObserver();
   }
 
   onScroll(direction) {
@@ -914,44 +920,50 @@ class Hero3DContainer {
   }
 
   /**
-   * RAF loop that counts frames per second while the hero is active.
-   * Runs one bucket at a time (FPS_WINDOW_MS). If the measured FPS for a
-   * bucket is below FPS_THRESHOLD, a strike is recorded. Once
-   * FPS_STRIKE_COUNT consecutive strikes accumulate the viewer is degraded.
-   *
-   * A startup grace period (FPS_GRACE_MS from enter()) is enforced so that
-   * the initial asset-load GPU spike — GLB parsing, HDR decode, shader
-   * compilation — cannot falsely trigger degradation before the model has
-   * had a chance to settle into its steady-state frame rate.
+   * Starts a PerformanceObserver that counts 'longtask' entries (main-thread
+   * blocks ≥ 50 ms) while the hero is active. No rAF loop — zero frame-budget
+   * cost on healthy devices. FPS_STRIKE_COUNT consecutive long tasks after the
+   * grace period triggers _fpsDegrade() exactly as before.
    */
-  _fpsMeasure(ts) {
-    if (!this._active) { this._fpsRafId = 0; return; }
-    this._fpsFrameCount++;
-    const elapsed = ts - this._fpsWindowStart;
-    if (elapsed >= this._FPS_WINDOW_MS) {
-      // Only evaluate the bucket if we are past the startup grace period.
-      // Buckets during the grace window are silently discarded — frame count
-      // and window start are simply reset so the first real bucket begins
-      // immediately after the grace period ends.
-      const sinceEnter = ts - this._fpsEnterTime;
-      if (sinceEnter >= this._FPS_GRACE_MS) {
-        const fps = (this._fpsFrameCount / elapsed) * 1000;
-        if (fps < this._FPS_THRESHOLD) {
+  _fpsMeasure() {
+    if (this._fpsDegraded || this._fpsObserver) return;
+    if (!window.PerformanceObserver) return; // unsupported — fail silently
+
+    this._fpsObserver = new PerformanceObserver(list => {
+      if (!this._active || this._fpsDegraded) return;
+      const sinceEnter = performance.now() - this._fpsEnterTime;
+      if (sinceEnter < this._FPS_GRACE_MS) return; // still in grace period
+
+      for (const entry of list.getEntries()) {
+        // Only count tasks that are long enough to visibly drop frames.
+        // A 50 ms task blocks ~3 frames at 60 fps; we treat each as a strike.
+        if (entry.duration >= 50) {
           this._fpsStrikes++;
           if (this._fpsStrikes >= this._FPS_STRIKE_COUNT) {
-            this._fpsRafId = 0;
+            this._stopFpsObserver();
             this._fpsDegrade();
-            return; // stop the loop — degraded path takes over
+            return;
           }
         } else {
-          this._fpsStrikes = 0; // reset on a good window
+          // Short tasks reset the run — we only degrade on sustained blocking.
+          this._fpsStrikes = 0;
         }
       }
-      // Start the next bucket regardless of whether this one was evaluated.
-      this._fpsFrameCount  = 0;
-      this._fpsWindowStart = ts;
+    });
+
+    try {
+      this._fpsObserver.observe({ type: 'longtask', buffered: false });
+    } catch(e) {
+      // longtask not supported in this browser — fail silently.
+      this._fpsObserver = null;
     }
-    this._fpsRafId = requestAnimationFrame(this._fpsMeasure);
+  }
+
+  _stopFpsObserver() {
+    if (this._fpsObserver) {
+      try { this._fpsObserver.disconnect(); } catch(e) { /* non-fatal */ }
+      this._fpsObserver = null;
+    }
   }
 
   /**
