@@ -1086,6 +1086,7 @@ class CarouselContainer {
     this._dotsEl   = null;
     this._dotWraps = [];
     this._projs    = [];
+    this._chSpans  = []; // cached .ch spans per slide, populated in init()
     this._N        = 0;
     this._active        = false;
     this._activeIdx     = 0;
@@ -1111,17 +1112,22 @@ class CarouselContainer {
     this._N     = this._projs.length;
     if (!this._N) return;
 
-    // Character-by-character title animation prep
+    // Character-by-character title animation prep — also cache the spans so
+    // _setPositions never runs querySelectorAll on every advance.
+    this._chSpans = []; // parallel array to this._projs
     this._projs.forEach(p => {
       const title = p.querySelector('.proj-title');
-      if (!title) return;
+      if (!title) { this._chSpans.push([]); return; }
       const text = title.textContent.trim();
       title.innerHTML = '';
+      const spans = [];
       [...text].forEach(ch => {
         const s = document.createElement('span');
         s.className = 'ch'; s.textContent = ch === ' ' ? '\u00a0' : ch;
         title.appendChild(s);
+        spans.push(s);
       });
+      this._chSpans.push(spans);
     });
 
     // Dot nav — reuse the static #c-dots already in the HTML (documented exception).
@@ -1225,16 +1231,15 @@ class CarouselContainer {
       // Release lock AFTER positions are applied so the first advance is always clean.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
     }));
-    // Slides 1 and 2 have their images inlined in HTML (no data-bg) so they
-    // are already painted. Trigger remaining slides progressively: start the
-    // next slide's fetch immediately, then defer the rest to idle so they
-    // never compete with the active entrance animation.
-    this._preloadBg(this._activeIdx + 1);
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(() => { for (let i = this._activeIdx + 2; i < this._N; i++) this._preloadBg(i); }, { timeout: 1500 });
-    } else {
-      setTimeout(() => { for (let i = this._activeIdx + 2; i < this._N; i++) this._preloadBg(i); }, 800);
-    }
+    // On first entry, start background image loads for all slides now that
+    // the carousel is visible. Images that are already loaded are no-ops.
+    this._projs.forEach(p => {
+      const img = p.querySelector('.proj-img');
+      if (img && img.dataset.bg) {
+        img.style.backgroundImage = `url('${img.dataset.bg}')`;
+        delete img.dataset.bg;
+      }
+    });
   }
 
   exit() {
@@ -1262,12 +1267,13 @@ class CarouselContainer {
   _setPositions(idx, animate) {
     this._projs.forEach((p, i) => {
       const delta = i - idx;
+      const spans = this._chSpans[i] || [];
       if      (delta < -1)   p.dataset.pos = 'far-above';
       else if (delta === -1) p.dataset.pos = 'prev';
       else if (delta === 0) {
         p.dataset.pos = 'active';
         if (animate) {
-          p.querySelectorAll('.proj-title .ch').forEach((s, ci) => {
+          spans.forEach((s, ci) => {
             s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
           });
         }
@@ -1275,26 +1281,12 @@ class CarouselContainer {
       else if (delta === 1) p.dataset.pos = 'next';
       else                  p.dataset.pos = 'far-below';
       if (delta !== 0) {
-        p.querySelectorAll('.proj-title .ch').forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
+        spans.forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
     // Show next-section arrow only on the last slide
     if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
-  }
-
-  /**
-   * Flush data-bg → backgroundImage on a single slide.
-   * Safe to call repeatedly — no-op if already set or out of range.
-   */
-  _preloadBg(idx) {
-    const proj = this._projs[idx];
-    if (!proj) return;
-    const img = proj.querySelector('.proj-img');
-    if (img && img.dataset.bg) {
-      img.style.backgroundImage = `url('${img.dataset.bg}')`;
-      delete img.dataset.bg;
-    }
   }
 
   _advance(dir) {
@@ -1328,11 +1320,6 @@ class CarouselContainer {
     this._lastAdvDir    = dir;
     this._activeIdx     = next;
     this._setPositions(this._activeIdx, true);
-    // Pre-fetch the slide after the one we just landed on so it's ready
-    // before the user gets there. Running after _setPositions is intentional —
-    // the active slide's compositor work is already scheduled, so this fetch
-    // starts during the quiet period of the transition.
-    this._preloadBg(this._activeIdx + dir);
     setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
   }
 }
