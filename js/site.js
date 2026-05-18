@@ -880,6 +880,18 @@ class Hero3DContainer {
     this._stopFpsObserver();
     if (!this._fpsDegraded) this._fpsMeasure();
     requestAnimationFrame(() => this._revealHero());
+
+    // Preload carousel images during hero idle time so they're decoded before
+    // the user scrolls to the carousel. requestIdleCallback avoids competing
+    // with the hero entrance animation; the setTimeout fallback covers Safari.
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(
+        () => this._app._containers.get('carousel')?.preload(),
+        { timeout: 3000 }
+      );
+    } else {
+      setTimeout(() => this._app._containers.get('carousel')?.preload(), 1500);
+    }
   }
 
   exit() {
@@ -1119,6 +1131,7 @@ class CarouselContainer {
     this._nextArrow     = null; // c-next-arrow element
     this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
     this._tiltRafIds    = []; // per-proj pending tilt rAF ids; flushed on slide advance
+    this._preloaded     = false; // true once preload() has dispatched <link rel="preload"> tags
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1228,6 +1241,28 @@ class CarouselContainer {
     this._setPositions(0, false);
     this._root.style.visibility = 'hidden';
     this._root.classList.remove('carousel-active');
+  }
+
+  /**
+   * Warm the browser image cache for all carousel slides using
+   * <link rel="preload"> tags. Called during hero idle time so images are
+   * fully fetched and decoded before the user ever reaches the carousel,
+   * eliminating the jank + cursor lag caused by on-demand image loads.
+   * Safe to call multiple times — guarded by this._preloaded.
+   */
+  preload() {
+    if (this._preloaded) return;
+    this._preloaded = true;
+    this._projs.forEach(p => {
+      const img = p.querySelector('.proj-img');
+      if (img?.dataset.bg) {
+        const link = document.createElement('link');
+        link.rel  = 'preload';
+        link.as   = 'image';
+        link.href = img.dataset.bg;
+        document.head.appendChild(link);
+      }
+    });
   }
 
   enter(fromDirection = 0) {
