@@ -1210,7 +1210,8 @@ class CarouselContainer {
           const ny = (e.clientY - r.top)  / r.height - 0.5;
           // Batch the style write into a rAF — mousemove fires faster than
           // display refresh on high-DPI trackpads, so cap at one write per frame.
-          if (!tiltRafId) tiltRafId = requestAnimationFrame(() => {
+          if (tiltRafId) cancelAnimationFrame(tiltRafId);
+          tiltRafId = requestAnimationFrame(() => {
             tiltRafId = 0;
             img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
           });
