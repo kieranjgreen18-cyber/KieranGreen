@@ -692,6 +692,28 @@ class PageChrome {
     // Clear about-panel marker when we leave the about section so stale
     // data-about-panel="contact" cannot affect nav highlighting on other sections.
     if (key !== 'about') delete document.body.dataset.aboutPanel;
+
+    // Apply a class directly on the nav element so the active-link CSS rules
+    // are scoped to nav rather than body — the browser only needs to re-evaluate
+    // against nav's subtree on each section change instead of the entire DOM.
+    if (this._navEl) {
+      this._navEl.classList.remove('nav--work', 'nav--about', 'nav--contact');
+      if (key === 'carousel') this._navEl.classList.add('nav--work');
+      else if (key === 'about') this._navEl.classList.add('nav--about');
+      // 'contact' is set by AboutContainer via notifyAboutPanel below
+    }
+  }
+
+  /**
+   * Called by AboutContainer when the active panel changes.
+   * Updates both body[data-about-panel] (existing) and the nav class (new).
+   */
+  notifyAboutPanel(panelKey) {
+    document.body.dataset.aboutPanel = panelKey;
+    if (this._navEl) {
+      this._navEl.classList.remove('nav--about', 'nav--contact');
+      this._navEl.classList.add(panelKey === 'contact' ? 'nav--contact' : 'nav--about');
+    }
   }
 
   // Cursor state is expressed as body classes so CSS owns all appearance.
@@ -1474,10 +1496,10 @@ class AboutContainer {
     // Drive progress dots (desktop — mobile hides them via CSS)
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
 
-    // Drive body[data-about-panel] so CSS nav active rules can differentiate
-    // the contact panel (highlights "Contact" nav link) from other about panels.
+    // Drive body[data-about-panel] and nav class so CSS nav active rules can
+    // differentiate the contact panel (highlights "Contact" nav link) from other about panels.
     const isLast = idx === this._contactPanelIdx;
-    document.body.dataset.aboutPanel = isLast ? 'contact' : 'about';
+    this._app._chrome?.notifyAboutPanel(isLast ? 'contact' : 'about');
 
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
     // intentionally excluded from the global IntersectionObserver (it lives inside
