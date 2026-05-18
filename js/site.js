@@ -197,15 +197,12 @@ class AppController {
         const now = performance.now();
         if (now >= this._settleUntil) this._fire(-1);
       }
-      // Left/Right arrows navigate the about carousel when it is engaged.
-      // Route through the fire path (settle window + transitioning guard)
-      // so key-repeat cannot double-fire a panel advance.
+      // Left/Right arrows navigate the about carousel when it is engaged
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         const about = this._containers.get('about');
         if (about?._active) {
           e.preventDefault();
-          const now = performance.now();
-          if (now >= this._settleUntil) this._fire(e.key === 'ArrowRight' ? 1 : -1);
+          about._advance(e.key === 'ArrowRight' ? 1 : -1);
         }
       }
       if (e.key === 'Escape') {
@@ -383,9 +380,7 @@ class AppController {
   /** Navigate directly to the contact panel (last About panel). */
   goToContactPanel() {
     const about = this._containers.get('about');
-    // Wait for the section-change LOCK_MS to clear before jumping to the
-    // last panel, so the panel jump is never swallowed by the lock guard.
-    if (about) setTimeout(() => about.goToLastPanel(), LOCK_MS);
+    if (about) setTimeout(() => about.goToLastPanel(), 80);
   }
 }
 
@@ -461,21 +456,17 @@ class PageChrome {
     window.addEventListener('pageshow', (e) => {
       if (e.persisted && veil) {
         veil.style.transition = 'none';
-        veil.style.transform = 'translateX(-100%)';
+        veil.style.clipPath = 'inset(0 100% 0 0)';
         veil.style.pointerEvents = 'none';
-        // Use a double-rAF instead of offsetWidth to flush styles without
-        // forcing a synchronous layout read mid-script.
-        requestAnimationFrame(() => requestAnimationFrame(() => { if (veil) { veil.style.transition = ''; } }));
+        void veil.offsetWidth;
+        requestAnimationFrame(() => { if (veil) { veil.style.transition = ''; } });
       }
     });
 
     // ── Document-level mouse ───────────────────────────────────────────
     document.addEventListener('mousemove', e => {
-      // Only store raw position — DOM writes happen inside the rAF loop below.
-      // Writing style.left/top directly here (outside rAF) caused the dot to
-      // update at arbitrary points mid-frame, fighting model-viewer's render
-      // loop and producing visible jitter.
       this._mx = e.clientX; this._my = e.clientY;
+      if (this._cur) { this._cur.style.left = `${e.clientX}px`; this._cur.style.top = `${e.clientY}px`; }
     });
     document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
     document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
@@ -488,20 +479,13 @@ class PageChrome {
       if (this._curR) this._curR.style.opacity = '1';
     });
 
-    // Single delegated listeners instead of one per element — same outcome,
-    // no per-element allocation at init time, and automatically covers any
-    // anchors or buttons added to the DOM after init.
-    // mouseover/mouseout bubble; we check relatedTarget to avoid toggling
-    // the flag when moving between children of the same link or proj card.
-    document.addEventListener('mouseover', e => {
-      if (e.target.closest('a, button')) { this._inLink = true;  this._apply(); }
-      if (e.target.closest('.proj'))     { this._inProj = true;  this._apply(); }
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => { this._inLink = true;  this._apply(); });
+      el.addEventListener('mouseleave', () => { this._inLink = false; this._apply(); });
     });
-    document.addEventListener('mouseout', e => {
-      const link = e.target.closest('a, button');
-      if (link && !link.contains(e.relatedTarget)) { this._inLink = false; this._apply(); }
-      const proj = e.target.closest('.proj');
-      if (proj && !proj.contains(e.relatedTarget)) { this._inProj = false; this._apply(); }
+    document.querySelectorAll('.proj').forEach(el => {
+      el.addEventListener('mouseenter', () => { this._inProj = true;  this._apply(); });
+      el.addEventListener('mouseleave', () => { this._inProj = false; this._apply(); });
     });
 
     // Cursor follower — position tracking only.
@@ -513,12 +497,6 @@ class PageChrome {
       let rafId = 0;
       const loop = () => {
         rafId = 0;
-        // Move the dot at exact mouse position, in sync with the display
-        // refresh — same frame as the ring lerp, no mid-frame style fights.
-        if (this._cur) {
-          this._cur.style.left = `${this._mx}px`;
-          this._cur.style.top  = `${this._my}px`;
-        }
         const rxN = this._rx + (this._mx - this._rx) * 0.12;
         const ryN = this._ry + (this._my - this._ry) * 0.12;
         const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
@@ -528,6 +506,7 @@ class PageChrome {
           this._curR.style.left = `${this._rx}px`;
           this._curR.style.top  = `${this._ry}px`;
         }
+        // Only continue while the follower is catching up; goes fully idle otherwise.
         if (stillMoving) rafId = requestAnimationFrame(loop);
       };
       document.addEventListener('mousemove', () => {
@@ -619,43 +598,25 @@ class PageChrome {
     if (logo && logoLast) {
       const scramble = () => {
         if (scrambling) return; scrambling = true;
-        let iter = 0;
-        const TARGET   = 'Green';
-        // Advance iter by this amount per frame. Calibrated against a ~60fps
-        // display — 0.38 per frame at 60fps resolves one letter roughly every
-        // 2-3 frames, matching the original 26ms setInterval cadence without
-        // drifting or firing mid-frame.
-        const STEP     = 0.38;
-        let lastTs     = 0;
-        const tick = (ts) => {
-          // Cap delta so a long frame (tab switch, GC pause) doesn't skip
-          // multiple letters at once — max one frame's worth of advance.
-          const dt = Math.min(ts - lastTs, 32);
-          lastTs   = ts;
-          // Scale step by actual elapsed time so it's frame-rate independent.
-          iter += STEP * (dt / 16.67);
+        let iter = 0; const TARGET = 'Green';
+        const iv = setInterval(() => {
           logoLast.textContent = TARGET.split('').map((c, i) =>
             i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
           ).join('');
-          if (Math.floor(iter) >= TARGET.length) {
-            logoLast.textContent = TARGET;
-            scrambling = false;
-            return; // stop the loop
-          }
-          requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
+          if (Math.floor(iter) >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
+          iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
+        }, 26);
       };
       logo.addEventListener('mouseenter', scramble);
       logo.addEventListener('focus', () => { if (!scrambling) scramble(); });
     }
 
-    // ── Nav scrolled + hero counter hide on scroll ─────────────────────
-    const heroCounterEl = document.getElementById('hero-counter');
+    // ── Nav scrolled + hero scroll hint ───────────────────────────────
+    const heroScrollEl = document.getElementById('hero-scroll');
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
-      if (heroCounterEl) heroCounterEl.classList.toggle('hide', y > 60);
+      if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
     }, { passive: true });
 
     // ── Resize ─────────────────────────────────────────────────────────
@@ -682,37 +643,19 @@ class PageChrome {
 
   /**
    * Called by AppController._activateDirect whenever the active section changes.
-   * Sets body[data-section] so CSS nav active-state rules fire correctly.
-   * The vertical section-indicator element has been removed — the navbar
-   * now serves as the active-section indicator via CSS attribute selectors.
+   * Updates body[data-section] and the section indicator label.
    * @param {string} sectionKey  'hero' | 'carousel' | 'about'
    */
   notifySection(key) {
+    // Drive body[data-section] so CSS can show/hide section-specific UI
+    // (e.g. the nav availability badge which should only appear on hero).
     document.body.dataset.section = key;
-    // Clear about-panel marker when we leave the about section so stale
-    // data-about-panel="contact" cannot affect nav highlighting on other sections.
-    if (key !== 'about') delete document.body.dataset.aboutPanel;
-
-    // Apply a class directly on the nav element so the active-link CSS rules
-    // are scoped to nav rather than body — the browser only needs to re-evaluate
-    // against nav's subtree on each section change instead of the entire DOM.
-    if (this._navEl) {
-      this._navEl.classList.remove('nav--work', 'nav--about', 'nav--contact');
-      if (key === 'carousel') this._navEl.classList.add('nav--work');
-      else if (key === 'about') this._navEl.classList.add('nav--about');
-      // 'contact' is set by AboutContainer via notifyAboutPanel below
-    }
-  }
-
-  /**
-   * Called by AboutContainer when the active panel changes.
-   * Updates both body[data-about-panel] (existing) and the nav class (new).
-   */
-  notifyAboutPanel(panelKey) {
-    document.body.dataset.aboutPanel = panelKey;
-    if (this._navEl) {
-      this._navEl.classList.remove('nav--about', 'nav--contact');
-      this._navEl.classList.add(panelKey === 'contact' ? 'nav--contact' : 'nav--about');
+    if (!this._secInd) return;
+    const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About' };
+    const label = labelMap[key];
+    if (label) {
+      this._secInd.textContent = label;
+      this._secInd.classList.toggle('visible', key !== 'hero');
     }
   }
 
@@ -764,26 +707,6 @@ class Hero3DContainer {
     this._t0x         = 0;
     this._tScrolling  = null;
 
-    // ── Performance monitor state ──────────────────────────────────────
-    // Watches for long tasks (main-thread blocks ≥ 50 ms) using
-    // PerformanceObserver instead of a rAF loop, so there is no second
-    // render loop competing with model-viewer for frame budget.
-    // FPS_STRIKE_COUNT consecutive long tasks after the grace period
-    // triggers the static fallback.
-    this._FPS_THRESHOLD   = 15;   // unused by PerformanceObserver path; kept for reference
-    this._FPS_WINDOW_MS   = 1000; // unused by PerformanceObserver path; kept for reference
-    this._FPS_STRIKE_COUNT= 3;    // long-task strikes before degrading
-    this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes count
-    this._fpsRafId        = 0;    // no longer used; kept so exit() cancel is a no-op
-    this._fpsFrameCount   = 0;    // no longer used
-    this._fpsWindowStart  = 0;    // no longer used
-    this._fpsEnterTime    = 0;    // set in enter() to enforce grace period
-    this._fpsStrikes      = 0;    // consecutive long-task count
-    this._fpsDegraded     = false;// true once swapped to static fallback
-    this._fpsFallbackEl   = null; // the <img> fallback element (created lazily)
-    this._fpsObserver     = null; // PerformanceObserver handle
-    this._fpsMeasure      = this._fpsMeasure.bind(this); // kept so enter() call is a no-op
-
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
     this._onViewerLoad         = this._onViewerLoad.bind(this);
@@ -798,16 +721,14 @@ class Hero3DContainer {
   }
 
   init(root) {
-    this._root        = root;
-    this._viewer      = root.querySelector('model-viewer');
-    this._heroText    = root.querySelector('#hero-text');
-    this._heroCounter = root.querySelector('#hero-counter');   // replaces hero-scroll
-    this._heroScroll  = this._heroCounter;                     // keep alias so legacy refs are safe
-    this._mobile360   = root.querySelector('#hero-mobile-360'); // mobile 360 badge
-    this._modelLabel  = root.querySelector('#model-label');
-    this._modelHint   = root.querySelector('#model-hint');
-    this._errorEl     = root.querySelector('#model-error');
-    this._nav         = document.getElementById('nav'); // documented exception
+    this._root       = root;
+    this._viewer     = root.querySelector('model-viewer');
+    this._heroText   = root.querySelector('#hero-text');
+    this._heroScroll = root.querySelector('#hero-scroll');
+    this._modelLabel = root.querySelector('#model-label');
+    this._modelHint  = root.querySelector('#model-hint');
+    this._errorEl    = root.querySelector('#model-error');
+    this._nav        = document.getElementById('nav'); // documented exception
 
     // ── Model-viewer preload: warm the HDR environment cache as soon as
     //    the container inits. The GLB is preloaded via <link rel="preload">
@@ -853,45 +774,22 @@ class Hero3DContainer {
     // Reset hint state so re-entry always shows the 360° hint again
     this._hintDone  = false;
     this._hintReady = false;
-    // scrollTo first — layout is still clean here, no prior writes to flush.
-    // Moving it before the classList write avoids a forced layout caused by
-    // the browser needing to resolve the new style before computing scroll position.
-    window.scrollTo({ top: 0, behavior: 'instant' });
     if (this._nav) this._nav.classList.remove('scrolled');
+    window.scrollTo({ top: 0, behavior: 'instant' });
     this._root.style.visibility = 'visible';
     this._root.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1)';
     this._root.style.opacity    = '1';
-    // Clear any inline opacity and hide-class set by the scroll listener so the CSS transition plays correctly
-    if (this._heroCounter) { this._heroCounter.style.opacity = ''; this._heroCounter.classList.remove('hide'); }
+    // Clear any inline opacity set by the scroll listener so the CSS transition plays correctly
+    if (this._heroScroll) this._heroScroll.style.opacity = '';
     // Force a clean re-reveal: strip classes first so re-adding them in the
     // next frame always triggers the entrance transition even on re-entry.
-    [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
+    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
-    // Re-enable auto-rotate and resume the render loop (was paused on exit).
-    if (this._viewer && !this._fpsDegraded) {
-      try { this._viewer.play(); } catch(e) { /* non-fatal */ }
+    // Re-enable auto-rotate (was removed on exit to prevent GPU thrash)
+    if (this._viewer) {
       this._viewer.setAttribute('auto-rotate', '');
     }
-    // Start (or restart) the performance observer for this visit.
-    // Reset strike counter on re-entry so a brief visit to another section
-    // doesn't carry over stale strikes.
-    this._fpsStrikes     = 0;
-    this._fpsEnterTime   = performance.now();
-    this._stopFpsObserver();
-    if (!this._fpsDegraded) this._fpsMeasure();
     requestAnimationFrame(() => this._revealHero());
-
-    // Preload carousel images during hero idle time so they're decoded before
-    // the user scrolls to the carousel. requestIdleCallback avoids competing
-    // with the hero entrance animation; the setTimeout fallback covers Safari.
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(
-        () => this._app._containers.get('carousel')?.preload(),
-        { timeout: 3000 }
-      );
-    } else {
-      setTimeout(() => this._app._containers.get('carousel')?.preload(), 1500);
-    }
   }
 
   exit() {
@@ -906,15 +804,15 @@ class Hero3DContainer {
     this._root.style.transition = 'opacity 0.4s ease';
     this._root.style.opacity    = '0';
     // Strip reveal classes so re-entering Hero re-plays the entrance animation.
-    [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
+    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
-    // Pause model-viewer when offscreen to stop the GPU render loop entirely.
-    // pauseAllAnimations() halts the internal rAF loop; removing auto-rotate
-    // prevents delta accumulation. On mobile we also reset the camera so
-    // re-entry always shows the correct angle.
+    // Pause model-viewer on mobile to prevent GPU/state thrash when
+    // the user scrolls away and back repeatedly. Pausing stops the render
+    // loop and prevents the auto-rotate from accumulating delta while hidden.
     if (this._viewer) {
       this._viewer.removeAttribute('auto-rotate');
-      try { this._viewer.pauseAllAnimations(); } catch(e) { /* non-fatal */ }
+      // On mobile, also reset camera to default orbit so re-entry always
+      // shows the model from the correct angle after extended interaction.
       if (window.matchMedia('(pointer: coarse)').matches) {
         try {
           this._viewer.cameraOrbit = '-20deg 92deg 50%';
@@ -923,8 +821,6 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
-    // Stop the performance observer — no need to watch while hero is offscreen.
-    this._stopFpsObserver();
   }
 
   onScroll(direction) {
@@ -934,7 +830,7 @@ class Hero3DContainer {
 
   _revealHero() {
     if (!this._active) return;
-    [this._heroText, this._heroCounter, this._mobile360, this._modelLabel, this._modelHint]
+    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.add('is-revealed'));
   }
 
@@ -945,7 +841,7 @@ class Hero3DContainer {
   }
 
   async _onViewerLoad() {
-    try { await this._viewer.updateComplete; } catch(e) { /* non-fatal */ }
+    await this._viewer.updateComplete;
     this._viewer.jumpCameraToGoal();
     // Open the dismiss gate after the fadeUp animation has had time to play
     // so camera-change on init doesn't hide the hint before it appears.
@@ -958,7 +854,32 @@ class Hero3DContainer {
       this._hintReady = true;
       this._dismissHint();
     }, 18000);
-    // GLB Keyshot materials are used as-is — no JS overrides applied.
+
+    const model = this._viewer.model;
+    if (!model?.materials?.length) return;
+    const skipRe = /glass|window|lens|tyre|tire|rubber|wheel|chrome|mirror/i;
+    const bodyRe = /body|paint|panel|car|exterior|shell|chassis/i;
+    let bodyFound = false;
+    model.materials.forEach((mat, i) => {
+      const name = mat.name || '';
+      if (skipRe.test(name)) return;
+      const pbr = mat.pbrMetallicRoughness;
+      if (!pbr) return;
+      if (bodyRe.test(name) || (!bodyFound && i === 0)) {
+        bodyFound = true;
+        pbr.setBaseColorFactor([0.012, 0.048, 0.022, 1.0]);
+        pbr.setMetallicFactor(0.0);
+        pbr.setRoughnessFactor(0.36);
+        if (mat.extensions?.KHR_materials_clearcoat) {
+          mat.extensions.KHR_materials_clearcoat.clearcoatFactor          = 1.0;
+          mat.extensions.KHR_materials_clearcoat.clearcoatRoughnessFactor = 0.06;
+        }
+      } else {
+        pbr.setBaseColorFactor([0.04, 0.04, 0.04, 1.0]);
+        pbr.setMetallicFactor(0.3);
+        pbr.setRoughnessFactor(0.55);
+      }
+    });
   }
 
   _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
@@ -976,96 +897,6 @@ class Hero3DContainer {
     if (!this._hintReady || this._hintDone) return;
     this._hintDone = true;
     this._modelHint?.classList.add('hidden');
-  }
-
-  /**
-   * Starts a PerformanceObserver that counts 'longtask' entries (main-thread
-   * blocks ≥ 50 ms) while the hero is active. No rAF loop — zero frame-budget
-   * cost on healthy devices. FPS_STRIKE_COUNT consecutive long tasks after the
-   * grace period triggers _fpsDegrade() exactly as before.
-   */
-  _fpsMeasure() {
-    if (this._fpsDegraded || this._fpsObserver) return;
-    if (!window.PerformanceObserver) return; // unsupported — fail silently
-
-    this._fpsObserver = new PerformanceObserver(list => {
-      if (!this._active || this._fpsDegraded) return;
-      const sinceEnter = performance.now() - this._fpsEnterTime;
-      if (sinceEnter < this._FPS_GRACE_MS) return; // still in grace period
-
-      for (const entry of list.getEntries()) {
-        // Only count tasks that are long enough to visibly drop frames.
-        // A 50 ms task blocks ~3 frames at 60 fps; we treat each as a strike.
-        if (entry.duration >= 50) {
-          this._fpsStrikes++;
-          if (this._fpsStrikes >= this._FPS_STRIKE_COUNT) {
-            this._stopFpsObserver();
-            this._fpsDegrade();
-            return;
-          }
-        } else {
-          // Short tasks reset the run — we only degrade on sustained blocking.
-          this._fpsStrikes = 0;
-        }
-      }
-    });
-
-    try {
-      this._fpsObserver.observe({ type: 'longtask', buffered: false });
-    } catch(e) {
-      // longtask not supported in this browser — fail silently.
-      this._fpsObserver = null;
-    }
-  }
-
-  _stopFpsObserver() {
-    if (this._fpsObserver) {
-      try { this._fpsObserver.disconnect(); } catch(e) { /* non-fatal */ }
-      this._fpsObserver = null;
-    }
-  }
-
-  /**
-   * Swap out the model-viewer for a static fallback image.
-   * Called once when sustained low FPS is detected while the hero is active.
-   */
-  _fpsDegrade() {
-    if (this._fpsDegraded) return;
-    this._fpsDegraded = true;
-
-    // Disable the model-viewer: stop its render loop, hide it visually.
-    if (this._viewer) {
-      this._viewer.removeAttribute('auto-rotate');
-      // Disconnect camera-change listener so it can't fire after removal.
-      this._viewer.removeEventListener('camera-change', this._onViewerCameraChange);
-      this._viewer.style.display = 'none';
-      // Destroy the WebGL context by clearing the src — this releases GPU memory.
-      try { this._viewer.src = ''; } catch(e) { /* non-fatal */ }
-    }
-
-    // Hide hint / label UI elements that only make sense with the 3D model.
-    if (this._modelLabel) this._modelLabel.style.display = 'none';
-    if (this._modelHint)  this._modelHint.style.display  = 'none';
-    const mobile360 = this._root?.querySelector('#hero-mobile-360');
-    if (mobile360) mobile360.style.display = 'none';
-
-    // Build and insert the static fallback <img> if it doesn't exist yet.
-    if (!this._fpsFallbackEl) {
-      const img = document.createElement('img');
-      img.src      = 'assets/images/miniheroheader.png';
-      img.alt      = 'Kieran Green — Industrial Designer hero image';
-      img.className = 'hero-fps-fallback';
-      // Insert before the vignette overlay so the vignette still renders on top.
-      const vignette = this._root?.querySelector('.hero-vignette');
-      if (vignette) {
-        this._root.insertBefore(img, vignette);
-      } else {
-        this._root?.appendChild(img);
-      }
-      this._fpsFallbackEl = img;
-    } else {
-      this._fpsFallbackEl.style.display = '';
-    }
   }
 
   _onRootWheel(e) {
@@ -1120,7 +951,6 @@ class CarouselContainer {
     this._dotsEl   = null;
     this._dotWraps = [];
     this._projs    = [];
-    this._chSpans  = []; // cached .ch spans per slide, populated in init()
     this._N        = 0;
     this._active        = false;
     this._activeIdx     = 0;
@@ -1130,8 +960,6 @@ class CarouselContainer {
     this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
     this._nextArrow     = null; // c-next-arrow element
     this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
-    this._tiltRafIds    = []; // per-proj pending tilt rAF ids; flushed on slide advance
-    this._preloaded     = false; // true once preload() has dispatched <link rel="preload"> tags
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1147,24 +975,18 @@ class CarouselContainer {
     this._projs = Array.from(root.querySelectorAll(':scope .proj'));
     this._N     = this._projs.length;
     if (!this._N) return;
-    this._tiltRafIds = new Array(this._N).fill(0);
 
-    // Character-by-character title animation prep — also cache the spans so
-    // _setPositions never runs querySelectorAll on every advance.
-    this._chSpans = []; // parallel array to this._projs
+    // Character-by-character title animation prep
     this._projs.forEach(p => {
       const title = p.querySelector('.proj-title');
-      if (!title) { this._chSpans.push([]); return; }
+      if (!title) return;
       const text = title.textContent.trim();
       title.innerHTML = '';
-      const spans = [];
       [...text].forEach(ch => {
         const s = document.createElement('span');
         s.className = 'ch'; s.textContent = ch === ' ' ? '\u00a0' : ch;
         title.appendChild(s);
-        spans.push(s);
       });
-      this._chSpans.push(spans);
     });
 
     // Dot nav — reuse the static #c-dots already in the HTML (documented exception).
@@ -1195,9 +1017,7 @@ class CarouselContainer {
     });
 
     this._sizeSpacer();
-    // Defer the rect read to a rAF so it doesn't immediately follow the height
-    // write above — getBoundingClientRect() after a style write forces layout.
-    requestAnimationFrame(() => this._calcSpacerTop());
+    this._calcSpacerTop();
     window.addEventListener('resize', this._onResize, { passive: true });
 
     // Create the next-section arrow and append it to the dots container AFTER
@@ -1211,58 +1031,24 @@ class CarouselContainer {
     this._nextArrow = arrowEl;
     if (!window.matchMedia('(pointer:coarse)').matches) {
       const rectCache = new WeakMap(); // avoids hanging non-standard properties on DOM nodes
-      this._projs.forEach((proj, pi) => {
+      this._projs.forEach(proj => {
         const img = proj.querySelector('.proj-img');
         if (!img) return;
         proj.addEventListener('mouseenter', () => { rectCache.set(proj, proj.getBoundingClientRect()); });
         proj.addEventListener('mousemove',  e => {
-          // Cache is always populated by mouseenter before mousemove fires,
-          // so no fallback getBoundingClientRect() read is needed here.
+          if (!rectCache.has(proj)) rectCache.set(proj, proj.getBoundingClientRect());
           const r  = rectCache.get(proj);
-          if (!r) return;
           const nx = (e.clientX - r.left) / r.width  - 0.5;
           const ny = (e.clientY - r.top)  / r.height - 0.5;
-          // Batch the style write into a rAF — mousemove fires faster than
-          // display refresh on high-DPI trackpads, so cap at one write per frame.
-          if (this._tiltRafIds[pi]) cancelAnimationFrame(this._tiltRafIds[pi]);
-          this._tiltRafIds[pi] = requestAnimationFrame(() => {
-            this._tiltRafIds[pi] = 0;
-            img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
-          });
+          img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
         });
-        proj.addEventListener('mouseleave', () => {
-          rectCache.delete(proj);
-          if (this._tiltRafIds[pi]) { cancelAnimationFrame(this._tiltRafIds[pi]); this._tiltRafIds[pi] = 0; }
-          img.style.transform = '';
-        });
+        proj.addEventListener('mouseleave', () => { img.style.transform = ''; });
       });
     }
 
     this._setPositions(0, false);
     this._root.style.visibility = 'hidden';
     this._root.classList.remove('carousel-active');
-  }
-
-  /**
-   * Warm the browser image cache for all carousel slides using
-   * <link rel="preload"> tags. Called during hero idle time so images are
-   * fully fetched and decoded before the user ever reaches the carousel,
-   * eliminating the jank + cursor lag caused by on-demand image loads.
-   * Safe to call multiple times — guarded by this._preloaded.
-   */
-  preload() {
-    if (this._preloaded) return;
-    this._preloaded = true;
-    this._projs.forEach(p => {
-      const img = p.querySelector('.proj-img');
-      if (img?.dataset.bg) {
-        const link = document.createElement('link');
-        link.rel  = 'preload';
-        link.as   = 'image';
-        link.href = img.dataset.bg;
-        document.head.appendChild(link);
-      }
-    });
   }
 
   enter(fromDirection = 0) {
@@ -1278,14 +1064,12 @@ class CarouselContainer {
     this._transitioning  = true;
     this._lastAdvanceAt  = 0;
     this._lastAdvDir     = 0;
+    this._calcSpacerTop();
     this._root.style.visibility = 'visible';
     this._root.classList.add('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      // Read geometry after styles have been applied and painted so this
-      // getBoundingClientRect() call does not force a synchronous layout.
-      this._calcSpacerTop();
       this._setPositions(this._activeIdx, true);
       // Release lock AFTER positions are applied so the first advance is always clean.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
@@ -1326,13 +1110,12 @@ class CarouselContainer {
   _setPositions(idx, animate) {
     this._projs.forEach((p, i) => {
       const delta = i - idx;
-      const spans = this._chSpans[i] || [];
       if      (delta < -1)   p.dataset.pos = 'far-above';
       else if (delta === -1) p.dataset.pos = 'prev';
       else if (delta === 0) {
         p.dataset.pos = 'active';
         if (animate) {
-          spans.forEach((s, ci) => {
+          p.querySelectorAll('.proj-title .ch').forEach((s, ci) => {
             s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
           });
         }
@@ -1340,7 +1123,7 @@ class CarouselContainer {
       else if (delta === 1) p.dataset.pos = 'next';
       else                  p.dataset.pos = 'far-below';
       if (delta !== 0) {
-        spans.forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
+        p.querySelectorAll('.proj-title .ch').forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
@@ -1351,13 +1134,6 @@ class CarouselContainer {
   _advance(dir) {
     if (this._transitioning) return;
     const now = performance.now();
-
-    // Cancel any pending tilt rAF on all slides — a queued transform write
-    // landing mid-transition interrupts the CSS slide animation.
-    // Placed before the boundary checks so it covers section-handoff paths too.
-    this._tiltRafIds.forEach((id, i) => {
-      if (id) { cancelAnimationFrame(id); this._tiltRafIds[i] = 0; }
-    });
 
     const next = this._activeIdx + dir;
     if (next < 0) {
@@ -1373,11 +1149,7 @@ class CarouselContainer {
     }
     if (next >= this._N) {
       this._transitioning = true;
-      if (this._nextKey) {
-        this._app.setSection(this._nextKey, +1);
-      }
-      // Safety net: clear _transitioning after TRANS_MS in case setSection is
-      // blocked (e.g. LOCK_MS guard) and enter() never fires to reset it.
+      this._app.setSection(this._nextKey, +1);
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
       return;
     }
@@ -1427,7 +1199,6 @@ class AboutContainer {
     // injected lazily the first time this panel becomes active.
     this._statementPanelIdx = -1;
     this._iframeInjected    = false;
-    this._resizeTopTimer    = null; // debounce handle for _calcSpacerTop after resize
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1439,10 +1210,11 @@ class AboutContainer {
   init(root) {
     this._root   = root;
     this._spacer = document.querySelector('.about-spacer'); // documented exception
+    this._moreBelow = document.getElementById('about-more-below'); // documented exception
 
     this._panels = Array.from(root.querySelectorAll('[data-panel]'));
-    this._dots   = Array.from(root.querySelectorAll('.prog-dot-wrap'));
-    this._hint   = null;
+    this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
+    this._hint   = root.querySelector('#about-scroll-hint');
     this._N      = this._panels.length;
     // The last panel is the contact panel — track its index so we can
     // update the section indicator label and suppress its dot.
@@ -1455,9 +1227,7 @@ class AboutContainer {
     }
 
     this._sizeSpacer();
-    // Defer the rect read to a rAF so it doesn't immediately follow the height
-    // write above — getBoundingClientRect() after a style write forces layout.
-    requestAnimationFrame(() => this._calcSpacerTop());
+    this._calcSpacerTop();
     window.addEventListener('resize', this._onResize, { passive: true });
 
     this._setPanel(0);
@@ -1473,10 +1243,9 @@ class AboutContainer {
     // Restore spacer height before engaging so layout is correct when the
     // stage becomes visible (was collapsed to 0 on exit to prevent gap).
     this._sizeSpacer();
-    // Do NOT read getBoundingClientRect() here — _sizeSpacer() just wrote
-    // a new height, so reading immediately forces a synchronous layout flush.
-    // The double-rAF below re-caches _spacerTop after paint; that value is
-    // what actually gets used for scroll-position calculations during the session.
+    // Cache spacerTop synchronously with the current layout — this gives a
+    // usable value immediately, even before the double-rAF resolves.
+    this._calcSpacerTop();
     // Arrive on last panel when scrolling back up from below.
     // Any other direction (including direct nav = 0) resets to first panel.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
@@ -1537,14 +1306,26 @@ class AboutContainer {
       const label = this._panels[idx]?.getAttribute('aria-label') || '';
       announcer.textContent = label;
     }
-    // Drive progress dots (desktop — mobile hides them via CSS)
+    // Only drive dots for the non-contact panels (contact panel has no dot —
+    // it uses the more-below arrow as its indicator instead).
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
-
-    // Drive body[data-about-panel] and nav class so CSS nav active rules can
-    // differentiate the contact panel (highlights "Contact" nav link) from other about panels.
-    const isLast = idx === this._contactPanelIdx;
-    this._app._chrome?.notifyAboutPanel(isLast ? 'contact' : 'about');
-
+    if (this._hint) this._hint.classList.toggle('hide', idx > 0);
+    // Show "more below" chevron on the panel BEFORE the contact panel (statement)
+    // — this signals there's one more slide (contact) without giving contact its own dot.
+    // Hide it on the contact panel itself (nothing below).
+    if (this._moreBelow) {
+      const showArrow = idx === this._N - 2; // second-to-last = statement panel
+      this._moreBelow.classList.toggle('visible', showArrow);
+    }
+    // Update section indicator label: "Contact" on contact panel, "About" otherwise
+    const secInd = document.getElementById('section-indicator');
+    if (secInd) {
+      if (idx === this._contactPanelIdx) {
+        secInd.textContent = 'Contact';
+      } else if (this._active) {
+        secInd.textContent = 'About';
+      }
+    }
     // Reveal contact panel content — .contact-inner carries .rev-stagger which is
     // intentionally excluded from the global IntersectionObserver (it lives inside
     // #about-stage). Drive the .in class here instead so the entrance animation fires
