@@ -24,6 +24,14 @@
 
 'use strict';
 
+// ── Wheel velocity tuning constants ───────────────────────────────────────
+// Declared at module level so they are visible to any future method that
+// needs to read or override them (e.g. per-device tuning).
+const W_THRESH = 160; // accumulated velocity required to trigger a section change
+const W_DECAY  = 0.94; // per-frame velocity decay factor (applied over 16ms increments)
+const W_CLAMP  = 90;  // maximum per-event contribution to velocity
+const W_MIN    = 20;  // minimum per-event contribution (filters micro-deltas)
+
 /* ─────────────────────────────────────────────────────────────────────────
    §1  APP CONTROLLER
    ─────────────────────────────────────────────────────────────────────────
@@ -32,53 +40,7 @@
      • which container is active
      • scroll direction dispatch
      • transition lock (prevents skipping sections mid-animation)
-
-   SCROLL ENGINE — Intent Classifier Model
-   ────────────────────────────────────────
-   The old velocity-accumulator model required 3+ mouse notches to fire and
-   produced a sticky, laggy feel on trackpads due to aggressive decay fighting
-   legitimate swipe intent. This engine uses a two-path classifier instead:
-
-   MOUSE PATH  (large discrete impulses, deltaY ≥ MOUSE_THRESHOLD per event)
-     One notch fires immediately. The event itself IS the intent.
-     A post-fire cooldown (MOUSE_COOLDOWN_MS) prevents double-fire from
-     mechanical bounce, but is short enough to feel instant.
-
-   TRACKPAD PATH  (many small continuous deltas)
-     Events are bucketed into a rolling window. The window's net displacement
-     must exceed TRACKPAD_THRESH before firing. After firing, the settle window
-     (SETTLE_MS) absorbs the inertia tail so it cannot chain into the next slide.
-     The key insight: we measure net displacement in a short time window, NOT
-     a velocity accumulator with exponential decay. This is more intuitive and
-     does not penalise users with slower deliberate swipes.
-
-   Both paths share the same settle window so the system cannot double-fire
-   regardless of input device.
    ───────────────────────────────────────────────────────────────────────── */
-
-// ── Tuning constants (all at module scope for easy adjustment) ────────────
-// MOUSE: raw |deltaY| >= this → treat as a discrete mouse wheel notch
-const MOUSE_THRESHOLD   = 60;   // px; typical notch is 100–120, even scaled-down is 60+
-// MOUSE: min ms between consecutive fires in the SAME direction (prevents mechanical double-tick)
-const MOUSE_COOLDOWN_MS = 350;
-// MOUSE: min ms between fires in OPPOSITE directions — much shorter since reversal is unambiguous
-const MOUSE_REVERSAL_MS = 80;
-// TRACKPAD: fire once net displacement in rolling window exceeds this
-const TRACKPAD_THRESH   = 55;   // px net; comfortable flick without requiring a hard shove
-// TRACKPAD: rolling window duration — events older than this are discarded
-const TRACKPAD_WINDOW_MS= 180;  // ms; wide enough for a natural swipe, short for inertia rejection
-// TRACKPAD: ignore individual events below this (sub-pixel jitter filter)
-const TRACKPAD_MIN_DELTA= 1.5;  // px
-// POST-FIRE: absorb inertia/bounce in the SAME direction as the last fire
-const SETTLE_MS         = 440;  // ms; covers trackpad inertia tail without feeling slow
-// POST-FIRE: settle window for the OPPOSITE direction — near-zero so reversals feel instant.
-// A small non-zero value (40ms) prevents a stray simultaneous event on the wrong path
-// from double-firing, without making reversal feel sluggish.
-const SETTLE_REVERSAL_MS = 40;
-// GLOBAL LOCK: hard lock between section changes — must be ≥ largest container TRANS_MS
-// About panels animate for 850ms; 950ms gives full clearance with a small margin.
-const LOCK_MS           = 950;
-
 class AppController {
 
   constructor(chrome = null) {
@@ -86,125 +48,52 @@ class AppController {
     this._containers = new Map();
     this._activeKey  = null;
     this._locked     = false;
+    this._LOCK_MS    = 900; // >= longest container _TRANS_MS (820) + ~80ms real margin
 
-    // ── Settle window (shared by both input paths) ─────────────────────
-    this._settleUntil   = 0;
-
-    // ── Last fire direction — used to make settle + cooldowns direction-aware ──
-    // A reversal (opposite dir) gets a much shorter settle/cooldown than a
-    // continuation (same dir), making the engine feel responsive to intentional
-    // direction changes without compromising inertia rejection.
-    this._lastFireDir   = 0; // 0 = no fire yet, +1 = last fired down, -1 = last fired up
-
-    // ── Mouse path state ───────────────────────────────────────────────
-    this._mouseLastFire = 0; // timestamp of last mouse-path fire
-
-    // ── Trackpad path state ────────────────────────────────────────────
-    // Fixed-size ring buffer: avoids allocating a new array on every wheel
-    // event (the old filter() approach). Size is generous — at 60 fps and
-    // TRACKPAD_WINDOW_MS=180ms you see at most ~11 events; 32 slots is ample.
-    this._tpBuf     = new Array(32);
-    this._tpHead    = 0; // write pointer (next slot to overwrite)
-    this._tpCount   = 0; // how many slots are currently valid
-
-    // ── Touch mid-gesture reversal tracking ────────────────────────────
-    // touchstart sets the origin; touchmove watches for a direction flip
-    // past a minimum threshold and resets the origin to the reversal point.
-    // This prevents a downward swipe followed by an upward recovery within
-    // the same touch gesture from reporting a near-zero net dy at touchend.
-    this._touchLastDir  = 0; // direction of the most recent touchmove segment
+    // ── Wheel velocity model ───────────────────────────────────────────
+    this._wVel        = 0;
+    this._wLastTime   = 0;
+    // After every section change, ignore wheel input for SETTLE_MS so that
+    // trackpad inertia from the previous section cannot chain into the next.
+    this._settleUntil = 0;
+    this._SETTLE_MS   = 520;
 
     // ── Global listeners — ONLY place in the codebase ─────────────────
     window.addEventListener('wheel', (e) => {
-      // All sections are scroll-locked; the engine always intercepts wheel events.
-      e.preventDefault();
+      // Allow native scroll if the active container opts in for this direction.
+      // This lets terminal sections (e.g. Contact) scroll the page naturally
+      // downward while still intercepting upward wheel to hand back to About.
+      const rawDir = e.deltaY > 0 ? +1 : e.deltaY < 0 ? -1 : 0;
+      const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
+      const nativeAllowed = activeContainer?.nativeScrollDirection?.(rawDir) === true;
+      if (!nativeAllowed) e.preventDefault();
 
-      // Normalise delta to pixels regardless of deltaMode
       const raw = e.deltaMode === 1 ? e.deltaY * 32
                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                 : e.deltaY;
-      if (raw === 0) return;
-
-      const now    = performance.now();
-      const dir    = raw > 0 ? +1 : -1;
-      const absRaw = Math.abs(raw);
-
-      // ── POST-FIRE SETTLE: direction-aware ────────────────────────────
-      const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
-      const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
-      if (now < this._settleUntil) {
-        const settleStart = this._settleUntil - SETTLE_MS;
-        if (!isReversal || now < settleStart + effectiveSettle) return;
-      }
-
-      // ── CLASSIFY: mouse vs trackpad ──────────────────────────────────
-      const isMouse = absRaw >= MOUSE_THRESHOLD;
-
-      if (isMouse) {
-        const sinceLastFire = now - this._mouseLastFire;
-        const cooldown = isReversal ? MOUSE_REVERSAL_MS : MOUSE_COOLDOWN_MS;
-        if (sinceLastFire < cooldown) return;
-        // Use _fireSoft when locked: a rejected setSection call shouldn't
-        // cost 440ms of settle. The full _fire settle is still armed on a
-        // successful transition (inside _activateDirect / enter()).
-        if (this._locked) { this._fireSoft(dir); } else { this._fire(dir); }
+      const now = performance.now();
+      // During the post-transition settle window, eat the event but don't act.
+      // This absorbs trackpad inertia that would otherwise chain into the new section.
+      if (now < this._settleUntil) { this._wVel = 0; this._wLastTime = now; return; }
+      const gap = now - this._wLastTime;
+      if (gap > 600 || this._wLastTime === 0) { this._wVel = 0; }
+      else { this._wVel *= Math.pow(W_DECAY, gap / 16); }
+      this._wLastTime = now;
+      const contrib = raw === 0 ? 0
+        : Math.sign(raw) * Math.min(Math.max(Math.abs(raw), W_MIN), W_CLAMP);
+      this._wVel += contrib;
+      if (!nativeAllowed) {
+        if (this._wVel >  W_THRESH) { this._wVel = 0; this._dispatchScroll(+1); }
+        if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
       } else {
-        if (absRaw < TRACKPAD_MIN_DELTA) return;
-
-        // Direction-reversal flush
-        if (this._tpCount > 0) {
-          let existingNet = 0;
-          const bufLen0 = this._tpBuf.length;
-          for (let i = 0; i < this._tpCount; i++) {
-            const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen0) % bufLen0];
-            if (now - slot.t > TRACKPAD_WINDOW_MS) break;
-            existingNet += slot.dy;
-          }
-          if (existingNet !== 0 && Math.sign(existingNet) !== Math.sign(raw)) {
-            this._tpHead = 0; this._tpCount = 0;
-          }
-        }
-
-        this._tpBuf[this._tpHead] = { t: now, dy: raw };
-        this._tpHead = (this._tpHead + 1) % this._tpBuf.length;
-        if (this._tpCount < this._tpBuf.length) this._tpCount++;
-
-        // Net displacement across entries still within the rolling window
-        let net = 0;
-        const bufLen = this._tpBuf.length;
-        for (let i = 0; i < this._tpCount; i++) {
-          const slot = this._tpBuf[(this._tpHead - 1 - i + bufLen) % bufLen];
-          if (now - slot.t > TRACKPAD_WINDOW_MS) break;
-          net += slot.dy;
-        }
-
-        if (Math.abs(net) >= TRACKPAD_THRESH) {
-          const fireDir = net > 0 ? +1 : -1;
-          this._tpHead = 0; this._tpCount = 0;
-          if (this._locked) { this._fireSoft(fireDir); } else { this._fire(fireDir); }
-        }
+        // Still watch for upward flick past threshold so we can hand back
+        if (this._wVel < -W_THRESH) { this._wVel = 0; this._dispatchScroll(-1); }
       }
     }, { passive: false });
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        e.preventDefault();
-        const now = performance.now();
-        if (now >= this._settleUntil) this._fire(+1);
-      }
-      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        e.preventDefault();
-        const now = performance.now();
-        if (now >= this._settleUntil) this._fire(-1);
-      }
-      // Left/Right arrows navigate the about carousel when it is engaged
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        const about = this._containers.get('about');
-        if (about?._active) {
-          e.preventDefault();
-          about._advance(e.key === 'ArrowRight' ? 1 : -1);
-        }
-      }
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); this._dispatchScroll(+1); }
+      if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); this._dispatchScroll(-1); }
       if (e.key === 'Escape') {
         const active = this._containers.get(this._activeKey);
         if (active?.onEscape) active.onEscape();
@@ -213,36 +102,17 @@ class AppController {
 
     let _ty0 = 0, _tx0 = 0, _tTime0 = 0;
     window.addEventListener('touchstart', (e) => {
-      _ty0 = e.touches[0].clientY;
-      _tx0 = e.touches[0].clientX;
-      _tTime0 = performance.now();
-      this._touchLastDir = 0; // reset mid-gesture direction tracking on new touch
+      _ty0 = e.touches[0].clientY; _tx0 = e.touches[0].clientX; _tTime0 = performance.now();
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
-      const currentY = e.touches[0].clientY;
-      const currentX = e.touches[0].clientX;
-      const dy = Math.abs(currentY - _ty0);
-      const dx = Math.abs(currentX - _tx0);
+      const dy = Math.abs(e.touches[0].clientY - _ty0);
+      const dx = Math.abs(e.touches[0].clientX - _tx0);
       if (dy > dx && dy > 10) {
-        const touchDir = (currentY - _ty0) > 0 ? -1 : +1;
-        e.preventDefault();
-
-        // ── Mid-gesture reversal reset ──────────────────────────────────
-        // If the user reverses direction mid-gesture (e.g. starts scrolling
-        // down then pulls back up), reset the origin to the current point.
-        // Without this, touchend measures dy from the original origin and sees
-        // a small or wrong-sign net, causing the gesture to misfire or drop.
-        // Only reset after a minimum displacement (12px) in the new direction
-        // to avoid flipping on micro-jitter at the turn-around point.
-        if (this._touchLastDir !== 0 && touchDir !== this._touchLastDir) {
-          const reversalDy = Math.abs(currentY - _ty0);
-          if (reversalDy > 12) {
-            _ty0    = currentY;
-            _tx0    = currentX;
-            _tTime0 = performance.now();
-          }
-        }
-        this._touchLastDir = touchDir;
+        // Check if active container allows native scroll in this direction
+        const touchDir = (e.touches[0].clientY - _ty0) > 0 ? -1 : +1; // finger up = scroll down
+        const activeContainer = this._activeKey ? this._containers.get(this._activeKey) : null;
+        const nativeAllowed = activeContainer?.nativeScrollDirection?.(touchDir) === true;
+        if (!nativeAllowed) e.preventDefault();
       }
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
@@ -251,75 +121,9 @@ class AppController {
       const dt     = Math.max(1, performance.now() - _tTime0);
       const vel    = Math.abs(dy) / dt;
       const locked = Math.abs(dy) > dx * 1.2;
-      const valid  = (vel >= 0.25 && Math.abs(dy) >= 18) || Math.abs(dy) >= 40;
-      if (locked && valid) {
-        const dir = dy > 0 ? +1 : -1;
-        const now = performance.now();
-        // Direction-aware settle for touch too: reversals pass through faster
-        const isReversal = this._lastFireDir !== 0 && dir !== this._lastFireDir;
-        const settleStart = this._settleUntil - SETTLE_MS;
-        const effectiveSettle = isReversal ? SETTLE_REVERSAL_MS : SETTLE_MS;
-        if (now < this._settleUntil) {
-          if (!isReversal || now < settleStart + effectiveSettle) return;
-        }
-        this._fire(dir);
-      }
+      const valid  = (vel >= 0.3 && Math.abs(dy) >= 20) || Math.abs(dy) >= 44;
+      if (locked && valid) this._dispatchScroll(dy > 0 ? +1 : -1);
     }, { passive: true });
-
-    // ── Visibility change — phone lock/unlock recovery ─────────────────
-    // When the screen turns off mid-scroll, in-flight touch events are
-    // silently cancelled and the settle/lock timers keep running but their
-    // setTimeout callbacks fire while the page is hidden. On resume the
-    // settle window may still be non-zero (blocking all input) and
-    // _mouseLastFire may be stale, leaving the scroll engine locked.
-    // Fix: flush all transient per-gesture state on visibility restore.
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        this._settleUntil   = 0;
-        this._mouseLastFire = 0;
-        this._lastFireDir   = 0;
-        this._touchLastDir  = 0;
-        this._tpHead = 0; this._tpCount = 0;
-        this._locked = false;
-        if (this._activeKey) {
-          this._chrome?.notifySection?.(this._activeKey);
-        }
-      }
-    });
-  }
-
-  /**
-   * Common fire path for both mouse and trackpad.
-   * Arms the settle window and dispatches to the active container.
-   * @param {number} dir  +1 | -1
-   */
-  _fire(dir) {
-    // Arm settle window BEFORE dispatch so any inertia burst that arrives
-    // synchronously during the dispatch is already gated out.
-    // Always arm with the full SETTLE_MS — the direction-aware check in the
-    // wheel handler computes the effective window at read-time using _lastFireDir,
-    // so we only need to record the ceiling here.
-    const now = performance.now();
-    this._settleUntil   = now + SETTLE_MS;
-    this._mouseLastFire = now;
-    this._lastFireDir   = dir;
-    // Clear trackpad buffer so the settle period starts clean
-    this._tpHead = 0; this._tpCount = 0;
-    this._dispatchScroll(dir);
-  }
-
-  /**
-   * Like _fire but does NOT re-arm the settle window.
-   * Used when the container wants to attempt a section change that may be
-   * rejected by _locked — we don't want a failed setSection call to cost
-   * the user 440ms of frozen input.
-   */
-  _fireSoft(dir) {
-    const now = performance.now();
-    this._mouseLastFire = now;
-    this._lastFireDir   = dir;
-    this._tpHead = 0; this._tpCount = 0;
-    this._dispatchScroll(dir);
   }
 
   register(name, container) {
@@ -341,17 +145,8 @@ class AppController {
     if (name === this._activeKey)   return;
     if (!this._containers.has(name)) { console.warn(`[AppController] setSection("${name}") — not registered.`); return; }
     this._locked = true;
-    if (force) {
-      // Forced nav (e.g. from a nav anchor click): clear any active settle window
-      // so the first scroll in the target section isn't eaten.
-      this._settleUntil   = 0;
-      this._mouseLastFire = 0;
-      this._lastFireDir   = 0;
-      this._touchLastDir  = 0;
-      this._tpHead = 0; this._tpCount = 0;
-    }
     this._activateDirect(name, fromDirection);
-    setTimeout(() => { this._locked = false; }, LOCK_MS);
+    setTimeout(() => { this._locked = false; }, this._LOCK_MS);
   }
 
   _activateDirect(name, fromDirection = 0) {
@@ -359,28 +154,27 @@ class AppController {
     if (!next) return;
     if (this._activeKey) this._containers.get(this._activeKey)?.exit();
     this._activeKey = name;
-    // Flush trackpad buffer — stale events from the old section must not
-    // bleed into the new one.
-    this._tpHead = 0; this._tpCount = 0;
-    // Extend the settle window to cover the full lock period so a single scroll
-    // gesture cannot simultaneously trigger the section change AND the first
-    // advance in the new section.
-    const settleEnd = performance.now() + LOCK_MS;
-    if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
+    // Flush velocity and start settle window so inertia from the departing
+    // section cannot chain into the newly entered one.
+    this._wVel        = 0;
+    this._wLastTime   = 0;
+    this._settleUntil = performance.now() + this._SETTLE_MS;
     next.enter(fromDirection);
+    // Notify PageChrome so the section indicator updates immediately,
+    // rather than relying on scroll position (unreliable in scroll-lock mode).
     this._chrome?.notifySection?.(name);
+    // Suppress the scroll-position-based indicator for longer when entering
+    // Contact (smooth scroll can take ~700ms) so the label doesn't flicker
+    // back to "About" while the page is still scrolling into position.
+    const suppressMs = name === 'contact' ? 900 : this._SETTLE_MS;
+    this._chrome?.suppressScrollIndicator?.(suppressMs);
   }
 
   _dispatchScroll(direction) {
+    if (this._chrome) this._chrome.onScroll(window.scrollY);
     if (!this._activeKey) return;
     const active = this._containers.get(this._activeKey);
     if (active?.onScroll) active.onScroll(direction);
-  }
-
-  /** Navigate directly to the contact panel (last About panel). */
-  goToContactPanel() {
-    const about = this._containers.get('about');
-    if (about) setTimeout(() => about.goToLastPanel(), 80);
   }
 }
 
@@ -408,13 +202,13 @@ class PageChrome {
     // AppController reference — set via setApp() after bootstrap wires everything
     this._app     = null;
 
-    // Cursor — positions initialised in init() once elements exist
+    // Cursor
     this._cur     = null;
     this._curR    = null;
-    this._mx      = 0;
-    this._my      = 0;
-    this._rx      = 0;
-    this._ry      = 0;
+    this._mx      = window.innerWidth  / 2;
+    this._my      = window.innerHeight / 2;
+    this._rx      = this._mx;
+    this._ry      = this._my;
     this._isDown  = false;
     this._inLink  = false;
     this._inProj  = false;
@@ -422,6 +216,15 @@ class PageChrome {
     // Section indicator
     this._secInd  = null;
     this._navEl   = null;
+    this._suppressIndicatorUntil = 0; // timestamp — scroll-based updates are muted until this time
+    this._SECTIONS = [
+      { id: 'top',           label: 'Hero'     },
+      { id: 'projects-spacer', label: 'Projects' },
+      { id: 'about',         label: 'About'    },
+      { id: 'contact',       label: 'Contact'  },
+    ];
+    this._sectionOffsets = [];
+
     // Theme
     this._currentTheme = 'dark';
     this._SVG_SUN  = '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
@@ -437,9 +240,6 @@ class PageChrome {
     this._curR  = document.getElementById('cur-r');
     this._navEl = document.getElementById('nav');
     this._secInd= document.getElementById('section-indicator');
-    // Initialise cursor position to viewport centre now that elements exist
-    this._mx = this._rx = window.innerWidth  / 2;
-    this._my = this._ry = window.innerHeight / 2;
 
     // ── Veil + body ready ──────────────────────────────────────────────
     const veil = document.getElementById('veil');
@@ -494,24 +294,26 @@ class PageChrome {
     // catches up. This lets the RAF bail out early on idle frames instead of
     // running the lerp and threshold check on every single frame.
     if (window.matchMedia('(pointer:fine)').matches) {
-      let rafId = 0;
+      let cursorMoved = false;
+      document.addEventListener('mousemove', () => { cursorMoved = true; }, { passive: true });
       const loop = () => {
-        rafId = 0;
-        const rxN = this._rx + (this._mx - this._rx) * 0.12;
-        const ryN = this._ry + (this._my - this._ry) * 0.12;
-        const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
-        this._rx = stillMoving ? rxN : this._mx;
-        this._ry = stillMoving ? ryN : this._my;
-        if (this._curR) {
-          this._curR.style.left = `${this._rx}px`;
-          this._curR.style.top  = `${this._ry}px`;
+        if (cursorMoved) {
+          const rxN = this._rx + (this._mx - this._rx) * 0.1;
+          const ryN = this._ry + (this._my - this._ry) * 0.1;
+          if (Math.abs(rxN - this._rx) > 0.02 || Math.abs(ryN - this._ry) > 0.02) {
+            this._rx = rxN; this._ry = ryN;
+            if (this._curR) {
+              this._curR.style.left = `${this._rx}px`;
+              this._curR.style.top  = `${this._ry}px`;
+            }
+          } else {
+            // Follower has fully caught up — go idle until next mousemove
+            cursorMoved = false;
+          }
         }
-        // Only continue while the follower is catching up; goes fully idle otherwise.
-        if (stillMoving) rafId = requestAnimationFrame(loop);
+        requestAnimationFrame(loop);
       };
-      document.addEventListener('mousemove', () => {
-        if (!rafId) rafId = requestAnimationFrame(loop);
-      }, { passive: true });
+      requestAnimationFrame(loop);
     }
     this._apply();
 
@@ -536,7 +338,7 @@ class PageChrome {
       '#top':     'hero',
       '#work':    'carousel',
       '#about':   'about',
-      '#contact': 'about',  // contact is now the last panel of about
+      '#contact': 'contact',
     };
     document.addEventListener('click', e => {
       const a = e.target.closest('a[href]');
@@ -547,9 +349,7 @@ class PageChrome {
         e.preventDefault();
         const sectionKey = ANCHOR_SECTION_MAP[href];
         if (sectionKey && this._app) {
-          this._app.setSection(sectionKey, 0, true);
-          // #contact jumps to the last About panel — ask the app to do it cleanly
-          if (href === '#contact') this._app.goToContactPanel();
+          this._app.setSection(sectionKey, 0, true); // force=true: nav clicks bypass transition lock
         } else {
           // Fallback for anchors outside the container system
           const targetId = href.slice(1);
@@ -573,20 +373,19 @@ class PageChrome {
     if (hamburger && navDrawer) {
       hamburger.addEventListener('click', () => {
         const isOpen = document.body.classList.toggle('menu-open');
-        hamburger.setAttribute('aria-expanded', String(isOpen));
+        hamburger.setAttribute('aria-expanded', isOpen);
         hamburger.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
-        navDrawer.setAttribute('aria-hidden', String(!isOpen));
+        navDrawer.setAttribute('aria-hidden', !isOpen);
       });
-      // Close drawer when any nav drawer link is tapped.
-      // The anchor click then bubbles to the document delegation handler which
-      // routes via app.setSection() — order is correct (close first, then navigate).
-      navDrawer.addEventListener('click', (e) => {
-        if (e.target.closest('a')) {
+      ['dw-top','dw-work','dw-about','dw-contact'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', () => {
           document.body.classList.remove('menu-open');
           hamburger.setAttribute('aria-expanded', 'false');
           hamburger.setAttribute('aria-label', 'Open menu');
           navDrawer.setAttribute('aria-hidden', 'true');
-        }
+        });
       });
     }
 
@@ -601,22 +400,43 @@ class PageChrome {
         let iter = 0; const TARGET = 'Green';
         const iv = setInterval(() => {
           logoLast.textContent = TARGET.split('').map((c, i) =>
-            i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
+            i < iter ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
           ).join('');
-          if (Math.floor(iter) >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
+          if (iter >= TARGET.length) { clearInterval(iv); logoLast.textContent = 'Green'; scrambling = false; }
           iter += 0.38; // fractional step: slows the letter-resolve relative to the 26ms tick
         }, 26);
       };
       logo.addEventListener('mouseenter', scramble);
-      logo.addEventListener('focus', () => { if (!scrambling) scramble(); });
+      logo.addEventListener('focus', () => { if (!scrambling) logo.dispatchEvent(new MouseEvent('mouseenter')); });
     }
 
-    // ── Nav scrolled + hero scroll hint ───────────────────────────────
+    // ── Nav scrolled + section indicator ──────────────────────────────
     const heroScrollEl = document.getElementById('hero-scroll');
+    const buildOffsets = () => {
+      this._sectionOffsets = this._SECTIONS.map(s => {
+        const el = document.getElementById(s.id);
+        return { label: s.label, top: el ? el.getBoundingClientRect().top + window.scrollY : 0 };
+      });
+    };
+    // Use a one-shot ResizeObserver instead of a fixed setTimeout so offsets
+    // are calculated after actual layout settles, regardless of font-load timing.
+    const ro = new ResizeObserver(() => { buildOffsets(); ro.disconnect(); });
+    ro.observe(document.body);
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (this._navEl) this._navEl.classList.toggle('scrolled', y > 40);
       if (heroScrollEl && y > 60) heroScrollEl.style.opacity = '0';
+      if (this._secInd && this._sectionOffsets.length) {
+        // Skip position-based label while a container transition is settling.
+        // notifySection() already set the correct label; let it stick.
+        if (performance.now() < this._suppressIndicatorUntil) return;
+        let active = this._SECTIONS[0].label;
+        for (let i = this._sectionOffsets.length - 1; i >= 0; i--) {
+          if (y >= this._sectionOffsets[i].top - 100) { active = this._sectionOffsets[i].label; break; }
+        }
+        this._secInd.textContent = active;
+        this._secInd.classList.toggle('visible', y > window.innerHeight * 0.5);
+      }
     }, { passive: true });
 
     // ── Resize ─────────────────────────────────────────────────────────
@@ -624,6 +444,7 @@ class PageChrome {
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
+        buildOffsets();
         if (window.innerWidth > 768) {
           document.body.classList.remove('menu-open');
           const h = document.getElementById('hamburger');
@@ -639,24 +460,36 @@ class PageChrome {
     if (copyYear) copyYear.textContent = new Date().getFullYear();
   }
 
-  // Cursor state is expressed as body classes so CSS owns all appearance.
+  /** Called by AppController on every dispatched scroll. Progress bar removed. */
+  onScroll(y) {
+    // intentionally empty — kept so the AppController call-site is unchanged
+  }
 
   /**
    * Called by AppController._activateDirect whenever the active section changes.
-   * Updates body[data-section] and the section indicator label.
-   * @param {string} sectionKey  'hero' | 'carousel' | 'about'
+   * Updates the section indicator label directly from the container key, bypassing
+   * the scroll-position heuristic which is unreliable in a scroll-locked layout.
+   * @param {string} sectionKey  e.g. 'hero' | 'carousel' | 'about' | 'contact'
    */
   notifySection(key) {
-    // Drive body[data-section] so CSS can show/hide section-specific UI
-    // (e.g. the nav availability badge which should only appear on hero).
-    document.body.dataset.section = key;
     if (!this._secInd) return;
-    const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About' };
+    const labelMap = { hero: 'Hero', carousel: 'Projects', about: 'About', contact: 'Contact' };
     const label = labelMap[key];
     if (label) {
       this._secInd.textContent = label;
       this._secInd.classList.toggle('visible', key !== 'hero');
     }
+  }
+
+  /**
+   * Mutes the scroll-position-based section indicator for `ms` milliseconds.
+   * Called by AppController._activateDirect after every section change so that
+   * an in-flight smooth scroll (ContactContainer.enter) cannot clobber the label
+   * that notifySection() just set.
+   * @param {number} ms
+   */
+  suppressScrollIndicator(ms) {
+    this._suppressIndicatorUntil = performance.now() + ms;
   }
 
   // Cursor state is expressed as body classes so CSS owns all appearance.
@@ -700,9 +533,7 @@ class Hero3DContainer {
     this._nav         = null;
     this._active      = false;
     this._hintDone    = false;
-    this._hintReady   = false;
     this._rotateTimer = null;
-    this._hintTimer   = null;  // tracks the 18s auto-dismiss timer so it can be cancelled
     this._t0y         = 0;
     this._t0x         = 0;
     this._tScrolling  = null;
@@ -730,33 +561,15 @@ class Hero3DContainer {
     this._errorEl    = root.querySelector('#model-error');
     this._nav        = document.getElementById('nav'); // documented exception
 
-    // ── Model-viewer preload: warm the HDR environment cache as soon as
-    //    the container inits. The GLB is preloaded via <link rel="preload">
-    //    in <head>; the HDR has no standard preload type so we use a no-op
-    //    fetch() here. Both are relatively large assets and benefit from
-    //    being in-cache before model-viewer requests them, significantly
-    //    reducing the "white box" pop-in on first visit.
     if (this._viewer) {
-      const hdr = this._viewer.getAttribute('skybox-image');
-      if (hdr) {
-        // Low-priority background fetch — won't block any critical resources.
-        // 'no-cors' is used because modelviewer.dev doesn't send CORS headers
-        // for the HDR; we only need to warm the cache, not read the response.
-        try {
-          fetch(hdr, { mode: 'no-cors', priority: 'low' }).catch(() => {});
-        } catch (e) { /* ignore — purely opportunistic */ }
-      }
-    }
-
-    if (this._viewer) {
-      this._viewer.addEventListener('camera-change', this._onViewerCameraChange);
+      this._viewer.addEventListener('camera-change', this._onViewerCameraChange, { once: true });
       this._viewer.addEventListener('error',         this._onViewerError);
       this._viewer.addEventListener('load',          this._onViewerLoad);
       this._viewer.addEventListener('mousedown',     this._onMouseDown);
       this._viewer.addEventListener('mouseup',       this._onMouseUp);
       this._viewer.addEventListener('mouseleave',    this._onMouseLeave);
       this._viewer.addEventListener('touchstart',    this._onTouchStart,  { passive: true });
-      this._viewer.addEventListener('touchend',      this._onTouchEnd,    { passive: true });
+      this._viewer.addEventListener('touchend',      this._onTouchEnd);
     }
 
     // Intercept wheel/touch on root so model-viewer doesn't eat them
@@ -771,24 +584,16 @@ class Hero3DContainer {
   enter() {
     if (!this._root) return;
     this._active = true;
-    // Reset hint state so re-entry always shows the 360° hint again
-    this._hintDone  = false;
-    this._hintReady = false;
     if (this._nav) this._nav.classList.remove('scrolled');
+    // Snap the page scroll back to the top. The hero is always at scrollY=0;
+    // leaving scrollY non-zero while the hero is visible would allow native
+    // scroll events to fire and could chain into the ContactContainer's
+    // nativeScrollDirection logic, or cause the section indicator / nav
+    // scrolled state to reflect a stale position.
     window.scrollTo({ top: 0, behavior: 'instant' });
     this._root.style.visibility = 'visible';
     this._root.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1)';
     this._root.style.opacity    = '1';
-    // Clear any inline opacity set by the scroll listener so the CSS transition plays correctly
-    if (this._heroScroll) this._heroScroll.style.opacity = '';
-    // Force a clean re-reveal: strip classes first so re-adding them in the
-    // next frame always triggers the entrance transition even on re-entry.
-    [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
-      .forEach(el => el?.classList.remove('is-revealed'));
-    // Re-enable auto-rotate (was removed on exit to prevent GPU thrash)
-    if (this._viewer) {
-      this._viewer.setAttribute('auto-rotate', '');
-    }
     requestAnimationFrame(() => this._revealHero());
   }
 
@@ -797,29 +602,11 @@ class Hero3DContainer {
     this._active = false;
     // Cancel any pending auto-rotate resume so it cannot fire after we've left.
     if (this._rotateTimer) { clearTimeout(this._rotateTimer); this._rotateTimer = null; }
-    // Cancel the hint auto-dismiss timer — it will be re-armed on next load event.
-    if (this._hintTimer) { clearTimeout(this._hintTimer); this._hintTimer = null; }
-    // Restore the hint element so it will be visible on re-entry.
-    this._modelHint?.classList.remove('hidden');
     this._root.style.transition = 'opacity 0.4s ease';
     this._root.style.opacity    = '0';
     // Strip reveal classes so re-entering Hero re-plays the entrance animation.
     [this._heroText, this._heroScroll, this._modelLabel, this._modelHint]
       .forEach(el => el?.classList.remove('is-revealed'));
-    // Pause model-viewer on mobile to prevent GPU/state thrash when
-    // the user scrolls away and back repeatedly. Pausing stops the render
-    // loop and prevents the auto-rotate from accumulating delta while hidden.
-    if (this._viewer) {
-      this._viewer.removeAttribute('auto-rotate');
-      // On mobile, also reset camera to default orbit so re-entry always
-      // shows the model from the correct angle after extended interaction.
-      if (window.matchMedia('(pointer: coarse)').matches) {
-        try {
-          this._viewer.cameraOrbit = '-20deg 92deg 50%';
-          this._viewer.jumpCameraToGoal();
-        } catch(e) { /* non-fatal — viewer may not be loaded yet */ }
-      }
-    }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
   }
 
@@ -843,17 +630,7 @@ class Hero3DContainer {
   async _onViewerLoad() {
     await this._viewer.updateComplete;
     this._viewer.jumpCameraToGoal();
-    // Open the dismiss gate after the fadeUp animation has had time to play
-    // so camera-change on init doesn't hide the hint before it appears.
-    setTimeout(() => { this._hintReady = true; }, 1800);
-    // Auto-dismiss after 18s — tracked so exit() can cancel it.
-    if (this._hintTimer) clearTimeout(this._hintTimer);
-    this._hintTimer = setTimeout(() => {
-      this._hintTimer = null;
-      if (!this._active) return; // navigated away — don't touch DOM
-      this._hintReady = true;
-      this._dismissHint();
-    }, 18000);
+    setTimeout(() => this._dismissHint(), 5000);
 
     const model = this._viewer.model;
     if (!model?.materials?.length) return;
@@ -894,7 +671,7 @@ class Hero3DContainer {
   }
 
   _dismissHint() {
-    if (!this._hintReady || this._hintDone) return;
+    if (this._hintDone) return;
     this._hintDone = true;
     this._modelHint?.classList.add('hidden');
   }
@@ -927,8 +704,7 @@ class Hero3DContainer {
       e.preventDefault();
       // Don't call this.onScroll() directly — AppController's touchend
       // handler owns the dispatch for touch events.
-      // NOTE: do NOT reset _t0y/_t0x here — the origin must remain fixed
-      // so AppController.touchend can measure total swipe displacement.
+      this._t0y = e.touches[0].clientY; this._t0x = e.touches[0].clientX;
     }
   }
 }
@@ -957,9 +733,7 @@ class CarouselContainer {
     this._transitioning = false;
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
-    this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
-    this._nextArrow     = null; // c-next-arrow element
-    this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
+    this._TRANS_MS      = 820;
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -994,10 +768,6 @@ class CarouselContainer {
     // populate it here rather than creating a duplicate element.
     this._dotsEl = document.getElementById('c-dots');
     if (!this._dotsEl) {
-      // #c-dots is expected in the HTML. This fallback appends to body as a
-      // last resort, which places it outside the projects section — visible
-      // but potentially mis-styled. Log a warning so it surfaces in dev.
-      console.warn('[CarouselContainer] #c-dots element not found in HTML; appending fallback to document.body.');
       this._dotsEl = document.createElement('nav');
       this._dotsEl.id = 'c-dots';
       this._dotsEl.setAttribute('aria-label', 'Project navigation');
@@ -1020,15 +790,7 @@ class CarouselContainer {
     this._calcSpacerTop();
     window.addEventListener('resize', this._onResize, { passive: true });
 
-    // Create the next-section arrow and append it to the dots container AFTER
-    // innerHTML is cleared — so it always exists and is never wiped.
-    const arrowEl = document.createElement('div');
-    arrowEl.className = 'c-next-arrow';
-    arrowEl.id = 'c-next-arrow';
-    arrowEl.setAttribute('aria-hidden', 'true');
-    arrowEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 9" fill="none"><line x1="3" y1="0" x2="3" y2="6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><polyline points="1,4 3,7 5,4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
-    if (this._dotsEl) this._dotsEl.appendChild(arrowEl);
-    this._nextArrow = arrowEl;
+    // Card tilt (element-level, not window)
     if (!window.matchMedia('(pointer:coarse)').matches) {
       const rectCache = new WeakMap(); // avoids hanging non-standard properties on DOM nodes
       this._projs.forEach(proj => {
@@ -1058,10 +820,11 @@ class CarouselContainer {
     // Any other direction (including direct nav jump = 0) resets to first card.
     if (fromDirection === -1) this._activeIdx = this._N - 1;
     else                      this._activeIdx = 0;
-    // Hold _transitioning true until the double-rAF entrance animation fires.
-    // Releasing it here (before rAF) would allow a rapid second scroll to
-    // advance the carousel before the entrance animation completes.
-    this._transitioning  = true;
+    // Reset all transition-debounce state on every entry. Stale values from a
+    // previous visit (particularly _transitioning=true or a recent _lastAdvDir)
+    // are the root cause of the carousel silently swallowing the boundary scroll
+    // that should hand off to the hero section.
+    this._transitioning  = false;
     this._lastAdvanceAt  = 0;
     this._lastAdvDir     = 0;
     this._calcSpacerTop();
@@ -1069,20 +832,7 @@ class CarouselContainer {
     this._root.classList.add('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      this._setPositions(this._activeIdx, true);
-      // Release lock AFTER positions are applied so the first advance is always clean.
-      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
-    }));
-    // On first entry, start background image loads for all slides now that
-    // the carousel is visible. Images that are already loaded are no-ops.
-    this._projs.forEach(p => {
-      const img = p.querySelector('.proj-img');
-      if (img && img.dataset.bg) {
-        img.style.backgroundImage = `url('${img.dataset.bg}')`;
-        delete img.dataset.bg;
-      }
-    });
+    requestAnimationFrame(() => requestAnimationFrame(() => this._setPositions(this._activeIdx, true)));
   }
 
   exit() {
@@ -1090,7 +840,6 @@ class CarouselContainer {
     this._active = false;
     this._root.classList.remove('carousel-active');
     if (this._dotsEl) this._dotsEl.style.opacity = '0';
-    if (this._nextArrow) this._nextArrow.classList.remove('visible');
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 400);
   }
 
@@ -1127,32 +876,15 @@ class CarouselContainer {
       }
     });
     this._dotWraps.forEach((w, i) => w.classList.toggle('on', i === idx));
-    // Show next-section arrow only on the last slide
-    if (this._nextArrow) this._nextArrow.classList.toggle('visible', idx === this._N - 1);
   }
 
   _advance(dir) {
     if (this._transitioning) return;
     const now = performance.now();
-
+    if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
     const next = this._activeIdx + dir;
-    if (next < 0) {
-      // Lock out further _advance calls while we hand off to the previous section.
-      // Without this, rapid trackpad ticks during the handoff (before AppController's
-      // LOCK_MS engages) can re-enter _advance and double-fire setSection, causing the
-      // "sticky on scroll-up" symptom on the Sabretta pen slide.
-      this._transitioning = true;
-      this._app.setSection(this._prevKey, -1);
-      // Safety net: clear _transitioning if enter() never fires to reset it.
-      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
-      return;
-    }
-    if (next >= this._N) {
-      this._transitioning = true;
-      this._app.setSection(this._nextKey, +1);
-      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
-      return;
-    }
+    if (next < 0)        { this._transitioning = false; this._app.setSection(this._prevKey, -1); return; }
+    if (next >= this._N) { this._transitioning = false; this._app.setSection(this._nextKey, +1); return; }
     this._transitioning = true;
     this._lastAdvanceAt = now;
     this._lastAdvDir    = dir;
@@ -1185,20 +917,13 @@ class AboutContainer {
     this._panels  = [];
     this._dots    = [];
     this._hint    = null;
-    this._moreBelow = null;
     this._N       = 0;
     this._active        = false;
     this._activeIdx     = 0;
     this._transitioning = false;
     this._lastAdvanceAt = 0;
     this._lastAdvDir    = 0;
-    this._TRANS_MS      = 900; // about panel CSS: 0.85s transform + margin
-    // Index of the contact panel (last panel) — set in init() once panels are counted
-    this._contactPanelIdx  = -1;
-    // Index of the personal-statement panel (second-to-last) — YouTube iframe is
-    // injected lazily the first time this panel becomes active.
-    this._statementPanelIdx = -1;
-    this._iframeInjected    = false;
+    this._TRANS_MS      = 820;
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1210,16 +935,11 @@ class AboutContainer {
   init(root) {
     this._root   = root;
     this._spacer = document.querySelector('.about-spacer'); // documented exception
-    this._moreBelow = document.getElementById('about-more-below'); // documented exception
 
     this._panels = Array.from(root.querySelectorAll('[data-panel]'));
     this._dots   = Array.from(root.querySelectorAll('.prog-dot'));
     this._hint   = root.querySelector('#about-scroll-hint');
     this._N      = this._panels.length;
-    // The last panel is the contact panel — track its index so we can
-    // update the section indicator label and suppress its dot.
-    this._contactPanelIdx   = this._N - 1;
-    this._statementPanelIdx = this._N - 2;
 
     if (!this._spacer || !this._N) {
       console.warn('[AboutContainer] Missing spacer or panels — check DOM.');
@@ -1231,20 +951,12 @@ class AboutContainer {
     window.addEventListener('resize', this._onResize, { passive: true });
 
     this._setPanel(0);
-    // Preload panel 1 immediately on init — the user is very likely to scroll
-    // to it and it's cheaper to fetch during idle than on first advance.
-    this._preloadPanel(1);
     this._root.classList.remove('engaged');
   }
 
   enter(fromDirection = 0) {
     if (!this._root || !this._N) return;
     this._active = true;
-    // Restore spacer height before engaging so layout is correct when the
-    // stage becomes visible (was collapsed to 0 on exit to prevent gap).
-    this._sizeSpacer();
-    // Cache spacerTop synchronously with the current layout — this gives a
-    // usable value immediately, even before the double-rAF resolves.
     this._calcSpacerTop();
     // Arrive on last panel when scrolling back up from below.
     // Any other direction (including direct nav = 0) resets to first panel.
@@ -1256,29 +968,17 @@ class AboutContainer {
     this._transitioning = false;
     this._setPanel(this._activeIdx);
     this._root.classList.add('engaged');
-    // Re-cache after layout has fully flushed (spacer height change triggers a
-    // layout pass that may not be stable until the next paint frame).
-    requestAnimationFrame(() => requestAnimationFrame(() => this._calcSpacerTop()));
   }
 
   exit() {
     if (!this._root) return;
     this._active = false;
     this._root.classList.remove('engaged');
-    // Collapse the spacer so no raw document gap is visible if a native-scroll
-    // event slips through while the about-stage is hidden (visibility:hidden).
-    // It is restored in enter() before the stage becomes visible again.
-    if (this._spacer) this._spacer.style.height = '0px';
   }
 
   onScroll(direction) {
     if (!this._active) return;
     this._advance(direction);
-  }
-
-  /** Called by AppController.goToContactPanel() when a nav link targets #contact. */
-  goToLastPanel() {
-    if (this._active) this._setPanel(this._N - 1);
   }
 
   _sizeSpacer() {
@@ -1296,106 +996,29 @@ class AboutContainer {
       if      (i < idx)  el.classList.add('is-after');
       else if (i === idx) el.classList.add('is-active');
       else               el.classList.add('is-below');
-      // Hide off-screen panels from AT — they are visually hidden and their
-      // links/text should not be reachable by keyboard or screen reader
-      el.setAttribute('aria-hidden', i === idx ? 'false' : 'true');
     });
-    // Announce the newly active panel to screen readers via the polite live region
-    const announcer = document.getElementById('about-announcer');
-    if (announcer) {
-      const label = this._panels[idx]?.getAttribute('aria-label') || '';
-      announcer.textContent = label;
-    }
-    // Only drive dots for the non-contact panels (contact panel has no dot —
-    // it uses the more-below arrow as its indicator instead).
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
     if (this._hint) this._hint.classList.toggle('hide', idx > 0);
-    // Show "more below" chevron on the panel BEFORE the contact panel (statement)
-    // — this signals there's one more slide (contact) without giving contact its own dot.
-    // Hide it on the contact panel itself (nothing below).
-    if (this._moreBelow) {
-      const showArrow = idx === this._N - 2; // second-to-last = statement panel
-      this._moreBelow.classList.toggle('visible', showArrow);
-    }
-    // Update section indicator label: "Contact" on contact panel, "About" otherwise
-    const secInd = document.getElementById('section-indicator');
-    if (secInd) {
-      if (idx === this._contactPanelIdx) {
-        secInd.textContent = 'Contact';
-      } else if (this._active) {
-        secInd.textContent = 'About';
-      }
-    }
-    // Reveal contact panel content — .contact-inner carries .rev-stagger which is
-    // intentionally excluded from the global IntersectionObserver (it lives inside
-    // #about-stage). Drive the .in class here instead so the entrance animation fires
-    // when the contact panel becomes active, and resets when it leaves.
-    const contactPanel = this._panels[this._contactPanelIdx];
-    if (contactPanel) {
-      contactPanel.querySelectorAll('.rev-stagger').forEach(el => {
-        el.classList.toggle('in', idx === this._contactPanelIdx);
-      });
-    }
-    // Inject the YouTube iframe the first time panel 3 (personal statement) becomes
-    // active. Keeping it out of the DOM until then prevents the browser from
-    // initiating the YouTube connection (DNS, TLS, iframe JS) during earlier panel
-    // transitions, which was a primary contributor to sluggishness mid-slideshow.
-    if (idx >= this._statementPanelIdx && !this._iframeInjected) {
-      const stmtPanel = this._panels[this._statementPanelIdx];
-      const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
-      const placeholder = frameWrap?.querySelector('iframe[data-src]');
-      if (placeholder) {
-        placeholder.src = placeholder.dataset.src;
-        placeholder.removeAttribute('data-src');
-        this._iframeInjected = true;
-      }
-    }
-    // Preload images for this panel AND the next — so they're decoded before arrival.
-    this._preloadPanel(idx);
-    this._preloadPanel(idx + 1);
-  }
-
-  /**
-   * Flush data-src → src on all <img data-src> inside a panel so the
-   * browser starts fetching while the panel transition is still running.
-   * Safe to call multiple times — img.src assignment is a no-op if the
-   * src is already set to the same value.
-   */
-  _preloadPanel(idx) {
-    const panel = this._panels[idx];
-    if (!panel) return;
-    panel.querySelectorAll('img[data-src]').forEach(img => {
-      const src = img.dataset.src;
-      if (src && img.src !== src) {
-        img.src = src;
-        img.removeAttribute('data-src');
-      }
-    });
   }
 
   _advance(dir) {
     if (this._transitioning) return;
     const now = performance.now();
-
+    if (dir === this._lastAdvDir && (now - this._lastAdvanceAt) < this._TRANS_MS) return;
     const next = this._activeIdx + dir;
     if (next < 0) {
-      // Lock out further _advance calls while we hand off to the previous section.
-      // Without this, rapid trackpad ticks during the handoff re-enter _advance
-      // (transitioning is false, debounce doesn't match) and fire setSection again.
-      this._transitioning = true;
+      this._transitioning = false;
       if (this._prevKey) this._app.setSection(this._prevKey, -1);
-      // Safety net: clear _transitioning if enter() never fires to reset it.
-      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
       return;
     }
     if (next >= this._N) {
-      this._transitioning = true;
+      this._transitioning = false;
       if (this._nextKey) {
-        this._app.setSection(this._nextKey, +1);
+        // Small delay so the last panel's exit animation (opacity 0.70s) has
+        // visibly started before Contact.enter() fires its smooth scroll.
+        // Without this, the about-stage snaps away before the panel fades out.
+        setTimeout(() => this._app.setSection(this._nextKey, +1), 120);
       }
-      // Safety net: clear _transitioning after TRANS_MS in case setSection is
-      // blocked (e.g. LOCK_MS guard) and enter() never fires to reset it.
-      setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
       return;
     }
     this._transitioning = true;
@@ -1408,7 +1031,125 @@ class AboutContainer {
 
 
 /* ─────────────────────────────────────────────────────────────────────────
-   §6  BOOTSTRAP
+   §6  CONTACT CONTAINER
+   ─────────────────────────────────────────────────────────────────────────
+   Root element: <section class="contact"> (plus the preceding personal-
+   statement section, which is part of the same scrollable region).
+
+   The contact section is a normal, scrollable section that lives below the
+   About scroll-lock stage. It is NOT a scroll-lock container itself — it
+   has no internal panels to advance through. Its sole jobs are:
+
+     enter()    — make the section visible / scroll it into view
+     exit()     — called when the user scrolls back up into About
+     onScroll() — only cares about upward scroll (hands back to About)
+
+   The contact + personal-statement area is rendered in normal document
+   flow. enter() uses window.scrollTo to reveal it; this is intentional
+   because the container system releases scroll-lock when ContactContainer
+   is active, allowing natural page scroll within this region.
+
+   ISOLATION CONTRACT
+   ──────────────────
+   ✓  Root query scoped to this._root (contact section)
+   ✓  No wheel / keydown / touch listeners (AppController owns those)
+   ✓  Communicates upward only via this._app.setSection()
+   ─────────────────────────────────────────────────────────────────────── */
+class ContactContainer {
+
+  constructor(app, prevSection = 'about') {
+    this._app     = app;
+    this._prevKey = prevSection;
+    this._root    = null;
+    this._active  = false;
+    // Track how far the user has scrolled past the contact top, so we know
+    // when an upward scroll should hand back to About vs just scroll up in page.
+    this._contactTop = 0;
+  }
+
+  init(root) {
+    this._root = root;
+    // Cache contact top on resize
+    window.addEventListener('resize', () => { this._cacheTop(); }, { passive: true });
+  }
+
+  _cacheTop() {
+    if (this._root) {
+      this._contactTop = Math.round(this._root.getBoundingClientRect().top + window.scrollY);
+    }
+  }
+
+  enter(fromDirection = 0) {
+    if (!this._root) return;
+    this._active = true;
+    // Resolve the scroll target first so we can set _contactTop synchronously.
+    // The deferred _cacheTop() call below was the only source of truth before,
+    // meaning nativeScrollDirection read a stale value for ~600ms after entry.
+    const psEl = document.getElementById('statement');
+    if (!psEl) console.warn('[ContactContainer] #statement not found — falling back to contact root for scroll target. Check if the element was renamed.');
+    const scrollTarget = psEl || this._root;
+    const top  = Math.round(scrollTarget.getBoundingClientRect().top + window.scrollY);
+    // Set _contactTop immediately from the *target* position, not from the
+    // post-scroll DOM state. This makes nativeScrollDirection accurate from
+    // the very first wheel event after entering Contact.
+    this._contactTop = top;
+    // Use instant scroll if we're jumping from a far section (hero/carousel)
+    // to avoid a long slow scroll across the whole page.
+    const dist = Math.abs(window.scrollY - top);
+    window.scrollTo({ top, behavior: dist > window.innerHeight * 2 ? 'instant' : 'smooth' });
+    // Re-cache after the scroll settles as a safety net for resize-caused drift.
+    setTimeout(() => this._cacheTop(), 650);
+  }
+
+  exit() {
+    if (!this._root) return;
+    this._active = false;
+    // Abort any in-flight smooth scroll so scrollY is deterministic before
+    // AboutContainer (or any other container) takes over. Without this, the
+    // continuing smooth scroll fires PageChrome's scroll listener with
+    // intermediate scrollY values that trip nativeScrollDirection incorrectly
+    // on the very next wheel event.
+    window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+  }
+
+  /**
+   * nativeScrollDirection — called by AppController's wheel handler.
+   * Returns true for downward scroll (+1) so the browser can scroll the
+   * contact/statement/footer area naturally. Returns false for upward (-1)
+   * so we can intercept it and hand back to About when the user scrolls
+   * back up to the top of the contact region.
+   *
+   * @param {number} dir  +1 (down) | -1 (up)
+   * @returns {boolean}
+   */
+  nativeScrollDirection(dir) {
+    if (!this._active) return false;
+    // Always allow downward native scroll so footer is reachable.
+    if (dir === +1) return true;
+    // For upward: allow native scroll while the user is still scrolled
+    // below the entry point of the contact region. Once they've scrolled
+    // back up to within 80px of the top, intercept and hand back to About.
+    if (dir === -1) {
+      const atTop = window.scrollY <= this._contactTop + 40;
+      return !atTop;
+    }
+    return false;
+  }
+
+  onScroll(direction) {
+    if (!this._active) return;
+    // Reached only when nativeScrollDirection returned false —
+    // user is at the contact top and scrolled up.
+    // AppController's settle window will absorb inertia after the handoff.
+    if (direction === -1) {
+      this._app.setSection(this._prevKey, -1);
+    }
+  }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   §7  BOOTSTRAP
    ─────────────────────────────────────────────────────────────────────────
    The ONLY block that:
      • instantiates all classes
@@ -1425,18 +1166,22 @@ class AboutContainer {
 
   const hero     = new Hero3DContainer(app,   /* next */ 'carousel');
   const carousel = new CarouselContainer(app, /* next */ 'about',    /* prev */ 'hero');
-  // About is now the terminal section — contact is embedded as its final panel.
-  const about    = new AboutContainer(app,    /* next */ null,        /* prev */ 'carousel');
+  // FIX: was null — AboutContainer never handed off to contact
+  const about    = new AboutContainer(app,    /* next */ 'contact',  /* prev */ 'carousel');
+  const contact  = new ContactContainer(app,  /* prev */ 'about');
 
   app.register('hero',     hero);
   app.register('carousel', carousel);
   app.register('about',    about);
+  app.register('contact',  contact);
 
   app.init(
     {
       hero:     document.querySelector('.hero'),
       carousel: document.querySelector('.projects'),
       about:    document.getElementById('about-stage'),
+      // Contact root is the <section class="contact"> element.
+      contact:  document.getElementById('contact'),
     },
     'hero'
   );
