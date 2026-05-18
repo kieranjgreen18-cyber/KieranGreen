@@ -1118,6 +1118,7 @@ class CarouselContainer {
     this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
     this._nextArrow     = null; // c-next-arrow element
     this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
+    this._tiltRafIds    = []; // per-proj pending tilt rAF ids; flushed on slide advance
 
     this._onResize = () => {
       this._sizeSpacer();
@@ -1133,6 +1134,7 @@ class CarouselContainer {
     this._projs = Array.from(root.querySelectorAll(':scope .proj'));
     this._N     = this._projs.length;
     if (!this._N) return;
+    this._tiltRafIds = new Array(this._N).fill(0);
 
     // Character-by-character title animation prep — also cache the spans so
     // _setPositions never runs querySelectorAll on every advance.
@@ -1196,11 +1198,10 @@ class CarouselContainer {
     this._nextArrow = arrowEl;
     if (!window.matchMedia('(pointer:coarse)').matches) {
       const rectCache = new WeakMap(); // avoids hanging non-standard properties on DOM nodes
-      this._projs.forEach(proj => {
+      this._projs.forEach((proj, pi) => {
         const img = proj.querySelector('.proj-img');
         if (!img) return;
         proj.addEventListener('mouseenter', () => { rectCache.set(proj, proj.getBoundingClientRect()); });
-        let tiltRafId = 0;
         proj.addEventListener('mousemove',  e => {
           // Cache is always populated by mouseenter before mousemove fires,
           // so no fallback getBoundingClientRect() read is needed here.
@@ -1210,15 +1211,15 @@ class CarouselContainer {
           const ny = (e.clientY - r.top)  / r.height - 0.5;
           // Batch the style write into a rAF — mousemove fires faster than
           // display refresh on high-DPI trackpads, so cap at one write per frame.
-          if (tiltRafId) cancelAnimationFrame(tiltRafId);
-          tiltRafId = requestAnimationFrame(() => {
-            tiltRafId = 0;
+          if (this._tiltRafIds[pi]) cancelAnimationFrame(this._tiltRafIds[pi]);
+          this._tiltRafIds[pi] = requestAnimationFrame(() => {
+            this._tiltRafIds[pi] = 0;
             img.style.transform = `scale(1.04) rotateY(${nx * 3}deg) rotateX(${-ny * 1.5}deg)`;
           });
         });
         proj.addEventListener('mouseleave', () => {
           rectCache.delete(proj);
-          if (tiltRafId) { cancelAnimationFrame(tiltRafId); tiltRafId = 0; }
+          if (this._tiltRafIds[pi]) { cancelAnimationFrame(this._tiltRafIds[pi]); this._tiltRafIds[pi] = 0; }
           img.style.transform = '';
         });
       });
@@ -1315,6 +1316,13 @@ class CarouselContainer {
   _advance(dir) {
     if (this._transitioning) return;
     const now = performance.now();
+
+    // Cancel any pending tilt rAF on all slides — a queued transform write
+    // landing mid-transition interrupts the CSS slide animation.
+    // Placed before the boundary checks so it covers section-handoff paths too.
+    this._tiltRafIds.forEach((id, i) => {
+      if (id) { cancelAnimationFrame(id); this._tiltRafIds[i] = 0; }
+    });
 
     const next = this._activeIdx + dir;
     if (next < 0) {
