@@ -1052,7 +1052,7 @@ class Hero3DContainer {
     // Build and insert the static fallback <img> if it doesn't exist yet.
     if (!this._fpsFallbackEl) {
       const img = document.createElement('img');
-      img.src      = 'assets/images/miniheroheader.png';
+      img.src      = 'assets/images/miniheroheader.webp';
       img.alt      = 'Kieran Green — Industrial Designer hero image';
       img.className = 'hero-fps-fallback';
       // Insert before the vignette overlay so the vignette still renders on top.
@@ -1244,10 +1244,15 @@ class CarouselContainer {
   }
 
   /**
-   * Warm the browser image cache for all carousel slides using
-   * <link rel="preload"> tags. Called during hero idle time so images are
-   * fully fetched and decoded before the user ever reaches the carousel,
-   * eliminating the jank + cursor lag caused by on-demand image loads.
+   * Warm the browser image cache for all carousel slides using Image()
+   * objects. Called during hero idle time so images are fully fetched and
+   * decoded before the user ever reaches the carousel, eliminating the jank
+   * + cursor lag caused by on-demand image loads.
+   *
+   * Using new Image() instead of <link rel="preload"> avoids the
+   * "preloaded but not used within a few seconds" console warning that fired
+   * when the user hadn't yet scrolled to the carousel by the time the
+   * browser's ~3 s preload consumption window expired.
    * Safe to call multiple times — guarded by this._preloaded.
    */
   preload() {
@@ -1256,11 +1261,8 @@ class CarouselContainer {
     this._projs.forEach(p => {
       const img = p.querySelector('.proj-img');
       if (img?.dataset.bg) {
-        const link = document.createElement('link');
-        link.rel  = 'preload';
-        link.as   = 'image';
-        link.href = img.dataset.bg;
-        document.head.appendChild(link);
+        const preloadImg = new Image();
+        preloadImg.src = img.dataset.bg;
       }
     });
   }
