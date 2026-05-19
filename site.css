@@ -400,7 +400,8 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   position: fixed; z-index: var(--z-veil); pointer-events: none;
   width: 16px; height: 1px;
   background: var(--c-accent);
-  transform: translate(-50%, -50%);
+  /* JS sets --cx/--cy on :root; translate is pure compositor — no left/top layout cost */
+  transform: translate(var(--cx, -100vw), var(--cy, -100vw)) translate(-50%, -50%);
   will-change: transform;
   transition: opacity var(--dur-fast) var(--ease);
 }
@@ -424,19 +425,17 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #cur-r {
   position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
   width: 24px; height: 24px;
-  /* scale() is compositor-only — no layout, no paint on resize.
-     translate(-50%,-50%) centres on the hotspot; scale grows/shrinks from centre. */
-  transform: translate(-50%, -50%) scale(1);
+  /* Position from --crx/--cry, scale from --cur-scale. Kept separate so JS
+     position writes never clobber the CSS scale transition, and vice versa. */
+  transform: translate(var(--crx, -100vw), var(--cry, -100vw)) translate(-50%, -50%) scale(var(--cur-scale, 1));
   will-change: transform;
-  transition: transform var(--dur-mid) var(--ease),
+  transition: --cur-scale var(--dur-mid) var(--ease),
               opacity var(--dur-fast);
 }
 #cur-r::before,
 #cur-r::after {
   content: '';
   position: absolute;
-  /* Fixed corner bracket size — the parent scale handles apparent size change.
-     Keeping these fixed avoids the secondary width/height layout cost. */
   width: 7px; height: 7px;
   border-color: rgba(91,160,164,.5);
   border-style: solid;
@@ -445,16 +444,16 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #cur-r::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
 #cur-r::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
 
-/* Cursor state variants — PageChrome toggles these classes on body.
-   Scale factors: link=38/24≈1.583, proj=54/24=2.25, click=16/24≈0.667 */
-body.cur-link  #cur-r { transform: translate(-50%, -50%) scale(1.583); }
+/* Cursor state variants — only --cur-scale changes; position vars are untouched
+   so JS and CSS never fight over the same transform. */
+body.cur-link  { --cur-scale: 1.583; }
 body.cur-link  #cur-r::before,
 body.cur-link  #cur-r::after  { border-color: rgba(91,160,164,.85); }
-body.cur-proj  #cur-r { transform: translate(-50%, -50%) scale(2.25); }
+body.cur-proj  { --cur-scale: 2.25; }
 body.cur-proj  #cur-r::before,
 body.cur-proj  #cur-r::after  { border-color: rgba(91,160,164,.25); }
 body.cur-click #cur   { opacity: .55; }
-body.cur-click #cur-r { transform: translate(-50%, -50%) scale(0.667); }
+body.cur-click { --cur-scale: 0.667; }
 
 /* Section indicator — removed in favour of nav active state */
 #section-indicator {
@@ -922,7 +921,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   opacity: 1;
   transition: opacity 1.15s ease;
 }
-.proj[data-pos=\"active\"] .proj-img { will-change: transform; }
+.proj[data-pos="active"] .proj-img { will-change: transform; }
 .proj:hover .proj-img { transform: scale(1.01); }
 .proj:hover .proj-img::after { opacity: 0.18; }
 
