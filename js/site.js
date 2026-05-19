@@ -370,8 +370,12 @@ class AppController {
     // advance in the new section.
     const settleEnd = performance.now() + LOCK_MS;
     if (settleEnd > this._settleUntil) this._settleUntil = settleEnd;
-    next.enter(fromDirection);
+    // notifySection fires BEFORE enter() so that enter() → _setPanel() →
+    // notifyAboutPanel() can override nav--about with nav--contact when
+    // re-entering the about section already at the contact panel. If notifySection
+    // fired after, it would clobber the nav--contact class set by notifyAboutPanel.
     this._chrome?.notifySection?.(name);
+    next.enter(fromDirection);
   }
 
   _dispatchScroll(direction) {
@@ -510,24 +514,24 @@ class PageChrome {
     // catches up. This lets the RAF bail out early on idle frames instead of
     // running the lerp and threshold check on every single frame.
     if (window.matchMedia('(pointer:fine)').matches) {
+      const root = document.documentElement;
       let rafId = 0;
       const loop = () => {
         rafId = 0;
-        // Move the dot at exact mouse position, in sync with the display
-        // refresh — same frame as the ring lerp, no mid-frame style fights.
-        if (this._cur) {
-          this._cur.style.left = `${this._mx}px`;
-          this._cur.style.top  = `${this._my}px`;
-        }
+        // Drive position via CSS custom properties on :root.
+        // Cursor elements use transform:translate(var(--cx),var(--cy)) so this
+        // is a pure compositor path — no layout, no paint triggered by left/top.
+        root.style.setProperty('--cx', `${this._mx}px`);
+        root.style.setProperty('--cy', `${this._my}px`);
+
         const rxN = this._rx + (this._mx - this._rx) * 0.12;
         const ryN = this._ry + (this._my - this._ry) * 0.12;
         const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
-        if (this._curR) {
-          this._curR.style.left = `${this._rx}px`;
-          this._curR.style.top  = `${this._ry}px`;
-        }
+        root.style.setProperty('--crx', `${this._rx}px`);
+        root.style.setProperty('--cry', `${this._ry}px`);
+
         if (stillMoving) rafId = requestAnimationFrame(loop);
       };
       document.addEventListener('mousemove', () => {
