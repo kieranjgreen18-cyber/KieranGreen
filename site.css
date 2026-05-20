@@ -37,6 +37,16 @@
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
+/* ── Registered custom properties ── */
+/* --cur-scale must be registered with a numeric syntax so the browser can
+   interpolate it in the CSS transition on #cur-r. Without @property the
+   browser treats it as an opaque string and snaps instead of transitioning. */
+@property --cur-scale {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    § DESIGN TOKENS
 ═══════════════════════════════════════════════════════════════ */
@@ -241,9 +251,6 @@
   }
   /* Statement panel video frame background */
   [data-theme="light"] .stmt-video-frame {
-    background: var(--c-bg);
-  }
-  [data-theme="light"] .stmt-video-frame .ps-film-bar {
     background: var(--c-bg);
   }
 }
@@ -785,12 +792,6 @@ model-viewer#mini-viewer {
   animation: counterChevron 1.8s ease-in-out infinite;
   color: rgba(91,160,164,.65);
 }
-/* hero-scroll kept as no-op so JS refs don't break */
-.hero-scroll { display: none !important; }
-.hero-scroll-line {
-  width: 1px; height: 48px;
-  background: linear-gradient(to bottom, var(--c-secondary), transparent);
-}
 
 /* Model metadata label */
 .model-label {
@@ -860,7 +861,6 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 /* ═══════════════════════════════════════════════════════════════
    § PROJECTS CAROUSEL — fixed fullscreen scroll-lock
 ═══════════════════════════════════════════════════════════════ */
-.projects-spacer { pointer-events: none; }
 
 .projects {
   position: fixed; inset: 0; z-index: var(--z-carousel);
@@ -1126,6 +1126,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   width: 6px; height: 9px;
   animation: moreBelow 2s ease-in-out infinite;
 }
+@keyframes moreBelow {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50%       { transform: translateY(5px); opacity: 1; }
+}
 
 /* Stage edge fades */
 .stage-edge {
@@ -1337,7 +1341,6 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 .stmt-video-frame iframe {
   position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block;
 }
-.stmt-video-frame .ps-film-bar { background: var(--c-bg); height: clamp(16px,2.5vw,32px); }
 .stmt-wm {
   position: absolute; right: calc(var(--pad) - 0.04em); bottom: -0.1em;
   font-family: var(--f-heading); font-size: clamp(120px, 18vw, 260px);
@@ -1425,100 +1428,16 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   animation: counterChevron 1.8s ease-in-out infinite;
 }
 
+/* Pause about-counter chevron + "Next Section" label animations when the
+   about section is not active — these elements exist in all panels but only
+   the active one is visible; running the animation on hidden panels wastes
+   compositor resources. */
+body:not([data-section="about"]) .about-counter-chevron,
+body:not([data-section="about"]) .about-counter-next-label { animation-play-state: paused; }
+
 /* Light mode overrides for about-counter (about stage is always dark, so pin colours) */
 [data-theme="light"] .about-counter { color: rgba(91,160,164,.5); }
 [data-theme="light"] .about-counter .ac-cur { color: rgba(91,160,164,.85); }
-
-/* More-below indicator — aligned to dot column center */
-.about-more-below {
-  align-self: center;
-  margin-top: 6px;
-  color: var(--c-accent);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.5s var(--ease);
-}
-.about-more-below.visible { opacity: 1; }
-.more-below-arrow {
-  display: block;
-  width: 6px; height: 9px;
-  animation: moreBelow 2s ease-in-out infinite;
-}
-@keyframes moreBelow {
-  0%, 100% { transform: translateY(0); opacity: 0.55; }
-  50%       { transform: translateY(5px); opacity: 1; }
-}
-
-/* About scroll hint — hidden; replaced by .about-counter */
-.about-scroll-hint { display: none !important; }
-.hint-line {
-  width: 1px; height: 40px;
-  background: linear-gradient(to bottom, var(--c-secondary), transparent);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   § PERSONAL STATEMENT VIDEO
-═══════════════════════════════════════════════════════════════ */
-.personal-statement {
-  position: relative; background: var(--c-bg);
-  border-top: 1px solid var(--c-rule); overflow: hidden;
-}
-.personal-statement-inner {
-  max-width: var(--max-w); margin: 0 auto;
-  padding: var(--s-10) var(--pad);
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: var(--s-7); align-items: center;
-}
-.ps-text-col { display: flex; flex-direction: column; gap: var(--s-5); }
-.ps-eyebrow {
-  display: flex; align-items: center; gap: var(--s-2);
-  font-family: var(--f-heading); font-size: var(--t-micro); font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase; color: var(--c-accent);
-}
-.ps-eyebrow::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); flex-shrink: 0; }
-.ps-heading {
-  font-family: var(--f-heading); font-size: clamp(48px, 7vw, 96px);
-  font-weight: 100; letter-spacing: var(--ls-tight); line-height: .92;
-  text-transform: uppercase; color: var(--c-primary);
-}
-.ps-heading em { font-style: italic; color: var(--c-accent); font-weight: 100; }
-.ps-body { color: var(--c-secondary); max-width: 440px; }
-.ps-video-col { position: relative; }
-.ps-video-frame {
-  position: relative; width: 100%; aspect-ratio: 16/9;
-  background: var(--c-bg); overflow: hidden;
-  border: 1px solid var(--c-rule); cursor: none;
-  box-shadow: var(--shadow-lg);
-}
-.ps-video-frame::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(91,160,164,0.04) 0%, transparent 60%);
-  pointer-events: none; z-index: 2;
-}
-.ps-video-frame iframe {
-  position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block;
-}
-.ps-film-bar {
-  position: absolute; left: 0; right: 0;
-  height: clamp(20px, 3vw, 40px); background: var(--c-bg); z-index: 4; pointer-events: none;
-}
-.ps-film-bar-top { top: 0; }
-.ps-film-bar-bot { bottom: 0; }
-.ps-film-meta {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: clamp(20px, 3vw, 40px); z-index: 5; pointer-events: none;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 var(--s-3);
-}
-.ps-film-meta span {
-  font-family: var(--f-heading); font-size: 9px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(91,160,164,.4);
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Old standalone .contact section removed — contact is now panel-contact
-   inside the About carousel (see § CONTACT PANEL above).
-   ─────────────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════
    § SCROLL REVEAL
@@ -1581,7 +1500,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
     transition-duration: .01ms !important;
   }
   #grain { display: none; }
-  .hero-text, .hero-scroll, .model-label, .model-hint, .hero-coords,
+  .hero-text, .model-label, .model-hint, .hero-coords,
   .hero-h1 .word, .n-logo, .n-links, .n-right { opacity: 1 !important; transform: none !important; }
   .hero-eyebrow-line { transform: scaleX(1) !important; }
   .hero-sub, .hero-avail { opacity: 1 !important; }
@@ -1592,10 +1511,6 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .proj-text { width: 55%; }
-  .personal-statement-inner { grid-template-columns: 1fr; gap: var(--s-6); }
-  .ps-text-col { text-align: center; align-items: center; }
-  .ps-eyebrow { justify-content: center; }
-  .ps-body { max-width: 560px; }
 }
 
 @media (max-width: 768px) {
@@ -2002,9 +1917,6 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 
   /* Progress dots light mode — removed (dots hidden on mobile) */
 
-  /* Personal statement */
-  .personal-statement-inner { padding: var(--s-8) var(--pad); }
-
   /* Contact panel — mobile: single column, content centred in viewport */
   .panel-contact {
     display: flex;
@@ -2088,10 +2000,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 
 /* Nav link padding-bottom already set above for underline space */
 
-/* Pause scroll-hint and arrow animations when their containers are not active —
-   prevents unnecessary compositor work on idle sections */
-.about-stage:not(.engaged) .hint-line,
-.about-stage:not(.engaged) .more-below-arrow,
+/* Pause next-section arrow animation when carousel is not active */
 body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: paused; }
 
 /* ── Project slide: image parallax depth ── */
@@ -2417,30 +2326,11 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
   [data-theme="light"] .panel-contact .panel-footer { border-top-color: var(--c-rule); }
 }
 
-footer::before {
-  content: '';
-  position: absolute;
-  top: 0; left: var(--pad); right: var(--pad);
-  height: 1px;
-  background: linear-gradient(to right, transparent, var(--c-accent-lo), transparent);
-  pointer-events: none;
-}
-
 
 /* ── Dot glow when active — carousel and about ── */
 .c-dot-wrap.on .c-dot,
 .prog-dot-wrap.on .prog-dot {
   box-shadow: 0 0 5px rgba(91,160,164,0.50);
-}
-
-/* ── Hint line enhanced pulse ── */
-@keyframes hintPulse {
-  0%   { opacity: 0.38; transform: scaleY(1) translateY(0); }
-  50%  { opacity: 0.88; transform: scaleY(0.55) translateY(8px); }
-  100% { opacity: 0.38; transform: scaleY(1) translateY(0); }
-}
-.hint-line, .hero-scroll-line {
-  animation: hintPulse 2.2s ease infinite;
 }
 
 /* ── About stage: vertical rule fade-in ── */
@@ -2452,14 +2342,6 @@ footer::before {
 .about-stage.engaged .v-rule:nth-child(3) { animation-delay: 0.15s; }
 .about-stage.engaged .v-rule:nth-child(4) { animation-delay: 0.20s; }
 .about-stage.engaged .v-rule:nth-child(5) { animation-delay: 0.25s; }
-
-/* ── PS video frame shimmer border ── */
-.ps-video-frame::after {
-  content: '';
-  position: absolute; inset: 0;
-  border: 1px solid rgba(91,160,164,0.06);
-  pointer-events: none; z-index: 3;
-}
 
 /* ── Ghost number enhanced depth ── */
 .proj:hover .proj-ghost {
@@ -2482,9 +2364,6 @@ footer::before {
 .proj-swipe-hint {
   animation: swipeReveal 0.5s var(--ease) 0.4s both, swipeHintFade 2.5s ease 1s forwards;
 }
-
-/* ── About scroll hint: only first panel ── */
-/* (transition consolidated into .about-scroll-hint base rule above) */
 
 /* ── Keyboard focus ring enhancement ── */
 a:focus-visible,
