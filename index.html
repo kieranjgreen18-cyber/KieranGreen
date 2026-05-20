@@ -82,7 +82,7 @@
      on the initial connection. The model-viewer script is deferred and the veil
      animation buys ~800 ms — plenty of time for the GLB to land without blocking
      the LCP element (hero text). The HDR is fetched opportunistically in JS init. -->
-<link rel="preload" as="fetch" href="assets/models/minisite.glb" crossorigin fetchpriority="low">
+<link rel="preload" as="fetch" href="https://glb.kieran-green.com/minisite.glb" crossorigin="anonymous" fetchpriority="low">
 
 <link rel="preload" as="style" href="site.css">
 <link rel="stylesheet" href="site.css">
@@ -148,7 +148,7 @@
 
   <model-viewer
     id="mini-viewer"
-    src="assets/models/minisite.glb"
+    src="https://glb.kieran-green.com/minisite.glb"
     alt="Interactive 3D model of Kieran Green's Mini Clubman, fully surface modeled in Rhino 3D — drag to rotate"
     camera-controls
     auto-rotate
