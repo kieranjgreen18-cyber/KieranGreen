@@ -516,13 +516,21 @@ class PageChrome {
     if (window.matchMedia('(pointer:fine)').matches) {
       const root = document.documentElement;
       let rafId = 0;
+      // Dirty-flag: track the last values written to avoid triggering a
+      // style-recalc on :root for frames where the mouse hasn't moved.
+      // CSS custom property writes on :root invalidate styles document-wide,
+      // so skipping redundant writes is meaningful on complex pages.
+      let _lastCx = null, _lastCy = null;
       const loop = () => {
         rafId = 0;
         // Drive position via CSS custom properties on :root.
         // Cursor elements use transform:translate(var(--cx),var(--cy)) so this
         // is a pure compositor path — no layout, no paint triggered by left/top.
-        root.style.setProperty('--cx', `${this._mx}px`);
-        root.style.setProperty('--cy', `${this._my}px`);
+        if (this._mx !== _lastCx || this._my !== _lastCy) {
+          root.style.setProperty('--cx', `${this._mx}px`);
+          root.style.setProperty('--cy', `${this._my}px`);
+          _lastCx = this._mx; _lastCy = this._my;
+        }
 
         const rxN = this._rx + (this._mx - this._rx) * 0.12;
         const ryN = this._ry + (this._my - this._ry) * 0.12;
@@ -621,10 +629,15 @@ class PageChrome {
     const CHARS    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·—';
     let scrambling = false;
     if (logo && logoLast) {
+      // Pre-split once at definition time — avoids creating two new arrays on
+      // every rAF tick during the scramble (~18 allocations at 60fps that
+      // overlap with the hero entrance animation and model-viewer render loop).
+      const TARGET_CHARS = [...'Green'];
+      const TARGET_LEN   = TARGET_CHARS.length;
+      const TARGET_STR   = 'Green';
       const scramble = () => {
         if (scrambling) return; scrambling = true;
         let iter = 0;
-        const TARGET   = 'Green';
         // Advance iter by this amount per frame. Calibrated against a ~60fps
         // display — 0.38 per frame at 60fps resolves one letter roughly every
         // 2-3 frames, matching the original 26ms setInterval cadence without
@@ -638,11 +651,12 @@ class PageChrome {
           lastTs   = ts;
           // Scale step by actual elapsed time so it's frame-rate independent.
           iter += STEP * (dt / 16.67);
-          logoLast.textContent = TARGET.split('').map((c, i) =>
-            i < Math.floor(iter) ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
+          const floor = Math.floor(iter);
+          logoLast.textContent = TARGET_CHARS.map((c, i) =>
+            i < floor ? c : CHARS[Math.floor(Math.random() * CHARS.length)]
           ).join('');
-          if (Math.floor(iter) >= TARGET.length) {
-            logoLast.textContent = TARGET;
+          if (floor >= TARGET_LEN) {
+            logoLast.textContent = TARGET_STR;
             scrambling = false;
             return; // stop the loop
           }
@@ -754,7 +768,6 @@ class Hero3DContainer {
     this._root        = null;
     this._viewer      = null;
     this._heroText    = null;
-    this._heroScroll  = null;
     this._modelLabel  = null;
     this._modelHint   = null;
     this._errorEl     = null;
@@ -774,13 +787,8 @@ class Hero3DContainer {
     // render loop competing with model-viewer for frame budget.
     // FPS_STRIKE_COUNT consecutive long tasks after the grace period
     // triggers the static fallback.
-    this._FPS_THRESHOLD   = 15;   // unused by PerformanceObserver path; kept for reference
-    this._FPS_WINDOW_MS   = 1000; // unused by PerformanceObserver path; kept for reference
     this._FPS_STRIKE_COUNT= 3;    // long-task strikes before degrading
     this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes count
-    this._fpsRafId        = 0;    // no longer used; kept so exit() cancel is a no-op
-    this._fpsFrameCount   = 0;    // no longer used
-    this._fpsWindowStart  = 0;    // no longer used
     this._fpsEnterTime    = 0;    // set in enter() to enforce grace period
     this._fpsStrikes      = 0;    // consecutive long-task count
     this._fpsDegraded     = false;// true once swapped to static fallback
@@ -805,8 +813,7 @@ class Hero3DContainer {
     this._root        = root;
     this._viewer      = root.querySelector('model-viewer');
     this._heroText    = root.querySelector('#hero-text');
-    this._heroCounter = root.querySelector('#hero-counter');   // replaces hero-scroll
-    this._heroScroll  = this._heroCounter;                     // keep alias so legacy refs are safe
+    this._heroCounter = root.querySelector('#hero-counter');
     this._mobile360   = root.querySelector('#hero-mobile-360'); // mobile 360 badge
     this._modelLabel  = root.querySelector('#model-label');
     this._modelHint   = root.querySelector('#model-hint');
@@ -1119,8 +1126,6 @@ class CarouselContainer {
     this._nextKey  = nextSection;
     this._prevKey  = prevSection;
     this._root     = null;
-    this._spacer   = null;
-    this._spacerTop = 0;
     this._dotsEl   = null;
     this._dotWraps = [];
     this._projs    = [];
@@ -1133,20 +1138,12 @@ class CarouselContainer {
     this._lastAdvDir    = 0;
     this._TRANS_MS      = 720; // carousel CSS: 0.68s transform + margin
     this._nextArrow     = null; // c-next-arrow element
-    this._resizeTopTimer = null; // debounce handle for _calcSpacerTop after resize
     this._tiltRafIds    = []; // per-proj pending tilt rAF ids; flushed on slide advance
     this._preloaded     = false; // true once preload() has dispatched <link rel="preload"> tags
-
-    this._onResize = () => {
-      this._sizeSpacer();
-      clearTimeout(this._resizeTopTimer);
-      this._resizeTopTimer = setTimeout(() => this._calcSpacerTop(), 220);
-    };
   }
 
   init(root) {
     this._root   = root;
-    this._spacer = document.getElementById('projects-spacer'); // documented exception
 
     this._projs = Array.from(root.querySelectorAll(':scope .proj'));
     this._N     = this._projs.length;
@@ -1197,12 +1194,6 @@ class CarouselContainer {
       this._dotsEl.appendChild(wrap);
       this._dotWraps.push(wrap);
     });
-
-    this._sizeSpacer();
-    // Defer the rect read to a rAF so it doesn't immediately follow the height
-    // write above — getBoundingClientRect() after a style write forces layout.
-    requestAnimationFrame(() => this._calcSpacerTop());
-    window.addEventListener('resize', this._onResize, { passive: true });
 
     // Create the next-section arrow and append it to the dots container AFTER
     // innerHTML is cleared — so it always exists and is never wiped.
@@ -1289,9 +1280,6 @@ class CarouselContainer {
     if (this._dotsEl) this._dotsEl.style.opacity = '1';
     this._projs[this._activeIdx].dataset.pos = fromDirection === -1 ? 'prev' : 'next';
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      // Read geometry after styles have been applied and painted so this
-      // getBoundingClientRect() call does not force a synchronous layout.
-      this._calcSpacerTop();
       this._setPositions(this._activeIdx, true);
       // Release lock AFTER positions are applied so the first advance is always clean.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
@@ -1319,14 +1307,6 @@ class CarouselContainer {
   onScroll(direction) {
     if (!this._active) return;
     this._advance(direction);
-  }
-
-  _sizeSpacer() {
-    if (this._spacer) this._spacer.style.height = `${this._N * window.innerHeight}px`;
-  }
-
-  _calcSpacerTop() {
-    if (this._spacer) this._spacerTop = Math.round(this._spacer.getBoundingClientRect().top + window.scrollY);
   }
 
   _setPositions(idx, animate) {
@@ -1436,9 +1416,15 @@ class AboutContainer {
     this._resizeTopTimer    = null; // debounce handle for _calcSpacerTop after resize
 
     this._onResize = () => {
-      this._sizeSpacer();
       clearTimeout(this._resizeTopTimer);
-      this._resizeTopTimer = setTimeout(() => this._calcSpacerTop(), 220);
+      // Both _sizeSpacer (style write) and _calcSpacerTop (rect read) are
+      // debounced together — running _sizeSpacer immediately on every resize
+      // event forces a style flush on each tick, then the separate debounced
+      // _calcSpacerTop would read stale geometry anyway.
+      this._resizeTopTimer = setTimeout(() => {
+        this._sizeSpacer();
+        this._calcSpacerTop();
+      }, 220);
     };
   }
 
@@ -1640,6 +1626,33 @@ class AboutContainer {
      • encodes section order (via constructor args)
      • maps section names to DOM elements
    ───────────────────────────────────────────────────────────────────────── */
+
+// ── model-viewer global performance configuration ─────────────────────────
+// Must be set before any <model-viewer> element is rendered.
+// minimumRenderScale: dynamic resolution scaling will not drop below 50%
+//   of native resolution on low-end devices — avoids runaway GPU cost while
+//   keeping the model legible. Default is already 0.5 in most builds, but
+//   setting it explicitly ensures the behaviour regardless of library version.
+// powerPreference: 'high-performance' hints the browser/OS to prefer the
+//   discrete GPU on multi-GPU systems (e.g. MacBook with integrated + AMD).
+//   The hero 3D model is the centrepiece of the page; we want the fast GPU.
+if (window.customElements && customElements.get('model-viewer') === undefined) {
+  // Element not yet defined — set statics once it upgrades.
+  customElements.whenDefined('model-viewer').then(() => {
+    const MV = customElements.get('model-viewer');
+    if (MV) {
+      if (typeof MV.minimumRenderScale === 'number') MV.minimumRenderScale = 0.5;
+      if ('powerPreference' in MV) MV.powerPreference = 'high-performance';
+    }
+  });
+} else if (window.customElements) {
+  const MV = customElements.get('model-viewer');
+  if (MV) {
+    if (typeof MV.minimumRenderScale === 'number') MV.minimumRenderScale = 0.5;
+    if ('powerPreference' in MV) MV.powerPreference = 'high-performance';
+  }
+}
+
 (function bootstrap() {
   const chrome   = new PageChrome();
   const app      = new AppController(chrome);
