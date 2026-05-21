@@ -510,25 +510,21 @@ class PageChrome {
 
     // Cursor follower — position tracking only.
     // Width/height/appearance are owned entirely by CSS via body classes.
-    // _cursorMoved is a dirty flag: set on mousemove, cleared when follower
-    // catches up. This lets the RAF bail out early on idle frames instead of
-    // running the lerp and threshold check on every single frame.
     if (window.matchMedia('(pointer:fine)').matches) {
-      const root = document.documentElement;
       let rafId = 0;
-      // Dirty-flag: track the last values written to avoid triggering a
-      // style-recalc on :root for frames where the mouse hasn't moved.
-      // CSS custom property writes on :root invalidate styles document-wide,
-      // so skipping redundant writes is meaningful on complex pages.
+      // Write transforms directly on the cursor elements instead of setting
+      // CSS custom properties on :root. setProperty('--cx') on :root triggers
+      // a document-wide style recalc every moving frame — the browser re-evaluates
+      // every rule referencing those vars across the whole document. Direct element
+      // transforms skip style recalc entirely; the compositor handles them without
+      // touching the main thread. This is the primary cause of cold-load cursor lag.
+      const cur  = this._cur;
+      const curR = this._curR;
       let _lastCx = null, _lastCy = null;
       const loop = () => {
         rafId = 0;
-        // Drive position via CSS custom properties on :root.
-        // Cursor elements use transform:translate(var(--cx),var(--cy)) so this
-        // is a pure compositor path — no layout, no paint triggered by left/top.
         if (this._mx !== _lastCx || this._my !== _lastCy) {
-          root.style.setProperty('--cx', `${this._mx}px`);
-          root.style.setProperty('--cy', `${this._my}px`);
+          if (cur) cur.style.transform = `translate(${this._mx}px,${this._my}px) translate(-50%,-50%)`;
           _lastCx = this._mx; _lastCy = this._my;
         }
 
@@ -537,8 +533,9 @@ class PageChrome {
         const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
-        root.style.setProperty('--crx', `${this._rx}px`);
-        root.style.setProperty('--cry', `${this._ry}px`);
+        // Ring keeps --cur-scale as a CSS custom property for the CSS scale transition;
+        // only the position (high-frequency) is written as a direct transform.
+        if (curR) curR.style.transform = `translate(${this._rx}px,${this._ry}px) translate(-50%,-50%) scale(var(--cur-scale,1))`;
 
         if (stillMoving) rafId = requestAnimationFrame(loop);
       };
