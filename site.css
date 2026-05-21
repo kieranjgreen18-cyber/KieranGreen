@@ -27,14 +27,18 @@
   src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2'),
        url('assets/fonts/d-dincondensed-webfont.woff') format('woff'),
        url('assets/fonts/D-DINCondensed.otf') format('opentype');
-  font-weight: 100 600; font-style: normal; font-display: swap;
+  /* font-display: optional — D-DIN Condensed is used for .proj-ghost counter
+     labels and decorative elements; it is not LCP-critical. 'optional' eliminates
+     the late-swap FOUT that triggers a layout recalc during hero entrance while
+     carousel images are also fetching. */
+  font-weight: 100 600; font-style: normal; font-display: optional;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
   src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2'),
        url('assets/fonts/d-dincondensed-bold-webfont.woff') format('woff'),
        url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
-  font-weight: 700; font-style: normal; font-display: swap;
+  font-weight: 700; font-style: normal; font-display: optional;
 }
 
 /* ── Registered custom properties ── */
@@ -893,11 +897,16 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
    off-screen layers. The browser will still animate prev/next correctly
    on the transition frame — it promotes on demand. */
 .proj[data-pos="active"] { will-change: transform; }
-.proj[data-pos="far-above"] { transform: translateY(-200%) translateZ(0); visibility: hidden; transition: none !important; }
+/* far-above / far-below: translateZ(0) removed — GPU promotion buys nothing on
+   hidden, non-animating layers and keeps large texture memory occupied.
+   content-visibility:hidden skips style recalc on the entire subtree (including
+   the 10-15 .ch character spans with transitions). contain-intrinsic-size keeps
+   layout stable so removal doesn't trigger a reflow. */
+.proj[data-pos="far-above"] { transform: translateY(-200%); visibility: hidden; transition: none !important; content-visibility: hidden; contain-intrinsic-size: 100vw 100vh; }
 .proj[data-pos="prev"]      { transform: translateY(-100%) translateZ(0); }
 .proj[data-pos="active"]    { transform: translateY(0) translateZ(0); }
 .proj[data-pos="next"]      { transform: translateY(100%) translateZ(0); }
-.proj[data-pos="far-below"] { transform: translateY(200%) translateZ(0); visibility: hidden; transition: none !important; }
+.proj[data-pos="far-below"] { transform: translateY(200%); visibility: hidden; transition: none !important; content-visibility: hidden; contain-intrinsic-size: 100vw 100vh; }
 
 /* Background image */
 .proj-img {
