@@ -27,18 +27,18 @@
   src: url('assets/fonts/d-dincondensed-webfont.woff2') format('woff2'),
        url('assets/fonts/d-dincondensed-webfont.woff') format('woff'),
        url('assets/fonts/D-DINCondensed.otf') format('opentype');
-  /* font-display: optional — D-DIN Condensed is used for .proj-ghost counter
-     labels and decorative elements; it is not LCP-critical. 'optional' eliminates
-     the late-swap FOUT that triggers a layout recalc during hero entrance while
-     carousel images are also fetching. */
-  font-weight: 100 600; font-style: normal; font-display: optional;
+  /* font-display: swap — D-DIN Condensed is the heading font used for the nav
+     logo, nav links, project titles, and all heading/micro text. 'swap' ensures
+     the font renders as soon as it loads on cold visits instead of the 'optional'
+     behaviour that suppresses it entirely if it misses the first render window. */
+  font-weight: 100 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'D-DIN Condensed';
   src: url('assets/fonts/d-dincondensed-bold-webfont.woff2') format('woff2'),
        url('assets/fonts/d-dincondensed-bold-webfont.woff') format('woff'),
        url('assets/fonts/D-DINCondensed-Bold.otf') format('opentype');
-  font-weight: 700; font-style: normal; font-display: optional;
+  font-weight: 700; font-style: normal; font-display: swap;
 }
 
 /* ── Registered custom properties ── */
@@ -412,7 +412,7 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   width: 16px; height: 1px;
   background: var(--c-accent);
   /* JS sets --cx/--cy on :root; translate is pure compositor — no left/top layout cost */
-  transform: translate(var(--cx, -100vw), var(--cy, -100vw)) translate(-50%, -50%);
+  transform: translate(-100vw, -100vw) translate(-50%, -50%); /* initial offscreen; JS sets this directly via style.transform */
   will-change: transform;
   transition: opacity var(--dur-fast) var(--ease);
 }
@@ -438,7 +438,7 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   width: 24px; height: 24px;
   /* Position from --crx/--cry, scale from --cur-scale. Kept separate so JS
      position writes never clobber the CSS scale transition, and vice versa. */
-  transform: translate(var(--crx, -100vw), var(--cry, -100vw)) translate(-50%, -50%) scale(var(--cur-scale, 1));
+  transform: translate(-100vw, -100vw) translate(-50%, -50%) scale(var(--cur-scale, 1)); /* position set by JS; scale via CSS var for transition */
   will-change: transform;
   transition: --cur-scale var(--dur-mid) var(--ease),
               opacity var(--dur-fast);
