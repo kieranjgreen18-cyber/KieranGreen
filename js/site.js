@@ -528,9 +528,9 @@ class PageChrome {
           _lastCx = this._mx; _lastCy = this._my;
         }
 
-        const rxN = this._rx + (this._mx - this._rx) * 0.12;
-        const ryN = this._ry + (this._my - this._ry) * 0.12;
-        const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
+        const rxN = this._rx + (this._mx - this._rx) * 0.18;
+        const ryN = this._ry + (this._my - this._ry) * 0.18;
+        const stillMoving = Math.abs(rxN - this._rx) > 0.15 || Math.abs(ryN - this._ry) > 0.15;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
         // Ring keeps --cur-scale as a CSS custom property for the CSS scale transition;
@@ -1285,6 +1285,18 @@ class CarouselContainer {
       // Release lock AFTER positions are applied so the first advance is always clean.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
     }));
+    // During carousel idle time, preload about section images so they're
+    // decoded before the user scrolls to the about section.
+    // Staggered 1.5s after enter so carousel's own entrance animation finishes first.
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(
+        () => this._app._containers.get('about')?.preload(),
+        { timeout: 4000 }
+      );
+    } else {
+      setTimeout(() => this._app._containers.get('about')?.preload(), 2500);
+    }
+
     // Background images for data-bg slides are no longer swapped here.
     // They are set one slide ahead inside _setPositions() when a slide reaches
     // data-pos="next", giving the browser a full ~680ms transition duration to
@@ -1323,7 +1335,9 @@ class CarouselContainer {
       // far-above/far-below get content-visibility:hidden via CSS (skips subtree
       // style recalc). When a slide transitions into prev or next, we must remove
       // the inline override so the subtree is re-evaluated before it becomes visible.
-      if (delta === -1 || delta === 1) {
+      if (delta >= -1 && delta <= 1) {
+        // Clear content-visibility for active + adjacent slides so they render.
+        // far-above/far-below keep content-visibility:hidden from CSS.
         p.style.contentVisibility = '';
       }
 
@@ -1474,6 +1488,7 @@ class AboutContainer {
     this._statementPanelIdx = -1;
     this._iframeInjected    = false;
     this._resizeTopTimer    = null; // debounce handle for _calcSpacerTop after resize
+    this._preloaded         = false; // true once preload() has run
 
     this._onResize = () => {
       clearTimeout(this._resizeTopTimer);
@@ -1577,7 +1592,14 @@ class AboutContainer {
     this._panels.forEach((el, i) => {
       el.classList.remove('is-active', 'is-after', 'is-below');
       if      (i < idx)  el.classList.add('is-after');
-      else if (i === idx) el.classList.add('is-active');
+      else if (i === idx) {
+        // Clear content-visibility before adding is-active so the browser
+        // doesn't skip painting the panel on the frame it becomes visible.
+        // The CSS is-active rule also sets content-visibility:visible but
+        // an inline clear here ensures the paint path is open one rAF earlier.
+        el.style.contentVisibility = '';
+        el.classList.add('is-active');
+      }
       else               el.classList.add('is-below');
       // Hide off-screen panels from AT — they are visually hidden and their
       // links/text should not be reachable by keyboard or screen reader
@@ -1640,8 +1662,50 @@ class AboutContainer {
       if (src && img.src !== src) {
         img.src = src;
         img.removeAttribute('data-src');
+        // decode() queues the actual raster decode off the main thread so the
+        // image is ready to paint without a jank spike on first composite.
+        img.decode().catch(() => {});
       }
     });
+  }
+
+  /**
+   * Eagerly warm the browser cache for all about panel images using
+   * Image() objects + decode(). Called during carousel idle time so
+   * images are fully fetched and decoded before the user reaches the
+   * about section. Safe to call multiple times — guarded by _preloaded.
+   */
+  preload() {
+    if (this._preloaded) return;
+    this._preloaded = true;
+    // Gather all data-src images across all panels and stagger their
+    // fetches using requestIdleCallback slices so we don't flood the
+    // network in one burst and compete with any in-flight carousel assets.
+    const imgs = [];
+    this._panels.forEach(panel => {
+      panel.querySelectorAll('img[data-src]').forEach(img => {
+        if (img.dataset.src) imgs.push(img);
+      });
+    });
+    const scheduleNext = (i) => {
+      if (i >= imgs.length) return;
+      const doLoad = () => {
+        const img = imgs[i];
+        const src = img.dataset.src;
+        if (src && img.src !== src) {
+          img.src = src;
+          img.removeAttribute('data-src');
+          img.decode().catch(() => {});
+        }
+        scheduleNext(i + 1);
+      };
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(doLoad, { timeout: 5000 });
+      } else {
+        setTimeout(doLoad, 200 * i);
+      }
+    };
+    scheduleNext(0);
   }
 
   _advance(dir) {
