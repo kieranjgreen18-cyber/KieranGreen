@@ -1256,8 +1256,12 @@ class CarouselContainer {
     this._projs.forEach(p => {
       const img = p.querySelector('.proj-img');
       if (img?.dataset.bg) {
+        // img.decode() queues the actual decode off the main thread, guaranteeing
+        // no paint cost on the display frame (McMaster pattern).
+        // new Image().src starts the fetch but doesn't gate on decode completion.
         const preloadImg = new Image();
         preloadImg.src = img.dataset.bg;
+        preloadImg.decode().catch(() => {});
       }
     });
   }
@@ -1284,15 +1288,11 @@ class CarouselContainer {
       // Release lock AFTER positions are applied so the first advance is always clean.
       setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
     }));
-    // On first entry, start background image loads for all slides now that
-    // the carousel is visible. Images that are already loaded are no-ops.
-    this._projs.forEach(p => {
-      const img = p.querySelector('.proj-img');
-      if (img && img.dataset.bg) {
-        img.style.backgroundImage = `url('${img.dataset.bg}')`;
-        delete img.dataset.bg;
-      }
-    });
+    // Background images for data-bg slides are no longer swapped here.
+    // They are set one slide ahead inside _setPositions() when a slide reaches
+    // data-pos="next", giving the browser a full ~680ms transition duration to
+    // decode before the image is visible. Swapping on enter() caused a decode+paint
+    // hit on the exact same frame as the CSS transform transition fired (CRIT fix).
   }
 
   exit() {
@@ -1310,21 +1310,69 @@ class CarouselContainer {
   }
 
   _setPositions(idx, animate) {
+    const TRANS_MS = this._TRANS_MS;
     this._projs.forEach((p, i) => {
       const delta = i - idx;
       const spans = this._chSpans[i] || [];
+      const prevPos = p.dataset.pos;
+
       if      (delta < -1)   p.dataset.pos = 'far-above';
       else if (delta === -1) p.dataset.pos = 'prev';
-      else if (delta === 0) {
-        p.dataset.pos = 'active';
-        if (animate) {
-          spans.forEach((s, ci) => {
-            s.style.transitionDelay = `${420 + ci * 20}ms`; s.classList.add('show');
-          });
-        }
+      else if (delta === 0)  p.dataset.pos = 'active';
+      else if (delta === 1)  p.dataset.pos = 'next';
+      else                   p.dataset.pos = 'far-below';
+
+      // ── content-visibility management ────────────────────────────────
+      // far-above/far-below get content-visibility:hidden via CSS (skips subtree
+      // style recalc). When a slide transitions into prev or next, we must remove
+      // the inline override so the subtree is re-evaluated before it becomes visible.
+      if (delta === -1 || delta === 1) {
+        p.style.contentVisibility = '';
       }
-      else if (delta === 1) p.dataset.pos = 'next';
-      else                  p.dataset.pos = 'far-below';
+
+      // ── Background-image preload: set one slide ahead ─────────────────
+      // CRITICAL FIX: apply data-bg → background-image when the slide reaches
+      // data-pos="next" (one full transition ahead), NOT in enter(). This gives
+      // the browser ~680ms to decode the image before it's ever visible, preventing
+      // the decode+paint hit from landing on the same frame as the CSS transform.
+      if (delta === 1) {
+        const bgEl = p.querySelector('.proj-img');
+        if (bgEl && bgEl.dataset.bg) {
+          const url = bgEl.dataset.bg;
+          // Queue decode off main thread before setting the CSS property.
+          const decodeImg = new Image();
+          decodeImg.src = url;
+          decodeImg.decode().catch(() => {});
+          bgEl.style.backgroundImage = `url('${url}')`;
+          delete bgEl.dataset.bg;
+        }
+        // Also decode the img for the slide that just became "next" (delta===1).
+        // Mirrors the _preloadPanel pattern for <img data-src> elements.
+        p.querySelectorAll('img[data-src]').forEach(img => {
+          const src = img.dataset.src;
+          if (src && img.src !== src) {
+            img.src = src;
+            img.removeAttribute('data-src');
+            img.decode().catch(() => {});
+          }
+        });
+      }
+
+      // ── Character stagger animation ───────────────────────────────────
+      if (delta === 0 && animate) {
+        // PERF FIX: batch .ch class-adds AFTER the slide transition completes
+        // (~680ms) rather than mid-transition. Doing 10-15 DOM writes + class
+        // toggles concurrently with the compositor transition competes for frame
+        // budget. Delaying by TRANS_MS lets the transition finish cleanly first.
+        setTimeout(() => {
+          // Guard: only apply if this slide is still active
+          if (p.dataset.pos !== 'active') return;
+          spans.forEach((s, ci) => {
+            s.style.transitionDelay = `${ci * 20}ms`;
+            s.classList.add('show');
+          });
+        }, TRANS_MS);
+      }
       if (delta !== 0) {
         spans.forEach(s => { s.style.transitionDelay = '0ms'; s.classList.remove('show'); });
       }
@@ -1344,6 +1392,15 @@ class CarouselContainer {
     this._tiltRafIds.forEach((id, i) => {
       if (id) { cancelAnimationFrame(id); this._tiltRafIds[i] = 0; }
     });
+
+    // PERF FIX: set will-change:auto on all .proj-img at slide-advance start.
+    // The tilt effect writes style.transform on .proj-img — the same element
+    // the CSS animates via scale(1.06). A JS inline transform overrides the CSS
+    // rule entirely, causing the browser to re-composite the layer on every
+    // mousemove even during a transition. Clearing will-change here forces a
+    // clean compositor layer split; restore it after the transition completes.
+    const activeImg = this._projs[this._activeIdx]?.querySelector('.proj-img');
+    if (activeImg) activeImg.style.willChange = 'auto';
 
     const next = this._activeIdx + dir;
     if (next < 0) {
@@ -1372,7 +1429,13 @@ class CarouselContainer {
     this._lastAdvDir    = dir;
     this._activeIdx     = next;
     this._setPositions(this._activeIdx, true);
-    setTimeout(() => { this._transitioning = false; }, this._TRANS_MS);
+    setTimeout(() => {
+      this._transitioning = false;
+      // Restore will-change on the new active slide's proj-img so CSS hover
+      // scale transitions are compositor-promoted again after the advance.
+      const newActiveImg = this._projs[this._activeIdx]?.querySelector('.proj-img');
+      if (newActiveImg) newActiveImg.style.willChange = '';
+    }, this._TRANS_MS);
   }
 }
 
