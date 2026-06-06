@@ -406,6 +406,37 @@ strong { color: var(--c-primary); font-weight: 700; }
 
 .hero-content { position: relative; z-index: 2; }
 
+/* ── Scroll prompt — right-justified, above hero-content bottom padding ── */
+.hero-scroll-prompt {
+  position: absolute;
+  bottom: calc(var(--s-8) + var(--s-5));
+  right: var(--pad);
+  z-index: 4;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.5);
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeUp 0.7s var(--ease) 1.2s forwards;
+  transition: opacity 0.4s var(--ease);
+}
+.hero-scroll-prompt.hide { opacity: 0 !important; transition-duration: .4s !important; }
+.hero-scroll-prompt-label {
+  color: rgba(91,160,164,.85);
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+}
+.hero-scroll-prompt-chevron {
+  display: block; width: 14px; height: 9px;
+  animation: counterChevron 1.8s ease-in-out infinite;
+  color: rgba(91,160,164,.65);
+}
+@keyframes counterChevron {
+  0%, 100% { transform: translateY(0); opacity: .5; }
+  50%       { transform: translateY(4px); opacity: 1; }
+}
+
 .hero-eyebrow {
   display: flex; align-items: center; gap: var(--s-2);
   margin-bottom: var(--s-3);
@@ -748,6 +779,13 @@ strong { color: var(--c-primary); font-weight: 700; }
   <header class="hero" id="hero" aria-label="Project: 3D Printed Car">
     <div class="hero-bg" role="img" aria-label="3D Printed Car — Mini Clubman surface model render"></div>
     <div class="hero-veil" aria-hidden="true"></div>
+
+    <!-- Scroll prompt — right-justified, matches style-guide margins -->
+    <div class="hero-scroll-prompt" id="hero-scroll-prompt" aria-hidden="true">
+      <span class="hero-scroll-prompt-label">Scroll</span>
+      <svg class="hero-scroll-prompt-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+    </div>
+
     <div class="hero-content">
       <p class="hero-eyebrow t-label">01 — 2025</p>
       <h1 class="hero-h1">3D Printed<br>Car</h1>
@@ -911,7 +949,11 @@ strong { color: var(--c-primary); font-weight: 700; }
   </div>
 
   <!-- PROJ-NAV -->
-  <nav class="proj-nav" aria-label="Project navigation" style="grid-template-columns: 1fr;">
+  <nav class="proj-nav" aria-label="Project navigation">
+    <a href="project-benedetto.html" class="pn-item">
+      <span class="pn-dir"><svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="12" y1="5" x2="1" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="5,1 1,5 5,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Previous</span>
+      <span class="pn-title">Benedetto Guitar</span>
+    </a>
     <a href="project-pen.html" class="pn-item right">
       <span class="pn-dir">Next <svg viewBox="0 0 13 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="10"><line x1="1" y1="5" x2="12" y2="5" stroke="currentColor" stroke-width="1.2"/><polyline points="8,1 12,5 8,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
       <span class="pn-title">Sabretta Pen</span>
@@ -1007,6 +1049,8 @@ strong { color: var(--c-primary); font-weight: 700; }
     topNav.classList.toggle('scrolled', scroller.scrollTop > 60);
     const max = scroller.scrollHeight - scroller.clientHeight;
     prog.style.width = (max > 0 ? (scroller.scrollTop / max) * 100 : 0) + '%';
+    const scrollPrompt = document.getElementById('hero-scroll-prompt');
+    if (scrollPrompt) scrollPrompt.classList.toggle('hide', scroller.scrollTop > 40);
   }, { passive: true });
 
   const heroBg = document.querySelector('.hero-bg');

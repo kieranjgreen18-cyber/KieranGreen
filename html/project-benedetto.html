@@ -223,6 +223,37 @@ strong { color: var(--c-primary); font-weight: 700; }
 .hero-veil { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,9,9,.97) 0%, rgba(8,9,9,.55) 28%, rgba(8,9,9,.05) 60%, transparent 100%), linear-gradient(to bottom, rgba(8,9,9,.5) 0%, transparent 18%); }
 [data-theme="light"] .hero-veil { background: linear-gradient(to top, rgba(237,238,237,.98) 0%, rgba(237,238,237,.6) 28%, transparent 60%), linear-gradient(to bottom, rgba(237,238,237,.5) 0%, transparent 18%); }
 .hero-content { position: relative; z-index: 2; }
+
+/* ── Scroll prompt — right-justified, above hero-content bottom padding ── */
+.hero-scroll-prompt {
+  position: absolute;
+  bottom: calc(var(--s-8) + var(--s-5));
+  right: var(--pad);
+  z-index: 4;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  color: rgba(91,160,164,.5);
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeUp 0.7s var(--ease) 1.2s forwards;
+  transition: opacity 0.4s var(--ease);
+}
+.hero-scroll-prompt.hide { opacity: 0 !important; transition-duration: .4s !important; }
+.hero-scroll-prompt-label {
+  color: rgba(91,160,164,.85);
+  font-family: var(--f-heading); font-size: 13px; font-weight: 700;
+  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+}
+.hero-scroll-prompt-chevron {
+  display: block; width: 14px; height: 9px;
+  animation: counterChevron 1.8s ease-in-out infinite;
+  color: rgba(91,160,164,.65);
+}
+@keyframes counterChevron {
+  0%, 100% { transform: translateY(0); opacity: .5; }
+  50%       { transform: translateY(4px); opacity: 1; }
+}
 .hero-eyebrow { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-3); opacity: 0; animation: fadeDown .7s var(--ease) .2s forwards; }
 .hero-eyebrow::before { content: ''; width: var(--s-2); height: 1px; background: var(--c-accent); flex-shrink: 0; }
 .hero-h1 { font-family: var(--f-heading); font-size: var(--t-display); font-weight: 100; letter-spacing: var(--ls-tight); line-height: var(--lh-display); text-transform: uppercase; margin-bottom: var(--s-4); opacity: 0; transform: translateY(40px); animation: fadeUp .9s var(--ease) .32s forwards; }
@@ -338,6 +369,13 @@ strong { color: var(--c-primary); font-weight: 700; }
   <header class="hero" id="hero" aria-label="Project: Benedetto x SCAD Guitar">
     <div class="hero-bg" role="img" aria-label="Benedetto x SCAD ergonomic guitar - hero image"></div>
     <div class="hero-veil" aria-hidden="true"></div>
+
+    <!-- Scroll prompt — right-justified, matches style-guide margins -->
+    <div class="hero-scroll-prompt" id="hero-scroll-prompt" aria-hidden="true">
+      <span class="hero-scroll-prompt-label">Scroll</span>
+      <svg class="hero-scroll-prompt-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
+    </div>
+
     <div class="hero-content">
       <p class="hero-eyebrow t-label">01 - 2026</p>
       <h1 class="hero-h1">Benedetto x SCAD<br>Guitar</h1>
@@ -549,7 +587,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   const scroller = document.getElementById('page-scroll');
   const topNav   = document.getElementById('top-nav');
   const prog     = document.getElementById('prog');
-  scroller.addEventListener('scroll', () => { topNav.classList.toggle('scrolled', scroller.scrollTop > 60); const max = scroller.scrollHeight - scroller.clientHeight; prog.style.width = (max > 0 ? (scroller.scrollTop / max) * 100 : 0) + '%'; }, { passive: true });
+  scroller.addEventListener('scroll', () => { topNav.classList.toggle('scrolled', scroller.scrollTop > 60); const max = scroller.scrollHeight - scroller.clientHeight; prog.style.width = (max > 0 ? (scroller.scrollTop / max) * 100 : 0) + '%'; const scrollPrompt = document.getElementById('hero-scroll-prompt'); if (scrollPrompt) scrollPrompt.classList.toggle('hide', scroller.scrollTop > 40); }, { passive: true });
   const heroBg = document.querySelector('.hero-bg');
   const heroEl = document.getElementById('hero');
   scroller.addEventListener('scroll', () => { if (scroller.scrollTop < scroller.clientHeight) { const shift = Math.min(heroEl.offsetHeight * .04, scroller.scrollTop * .18); heroBg.style.transform = `scale(1.04) translateY(-${shift}px)`; } }, { passive: true });
