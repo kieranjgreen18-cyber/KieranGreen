@@ -225,6 +225,16 @@ strong { color: var(--c-primary); font-weight: 700; }
     /* very subtle cool rim on the left edge for depth separation */
     linear-gradient(to right, rgba(6,10,12,1) 0%, rgba(8,9,9,1) 30%, rgba(8,9,9,1) 100%);
 }
+/* Hero image overlay at 40% opacity */
+.hero-img-overlay {
+  position: absolute; inset: 0;
+  background-image: url('https://www.kieran-green.com/assets/images/benehero.webp');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.4;
+  z-index: 1;
+  pointer-events: none;
+}
 /* Veil: just a bottom-edge fade so text remains legible over the model,
    and a top tint to blend with the nav gradient */
 .hero-veil {
@@ -300,11 +310,11 @@ strong { color: var(--c-primary); font-weight: 700; }
   --progress-bar-height: 1px;
   pointer-events: all;
   display: block;
-  /* Shift the canvas right so the guitar sits in the right two-thirds of the hero,
-     proud of the left-side text. The wrap clips anything that overflows left. */
+  /* Shift the canvas right so the guitar sits in the right portion of the hero,
+     proud of the left-side text. The wrap clips anything that overflows. */
   position: relative;
-  left: 22%;
-  width: 78%;
+  left: 32%;
+  width: 68%;
 }
 .hero-model-wrap model-viewer::part(default-progress-bar) {
   background: var(--c-accent); height: 1px;
@@ -524,6 +534,7 @@ strong { color: var(--c-primary); font-weight: 700; }
   <!-- HERO -->
   <header class="hero" id="hero" aria-label="Project: Benedetto x SCAD Guitar">
     <div class="hero-bg" role="img" aria-label="Benedetto x SCAD ergonomic guitar - hero image"></div>
+    <div class="hero-img-overlay" aria-hidden="true"></div>
     <div class="hero-veil" aria-hidden="true"></div>
 
     <!-- 3D model viewer — right side on desktop, full-bleed on mobile -->
