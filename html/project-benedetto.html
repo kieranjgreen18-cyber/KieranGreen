@@ -216,16 +216,30 @@ strong { color: var(--c-primary); font-weight: 700; }
 .pn-title { font-family: var(--f-heading); font-size: clamp(18px, 2.2vw, 28px); font-weight: 100; letter-spacing: var(--ls-tight); color: var(--c-primary); line-height: 1.1; text-transform: uppercase; }
 
 .hero { position: relative; height: 100svh; min-height: 480px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--pad) var(--s-8); }
+/* Dark studio background — replaces photo, plain but has depth */
 .hero-bg {
   position: absolute; inset: 0;
-  background-image: url('../assets/images/benehero.webp');
-  background-size: cover; background-position: center 20%;
-  transform: scale(1.06); will-change: transform; transition: transform 8s ease;
+  /* Deep near-black with a subtle warm-to-cool radial centre and soft bottom falloff */
+  background:
+    radial-gradient(ellipse 80% 60% at 60% 38%, rgba(22,24,24,1) 0%, rgba(8,9,9,1) 70%),
+    linear-gradient(to bottom, rgba(12,13,13,1) 0%, rgba(6,7,7,1) 100%);
+  /* no transform / animation needed — static studio backdrop */
 }
-.hero.loaded .hero-bg { transform: scale(1.01); }
-.hero-veil { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,9,9,.97) 0%, rgba(8,9,9,.55) 28%, rgba(8,9,9,.05) 60%, transparent 100%), linear-gradient(to bottom, rgba(8,9,9,.5) 0%, transparent 18%); }
-[data-theme="light"] .hero-veil { background: linear-gradient(to top, rgba(237,238,237,.98) 0%, rgba(237,238,237,.6) 28%, transparent 60%), linear-gradient(to bottom, rgba(237,238,237,.5) 0%, transparent 18%); }
-.hero-content { position: relative; z-index: 2; }
+.hero.loaded .hero-bg { /* no-op — kept so JS adding .loaded is harmless */ }
+/* Veil: just a bottom-edge fade so text remains legible over the model,
+   and a top tint to blend with the nav gradient */
+.hero-veil {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(to top,  rgba(8,9,9,.98) 0%, rgba(8,9,9,.60) 22%, transparent 52%),
+    linear-gradient(to bottom, rgba(8,9,9,.45) 0%, transparent 14%);
+}
+[data-theme="light"] .hero-veil {
+  background:
+    linear-gradient(to top, rgba(237,238,237,.98) 0%, rgba(237,238,237,.6) 22%, transparent 52%),
+    linear-gradient(to bottom, rgba(237,238,237,.45) 0%, transparent 14%);
+}
+.hero-content { position: relative; z-index: 5; }
 
 /* ── Scroll prompt — right-justified, above hero-content bottom padding ── */
 .hero-scroll-prompt {
@@ -267,20 +281,17 @@ strong { color: var(--c-primary); font-weight: 700; }
 @keyframes fadeDown { from { opacity:0; transform:translateY(-8px);  } to { opacity:1; transform:translateY(0); } }
 
 /* ═══════════════════════════════════════════════════════════════
-   § HERO MODEL VIEWER — right side, outdoor env, plain background
+   § HERO MODEL VIEWER — full viewport, guitar pushed right, ~125% scale
 ═══════════════════════════════════════════════════════════════ */
 .hero-model-wrap {
   position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 58%;
+  inset: 0;
+  width: 100%;
   z-index: 3;
   pointer-events: none;
   opacity: 0;
   animation: fadeUp 1.1s var(--ease) 0.5s forwards;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 8%, black 22%);
-  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 8%, black 22%);
+  /* No mask — full bleed, gradient veil handles left-side text legibility */
 }
 .hero-model-wrap model-viewer {
   width: 100%; height: 100%;
@@ -330,29 +341,53 @@ strong { color: var(--c-primary); font-weight: 700; }
   opacity: 0; animation: fadeUp 0.6s var(--ease) 1.5s forwards;
 }
 
+/* ── AR button — mobile-only, bottom-left, unified design ── */
 .hero-ar-btn {
-  display: none;
-  position: absolute; bottom: var(--s-5); right: var(--pad); z-index: 20;
-  align-items: center; gap: 8px; font-family: var(--f-heading);
-  font-size: var(--t-micro); font-weight: 700; letter-spacing: var(--ls-stencil);
-  text-transform: uppercase; color: var(--c-accent);
-  background: rgba(8,9,9,0.70); border: 1px solid rgba(91,160,164,0.40);
-  padding: 10px 14px 9px; backdrop-filter: blur(12px); cursor: pointer;
-  transition: border-color var(--dur-fast), background var(--dur-fast);
+  display: none; /* shown via @media (max-width: 480px) */
+  position: absolute;
+  bottom: var(--s-6);
+  left: var(--pad);
+  z-index: 20;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--f-heading);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  color: var(--c-accent);
+  background: rgba(8,9,9,0.72);
+  border: 1px solid rgba(91,160,164,0.35);
+  padding: 12px 18px 11px 14px;
+  backdrop-filter: blur(16px);
+  cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast), color var(--dur-fast);
+  opacity: 0;
+  animation: fadeUp 0.6s var(--ease) 1.6s forwards;
 }
-.hero-ar-btn:hover { border-color: var(--c-accent); background: rgba(91,160,164,0.15); }
+.hero-ar-btn:hover {
+  border-color: var(--c-accent);
+  background: rgba(91,160,164,0.12);
+  color: var(--c-accent-hi);
+}
+.hero-ar-btn svg {
+  flex-shrink: 0;
+  color: inherit;
+  transition: color var(--dur-fast);
+}
 
-.hero-content { max-width: 48%; }
+/* hero-content stays left, model bleeds full width behind it */
+.hero-content { max-width: 48%; position: relative; z-index: 5; }
 
 @media (max-width: 860px) {
-  .hero-model-wrap { width: 100%; opacity: 0.25; pointer-events: none; }
+  /* tablet: model full-bleed but more dimmed */
+  .hero-model-wrap { opacity: 0.3; pointer-events: none; }
   .hero-content { max-width: 80%; }
   .hero-model-hint { display: none; }
   .hero-model-label { display: none; }
 }
 @media (max-width: 480px) {
-  .hero-bg   { display: none; }
-  .hero-veil { display: none; }
+  /* mobile: keep dark bg, model full-bleed with gradient overlay for text legibility */
   .hero-model-wrap {
     position: absolute; inset: 0; width: 100%; height: 100%;
     opacity: 1; pointer-events: all;
@@ -499,6 +534,9 @@ strong { color: var(--c-primary); font-weight: 700; }
         shadow-intensity="1.2"
         shadow-softness="0.7"
         tone-mapping="commerce"
+        camera-orbit="-30deg 80deg 80%"
+        camera-target="0.1m 0m 0m"
+        field-of-view="22deg"
         interaction-prompt="none"
         ar
         ar-modes="webxr scene-viewer quick-look"
@@ -521,9 +559,16 @@ strong { color: var(--c-primary); font-weight: 700; }
     <!-- Model label -->
     <span class="hero-model-label" aria-hidden="true">Benedetto · Rhino 3D</span>
 
-    <!-- AR button — mobile only -->
+    <!-- AR button — mobile only, bottom-left -->
     <button class="hero-ar-btn" id="ar-btn" aria-label="View guitar in augmented reality" type="button">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      <!-- AR cube icon: a 3D box with a small AR indicator dot, site stroke style -->
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- box face lines -->
+        <polyline points="10,2 18,6 18,14 10,18 2,14 2,6 10,2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="2" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="18" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
       View in AR
     </button>
 
