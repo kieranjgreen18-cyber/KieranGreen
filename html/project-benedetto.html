@@ -312,8 +312,8 @@ strong { color: var(--c-primary); font-weight: 700; }
   display: block;
   /* Shift the canvas right so the guitar sits in the right portion of the hero,
      proud of the left-side text. The wrap clips anything that overflows. */
-  position: relative;
-  left: 32%;
+  position: absolute;
+  left: 56%;
   width: 68%;
 }
 .hero-model-wrap model-viewer::part(default-progress-bar) {
@@ -554,8 +554,7 @@ strong { color: var(--c-primary); font-weight: 700; }
         shadow-softness="0.7"
         tone-mapping="commerce"
         camera-orbit="0deg 80deg 55%"
-        field-of-view="26deg"
-        camera-target="0m 0m -0.3m"
+        field-of-view="34deg"
         interaction-prompt="none"
         ar
         ar-modes="webxr scene-viewer quick-look"
