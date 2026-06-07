@@ -305,6 +305,10 @@ strong { color: var(--c-primary); font-weight: 700; }
 .hero-model-wrap model-viewer::part(default-progress-bar) {
   background: var(--c-accent); height: 1px;
 }
+/* suppress model-viewer's own AR button — we use our custom one */
+.hero-model-wrap model-viewer::part(default-ar-button) {
+  display: none;
+}
 
 /* drag hint */
 .hero-model-hint {
@@ -341,39 +345,33 @@ strong { color: var(--c-primary); font-weight: 700; }
   opacity: 0; animation: fadeUp 0.6s var(--ease) 1.5s forwards;
 }
 
-/* ── AR button — mobile-only, bottom-left, unified design ── */
+/* ── AR button — mobile-only, flows below chips inside hero-content ── */
 .hero-ar-btn {
   display: none; /* shown via @media (max-width: 480px) */
-  position: absolute;
-  bottom: var(--s-6);
-  left: var(--pad);
-  z-index: 20;
+  margin-top: var(--s-4);
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   font-family: var(--f-heading);
   font-size: var(--t-micro);
   font-weight: 700;
   letter-spacing: var(--ls-stencil);
   text-transform: uppercase;
-  color: var(--c-accent);
-  background: rgba(8,9,9,0.72);
-  border: 1px solid rgba(91,160,164,0.35);
-  padding: 12px 18px 11px 14px;
-  backdrop-filter: blur(16px);
+  color: rgba(8,9,9,0.92);
+  background: var(--c-accent);
+  border: none;
+  padding: 11px 16px 10px 13px;
   cursor: pointer;
-  transition: border-color var(--dur-fast), background var(--dur-fast), color var(--dur-fast);
-  opacity: 0;
-  animation: fadeUp 0.6s var(--ease) 1.6s forwards;
+  transition: background var(--dur-fast), transform var(--dur-fast) var(--ease);
+  /* prevent button stretching to full content width */
+  width: fit-content;
 }
-.hero-ar-btn:hover {
-  border-color: var(--c-accent);
-  background: rgba(91,160,164,0.12);
-  color: var(--c-accent-hi);
+.hero-ar-btn:active {
+  background: var(--c-accent-hi);
+  transform: scale(0.97);
 }
 .hero-ar-btn svg {
   flex-shrink: 0;
   color: inherit;
-  transition: color var(--dur-fast);
 }
 
 /* hero-content stays left, model bleeds full width behind it */
@@ -534,9 +532,8 @@ strong { color: var(--c-primary); font-weight: 700; }
         shadow-intensity="1.2"
         shadow-softness="0.7"
         tone-mapping="commerce"
-        camera-orbit="-30deg 80deg 80%"
-        camera-target="0.1m 0m 0m"
-        field-of-view="22deg"
+        camera-orbit="-25deg 80deg 55%"
+        field-of-view="26deg"
         interaction-prompt="none"
         ar
         ar-modes="webxr scene-viewer quick-look"
@@ -559,20 +556,7 @@ strong { color: var(--c-primary); font-weight: 700; }
     <!-- Model label -->
     <span class="hero-model-label" aria-hidden="true">Benedetto · Rhino 3D</span>
 
-    <!-- AR button — mobile only, bottom-left -->
-    <button class="hero-ar-btn" id="ar-btn" aria-label="View guitar in augmented reality" type="button">
-      <!-- AR cube icon: a 3D box with a small AR indicator dot, site stroke style -->
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <!-- box face lines -->
-        <polyline points="10,2 18,6 18,14 10,18 2,14 2,6 10,2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-        <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        <line x1="2" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        <line x1="18" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      </svg>
-      View in AR
-    </button>
-
-    <!-- Scroll prompt — right-justified, matches style-guide margins -->
+    <!-- Scroll prompt -->
     <div class="hero-scroll-prompt" id="hero-scroll-prompt" aria-hidden="true">
       <span class="hero-scroll-prompt-label">Scroll</span>
       <svg class="hero-scroll-prompt-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 7,8 13,1"/></svg>
@@ -587,6 +571,16 @@ strong { color: var(--c-primary); font-weight: 700; }
         <span class="hero-chip" role="listitem">Sketching</span>
         <span class="hero-chip" role="listitem">Ergonomics</span>
       </div>
+      <!-- AR button — mobile only, sits below chips -->
+      <button class="hero-ar-btn" id="ar-btn" aria-label="View guitar in augmented reality" type="button">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polyline points="10,2 18,6 18,14 10,18 2,14 2,6 10,2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="2" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="18" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        View in AR
+      </button>
     </div>
   </header>
 
