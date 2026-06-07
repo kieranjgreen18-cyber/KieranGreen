@@ -513,6 +513,10 @@ strong { color: var(--c-primary); font-weight: 700; }
   background: var(--c-accent);
   height: 1px;
 }
+/* suppress model-viewer's own AR button — we use our custom one */
+.hero-model-wrap model-viewer::part(default-ar-button) {
+  display: none;
+}
 
 /* ── Scroll prompt — right-justified, above hero-content bottom padding ── */
 .hero-scroll-prompt {
@@ -826,30 +830,32 @@ strong { color: var(--c-primary); font-weight: 700; }
 }
 
 /* ── AR button — mobile only, anchored bottom-right of hero ── */
+/* ── AR button — mobile-only, flows below chips inside hero-content ── */
 .hero-ar-btn {
   display: none; /* shown via @media (max-width: 480px) */
-  position: absolute;
-  bottom: var(--s-5);
-  right: var(--pad);
-  z-index: 20;
+  margin-top: var(--s-4);
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   font-family: var(--f-heading);
   font-size: var(--t-micro);
   font-weight: 700;
   letter-spacing: var(--ls-stencil);
   text-transform: uppercase;
-  color: var(--c-accent);
-  background: rgba(8,9,9,0.70);
-  border: 1px solid rgba(91,160,164,0.40);
-  padding: 10px 14px 9px;
-  backdrop-filter: blur(12px);
+  color: rgba(8,9,9,0.92);
+  background: var(--c-accent);
+  border: none;
+  padding: 11px 16px 10px 13px;
   cursor: pointer;
-  transition: border-color var(--dur-fast), background var(--dur-fast);
+  transition: background var(--dur-fast), transform var(--dur-fast) var(--ease);
+  width: fit-content;
 }
-.hero-ar-btn:hover {
-  border-color: var(--c-accent);
-  background: rgba(91,160,164,0.15);
+.hero-ar-btn:active {
+  background: var(--c-accent-hi);
+  transform: scale(0.97);
+}
+.hero-ar-btn svg {
+  flex-shrink: 0;
+  color: inherit;
 }
 
 /* ── Video embed ── */
@@ -1057,12 +1063,6 @@ strong { color: var(--c-primary); font-weight: 700; }
     <!-- Model label -->
     <span class="hero-model-label" aria-hidden="true">Sabretta · Rhino 3D</span>
 
-    <!-- AR button — bottom right, mobile only (display:none on desktop via CSS) -->
-    <button class="hero-ar-btn" id="ar-btn" aria-label="View pen in augmented reality" type="button">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      View in AR
-    </button>
-
     <!-- Scroll prompt — right-justified, matches style-guide margins -->
     <div class="hero-scroll-prompt" id="hero-scroll-prompt" aria-hidden="true">
       <span class="hero-scroll-prompt-label">Scroll</span>
@@ -1078,6 +1078,16 @@ strong { color: var(--c-primary); font-weight: 700; }
         <span class="hero-chip" role="listitem">Animation</span>
         <span class="hero-chip" role="listitem">Premiere Pro</span>
       </div>
+      <!-- AR button — mobile only, sits below chips -->
+      <button class="hero-ar-btn" id="ar-btn" aria-label="View pen in augmented reality" type="button">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polyline points="10,2 18,6 18,14 10,18 2,14 2,6 10,2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="2" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="18" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        View in AR
+      </button>
     </div>
   </header>
 
