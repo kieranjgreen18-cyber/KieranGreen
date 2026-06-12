@@ -42,10 +42,14 @@
 }
 
 /* ── Registered custom properties ── */
-/* --cur-scale removed: transitioning a CSS custom property in transform()
-   prevents compositor promotion and causes main-thread style recalcs on
-   every hover frame. Scale is now written directly from JS via a CSS
-   transition on a data-attribute-driven class. See #cur-r below. */
+/* --cur-scale must be registered with a numeric syntax so the browser can
+   interpolate it in the CSS transition on #cur-r. Without @property the
+   browser treats it as an opaque string and snaps instead of transitioning. */
+@property --cur-scale {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    § DESIGN TOKENS
@@ -177,8 +181,9 @@
 /* ── Nav ── */
 [data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.90) 0%, transparent 100%); }
 [data-theme="light"] nav.scrolled {
-  background: rgba(237,238,237,0.97);
-  /* backdrop-filter removed — same reason as dark theme */
+  background: rgba(237,238,237,0.94);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
   border-bottom: 1px solid rgba(8,9,9,0.10);
 }
 /* Nav links and logo — ensure they read against the light nav bg */
@@ -187,8 +192,9 @@
 [data-theme="light"] .n-logo { color: var(--c-secondary); }
 /* Nav drawer — dark overlay becomes light panel */
 [data-theme="light"] .nav-drawer {
-  background: rgba(237,238,237,.99);
-  /* backdrop-filter removed */
+  background: rgba(237,238,237,.98);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
 }
 [data-theme="light"] .nav-drawer a { color: var(--c-secondary); }
 [data-theme="light"] .nav-drawer a:hover { color: var(--c-accent); }
@@ -405,11 +411,8 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   position: fixed; z-index: var(--z-veil); pointer-events: none;
   width: 16px; height: 1px;
   background: var(--c-accent);
-  /* JS writes style.translate for position (CSS Level 5 individual property).
-     margin handles the -50% centering offset so translate only carries px coords.
-     will-change promotes to compositor layer; translate changes are zero-cost. */
-  translate: -100vw -100vw; /* initial offscreen; JS overrides with mouse position */
-  margin-left: -8px; margin-top: 0px; /* centers the 16x1px element on the cursor point */
+  /* JS sets --cx/--cy on :root; translate is pure compositor — no left/top layout cost */
+  transform: translate(-100vw, -100vw) translate(-50%, -50%); /* initial offscreen; JS sets this directly via style.transform */
   will-change: transform;
   transition: opacity var(--dur-fast) var(--ease);
 }
@@ -433,21 +436,13 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #cur-r {
   position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
   width: 24px; height: 24px;
-  /* CSS Level 5 individual transform properties:
-     `translate` is written by the JS rAF loop (position, high-frequency).
-     `scale`     is transitioned by CSS on body class change (discrete, compositor).
-     They compose automatically — neither overrides the other, unlike style.transform. */
-  translate: -100vw -100vw; /* initial offscreen; JS overrides with mouse position */
-  margin-left: -12px; margin-top: -12px; /* centers the 24x24px element on the cursor point */
-  scale: 1;
+  /* Position from --crx/--cry, scale from --cur-scale. Kept separate so JS
+     position writes never clobber the CSS scale transition, and vice versa. */
+  transform: translate(-100vw, -100vw) translate(-50%, -50%) scale(var(--cur-scale, 1)); /* position set by JS; scale via CSS var for transition */
   will-change: transform;
-  transition: scale var(--dur-mid) var(--ease), opacity var(--dur-fast);
+  transition: --cur-scale var(--dur-mid) var(--ease),
+              opacity var(--dur-fast);
 }
-/* Scale state — driven by body class from _apply() on discrete state changes only.
-   CSS transitions scale automatically on the compositor thread. */
-body.cur-link  #cur-r { scale: 1.583; }
-body.cur-proj  #cur-r { scale: 2.25;  }
-body.cur-click #cur-r { scale: 0.667; }
 #cur-r::before,
 #cur-r::after {
   content: '';
@@ -460,14 +455,16 @@ body.cur-click #cur-r { scale: 0.667; }
 #cur-r::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
 #cur-r::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
 
-/* Cursor state variants — border-color only; scale is now written directly
-   from JS so the transform transition is compositor-safe. */
+/* Cursor state variants — only --cur-scale changes; position vars are untouched
+   so JS and CSS never fight over the same transform. */
+body.cur-link  { --cur-scale: 1.583; }
 body.cur-link  #cur-r::before,
 body.cur-link  #cur-r::after  { border-color: rgba(91,160,164,.85); }
+body.cur-proj  { --cur-scale: 2.25; }
 body.cur-proj  #cur-r::before,
 body.cur-proj  #cur-r::after  { border-color: rgba(91,160,164,.25); }
 body.cur-click #cur   { opacity: .55; }
-/* cur-click scale (0.667) now handled in JS cursor loop directly */
+body.cur-click { --cur-scale: 0.667; }
 
 /* Section indicator — removed in favour of nav active state */
 #section-indicator {
@@ -511,10 +508,9 @@ nav#nav {
 }
 nav#nav.scrolled {
   padding: var(--s-2) var(--pad);
-  /* backdrop-filter removed: was blurring the WebGL canvas every frame — the
-     single biggest perf cost on the page. rgba(8,9,9,.95) is fully opaque
-     enough; no blur needed for legibility. */
-  background: rgba(8,9,9,.95);
+  background: rgba(8,9,9,.90);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
   border-bottom: 1px solid var(--c-rule);
 }
 
@@ -618,9 +614,9 @@ body.menu-open { overflow: hidden; }
 /* Mobile drawer */
 .nav-drawer {
   position: fixed; inset: 0; z-index: calc(var(--z-nav) - 1);
-  /* backdrop-filter removed: drawer covers full screen so there's nothing
-     meaningful to blur behind it. Solid bg is visually identical. */
-  background: rgba(8,9,9,.99);
+  background: rgba(8,9,9,.98);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: var(--s-3);
   transform: translateY(-100%);
@@ -845,15 +841,9 @@ model-viewer#mini-viewer {
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: 0.04em; color: rgba(91,160,164,0.85);
 }
-/* Pause hero-specific animations when hero is not active — saves compositor
-   wakeups on layers the user can't see. n-avail-dot lives in the nav (always
-   visible) so we leave it running on hero but pause on other sections. */
+/* Pause ripple animations when hero is not the active section to save GPU */
 body:not([data-section="hero"]) .hero-avail-dot::after,
-body:not([data-section="hero"]) .hero-counter-chevron,
-body:not([data-section="hero"]) .model-360-ring,
-body:not([data-section="hero"]) .hero-mobile-360-ring { animation-play-state: paused; }
-body[data-section="carousel"] .n-avail-dot::after,
-body[data-section="about"] .n-avail-dot::after { animation-play-state: paused; }
+body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paused; }
 
 /* 360° ring spin — used by model-360-ring */
 @keyframes hintSpin {
@@ -1214,21 +1204,32 @@ body[data-section="about"] .n-avail-dot::after { animation-play-state: paused; }
   position: absolute; inset: 0;
   display: grid; grid-template-columns: 1fr 1fr;
   z-index: 1;
-  opacity: 0; transform: translateY(56px); pointer-events: none;
+  /* No will-change here — idle panels don't need compositor promotion.
+     The browser creates a layer on demand when opacity/transform animates. */
+  opacity: 0; transform: translateY(56px) translateZ(0); pointer-events: none;
   transition: transform 0.85s var(--ease), opacity 0.70s var(--ease);
 }
 .panel.is-active {
-  opacity: 1; transform: translateY(0); pointer-events: auto;
+  /* Promote only the visible panel — keeps GPU layer count minimal so the
+     cursor compositor thread isn't competing with 4 unused panel layers. */
+  will-change: transform, opacity;
+  opacity: 1; transform: translateY(0) translateZ(0); pointer-events: auto;
+  /* Explicitly reset content-visibility so the panel is fully painted when active.
+     Required because is-after/is-below set content-visibility:hidden. */
   content-visibility: visible;
 }
 .panel.is-after {
-  opacity: 0; transform: translateY(-46px); pointer-events: none;
+  opacity: 0; transform: translateY(-46px) translateZ(0); pointer-events: none;
   transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
+  /* Off-screen panels: skip subtree style recalc and paint entirely.
+     content-visibility:hidden keeps the panel laid out (no reflow on reveal)
+     but skips painting and style evaluation for all descendants.
+     contain-intrinsic-size prevents the stage from collapsing. */
   content-visibility: hidden;
   contain-intrinsic-size: 100vw 100vh;
 }
 .panel.is-below {
-  opacity: 0; transform: translateY(56px); pointer-events: none;
+  opacity: 0; transform: translateY(56px) translateZ(0); pointer-events: none;
   transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
   content-visibility: hidden;
   contain-intrinsic-size: 100vw 100vh;
@@ -1293,11 +1294,8 @@ body[data-section="about"] .n-avail-dot::after { animation-play-state: paused; }
 .panel.is-active .pf-accent { opacity: 1; transition-delay: .22s; }
 .photo-frame img {
   width: 100%; height: 100%; object-fit: cover; display: block;
-  /* filter: removed — filter transitions require a repaint on every frame
-     (non-compositable). Static filter is fine; only the transition was the
-     problem. The desaturation look is preserved as a static value. */
   filter: saturate(0.72) brightness(0.85);
-  transition: transform .7s var(--ease);
+  transition: filter .7s ease, transform .7s var(--ease);
 }
 .photo-placeholder {
   width: 100%; height: 100%;
@@ -2101,11 +2099,10 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 }
 .intro-portrait-wrap img {
   width: 100%; height: 100%; object-fit: cover; object-position: center 20%;
-  /* filter transition removed — non-compositable, causes repaint per frame.
-     Static filter applied; the subtle brightening on is-active is dropped
-     (visually negligible given the vignette overlay on top). */
-  filter: saturate(0.75) brightness(0.83);
+  filter: saturate(0.65) brightness(0.78);
+  transition: filter .7s ease;
 }
+.panel.is-active .intro-portrait-wrap img { filter: saturate(0.82) brightness(0.88); }
 .intro-portrait-vignette {
   position: absolute; inset: 0; pointer-events: none;
   background:
