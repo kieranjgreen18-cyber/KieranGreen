@@ -405,8 +405,11 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   position: fixed; z-index: var(--z-veil); pointer-events: none;
   width: 16px; height: 1px;
   background: var(--c-accent);
-  /* JS sets --cx/--cy on :root; translate is pure compositor — no left/top layout cost */
-  transform: translate(-100vw, -100vw) translate(-50%, -50%); /* initial offscreen; JS sets this directly via style.transform */
+  /* JS writes style.translate for position (CSS Level 5 individual property).
+     margin handles the -50% centering offset so translate only carries px coords.
+     will-change promotes to compositor layer; translate changes are zero-cost. */
+  translate: -100vw -100vw; /* initial offscreen; JS overrides with mouse position */
+  margin-left: -8px; margin-top: 0px; /* centers the 16x1px element on the cursor point */
   will-change: transform;
   transition: opacity var(--dur-fast) var(--ease);
 }
@@ -430,19 +433,21 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #cur-r {
   position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
   width: 24px; height: 24px;
-  /* Position from --crx/--cry, scale from --cur-scale. Kept separate so JS
-     position writes never clobber the CSS scale transition, and vice versa. */
-  /* Position written by JS as translate(); scale written by JS as a CSS var
-     that triggers a transition — but since we removed --cur-scale @property,
-     we now use a dedicated --cs variable only on this element so the style
-     recalc is scoped to #cur-r alone, not the whole document. */
-  transform: translate(-100vw, -100vw) translate(-50%, -50%) scale(1);
+  /* CSS Level 5 individual transform properties:
+     `translate` is written by the JS rAF loop (position, high-frequency).
+     `scale`     is transitioned by CSS on body class change (discrete, compositor).
+     They compose automatically — neither overrides the other, unlike style.transform. */
+  translate: -100vw -100vw; /* initial offscreen; JS overrides with mouse position */
+  margin-left: -12px; margin-top: -12px; /* centers the 24x24px element on the cursor point */
+  scale: 1;
   will-change: transform;
-  /* transition only opacity here; scale transition handled via JS direct write
-     with a separate CSS transition on the transform property itself. */
-  transition: transform var(--dur-mid) var(--ease),
-              opacity var(--dur-fast);
+  transition: scale var(--dur-mid) var(--ease), opacity var(--dur-fast);
 }
+/* Scale state — driven by body class from _apply() on discrete state changes only.
+   CSS transitions scale automatically on the compositor thread. */
+body.cur-link  #cur-r { scale: 1.583; }
+body.cur-proj  #cur-r { scale: 2.25;  }
+body.cur-click #cur-r { scale: 0.667; }
 #cur-r::before,
 #cur-r::after {
   content: '';
