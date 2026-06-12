@@ -512,15 +512,19 @@ class PageChrome {
     // Width/height/appearance are owned entirely by CSS via body classes.
     if (window.matchMedia('(pointer:fine)').matches) {
       let rafId = 0;
-      // Write transforms directly on the cursor elements instead of setting
-      // CSS custom properties on :root. setProperty('--cx') on :root triggers
-      // a document-wide style recalc every moving frame — the browser re-evaluates
-      // every rule referencing those vars across the whole document. Direct element
-      // transforms skip style recalc entirely; the compositor handles them without
-      // touching the main thread. This is the primary cause of cold-load cursor lag.
       const cur  = this._cur;
       const curR = this._curR;
       let _lastCx = null, _lastCy = null;
+      // Scale targets per cursor state — written directly into the transform
+      // string so the transition runs on the compositor thread.
+      // (Previously used CSS --cur-scale custom property which prevented
+      // compositor promotion and triggered main-thread style recalcs on hover.)
+      let _curScale = 1;
+      let _curScaleTarget = 1;
+      const SCALE_DEFAULT = 1;
+      const SCALE_LINK    = 1.583;
+      const SCALE_PROJ    = 2.25;
+      const SCALE_CLICK   = 0.667;
       const loop = () => {
         rafId = 0;
         if (this._mx !== _lastCx || this._my !== _lastCy) {
@@ -533,11 +537,21 @@ class PageChrome {
         const stillMoving = Math.abs(rxN - this._rx) > 0.15 || Math.abs(ryN - this._ry) > 0.15;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
-        // Ring keeps --cur-scale as a CSS custom property for the CSS scale transition;
-        // only the position (high-frequency) is written as a direct transform.
-        if (curR) curR.style.transform = `translate(${this._rx}px,${this._ry}px) translate(-50%,-50%) scale(var(--cur-scale,1))`;
 
-        if (stillMoving) rafId = requestAnimationFrame(loop);
+        // Determine target scale from cursor state body classes
+        const target = this._isDown ? SCALE_CLICK
+                     : this._inLink ? SCALE_LINK
+                     : this._inProj ? SCALE_PROJ
+                     : SCALE_DEFAULT;
+        // Smooth the scale value (lerp at 0.15) so it eases like the old CSS transition
+        if (target !== _curScale) {
+          _curScale += (target - _curScale) * 0.15;
+          if (Math.abs(_curScale - target) < 0.005) _curScale = target;
+        }
+        // Write full transform directly — no CSS variable, compositor-safe
+        if (curR) curR.style.transform = `translate(${this._rx}px,${this._ry}px) translate(-50%,-50%) scale(${_curScale.toFixed(3)})`;
+
+        if (stillMoving || _curScale !== target) rafId = requestAnimationFrame(loop);
       };
       document.addEventListener('mousemove', () => {
         if (!rafId) rafId = requestAnimationFrame(loop);
