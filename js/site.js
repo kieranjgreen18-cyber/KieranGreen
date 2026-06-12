@@ -1633,15 +1633,20 @@ class AboutContainer {
     // active. Keeping it out of the DOM until then prevents the browser from
     // initiating the YouTube connection (DNS, TLS, iframe JS) during earlier panel
     // transitions, which was a primary contributor to sluggishness mid-slideshow.
-    if (idx >= this._statementPanelIdx && !this._iframeInjected) {
-      const stmtPanel = this._panels[this._statementPanelIdx];
-      const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
-      const placeholder = frameWrap?.querySelector('iframe[data-src]');
-      if (placeholder) {
-        placeholder.src = placeholder.dataset.src;
-        placeholder.removeAttribute('data-src');
-        this._iframeInjected = true;
-      }
+    if (idx === this._statementPanelIdx && !this._iframeInjected) {
+      this._iframeInjected = true;
+      // Defer src assignment until after the panel entrance animation completes
+      // so YouTube's DNS/TLS/JS bootstrap doesn't compete with the CSS transition
+      // on the same frame.
+      setTimeout(() => {
+        const stmtPanel = this._panels[this._statementPanelIdx];
+        const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
+        const placeholder = frameWrap?.querySelector('iframe[data-src]');
+        if (placeholder) {
+          placeholder.src = placeholder.dataset.src;
+          placeholder.removeAttribute('data-src');
+        }
+      }, this._TRANS_MS);
     }
     // Preload images for this panel AND the next — so they're decoded before arrival.
     this._preloadPanel(idx);
