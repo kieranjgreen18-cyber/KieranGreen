@@ -1214,32 +1214,21 @@ body[data-section="about"] .n-avail-dot::after { animation-play-state: paused; }
   position: absolute; inset: 0;
   display: grid; grid-template-columns: 1fr 1fr;
   z-index: 1;
-  /* No will-change here — idle panels don't need compositor promotion.
-     The browser creates a layer on demand when opacity/transform animates. */
-  opacity: 0; transform: translateY(56px) translateZ(0); pointer-events: none;
+  opacity: 0; transform: translateY(56px); pointer-events: none;
   transition: transform 0.85s var(--ease), opacity 0.70s var(--ease);
 }
 .panel.is-active {
-  /* Promote only the visible panel — keeps GPU layer count minimal so the
-     cursor compositor thread isn't competing with 4 unused panel layers. */
-  will-change: transform, opacity;
-  opacity: 1; transform: translateY(0) translateZ(0); pointer-events: auto;
-  /* Explicitly reset content-visibility so the panel is fully painted when active.
-     Required because is-after/is-below set content-visibility:hidden. */
+  opacity: 1; transform: translateY(0); pointer-events: auto;
   content-visibility: visible;
 }
 .panel.is-after {
-  opacity: 0; transform: translateY(-46px) translateZ(0); pointer-events: none;
+  opacity: 0; transform: translateY(-46px); pointer-events: none;
   transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
-  /* Off-screen panels: skip subtree style recalc and paint entirely.
-     content-visibility:hidden keeps the panel laid out (no reflow on reveal)
-     but skips painting and style evaluation for all descendants.
-     contain-intrinsic-size prevents the stage from collapsing. */
   content-visibility: hidden;
   contain-intrinsic-size: 100vw 100vh;
 }
 .panel.is-below {
-  opacity: 0; transform: translateY(56px) translateZ(0); pointer-events: none;
+  opacity: 0; transform: translateY(56px); pointer-events: none;
   transition: transform 0.56s var(--snap), opacity 0.46s var(--ease-out);
   content-visibility: hidden;
   contain-intrinsic-size: 100vw 100vh;
