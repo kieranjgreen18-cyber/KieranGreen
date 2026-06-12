@@ -512,16 +512,19 @@ class PageChrome {
     // Width/height/appearance are owned entirely by CSS via body classes.
     if (window.matchMedia('(pointer:fine)').matches) {
       let rafId = 0;
+      // Write transforms directly on the cursor elements instead of setting
+      // CSS custom properties on :root. setProperty('--cx') on :root triggers
+      // a document-wide style recalc every moving frame — the browser re-evaluates
+      // every rule referencing those vars across the whole document. Direct element
+      // transforms skip style recalc entirely; the compositor handles them without
+      // touching the main thread. This is the primary cause of cold-load cursor lag.
       const cur  = this._cur;
       const curR = this._curR;
       let _lastCx = null, _lastCy = null;
       const loop = () => {
         rafId = 0;
         if (this._mx !== _lastCx || this._my !== _lastCy) {
-          // style.translate is the CSS Level 5 individual transform property.
-          // It composes with CSS `scale` without overriding it — unlike
-          // style.transform which clobbers the CSS scale transition entirely.
-          if (cur) cur.style.translate = `${this._mx}px ${this._my}px`;
+          if (cur) cur.style.transform = `translate(${this._mx}px,${this._my}px) translate(-50%,-50%)`;
           _lastCx = this._mx; _lastCy = this._my;
         }
 
@@ -530,11 +533,10 @@ class PageChrome {
         const stillMoving = Math.abs(rxN - this._rx) > 0.15 || Math.abs(ryN - this._ry) > 0.15;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
-        if (curR) curR.style.translate = `${this._rx}px ${this._ry}px`;
+        // Ring keeps --cur-scale as a CSS custom property for the CSS scale transition;
+        // only the position (high-frequency) is written as a direct transform.
+        if (curR) curR.style.transform = `translate(${this._rx}px,${this._ry}px) translate(-50%,-50%) scale(var(--cur-scale,1))`;
 
-        // Loop stops the moment the mouse stops — zero ongoing cost at rest.
-        // Scale is handled by CSS `transition: scale` on body.cur-* classes,
-        // set in _apply() only on discrete state changes (click/enter/leave).
         if (stillMoving) rafId = requestAnimationFrame(loop);
       };
       document.addEventListener('mousemove', () => {
@@ -731,8 +733,6 @@ class PageChrome {
 
   // Cursor state is expressed as body classes so CSS owns all appearance.
   // Priority: click > link > proj > default (matches original _state() logic).
-  // CSS `scale` transition on #cur-r is driven purely by these body classes —
-  // no JS writes needed; toggling the class is the only state change required.
   _apply() {
     const b = document.body;
     b.classList.toggle('cur-click', this._isDown);
@@ -1633,20 +1633,15 @@ class AboutContainer {
     // active. Keeping it out of the DOM until then prevents the browser from
     // initiating the YouTube connection (DNS, TLS, iframe JS) during earlier panel
     // transitions, which was a primary contributor to sluggishness mid-slideshow.
-    if (idx === this._statementPanelIdx && !this._iframeInjected) {
-      this._iframeInjected = true;
-      // Defer src assignment until after the panel entrance animation completes
-      // so YouTube's DNS/TLS/JS bootstrap doesn't compete with the CSS transition
-      // on the same frame.
-      setTimeout(() => {
-        const stmtPanel = this._panels[this._statementPanelIdx];
-        const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
-        const placeholder = frameWrap?.querySelector('iframe[data-src]');
-        if (placeholder) {
-          placeholder.src = placeholder.dataset.src;
-          placeholder.removeAttribute('data-src');
-        }
-      }, this._TRANS_MS);
+    if (idx >= this._statementPanelIdx && !this._iframeInjected) {
+      const stmtPanel = this._panels[this._statementPanelIdx];
+      const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
+      const placeholder = frameWrap?.querySelector('iframe[data-src]');
+      if (placeholder) {
+        placeholder.src = placeholder.dataset.src;
+        placeholder.removeAttribute('data-src');
+        this._iframeInjected = true;
+      }
     }
     // Preload images for this panel AND the next — so they're decoded before arrival.
     this._preloadPanel(idx);
