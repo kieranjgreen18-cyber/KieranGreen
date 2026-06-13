@@ -181,9 +181,8 @@
 /* ── Nav ── */
 [data-theme="light"] nav { background: linear-gradient(to bottom, rgba(237,238,237,.90) 0%, transparent 100%); }
 [data-theme="light"] nav.scrolled {
-  background: rgba(237,238,237,0.94);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  backdrop-filter: blur(20px) saturate(1.5);
+  background: rgba(237,238,237,0.97);
+  /* backdrop-filter removed — same reason as dark theme */
   border-bottom: 1px solid rgba(8,9,9,0.10);
 }
 /* Nav links and logo — ensure they read against the light nav bg */
@@ -192,9 +191,8 @@
 [data-theme="light"] .n-logo { color: var(--c-secondary); }
 /* Nav drawer — dark overlay becomes light panel */
 [data-theme="light"] .nav-drawer {
-  background: rgba(237,238,237,.98);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  backdrop-filter: blur(24px) saturate(1.4);
+  background: rgba(237,238,237,.99);
+  /* backdrop-filter removed — same reason as dark theme */
 }
 [data-theme="light"] .nav-drawer a { color: var(--c-secondary); }
 [data-theme="light"] .nav-drawer a:hover { color: var(--c-accent); }
@@ -386,8 +384,13 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
   contain: strict;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' seed='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   background-size: 256px 256px;
-  opacity: 0.025;
-  mix-blend-mode: overlay;
+  /* mix-blend-mode:overlay removed: it forces the compositor to flatten every
+     layer beneath grain (model-viewer canvas, carousel, about stage) into a
+     single texture before compositing on every frame — full-page cost, always.
+     At opacity:0.025 the visual difference between overlay and normal blend is
+     imperceptible on near-black; the dark colours are too close to 0 for the
+     overlay math to produce a different result. Slight opacity bump compensates. */
+  opacity: 0.028;
 }
 /* #grain::before and #grain::after removed — grain is now a single static
    background on #grain itself (no pseudo-elements, no animation). */
@@ -504,13 +507,14 @@ nav#nav {
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
   padding: var(--s-3) var(--pad);
   background: linear-gradient(to bottom, rgba(8,9,9,.72) 0%, transparent 100%);
-  transition: padding var(--dur-mid) var(--ease), background var(--dur-mid), border-color var(--dur-mid);
+  transition: padding var(--dur-mid) var(--ease), border-color var(--dur-mid);
 }
 nav#nav.scrolled {
   padding: var(--s-2) var(--pad);
-  background: rgba(8,9,9,.90);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  backdrop-filter: blur(20px) saturate(1.6);
+  /* backdrop-filter removed: it forces the GPU to snapshot the WebGL canvas
+     (model-viewer) on every frame the nav is visible while scrolled — the single
+     biggest perf cost on the page. rgba(.96) is fully legible without blur. */
+  background: rgba(8,9,9,.96);
   border-bottom: 1px solid var(--c-rule);
 }
 
@@ -614,9 +618,10 @@ body.menu-open { overflow: hidden; }
 /* Mobile drawer */
 .nav-drawer {
   position: fixed; inset: 0; z-index: calc(var(--z-nav) - 1);
-  background: rgba(8,9,9,.98);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  backdrop-filter: blur(24px) saturate(1.4);
+  /* backdrop-filter removed: drawer covers the full screen so there is nothing
+     meaningful to blur behind it. A near-opaque solid bg is visually identical
+     and saves the GPU texture snapshot entirely. */
+  background: rgba(8,9,9,.99);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: var(--s-3);
   transform: translateY(-100%);
@@ -1288,14 +1293,21 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   overflow: hidden;
   border: 1px solid rgba(91,160,164,0.16);
   box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.038);
-  opacity: 0; transition: opacity 0.9s var(--ease), box-shadow 0.6s ease, transform 0.42s var(--ease);
+  opacity: 0; transition: opacity 0.9s var(--ease), transform 0.42s var(--ease);
+  /* box-shadow removed from transition: like filter, it triggers a full repaint
+     on every animated frame. Static box-shadow is applied above; opacity and
+     transform are compositor-only and cost nothing at rest. */
 }
 .panel.is-active .pf-main   { opacity: 1; transition-delay: .05s; }
 .panel.is-active .pf-accent { opacity: 1; transition-delay: .22s; }
 .photo-frame img {
   width: 100%; height: 100%; object-fit: cover; display: block;
   filter: saturate(0.72) brightness(0.85);
-  transition: filter .7s ease, transform .7s var(--ease);
+  /* filter transition removed: non-compositable, causes a full repaint every
+     frame for the duration of the panel transition. Static filter is applied;
+     the subtle brightening on is-active is dropped to avoid the repaint cost.
+     Only transform is transitioned — compositor-only, zero repaint. */
+  transition: transform .7s var(--ease);
 }
 .photo-placeholder {
   width: 100%; height: 100%;
@@ -2099,10 +2111,10 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 }
 .intro-portrait-wrap img {
   width: 100%; height: 100%; object-fit: cover; object-position: center 20%;
-  filter: saturate(0.65) brightness(0.78);
-  transition: filter .7s ease;
+  /* Static filter — transition removed (non-compositable, repaint per frame) */
+  filter: saturate(0.75) brightness(0.83);
 }
-.panel.is-active .intro-portrait-wrap img { filter: saturate(0.82) brightness(0.88); }
+.panel.is-active .intro-portrait-wrap img { filter: saturate(0.75) brightness(0.83); }
 .intro-portrait-vignette {
   position: absolute; inset: 0; pointer-events: none;
   background:
