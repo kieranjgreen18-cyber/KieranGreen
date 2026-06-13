@@ -833,6 +833,29 @@ class Hero3DContainer {
           fetch(hdr, { mode: 'no-cors', priority: 'low' }).catch(() => {});
         } catch (e) { /* ignore — purely opportunistic */ }
       }
+
+      // ── Mobile memory fix: strip the 4K HDR skybox on touch devices ──────
+      // The skybox-image loads a large texture (151_hdrmaps_com_free_4K.jpg)
+      // into GPU memory alongside the GLB. On low-memory iOS/Android devices
+      // this combination can exhaust the WebGL memory budget and trigger the
+      // browser's "A problem repeatedly occurred" / page crash.
+      // The camera orbit is constrained to 84–98deg (near top-down) so the
+      // skybox panorama is barely visible anyway — removing it on mobile costs
+      // nothing visually. environment-image="neutral" is kept for PBR lighting.
+      if (window.matchMedia('(pointer: coarse)').matches) {
+        this._viewer.removeAttribute('skybox-image');
+        this._viewer.removeAttribute('skybox-height');
+      }
+    }
+
+    // ── Custom AR button ─────────────────────────────────────────────────────
+    // Native model-viewer AR button is suppressed via CSS ::part(default-ar-button).
+    // Wire our custom button to model-viewer's activateAR() instead.
+    const arBtn = document.getElementById('hero-ar-btn');
+    if (arBtn && this._viewer) {
+      arBtn.addEventListener('click', () => {
+        if (this._viewer.canActivateAR) this._viewer.activateAR();
+      });
     }
 
     if (this._viewer) {
@@ -1507,10 +1530,11 @@ class AboutContainer {
     this._root   = root;
     this._spacer = document.querySelector('.about-spacer'); // documented exception
 
-    this._panels = Array.from(root.querySelectorAll('[data-panel]'));
-    this._dots   = Array.from(root.querySelectorAll('.prog-dot-wrap'));
-    this._hint   = null;
-    this._N      = this._panels.length;
+    this._panels   = Array.from(root.querySelectorAll('[data-panel]'));
+    this._dots     = Array.from(root.querySelectorAll('.prog-dot-wrap'));
+    this._announcer = document.getElementById('about-announcer'); // cached — queried on every panel advance otherwise
+    this._hint     = null;
+    this._N        = this._panels.length;
     // The last panel is the contact panel — track its index so we can
     // update the section indicator label and suppress its dot.
     this._contactPanelIdx   = this._N - 1;
@@ -1606,10 +1630,9 @@ class AboutContainer {
       el.setAttribute('aria-hidden', i === idx ? 'false' : 'true');
     });
     // Announce the newly active panel to screen readers via the polite live region
-    const announcer = document.getElementById('about-announcer');
-    if (announcer) {
+    if (this._announcer) {
       const label = this._panels[idx]?.getAttribute('aria-label') || '';
-      announcer.textContent = label;
+      this._announcer.textContent = label;
     }
     // Drive progress dots (desktop — mobile hides them via CSS)
     this._dots.forEach((d, i) => d.classList.toggle('on', i === idx));
