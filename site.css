@@ -202,7 +202,6 @@
 /* Model metadata label — too faint against light bg */
 [data-theme="light"] .model-label { color: rgba(91,160,164,0.45); }
 /* Cursor reticle centre-gap uses --c-bg which adapts, but bg shadow of reticle needs to be light */
-[data-theme="light"] #cur::before { background: var(--c-bg); }
 
 /* ── Grain ── */
 [data-theme="light"] #grain { opacity: .02; }
@@ -277,7 +276,8 @@ body {
   font-weight: 400;
   font-size: var(--t-body);
   line-height: var(--lh-body);
-  cursor: none;
+  /* CAD crosshair baked into a native cursor — compositor-tracked, zero JS */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Crect x='0' y='9.5' width='7' height='1' fill='%235ba0a4'/%3E%3Crect x='13' y='9.5' width='7' height='1' fill='%235ba0a4'/%3E%3Crect x='9.5' y='0' width='1' height='7' fill='%235ba0a4'/%3E%3Crect x='9.5' y='13' width='1' height='7' fill='%235ba0a4'/%3E%3C/svg%3E") 10 10, crosshair;
   overflow-x: hidden;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
@@ -408,33 +408,12 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #veil.gone    { transform: translateX(-100%); pointer-events: none; transition: transform var(--dur-slow) var(--snap); }
 #veil.instant { transition: none !important; transform: translateX(-100%) !important; pointer-events: none; }
 
-/* ── Cursor: CAD crosshair reticle — matches project pages exactly ── */
-/* Horizontal arm */
-#cur {
-  position: fixed; z-index: var(--z-veil); pointer-events: none;
-  width: 16px; height: 1px;
-  background: var(--c-accent);
-  /* JS sets --cx/--cy on :root; translate is pure compositor — no left/top layout cost */
-  transform: translate(-100vw, -100vw) translate(-50%, -50%); /* initial offscreen; JS sets this directly via style.transform */
-  will-change: transform;
-  transition: opacity var(--dur-fast) var(--ease);
-}
-/* Center gap — punched out of horizontal arm */
-#cur::before {
-  content: '';
-  position: absolute; top: 0; left: 50%;
-  width: 4px; height: 1px;
-  background: var(--c-bg);
-  transform: translateX(-50%);
-}
-/* Vertical arm */
-#cur::after {
-  content: '';
-  position: absolute; left: 50%; top: 50%;
-  width: 1px; height: 16px;
-  background: var(--c-accent);
-  transform: translate(-50%, -50%);
-}
+/* ── Cursor: CAD crosshair reticle ── */
+/* The crosshair (+) is baked into a native CSS cursor SVG so it tracks at
+   the OS compositor level — zero JS, zero rAF, zero jank.
+   The corner-bracket ring (#cur-r) stays as a DOM element for its
+   scale-on-hover CSS transition, but only runs rAF while it's moving. */
+#cur { display: none !important; }
 /* Corner bracket — lazy follower */
 #cur-r {
   position: fixed; z-index: calc(var(--z-veil) - 1); pointer-events: none;
@@ -522,7 +501,7 @@ nav#nav.scrolled {
 .n-logo {
   font-family: var(--f-heading); font-size: clamp(12px, 1.2vw, 15px);
   font-weight: 700; letter-spacing: var(--ls-wide); text-transform: uppercase;
-  color: var(--c-secondary); text-decoration: none; cursor: none;
+  color: var(--c-secondary); text-decoration: none; cursor: inherit;
   opacity: 0; animation: fd .6s var(--ease) .05s forwards;
   display: inline-flex; align-items: baseline; gap: .35em;
   transition: color .28s var(--ease);
@@ -541,7 +520,7 @@ nav#nav.scrolled {
 .n-links a {
   font-family: var(--f-heading); font-size: 14px; font-weight: 700;
   letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--c-secondary); text-decoration: none; cursor: none;
+  color: var(--c-secondary); text-decoration: none; cursor: inherit;
   position: relative; overflow: hidden; transition: color .25s;
 }
 .n-links a::after {
@@ -593,7 +572,7 @@ body:not([data-section="hero"]) .n-avail {
 
 /* Theme toggle */
 .n-theme {
-  background: none; border: none; cursor: none; padding: 6px;
+  background: none; border: none; cursor: inherit; padding: 6px;
   color: var(--c-secondary); transition: color .25s;
   display: flex; align-items: center; justify-content: center;
 }
@@ -601,7 +580,7 @@ body:not([data-section="hero"]) .n-avail {
 
 /* Hamburger */
 .n-ham {
-  background: none; border: none; cursor: none;
+  background: none; border: none; cursor: inherit;
   width: 36px; height: 36px; padding: 8px;
   display: none; flex-direction: column; justify-content: center; gap: 5px;
 }
@@ -632,7 +611,7 @@ body.menu-open .nav-drawer { transform: translateY(0); pointer-events: auto; }
 .nav-drawer a {
   font-family: var(--f-heading); font-size: clamp(44px, 10vw, 72px);
   font-weight: 100; letter-spacing: var(--ls-tight); text-transform: uppercase;
-  color: var(--c-secondary); text-decoration: none; cursor: none;
+  color: var(--c-secondary); text-decoration: none; cursor: inherit;
   transition: color .3s var(--ease);
 }
 .nav-drawer a:hover { color: var(--c-accent); }
@@ -663,9 +642,13 @@ model-viewer#mini-viewer::part(default-ar-button) {
    Matches the Benedetto project page style: teal fill, icon + label, compact. */
 .hero-ar-btn {
   display: none; /* shown via @media (pointer: coarse) — AR only on mobile */
+  position: absolute;
+  bottom: calc(var(--s-8) + var(--s-4));
+  left: var(--pad);
+  z-index: 21; /* above hero-text z-index 20 */
   align-items: center;
   gap: 9px;
-  margin-top: var(--s-4);
+  margin-top: 0;
   font-family: var(--f-heading);
   font-size: var(--t-micro);
   font-weight: 700;
@@ -831,6 +814,7 @@ model-viewer#mini-viewer::part(default-ar-button) {
   animation: counterChevron 1.8s ease-in-out infinite;
   color: rgba(91,160,164,.65);
 }
+body:not([data-section="hero"]) .hero-counter-chevron { animation-play-state: paused; }
 
 /* Model metadata label */
 .model-label {
@@ -895,6 +879,9 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
 }
 .model-error.visible { display: flex; }
 
+/* Suppress model-viewer's built-in AR button — we use our own */
+#mini-viewer::part(default-ar-button) { display: none; }
+
 
 
 /* ═══════════════════════════════════════════════════════════════
@@ -920,7 +907,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
      the browser to rasterize the entire slide (including the giant proj-ghost
      text) into a GPU texture for every promoted layer (active + prev + next).
      Clipping is now delegated to child elements that actually need it. */
-  cursor: none;
+  cursor: inherit;
   display: block; text-decoration: none;
   /* No global will-change — we promote selectively below */
   transition: transform 0.68s var(--snap);
@@ -1101,7 +1088,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   display: flex; align-items: center; justify-content: center;
   color: var(--c-primary);
   opacity: 0; transition: opacity .45s var(--ease), border-color .25s, background .25s, color .25s, transform .25s var(--ease);
-  cursor: none;
+  cursor: inherit;
 }
 .proj:nth-child(odd)  .proj-open { right: var(--pad); }
 .proj:nth-child(even) .proj-open { left: var(--pad); }
@@ -1400,14 +1387,10 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   border: 1px solid var(--c-rule);
   box-shadow: var(--shadow-lg);
 }
-/* Transparent shield sits over the iframe while it loads.
-   Prevents the browser handing mousemove to the iframe's context mid-load,
-   which would freeze the custom cursor. Removed by JS on iframe 'load'. */
+/* Pointer-events shield while iframe loads — keeps mousemove on parent doc
+   so the custom cursor doesn't freeze. Removed via .iframe-ready on load. */
 .stmt-video-frame::after {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: 1;
-  pointer-events: all;
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: all;
 }
 .stmt-video-frame.iframe-ready::after { display: none; }
 .stmt-video-frame iframe {
@@ -1504,6 +1487,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
    about section is not active — these elements exist in all panels but only
    the active one is visible; running the animation on hidden panels wastes
    compositor resources. */
+body:not([data-section="about"]) .about-counter-chevron,
 body:not([data-section="about"]) .about-counter-chevron,
 body:not([data-section="about"]) .about-counter-next-label { animation-play-state: paused; }
 
@@ -1636,6 +1620,8 @@ body:not([data-section="about"]) .about-counter-next-label { animation-play-stat
     color: var(--c-accent);
     animation: hintSpin 8s linear infinite;
   }
+  .hero-mobile-360.hidden .hero-mobile-360-ring,
+  body:not([data-section="hero"]) .hero-mobile-360-ring { animation-play-state: paused; }
   .hero-mobile-360-label {
     position: relative; z-index: 1;
     font-family: var(--f-heading); font-size: 9px; font-weight: 700;
@@ -2301,7 +2287,7 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 .panel-contact .c-soc {
   font-family: var(--f-heading); font-size: clamp(18px, 2vw, 26px); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
-  color: var(--c-primary); text-decoration: none; cursor: none;
+  color: var(--c-primary); text-decoration: none; cursor: inherit;
   display: inline-flex; align-items: center; gap: var(--s-2);
   transition: color .25s, gap .3s var(--ease); position: relative;
 }
@@ -2315,7 +2301,7 @@ body:not([data-section="carousel"]) .c-next-arrow svg { animation-play-state: pa
 .panel-contact .c-dl--primary {
   font-family: var(--f-heading); font-size: clamp(24px, 2.8vw, 42px); font-weight: 100;
   letter-spacing: var(--ls-tight); text-transform: uppercase;
-  color: var(--c-accent); text-decoration: none; cursor: none;
+  color: var(--c-accent); text-decoration: none; cursor: inherit;
   display: inline-flex; align-items: center; gap: var(--s-2);
   transition: color .25s, gap .3s var(--ease); position: relative;
 }
