@@ -484,9 +484,11 @@ class PageChrome {
     document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
     document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
     document.addEventListener('mouseleave', () => {
+      if (this._cur)  this._cur.style.opacity  = '0';
       if (this._curR) this._curR.style.opacity = '0';
     });
     document.addEventListener('mouseenter', () => {
+      if (this._cur)  this._cur.style.opacity  = '1';
       if (this._curR) this._curR.style.opacity = '1';
     });
 
@@ -506,19 +508,33 @@ class PageChrome {
       if (proj && !proj.contains(e.relatedTarget)) { this._inProj = false; this._apply(); }
     });
 
-    // Cursor follower — only the corner-bracket ring (#cur-r) needs rAF tracking.
-    // The crosshair arms are now a native CSS cursor, tracked at the OS level.
+    // Cursor follower — position tracking only.
+    // Width/height/appearance are owned entirely by CSS via body classes.
     if (window.matchMedia('(pointer:fine)').matches) {
       let rafId = 0;
+      // Write transforms directly on the cursor elements instead of setting
+      // CSS custom properties on :root. setProperty('--cx') on :root triggers
+      // a document-wide style recalc every moving frame — the browser re-evaluates
+      // every rule referencing those vars across the whole document. Direct element
+      // transforms skip style recalc entirely; the compositor handles them without
+      // touching the main thread. This is the primary cause of cold-load cursor lag.
+      const cur  = this._cur;
       const curR = this._curR;
+      let _lastCx = null, _lastCy = null;
       const loop = () => {
         rafId = 0;
+        if (this._mx !== _lastCx || this._my !== _lastCy) {
+          if (cur) cur.style.transform = `translate(${this._mx}px,${this._my}px) translate(-50%,-50%)`;
+          _lastCx = this._mx; _lastCy = this._my;
+        }
 
         const rxN = this._rx + (this._mx - this._rx) * 0.18;
         const ryN = this._ry + (this._my - this._ry) * 0.18;
         const stillMoving = Math.abs(rxN - this._rx) > 0.15 || Math.abs(ryN - this._ry) > 0.15;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
+        // Ring keeps --cur-scale as a CSS custom property for the CSS scale transition;
+        // only the position (high-frequency) is written as a direct transform.
         if (curR) curR.style.transform = `translate(${this._rx}px,${this._ry}px) translate(-50%,-50%) scale(var(--cur-scale,1))`;
 
         if (stillMoving) rafId = requestAnimationFrame(loop);
@@ -1645,6 +1661,13 @@ class AboutContainer {
       const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
       const placeholder = frameWrap?.querySelector('iframe[data-src]');
       if (placeholder) {
+        // Once fully loaded, mark the wrapper so the pointer-events shield
+        // (::after pseudo) is removed and the iframe becomes interactive.
+        // Until then, mousemove events stay on the parent document and the
+        // custom cursor keeps tracking normally.
+        placeholder.addEventListener('load', () => {
+          frameWrap.classList.add('iframe-ready');
+        }, { once: true });
         placeholder.src = placeholder.dataset.src;
         placeholder.removeAttribute('data-src');
         this._iframeInjected = true;
