@@ -82,7 +82,7 @@
      on the initial connection. The model-viewer script is deferred and the veil
      animation buys ~800 ms — plenty of time for the GLB to land without blocking
      the LCP element (hero text). The HDR is fetched opportunistically in JS init. -->
-<link rel="preload" as="fetch" href="/assets/models/minisite.glb" crossorigin="anonymous" fetchpriority="low">
+<link rel="preload" as="fetch" href="assets/models/minisite.glb" fetchpriority="low">
 
 <link rel="preload" as="style" href="site.css">
 <link rel="stylesheet" href="site.css">
@@ -148,7 +148,7 @@
 
   <model-viewer
     id="mini-viewer"
-    src="/assets/models/minisite.glb"
+    src="assets/models/minisite.glb"
     alt="Interactive 3D model of Kieran Green's Mini Clubman, fully surface modeled in Rhino 3D — drag to rotate"
     camera-controls
     auto-rotate
@@ -240,17 +240,6 @@
     <span class="t-micro">Model unavailable</span>
     <span class="t-micro" style="opacity:.4;">Try refreshing the page</span>
   </div>
-
-  <!-- AR button — mobile only, mirrors project-benedetto exactly -->
-  <button class="hero-ar-btn" id="hero-ar-btn" aria-label="View model in augmented reality" type="button">
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <polyline points="10,2 18,6 18,14 10,18 2,14 2,6 10,2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-      <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      <line x1="2" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      <line x1="18" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-    </svg>
-    View in AR
-  </button>
 
   <!-- Hero mobile swipe hint — touch devices only, one-time -->
   <div id="hero-mobile-hint" aria-hidden="true">
