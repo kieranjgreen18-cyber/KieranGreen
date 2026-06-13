@@ -785,14 +785,10 @@ class Hero3DContainer {
     // FPS_STRIKE_COUNT consecutive long tasks after the grace period
     // triggers the static fallback.
     this._FPS_STRIKE_COUNT= 3;    // long-task strikes before degrading
-    // Mobile devices generate heavy longtask bursts during WebGL context init
-    // and GLB parsing — give them a much longer grace period so the model
-    // actually gets a chance to load before the fallback fires.
-    this._FPS_GRACE_MS    = window.matchMedia('(pointer: coarse)').matches ? 12000 : 4000;
+    this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes count
     this._fpsEnterTime    = 0;    // set in enter() to enforce grace period
     this._fpsStrikes      = 0;    // consecutive long-task count
     this._fpsDegraded     = false;// true once swapped to static fallback
-    this._fpsViewerLoaded = false;// true once model-viewer fires 'load'
     this._fpsFallbackEl   = null; // the <img> fallback element (created lazily)
     this._fpsObserver     = null; // PerformanceObserver handle
     this._fpsMeasure      = this._fpsMeasure.bind(this); // kept so enter() call is a no-op
@@ -975,12 +971,14 @@ class Hero3DContainer {
 
   _onViewerCameraChange() { this._dismissHint(); }
   _onViewerError() {
-    if (this._errorEl) this._errorEl.classList.add('visible');
     console.warn('[Hero3DContainer] model-viewer error:', this._viewer?.src);
+    // Degrade to the static fallback image rather than showing "Model unavailable".
+    // The error UI is kept as a last resort if the fallback image also fails.
+    this._fpsViewerLoaded = true; // allow _fpsDegrade to run
+    this._fpsDegrade();
   }
 
   async _onViewerLoad() {
-    this._fpsViewerLoaded = true;
     try { await this._viewer.updateComplete; } catch(e) { /* non-fatal */ }
     this._viewer.jumpCameraToGoal();
     // Open the dismiss gate after the fadeUp animation has had time to play
@@ -1067,9 +1065,6 @@ class Hero3DContainer {
    */
   _fpsDegrade() {
     if (this._fpsDegraded) return;
-    // Never degrade before the model has successfully loaded — longtask bursts
-    // during WebGL init and GLB parsing are expected and not a sign of a bad device.
-    if (!this._fpsViewerLoaded) return;
     this._fpsDegraded = true;
 
     // Disable the model-viewer: stop its render loop, hide it visually.
@@ -1094,6 +1089,11 @@ class Hero3DContainer {
       img.src      = 'assets/images/miniheroheader.webp';
       img.alt      = 'Kieran Green — Industrial Designer hero image';
       img.className = 'hero-fps-fallback';
+      // Last resort: only show the "Model unavailable" error if the fallback
+      // image itself also fails to load.
+      img.onerror = () => {
+        if (this._errorEl) this._errorEl.classList.add('visible');
+      };
       // Insert before the vignette overlay so the vignette still renders on top.
       const vignette = this._root?.querySelector('.hero-vignette');
       if (vignette) {
