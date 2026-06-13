@@ -785,10 +785,14 @@ class Hero3DContainer {
     // FPS_STRIKE_COUNT consecutive long tasks after the grace period
     // triggers the static fallback.
     this._FPS_STRIKE_COUNT= 3;    // long-task strikes before degrading
-    this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes count
+    // Mobile devices generate heavy longtask bursts during WebGL context init
+    // and GLB parsing — give them a much longer grace period so the model
+    // actually gets a chance to load before the fallback fires.
+    this._FPS_GRACE_MS    = window.matchMedia('(pointer: coarse)').matches ? 12000 : 4000;
     this._fpsEnterTime    = 0;    // set in enter() to enforce grace period
     this._fpsStrikes      = 0;    // consecutive long-task count
     this._fpsDegraded     = false;// true once swapped to static fallback
+    this._fpsViewerLoaded = false;// true once model-viewer fires 'load'
     this._fpsFallbackEl   = null; // the <img> fallback element (created lazily)
     this._fpsObserver     = null; // PerformanceObserver handle
     this._fpsMeasure      = this._fpsMeasure.bind(this); // kept so enter() call is a no-op
@@ -976,6 +980,7 @@ class Hero3DContainer {
   }
 
   async _onViewerLoad() {
+    this._fpsViewerLoaded = true;
     try { await this._viewer.updateComplete; } catch(e) { /* non-fatal */ }
     this._viewer.jumpCameraToGoal();
     // Open the dismiss gate after the fadeUp animation has had time to play
@@ -1062,6 +1067,9 @@ class Hero3DContainer {
    */
   _fpsDegrade() {
     if (this._fpsDegraded) return;
+    // Never degrade before the model has successfully loaded — longtask bursts
+    // during WebGL init and GLB parsing are expected and not a sign of a bad device.
+    if (!this._fpsViewerLoaded) return;
     this._fpsDegraded = true;
 
     // Disable the model-viewer: stop its render loop, hide it visually.
@@ -1661,13 +1669,6 @@ class AboutContainer {
       const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
       const placeholder = frameWrap?.querySelector('iframe[data-src]');
       if (placeholder) {
-        // Once fully loaded, mark the wrapper so the pointer-events shield
-        // (::after pseudo) is removed and the iframe becomes interactive.
-        // Until then, mousemove events stay on the parent document and the
-        // custom cursor keeps tracking normally.
-        placeholder.addEventListener('load', () => {
-          frameWrap.classList.add('iframe-ready');
-        }, { once: true });
         placeholder.src = placeholder.dataset.src;
         placeholder.removeAttribute('data-src');
         this._iframeInjected = true;
