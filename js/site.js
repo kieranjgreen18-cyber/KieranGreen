@@ -484,11 +484,9 @@ class PageChrome {
     document.addEventListener('mousedown',  () => { this._isDown = true;  this._apply(); });
     document.addEventListener('mouseup',    () => { this._isDown = false; this._apply(); });
     document.addEventListener('mouseleave', () => {
-      if (this._cur)  this._cur.style.opacity  = '0';
       if (this._curR) this._curR.style.opacity = '0';
     });
     document.addEventListener('mouseenter', () => {
-      if (this._cur)  this._cur.style.opacity  = '1';
       if (this._curR) this._curR.style.opacity = '1';
     });
 
@@ -508,35 +506,19 @@ class PageChrome {
       if (proj && !proj.contains(e.relatedTarget)) { this._inProj = false; this._apply(); }
     });
 
-    // Cursor follower — position tracking only.
-    // Width/height/appearance are owned entirely by CSS via body classes.
+    // Cursor follower — only the corner-bracket ring (#cur-r) needs rAF tracking.
+    // The crosshair arms are now a native CSS cursor, tracked at OS level.
     if (window.matchMedia('(pointer:fine)').matches) {
       let rafId = 0;
-      // Write transforms directly on the cursor elements instead of setting
-      // CSS custom properties on :root. setProperty('--cx') on :root triggers
-      // a document-wide style recalc every moving frame — the browser re-evaluates
-      // every rule referencing those vars across the whole document. Direct element
-      // transforms skip style recalc entirely; the compositor handles them without
-      // touching the main thread. This is the primary cause of cold-load cursor lag.
-      const cur  = this._cur;
       const curR = this._curR;
-      let _lastCx = null, _lastCy = null;
       const loop = () => {
         rafId = 0;
-        if (this._mx !== _lastCx || this._my !== _lastCy) {
-          if (cur) cur.style.transform = `translate(${this._mx}px,${this._my}px) translate(-50%,-50%)`;
-          _lastCx = this._mx; _lastCy = this._my;
-        }
-
         const rxN = this._rx + (this._mx - this._rx) * 0.18;
         const ryN = this._ry + (this._my - this._ry) * 0.18;
         const stillMoving = Math.abs(rxN - this._rx) > 0.15 || Math.abs(ryN - this._ry) > 0.15;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
-        // Ring keeps --cur-scale as a CSS custom property for the CSS scale transition;
-        // only the position (high-frequency) is written as a direct transform.
         if (curR) curR.style.transform = `translate(${this._rx}px,${this._ry}px) translate(-50%,-50%) scale(var(--cur-scale,1))`;
-
         if (stillMoving) rafId = requestAnimationFrame(loop);
       };
       document.addEventListener('mousemove', () => {
@@ -785,10 +767,14 @@ class Hero3DContainer {
     // FPS_STRIKE_COUNT consecutive long tasks after the grace period
     // triggers the static fallback.
     this._FPS_STRIKE_COUNT= 3;    // long-task strikes before degrading
-    this._FPS_GRACE_MS    = 4000; // ms after enter() before strikes count
+    // Mobile devices generate heavy longtask bursts during WebGL context init
+    // and GLB parsing — give them a much longer grace period so the model
+    // actually gets a chance to load before the fallback fires.
+    this._FPS_GRACE_MS    = window.matchMedia('(pointer: coarse)').matches ? 12000 : 4000;
     this._fpsEnterTime    = 0;    // set in enter() to enforce grace period
     this._fpsStrikes      = 0;    // consecutive long-task count
     this._fpsDegraded     = false;// true once swapped to static fallback
+    this._fpsViewerLoaded = false;// true once model-viewer fires 'load'
     this._fpsFallbackEl   = null; // the <img> fallback element (created lazily)
     this._fpsObserver     = null; // PerformanceObserver handle
     this._fpsMeasure      = this._fpsMeasure.bind(this); // kept so enter() call is a no-op
@@ -972,13 +958,13 @@ class Hero3DContainer {
   _onViewerCameraChange() { this._dismissHint(); }
   _onViewerError() {
     console.warn('[Hero3DContainer] model-viewer error:', this._viewer?.src);
-    // Degrade to the static fallback image rather than showing "Model unavailable".
-    // The error UI is kept as a last resort if the fallback image also fails.
+    // Degrade to static fallback rather than showing "Model unavailable".
     this._fpsViewerLoaded = true; // allow _fpsDegrade to run
     this._fpsDegrade();
   }
 
   async _onViewerLoad() {
+    this._fpsViewerLoaded = true;
     try { await this._viewer.updateComplete; } catch(e) { /* non-fatal */ }
     this._viewer.jumpCameraToGoal();
     // Open the dismiss gate after the fadeUp animation has had time to play
@@ -1065,6 +1051,9 @@ class Hero3DContainer {
    */
   _fpsDegrade() {
     if (this._fpsDegraded) return;
+    // Never degrade before the model has successfully loaded — longtask bursts
+    // during WebGL init and GLB parsing are expected, not a sign of a bad device.
+    if (!this._fpsViewerLoaded) return;
     this._fpsDegraded = true;
 
     // Disable the model-viewer: stop its render loop, hide it visually.
@@ -1089,11 +1078,6 @@ class Hero3DContainer {
       img.src      = 'assets/images/miniheroheader.webp';
       img.alt      = 'Kieran Green — Industrial Designer hero image';
       img.className = 'hero-fps-fallback';
-      // Last resort: only show the "Model unavailable" error if the fallback
-      // image itself also fails to load.
-      img.onerror = () => {
-        if (this._errorEl) this._errorEl.classList.add('visible');
-      };
       // Insert before the vignette overlay so the vignette still renders on top.
       const vignette = this._root?.querySelector('.hero-vignette');
       if (vignette) {
@@ -1669,6 +1653,11 @@ class AboutContainer {
       const frameWrap = stmtPanel?.querySelector('.stmt-video-frame');
       const placeholder = frameWrap?.querySelector('iframe[data-src]');
       if (placeholder) {
+        // Remove pointer-events shield once iframe is fully loaded so the
+        // cursor doesn't freeze when hovering over it mid-load.
+        placeholder.addEventListener('load', () => {
+          frameWrap.classList.add('iframe-ready');
+        }, { once: true });
         placeholder.src = placeholder.dataset.src;
         placeholder.removeAttribute('data-src');
         this._iframeInjected = true;
