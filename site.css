@@ -654,6 +654,36 @@ model-viewer#mini-viewer {
   --progress-mask: transparent;
   background: var(--c-bg);
 }
+/* Suppress model-viewer's built-in AR button — we use our own styled one */
+model-viewer#mini-viewer::part(default-ar-button) {
+  display: none;
+}
+
+/* ── Custom AR button — mobile only (shown at ≤768px via @media below) ──
+   Matches the Benedetto project page style: teal fill, icon + label, compact. */
+.hero-ar-btn {
+  display: none; /* shown via @media (pointer: coarse) — AR only on mobile */
+  align-items: center;
+  gap: 9px;
+  margin-top: var(--s-4);
+  font-family: var(--f-heading);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  color: rgba(8,9,9,0.92);
+  background: var(--c-accent);
+  border: none;
+  padding: 11px 16px 10px 13px;
+  cursor: pointer;
+  width: fit-content;
+  transition: background var(--dur-fast), transform var(--dur-fast) var(--ease);
+}
+.hero-ar-btn:active {
+  background: var(--c-accent-hi);
+  transform: scale(0.97);
+}
+.hero-ar-btn svg { flex-shrink: 0; color: inherit; }
 
 /* FPS fallback — static hero image shown when framerate is too low for the
    3D viewer. Matches the hero section's full-viewport footprint exactly so
@@ -1524,6 +1554,8 @@ body:not([data-section="about"]) .about-counter-next-label { animation-play-stat
   .proj[data-pos="active"] .proj-tags { opacity: 1; }
   /* Show hero mobile hint on touch devices */
   #hero-mobile-hint { display: flex; }
+  /* Show custom AR button on touch devices — native model-viewer AR button is suppressed */
+  .hero-ar-btn { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

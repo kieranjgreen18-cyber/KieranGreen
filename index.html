@@ -197,6 +197,17 @@
       <div class="hero-avail-dot" aria-hidden="true"></div>
       Available
     </div>
+    <!-- AR button — touch/mobile only, shown via CSS (pointer:coarse).
+         Native model-viewer AR button is suppressed via ::part(default-ar-button). -->
+    <button class="hero-ar-btn" id="hero-ar-btn" aria-label="View 3D model in augmented reality" type="button">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <polyline points="10,2 18,6 18,14 10,18 2,14 2,6 10,2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="2" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="18" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      View in AR
+    </button>
   </div>
 
   <!-- Hero counter — replaces old scroll hint. Shows "Scroll" with animated chevron. -->
