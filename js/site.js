@@ -508,22 +508,25 @@ class PageChrome {
 
     // Cursor follower — only the corner-bracket ring (#cur-r) needs rAF tracking.
     // The crosshair arms are now a native CSS cursor, tracked at OS level.
+    //
+    // The loop runs CONTINUOUSLY (not just on mousemove) so the bracket
+    // position is always current even when the section changes under the
+    // cursor without mouse movement. A higher lerp factor (0.32 vs 0.18)
+    // reduces the visible lag — the bracket now catches up in ~3 frames
+    // instead of ~8 at 60fps. The loop self-throttles via requestAnimationFrame
+    // so it never fires faster than the display refresh rate.
     if (window.matchMedia('(pointer:fine)').matches) {
-      let rafId = 0;
       const curR = this._curR;
       const loop = () => {
-        rafId = 0;
-        const rxN = this._rx + (this._mx - this._rx) * 0.18;
-        const ryN = this._ry + (this._my - this._ry) * 0.18;
-        const stillMoving = Math.abs(rxN - this._rx) > 0.15 || Math.abs(ryN - this._ry) > 0.15;
+        const rxN = this._rx + (this._mx - this._rx) * 0.32;
+        const ryN = this._ry + (this._my - this._ry) * 0.32;
+        const stillMoving = Math.abs(rxN - this._rx) > 0.08 || Math.abs(ryN - this._ry) > 0.08;
         this._rx = stillMoving ? rxN : this._mx;
         this._ry = stillMoving ? ryN : this._my;
         if (curR) curR.style.transform = `translate(${this._rx}px,${this._ry}px) translate(-50%,-50%) scale(var(--cur-scale,1))`;
-        if (stillMoving) rafId = requestAnimationFrame(loop);
+        requestAnimationFrame(loop);
       };
-      document.addEventListener('mousemove', () => {
-        if (!rafId) rafId = requestAnimationFrame(loop);
-      }, { passive: true });
+      requestAnimationFrame(loop);
     }
     this._apply();
 
@@ -761,23 +764,42 @@ class Hero3DContainer {
     this._tScrolling  = null;
 
     // ── Performance monitor state ──────────────────────────────────────
-    // Watches for long tasks (main-thread blocks ≥ 50 ms) using
-    // PerformanceObserver instead of a rAF loop, so there is no second
-    // render loop competing with model-viewer for frame budget.
-    // FPS_STRIKE_COUNT consecutive long tasks after the grace period
-    // triggers the static fallback.
-    this._FPS_STRIKE_COUNT= 3;    // long-task strikes before degrading
-    // Mobile devices generate heavy longtask bursts during WebGL context init
-    // and GLB parsing — give them a much longer grace period so the model
-    // actually gets a chance to load before the fallback fires.
-    this._FPS_GRACE_MS    = window.matchMedia('(pointer: coarse)').matches ? 12000 : 4000;
-    this._fpsEnterTime    = 0;    // set in enter() to enforce grace period
-    this._fpsStrikes      = 0;    // consecutive long-task count
-    this._fpsDegraded     = false;// true once swapped to static fallback
-    this._fpsViewerLoaded = false;// true once model-viewer fires 'load'
-    this._fpsFallbackEl   = null; // the <img> fallback element (created lazily)
-    this._fpsObserver     = null; // PerformanceObserver handle
-    this._fpsMeasure      = this._fpsMeasure.bind(this); // kept so enter() call is a no-op
+    // Two separate fallback strategies depending on platform:
+    //
+    // DESKTOP — PerformanceObserver 'longtask': zero rAF cost, fires when the
+    //   main thread blocks ≥ 50 ms. FPS_STRIKE_COUNT consecutive long tasks
+    //   after the grace period triggers the static fallback.
+    //
+    // MOBILE — rAF-based actual frame timing: longtask is unreliable on
+    //   mobile Safari/Chrome because the browser throttles or omits entries.
+    //   Instead we measure real inter-frame deltas post-load; if the rolling
+    //   average drops below FPS_MOBILE_MIN for FPS_MOBILE_BAD_FRAMES in a
+    //   row (after the grace period) we degrade. The rAF loop is stopped
+    //   immediately on degrade / exit so it doesn't compete with model-viewer.
+
+    this._isMobile        = window.matchMedia('(pointer: coarse)').matches;
+
+    // Shared
+    this._FPS_GRACE_MS    = this._isMobile ? 10000 : 4000; // ms after enter() before checks begin
+    this._fpsEnterTime    = 0;
+    this._fpsDegraded     = false;
+    this._fpsViewerLoaded = false;
+    this._fpsFallbackEl   = null;
+
+    // Desktop (longtask) path
+    this._FPS_STRIKE_COUNT= 3;
+    this._fpsStrikes      = 0;
+    this._fpsObserver     = null;
+
+    // Mobile (rAF FPS) path
+    this._FPS_MOBILE_MIN       = 18;  // fps; below this is unusably choppy
+    this._FPS_MOBILE_BAD_FRAMES= 45;  // consecutive sub-min frames before degrading (~2.5s at 18fps)
+    this._fpsMobileRafId       = 0;   // cancelAnimationFrame handle
+    this._fpsMobileBadCount    = 0;   // consecutive low-fps frame counter
+    this._fpsMobileLastTs      = 0;   // timestamp of previous rAF tick
+
+    this._fpsMeasure      = this._fpsMeasure.bind(this);
+    this._fpsMobileTick   = this._fpsMobileTick.bind(this);
 
     this._onViewerCameraChange = this._onViewerCameraChange.bind(this);
     this._onViewerError        = this._onViewerError.bind(this);
@@ -803,44 +825,49 @@ class Hero3DContainer {
     this._errorEl     = root.querySelector('#model-error');
     this._nav         = document.getElementById('nav'); // documented exception
 
-    // ── Model-viewer preload: warm the HDR environment cache as soon as
-    //    the container inits. The GLB is preloaded via <link rel="preload">
-    //    in <head>; the HDR has no standard preload type so we use a no-op
-    //    fetch() here. Both are relatively large assets and benefit from
-    //    being in-cache before model-viewer requests them, significantly
-    //    reducing the "white box" pop-in on first visit.
     if (this._viewer) {
-      const hdr = this._viewer.getAttribute('skybox-image');
-      if (hdr) {
-        // Low-priority background fetch — won't block any critical resources.
-        // 'no-cors' is used because modelviewer.dev doesn't send CORS headers
-        // for the HDR; we only need to warm the cache, not read the response.
-        try {
-          fetch(hdr, { mode: 'no-cors', priority: 'low' }).catch(() => {});
-        } catch (e) { /* ignore — purely opportunistic */ }
-      }
+      const isMobile = window.matchMedia('(pointer: coarse)').matches;
 
-      // ── Mobile memory fix: strip the 4K HDR skybox on touch devices ──────
-      // The skybox-image loads a large texture (151_hdrmaps_com_free_4K.jpg)
-      // into GPU memory alongside the GLB. On low-memory iOS/Android devices
-      // this combination can exhaust the WebGL memory budget and trigger the
-      // browser's "A problem repeatedly occurred" / page crash.
-      // The camera orbit is constrained to 84–98deg (near top-down) so the
-      // skybox panorama is barely visible anyway — removing it on mobile costs
-      // nothing visually. environment-image="neutral" is kept for PBR lighting.
-      if (window.matchMedia('(pointer: coarse)').matches) {
+      if (isMobile) {
+        // ── Mobile memory optimisations ────────────────────────────────
+        // Strip the 4K HDRI skybox — it loads into GPU VRAM alongside the
+        // GLB, doubling texture memory use. The orbit is top-down (84–98°)
+        // so the panorama is barely visible anyway. environment-image="neutral"
+        // still provides PBR lighting; no visual quality loss.
         this._viewer.removeAttribute('skybox-image');
         this._viewer.removeAttribute('skybox-height');
+        // Transparent background — no skybox means the page bg shows through;
+        // model-viewer uses the canvas alpha automatically when skybox-image is absent.
+      } else {
+        // ── Desktop: warm the HDRI cache opportunistically ────────────
+        // Low-priority fetch — won't block fonts or stylesheet.
+        const hdr = this._viewer.getAttribute('skybox-image');
+        if (hdr) {
+          try {
+            fetch(hdr, { mode: 'no-cors', priority: 'low' }).catch(() => {});
+          } catch (e) { /* ignore — purely opportunistic */ }
+        }
       }
     }
 
     // ── Custom AR button ─────────────────────────────────────────────────────
     // Native model-viewer AR button is suppressed via CSS ::part(default-ar-button).
     // Wire our custom button to model-viewer's activateAR() instead.
+    // If the viewer degraded to the static fallback, restore the src first so
+    // model-viewer can run the AR session (it re-fetches the GLB on demand).
     const arBtn = document.getElementById('hero-ar-btn');
     if (arBtn && this._viewer) {
       arBtn.addEventListener('click', () => {
-        if (this._viewer.canActivateAR) this._viewer.activateAR();
+        if (this._fpsDegraded) {
+          // Viewer src was cleared when degrading — restore it for the AR session.
+          // The viewer stays hidden (the AR overlay takes the full screen).
+          this._viewer.src = 'assets/models/minisite.glb';
+          this._viewer.addEventListener('load', () => {
+            if (this._viewer.canActivateAR) this._viewer.activateAR();
+          }, { once: true });
+        } else if (this._viewer.canActivateAR) {
+          this._viewer.activateAR();
+        }
       });
     }
 
@@ -889,12 +916,14 @@ class Hero3DContainer {
       try { this._viewer.play(); } catch(e) { /* non-fatal */ }
       this._viewer.setAttribute('auto-rotate', '');
     }
-    // Start (or restart) the performance observer for this visit.
-    // Reset strike counter on re-entry so a brief visit to another section
-    // doesn't carry over stale strikes.
-    this._fpsStrikes     = 0;
-    this._fpsEnterTime   = performance.now();
+    // Start (or restart) the performance monitor for this visit.
+    // Reset counters on re-entry so stale strikes from a previous visit don't carry over.
+    this._fpsStrikes          = 0;
+    this._fpsMobileBadCount   = 0;
+    this._fpsMobileLastTs     = 0;
+    this._fpsEnterTime        = performance.now();
     this._stopFpsObserver();
+    this._stopMobileFpsTick();
     if (!this._fpsDegraded) this._fpsMeasure();
     requestAnimationFrame(() => this._revealHero());
 
@@ -940,8 +969,9 @@ class Hero3DContainer {
       }
     }
     setTimeout(() => { if (!this._active) this._root.style.visibility = 'hidden'; }, 420);
-    // Stop the performance observer — no need to watch while hero is offscreen.
+    // Stop both performance monitors — no need to watch while hero is offscreen.
     this._stopFpsObserver();
+    this._stopMobileFpsTick();
   }
 
   onScroll(direction) {
@@ -979,6 +1009,12 @@ class Hero3DContainer {
       this._dismissHint();
     }, 18000);
     // GLB Keyshot materials are used as-is — no JS overrides applied.
+
+    // Mobile: now that the model is confirmed loaded, start the rAF FPS
+    // monitor. We waited until here rather than enter() because WebGL init
+    // and GLB decode produce legitimate long frames that should not count
+    // against the device — we only measure rendering performance.
+    if (this._isMobile && !this._fpsDegraded) this._startMobileFpsTick();
   }
 
   _onMouseDown()   { this._viewer?.removeAttribute('auto-rotate'); }
@@ -999,42 +1035,104 @@ class Hero3DContainer {
   }
 
   /**
-   * Starts a PerformanceObserver that counts 'longtask' entries (main-thread
-   * blocks ≥ 50 ms) while the hero is active. No rAF loop — zero frame-budget
-   * cost on healthy devices. FPS_STRIKE_COUNT consecutive long tasks after the
-   * grace period triggers _fpsDegrade() exactly as before.
+   * Start the appropriate performance monitor for the current platform.
+   *
+   * DESKTOP — PerformanceObserver 'longtask'
+   *   Zero rAF overhead. Fires when the main thread blocks ≥ 50 ms.
+   *   FPS_STRIKE_COUNT consecutive long tasks (post grace period) → degrade.
+   *
+   * MOBILE — rAF-based actual FPS measurement
+   *   'longtask' entries are throttled / omitted on mobile Safari and Chrome,
+   *   making them an unreliable signal on the devices most likely to struggle.
+   *   Instead, we measure real inter-frame wall-clock deltas after the model
+   *   loads. If FPS_MOBILE_BAD_FRAMES consecutive frames each take longer than
+   *   1000/FPS_MOBILE_MIN ms, the device is genuinely unable to render the
+   *   model smoothly and we swap to the static fallback.
+   *   The rAF loop is cancelled immediately on degrade or exit, so it never
+   *   competes with model-viewer for frame budget in the steady state.
    */
   _fpsMeasure() {
-    if (this._fpsDegraded || this._fpsObserver) return;
-    if (!window.PerformanceObserver) return; // unsupported — fail silently
+    if (this._fpsDegraded) return;
 
-    this._fpsObserver = new PerformanceObserver(list => {
-      if (!this._active || this._fpsDegraded) return;
-      const sinceEnter = performance.now() - this._fpsEnterTime;
-      if (sinceEnter < this._FPS_GRACE_MS) return; // still in grace period
+    if (this._isMobile) {
+      // Mobile path — real FPS via rAF. Only start once the model has loaded
+      // (we wait for _fpsViewerLoaded to be set by _onViewerLoad), so we
+      // don't accidentally count the heavy WebGL init frames.
+      // _startMobileFpsTick() is idempotent (guarded by _fpsMobileRafId).
+      if (this._fpsViewerLoaded) this._startMobileFpsTick();
+      // If the model hasn't loaded yet, _onViewerLoad calls _startMobileFpsTick()
+      // directly once the load event fires, so nothing is missed.
+    } else {
+      // Desktop path — PerformanceObserver longtask
+      if (this._fpsObserver) return;
+      if (!window.PerformanceObserver) return;
 
-      for (const entry of list.getEntries()) {
-        // Only count tasks that are long enough to visibly drop frames.
-        // A 50 ms task blocks ~3 frames at 60 fps; we treat each as a strike.
-        if (entry.duration >= 50) {
-          this._fpsStrikes++;
-          if (this._fpsStrikes >= this._FPS_STRIKE_COUNT) {
-            this._stopFpsObserver();
-            this._fpsDegrade();
-            return;
+      this._fpsObserver = new PerformanceObserver(list => {
+        if (!this._active || this._fpsDegraded) return;
+        const sinceEnter = performance.now() - this._fpsEnterTime;
+        if (sinceEnter < this._FPS_GRACE_MS) return;
+
+        for (const entry of list.getEntries()) {
+          if (entry.duration >= 50) {
+            this._fpsStrikes++;
+            if (this._fpsStrikes >= this._FPS_STRIKE_COUNT) {
+              this._stopFpsObserver();
+              this._fpsDegrade();
+              return;
+            }
+          } else {
+            this._fpsStrikes = 0;
           }
-        } else {
-          // Short tasks reset the run — we only degrade on sustained blocking.
-          this._fpsStrikes = 0;
         }
-      }
-    });
+      });
 
-    try {
-      this._fpsObserver.observe({ type: 'longtask', buffered: false });
-    } catch(e) {
-      // longtask not supported in this browser — fail silently.
-      this._fpsObserver = null;
+      try {
+        this._fpsObserver.observe({ type: 'longtask', buffered: false });
+      } catch(e) {
+        this._fpsObserver = null;
+      }
+    }
+  }
+
+  /** Start the mobile rAF FPS tick loop (idempotent). */
+  _startMobileFpsTick() {
+    if (this._fpsMobileRafId || this._fpsDegraded) return;
+    this._fpsMobileLastTs   = performance.now();
+    this._fpsMobileBadCount = 0;
+    this._fpsMobileRafId    = requestAnimationFrame(this._fpsMobileTick);
+  }
+
+  /** Single rAF tick for mobile FPS measurement. */
+  _fpsMobileTick(ts) {
+    this._fpsMobileRafId = 0; // will be re-armed below unless stopping
+    if (!this._active || this._fpsDegraded) return; // don't re-arm
+
+    const sinceEnter = ts - this._fpsEnterTime;
+    const dt         = ts - (this._fpsMobileLastTs || ts);
+    this._fpsMobileLastTs = ts;
+
+    if (sinceEnter >= this._FPS_GRACE_MS && dt > 0) {
+      const fps = 1000 / dt;
+      if (fps < this._FPS_MOBILE_MIN) {
+        this._fpsMobileBadCount++;
+        if (this._fpsMobileBadCount >= this._FPS_MOBILE_BAD_FRAMES) {
+          this._fpsDegrade();
+          return; // don't re-arm
+        }
+      } else {
+        this._fpsMobileBadCount = 0; // reset on any good frame
+      }
+    }
+
+    // Re-arm for next frame
+    this._fpsMobileRafId = requestAnimationFrame(this._fpsMobileTick);
+  }
+
+  /** Cancel the mobile rAF tick loop. */
+  _stopMobileFpsTick() {
+    if (this._fpsMobileRafId) {
+      cancelAnimationFrame(this._fpsMobileRafId);
+      this._fpsMobileRafId = 0;
     }
   }
 
@@ -1773,28 +1871,27 @@ class AboutContainer {
 
 // ── model-viewer global performance configuration ─────────────────────────
 // Must be set before any <model-viewer> element is rendered.
-// minimumRenderScale: dynamic resolution scaling will not drop below 50%
-//   of native resolution on low-end devices — avoids runaway GPU cost while
-//   keeping the model legible. Default is already 0.5 in most builds, but
-//   setting it explicitly ensures the behaviour regardless of library version.
+// minimumRenderScale: on mobile we allow the renderer to drop to 35% of
+//   native resolution — GPU memory is the bottleneck on iOS/Android, not
+//   visual quality, so we let model-viewer trade pixels for stability.
+//   Desktop keeps 50% as the floor.
 // powerPreference: 'high-performance' hints the browser/OS to prefer the
-//   discrete GPU on multi-GPU systems (e.g. MacBook with integrated + AMD).
-//   The hero 3D model is the centrepiece of the page; we want the fast GPU.
+//   discrete GPU on multi-GPU systems. On mobile this is typically a no-op
+//   (single GPU) but costs nothing to set.
+const _mvIsMobile = window.matchMedia('(pointer: coarse)').matches;
+const _applyMVConfig = (MV) => {
+  if (!MV) return;
+  if (typeof MV.minimumRenderScale === 'number')
+    MV.minimumRenderScale = _mvIsMobile ? 0.35 : 0.5;
+  if ('powerPreference' in MV)
+    MV.powerPreference = 'high-performance';
+};
 if (window.customElements && customElements.get('model-viewer') === undefined) {
-  // Element not yet defined — set statics once it upgrades.
   customElements.whenDefined('model-viewer').then(() => {
-    const MV = customElements.get('model-viewer');
-    if (MV) {
-      if (typeof MV.minimumRenderScale === 'number') MV.minimumRenderScale = 0.5;
-      if ('powerPreference' in MV) MV.powerPreference = 'high-performance';
-    }
+    _applyMVConfig(customElements.get('model-viewer'));
   });
 } else if (window.customElements) {
-  const MV = customElements.get('model-viewer');
-  if (MV) {
-    if (typeof MV.minimumRenderScale === 'number') MV.minimumRenderScale = 0.5;
-    if ('powerPreference' in MV) MV.powerPreference = 'high-performance';
-  }
+  _applyMVConfig(customElements.get('model-viewer'));
 }
 
 (function bootstrap() {
