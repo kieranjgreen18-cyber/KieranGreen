@@ -422,7 +422,7 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
      position writes never clobber the CSS scale transition, and vice versa. */
   transform: translate(-100vw, -100vw) translate(-50%, -50%) scale(var(--cur-scale, 1)); /* position set by JS; scale via CSS var for transition */
   will-change: transform;
-  transition: --cur-scale var(--dur-mid) var(--ease),
+  transition: --cur-scale var(--dur-fast) var(--ease),
               opacity var(--dur-fast);
 }
 #cur-r::before,
@@ -438,15 +438,18 @@ p strong { color: var(--c-primary); font-weight: 700; font-family: var(--f-body)
 #cur-r::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
 
 /* Cursor state variants — only --cur-scale changes; position vars are untouched
-   so JS and CSS never fight over the same transform. */
-body.cur-link  { --cur-scale: 1.583; }
+   so JS and CSS never fight over the same transform.
+   Scale range tightened so the bracket never jumps jarringly between sections:
+   proj hover was 2.25 (too large a gap from default 1). Now max is 1.6 and
+   transitions are smoothed via --cur-scale on #cur-r. */
+body.cur-link  { --cur-scale: 1.45; }
 body.cur-link  #cur-r::before,
 body.cur-link  #cur-r::after  { border-color: rgba(91,160,164,.85); }
-body.cur-proj  { --cur-scale: 2.25; }
+body.cur-proj  { --cur-scale: 1.6; }
 body.cur-proj  #cur-r::before,
-body.cur-proj  #cur-r::after  { border-color: rgba(91,160,164,.25); }
+body.cur-proj  #cur-r::after  { border-color: rgba(91,160,164,.45); }
 body.cur-click #cur   { opacity: .55; }
-body.cur-click { --cur-scale: 0.667; }
+body.cur-click { --cur-scale: 0.75; }
 
 /* Section indicator — removed in favour of nav active state */
 #section-indicator {
@@ -1106,7 +1109,7 @@ body:not([data-section="hero"]) .n-avail-dot::after { animation-play-state: paus
   display: none; /* shown only on coarse pointer below */
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: var(--s-7); /* 64px — same as hero-text bottom offset so they don't overlap */
+  height: var(--s-7); /* 64px */
   align-items: center; justify-content: center; gap: var(--s-2);
   font-family: var(--f-heading); font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
@@ -1588,7 +1591,10 @@ body:not([data-section="about"]) .about-counter-next-label { animation-play-stat
   #section-indicator { display: none; }
 
   /* Hero */
-  .hero-text { max-width: 88vw; bottom: var(--s-7); }
+  /* hero-text bottom must clear the AR button which sits at
+     bottom: calc(var(--s-8) + var(--s-4)) = 112px, ~46px tall.
+     Add 12px breathing room above the button. */
+  .hero-text { max-width: 88vw; bottom: calc(var(--s-8) + var(--s-4) + 46px + 12px); }
   .hero-h1   { font-size: clamp(54px, 14vw, 88px); }
   .hero-coords { display: none; }
   .model-label-br { display: none; }
