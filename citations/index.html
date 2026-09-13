@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Citer — cite multiple sources at once</title>
+<meta name="description" content="Drag in tabs, links, or images and get MLA, APA, or Chicago citations, automatically." />
+<link rel="stylesheet" href="css/tokens.css" />
+<link rel="stylesheet" href="css/fonts.css" />
+<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="topbar__mark">Citer</div>
+    <div class="segmented" id="style-select" role="tablist" aria-label="Citation style">
+      <button class="segmented__opt is-active" data-style="mla" role="tab" aria-selected="true">MLA</button>
+      <button class="segmented__opt" data-style="apa" role="tab" aria-selected="false">APA</button>
+      <button class="segmented__opt" data-style="chicago" role="tab" aria-selected="false">Chicago (N-B)</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+
+    <section class="dropzone" id="dropzone" aria-label="Drop a tab, link, or image to cite it">
+      <div class="dropzone__inner">
+        <div class="dropzone__ring" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v11" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
+          </svg>
+        </div>
+        <p class="dropzone__title">Drag a tab, link, or image here</p>
+        <p class="dropzone__hint">Pull it in from another window — a browser tab, a link, an image, or a file. Processing starts the moment it lands.</p>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <div class="segmented" id="type-toggle" role="tablist" aria-label="What you're citing">
+        <button class="segmented__opt is-active" data-type="webpage" role="tab" aria-selected="true">Webpage</button>
+        <button class="segmented__opt" data-type="image" role="tab" aria-selected="false">Image</button>
+      </div>
+      <form class="manual-input" id="manual-form">
+        <label for="manual-url" class="visually-hidden">Paste a link to add it manually</label>
+        <input type="url" id="manual-url" name="url" placeholder="Or paste a link…" autocomplete="off" />
+        <button type="submit" class="btn btn--primary">Add</button>
+      </form>
+      <span class="spacer"></span>
+      <button class="btn btn--quiet btn--danger" id="clear-all">Clear all</button>
+    </div>
+
+    <div id="duplicate-banners"></div>
+
+    <div class="content-grid">
+      <div class="citation-list" id="citation-list">
+        <div class="empty-state" id="empty-state">
+          No sources yet. Drag something in above, or paste a link.
+        </div>
+      </div>
+
+      <aside class="bibliography-panel">
+        <div class="bibliography-panel__header">
+          <h2>Bibliography</h2>
+          <div class="segmented" id="view-toggle" role="tablist" aria-label="Bibliography view">
+            <button class="segmented__opt is-active" data-view="formatted" role="tab" aria-selected="true">Formatted</button>
+            <button class="segmented__opt" data-view="plain" role="tab" aria-selected="false">Plain text</button>
+          </div>
+        </div>
+        <div class="bibliography-panel__body" id="bibliography-output"></div>
+        <div class="bibliography-panel__footer">
+          <button class="btn btn--primary" id="copy-all">Copy bibliography</button>
+        </div>
+      </aside>
+    </div>
+
+  </main>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
