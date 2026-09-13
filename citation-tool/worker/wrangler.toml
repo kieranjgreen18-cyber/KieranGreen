@@ -8,7 +8,7 @@ compatibility_date = "2024-11-01"
 # once), or the literal string "*" if you explicitly want to allow any site
 # (fine for local testing, not recommended once this is live).
 [vars]
-ALLOWED_ORIGIN = "*"
+ALLOWED_ORIGIN = "https://kieran-green.com"
 
 # Optional: override the model used for AI-assisted metadata recovery.
 # ANTHROPIC_MODEL = "claude-sonnet-5"
