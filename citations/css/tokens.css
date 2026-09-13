@@ -1,0 +1,98 @@
+/*
+  Design direction — "reference desk instrument"
+  DIN is a signage/technical grotesque, so the app leans into precision and
+  measurement rather than a warm editorial or SaaS-dashboard look: a cool
+  paper background, one saturated "index" blue used only for interactive and
+  verified states, and small condensed-style meta labels that read like
+  annotations on a technical drawing rather than marketing chrome.
+*/
+
+:root {
+  /* --- Color --- */
+  --paper: #f5f6f3;
+  --paper-raised: #ffffff;
+  --ink: #14181d;
+  --ink-soft: #4b535c;
+  --line: #d8dbd6;
+  --line-strong: #b7bcb6;
+
+  --index-blue: #1f4fd8;
+  --index-blue-dim: #e7edfc;
+  --index-blue-ink: #0f2f8a;
+
+  --status-verified: #2f7d52;
+  --status-verified-bg: #e6f2ea;
+  --status-ai: #a9720a;
+  --status-ai-bg: #faf0dd;
+  --status-user: #3a5cc9;
+  --status-user-bg: #eaeefb;
+  --status-missing: #8a8f88;
+  --status-missing-bg: #eceeea;
+  --status-error: #b23a2e;
+  --status-error-bg: #fbe9e6;
+
+  /* --- Spacing scale (4px base) --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* --- Radius --- */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* --- Type scale --- */
+  --fs-label: 11px;
+  --fs-small: 13px;
+  --fs-body: 15px;
+  --fs-md: 17px;
+  --fs-lg: 21px;
+  --fs-xl: 28px;
+  --fs-xxl: 38px;
+
+  --lh-tight: 1.2;
+  --lh-normal: 1.5;
+  --lh-loose: 1.7;
+
+  /* --- Motion --- */
+  --ease-standard: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-med: 220ms;
+
+  --shadow-card: 0 1px 2px rgba(20, 24, 29, 0.06), 0 1px 1px rgba(20, 24, 29, 0.04);
+  --shadow-raised: 0 6px 20px rgba(20, 24, 29, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #16181a;
+    --paper-raised: #1e2124;
+    --ink: #eef0ee;
+    --ink-soft: #a7aeb4;
+    --line: #33373a;
+    --line-strong: #464b4f;
+
+    --index-blue: #6f96ff;
+    --index-blue-dim: #1b2540;
+    --index-blue-ink: #cddaff;
+
+    --status-verified: #58c98a;
+    --status-verified-bg: #17301f;
+    --status-ai: #e0ad4f;
+    --status-ai-bg: #332708;
+    --status-user: #8fa6ff;
+    --status-user-bg: #1c2440;
+    --status-missing: #7d8580;
+    --status-missing-bg: #24272a;
+    --status-error: #e2685a;
+    --status-error-bg: #3a1d19;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-raised: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+}

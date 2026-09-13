@@ -1,0 +1,54 @@
+/*
+  Self-hosted DIN. Drop your licensed WOFF2 files into /assets/fonts using
+  these exact names, or edit the src paths below to match your files.
+  Nothing here loads from an external font service.
+
+  If a weight/style file isn't available, that @font-face block simply won't
+  match and the browser falls back to the next family in the stack — it will
+  not synthesize a fake weight.
+*/
+
+@font-face {
+  font-family: "DIN";
+  src: url("../assets/fonts/DIN-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DIN";
+  src: url("../assets/fonts/DIN-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DIN";
+  src: url("../assets/fonts/DIN-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DIN Condensed";
+  src: url("../assets/fonts/DIN-Condensed-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DIN Condensed";
+  src: url("../assets/fonts/DIN-Condensed-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-body: "DIN", Arial, Helvetica, sans-serif;
+  --font-label: "DIN Condensed", "DIN", Arial, Helvetica, sans-serif;
+}
