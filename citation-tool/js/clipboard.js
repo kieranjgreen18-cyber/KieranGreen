@@ -1,9 +1,13 @@
 // Word and Google Docs both understand inline CSS hanging-indent on a <p>,
 // so that's what we paste as HTML. The matching text/plain payload has no
 // markup at all, per the "true plaintext" requirement.
-
-const HANGING_INDENT_STYLE =
-  "margin:0 0 1em 0;padding-left:2em;text-indent:-2em;line-height:1.6;";
+//
+// MLA and APA Works Cited/References pages are double-spaced *throughout*,
+// including between entries — there's no extra paragraph gap on top of that,
+// which is what line-height: 2 with zero margin gives you here. (An earlier
+// version used line-height: 1.6 plus a 1em bottom margin, which was neither
+// real double-spacing nor the no-extra-gap convention — fixed.)
+const HANGING_INDENT_STYLE = "margin:0;padding-left:0.5in;text-indent:-0.5in;line-height:2;";
 
 export function buildBibliographyHtml(completedSources) {
   const items = completedSources

@@ -16,6 +16,34 @@ function readFileAsDataUrl(file) {
   });
 }
 
+/** Finds the best image URL in a dragged <img> (or <picture><source>) fragment.
+ *  Modern sites lazy-load images behind data-src/data-lazy-src and only
+ *  populate the real src later, or skip src entirely in favor of srcset — so
+ *  checking src alone misses a lot of real-world markup. */
+function extractImageUrlFromHtml(html) {
+  const imgMatch = html.match(/<img\b[^>]*>/i);
+  const sourceMatch = html.match(/<source\b[^>]*>/i);
+  const tag = imgMatch ? imgMatch[0] : sourceMatch ? sourceMatch[0] : null;
+  if (!tag) return null;
+
+  const attr = (name) => {
+    const m = tag.match(new RegExp(`${name}\\s*=\\s*["']([^"']+)["']`, "i"));
+    return m ? m[1].trim() : null;
+  };
+
+  const direct = attr("src") || attr("data-src") || attr("data-lazy-src") || attr("data-original");
+  if (direct) return direct;
+
+  const srcset = attr("srcset") || attr("data-srcset");
+  if (srcset) {
+    // "url1 1x, url2 2x" or "url1 480w, url2 800w" — take the first candidate URL.
+    const first = srcset.split(",")[0].trim().split(/\s+/)[0];
+    if (first) return first;
+  }
+
+  return null;
+}
+
 /**
  * Reads whatever the browser actually exposed on a drop event and turns it
  * into one or more citation candidates. Different browsers/sources expose
@@ -64,14 +92,24 @@ export async function extractDragCandidates(dataTransfer) {
 
   let htmlImageUrl = null;
   if (types.includes("text/html")) {
-    const html = dataTransfer.getData("text/html");
-    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-    if (match) htmlImageUrl = match[1];
+    htmlImageUrl = extractImageUrlFromHtml(dataTransfer.getData("text/html"));
   }
 
   if (!urls.length && types.includes("text/plain")) {
     const plain = dataTransfer.getData("text/plain").trim();
     if (isValidHttpUrl(plain)) urls = [plain];
+  }
+
+  // Multi-line uri-list drags (some browsers give both the page URL and the
+  // image URL as separate lines when an <img> is dragged) — split them into
+  // "the image" and "the page it's on" rather than only ever looking at the
+  // first line.
+  if (urls.length > 1) {
+    const imageLike = urls.find((u) => looksLikeImageUrl(u));
+    const pageLike = urls.find((u) => !looksLikeImageUrl(u));
+    if (imageLike && pageLike) {
+      return [{ type: "image", url: imageLike, pageUrl: pageLike, titleHint, missingInfoNote: null }];
+    }
   }
 
   // An <img> in the dragged HTML fragment is a strong signal the user meant

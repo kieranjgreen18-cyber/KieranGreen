@@ -47,6 +47,19 @@ function getFieldDebouncer(key) {
   return fieldDebouncers.get(key);
 }
 
+// Guards against out-of-order async results: if the user clicks Retry twice
+// (or Retry then an AI lookup finishes late), only the most recently started
+// operation for a given key is allowed to write its result into state.
+const activeOps = new Map(); // key -> token
+function beginOp(key) {
+  const token = (activeOps.get(key) || 0) + 1;
+  activeOps.set(key, token);
+  return token;
+}
+function isCurrentOp(key, token) {
+  return activeOps.get(key) === token;
+}
+
 /* --------------------------------------------------------------------- *
  *  Rendering
  * --------------------------------------------------------------------- */
@@ -121,10 +134,15 @@ async function processSource(id) {
   const source = store.getState().sources.find((s) => s.id === id);
   if (!source) return;
 
+  const opKey = `process:${id}`;
+  const token = beginOp(opKey);
+  const stillCurrent = () => isCurrentOp(opKey, token);
+
   const isLocalFileOnly = Boolean(source.rawInput && source.rawInput.file) && !source.fields.imageUrl;
   if (isLocalFileOnly) {
     store.updateSource(id, { status: "analyzing", errorMessage: null });
     await tick(150);
+    if (!stillCurrent()) return;
     finalizeCitation(id);
     return;
   }
@@ -141,6 +159,7 @@ async function processSource(id) {
 
   store.updateSource(id, { status: "fetching", errorMessage: null });
   const result = await fetchMetadata(url, source.type, source.rawInput && source.rawInput.pageUrl);
+  if (!stillCurrent()) return; // a newer retry (or removal) superseded this one — drop the result
 
   if (!result.ok) {
     store.updateSource(id, { status: "error", errorMessage: humanizeFetchError(result) });
@@ -149,9 +168,11 @@ async function processSource(id) {
 
   store.updateSource(id, { status: "analyzing" });
   await tick(150);
+  if (!stillCurrent()) return;
 
   // Never let extracted metadata clobber a value the person already typed in themselves.
   const current = store.getState().sources.find((s) => s.id === id);
+  if (!current) return;
   const incoming = { ...result.fields };
   Object.keys(incoming).forEach((key) => {
     if (current.fieldSource[key] === "user") delete incoming[key];
@@ -161,6 +182,7 @@ async function processSource(id) {
 
   store.updateSource(id, { status: "generating" });
   await tick(120);
+  if (!stillCurrent()) return;
   finalizeCitation(id);
 }
 
@@ -184,7 +206,7 @@ function dedupeKeyFor(candidate) {
 }
 
 function createSourceFromCandidate(candidate, dedupeKey) {
-  const initialFields = {};
+  const initialFields = { dateAccessed: new Date().toISOString() };
   if (candidate.type === "image") {
     if (candidate.url) initialFields.imageUrl = candidate.url;
     if (candidate.titleHint) initialFields.imageTitle = candidate.titleHint;
@@ -263,6 +285,9 @@ async function runAiLookup(id, field) {
   const source = store.getState().sources.find((s) => s.id === id);
   if (!source) return;
 
+  const opKey = `ai:${id}:${field}`;
+  const token = beginOp(opKey);
+
   store.updateSource(id, { aiSuggestions: { ...source.aiSuggestions, [field]: { status: "loading" } } });
 
   const url = source.fields.imageUrl || source.fields.url;
@@ -273,6 +298,8 @@ async function runAiLookup(id, field) {
     knownFields: source.fields,
     missingField: field,
   });
+
+  if (!isCurrentOp(opKey, token)) return; // a newer lookup for this same field superseded this one
 
   const fresh = store.getState().sources.find((s) => s.id === id);
   if (!fresh) return;

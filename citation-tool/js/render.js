@@ -140,7 +140,7 @@ function renderCard(source, { aiAvailable, expanded }) {
   const iconSrc =
     source.type === "image"
       ? url || (source.rawInput.fileDataUrl && source.rawInput.fileDataUrl.startsWith("data:image/") ? source.rawInput.fileDataUrl : "")
-      : faviconUrlFor(url) || "";
+      : (isValidHttpUrl(source.fields.favicon) && source.fields.favicon) || faviconUrlFor(url) || "";
 
   const fields = fieldsFor(source);
   const isProcessing = !["complete", "error"].includes(source.status);
