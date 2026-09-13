@@ -5,12 +5,16 @@ import {
   ensureTerminalPeriod,
   escapeHtml,
   stripLeadingArticle,
+  lastNameFromFullName,
 } from "./helpers.js";
 
 export function format(u) {
   const author = u.authorName ? formatAuthorListMLA(u.authorName) : null;
   const title = u.title ? toTitleCaseMLA(u.title) : null;
   const date = formatDateMLA(u.date);
+  // MLA convention: an access date only earns a place when there's no publish
+  // date to cite instead — never both, and never as a substitute for one.
+  const accessedDate = !date && u.dateAccessed ? formatDateMLA(u.dateAccessed) : null;
   const showPublisher =
     u.publisher && (!u.siteName || u.publisher.toLowerCase() !== u.siteName.toLowerCase());
 
@@ -49,15 +53,22 @@ export function format(u) {
     sentences.push({ html, plain });
   }
 
+  if (accessedDate) {
+    sentences.push({
+      html: `Accessed ${escapeHtml(accessedDate)}.`,
+      plain: `Accessed ${accessedDate}.`,
+    });
+  }
+
   const html = sentences.map((s) => s.html).join(" ").trim();
   const plain = sentences.map((s) => s.plain).join(" ").trim();
 
   const sortKey = (
-    author
-      ? author.split(",")[0]
-      : title
-      ? stripLeadingArticle(title)
-      : u.siteName || u.url || ""
+    u.authorLastName || (u.authorName && lastNameFromFullName(u.authorName)) || (
+      title
+        ? stripLeadingArticle(title)
+        : u.siteName || u.url || ""
+    )
   ).toLowerCase();
 
   return {

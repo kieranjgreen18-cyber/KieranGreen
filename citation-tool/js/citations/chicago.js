@@ -5,6 +5,7 @@ import {
   ensureTerminalPeriod,
   escapeHtml,
   stripLeadingArticle,
+  lastNameFromFullName,
 } from "./helpers.js";
 
 // Bibliography-entry form (not the shorter note form) of Chicago 17th ed.
@@ -13,6 +14,7 @@ import {
 export function format(u) {
   const author = u.authorName ? formatAuthorListChicago(u.authorName) : null;
   const date = formatDateChicago(u.date);
+  const accessedDate = !date && u.dateAccessed ? formatDateChicago(u.dateAccessed) : null;
   const title = u.title ? toTitleCaseMLA(u.title) : null;
   const siteOrPublisher = u.siteName || u.publisher || null;
 
@@ -36,6 +38,11 @@ export function format(u) {
 
   if (date) {
     sentences.push({ html: ensureTerminalPeriod(escapeHtml(date)), plain: ensureTerminalPeriod(date) });
+  } else if (accessedDate) {
+    sentences.push({
+      html: `Accessed ${escapeHtml(accessedDate)}.`,
+      plain: `Accessed ${accessedDate}.`,
+    });
   }
 
   if (u.url) {
@@ -47,11 +54,11 @@ export function format(u) {
   const plain = sentences.map((s) => s.plain).join(" ").trim();
 
   const sortKey = (
-    author
-      ? author.split(",")[0]
-      : title
-      ? stripLeadingArticle(title)
-      : siteOrPublisher || u.url || ""
+    u.authorLastName || (u.authorName && lastNameFromFullName(u.authorName)) || (
+      title
+        ? stripLeadingArticle(title)
+        : siteOrPublisher || u.url || ""
+    )
   ).toLowerCase();
 
   return {

@@ -5,6 +5,7 @@ import {
   ensureTerminalPeriod,
   escapeHtml,
   stripLeadingArticle,
+  lastNameFromFullName,
 } from "./helpers.js";
 
 export function format(u) {
@@ -12,6 +13,11 @@ export function format(u) {
   const dateSentence = ensureTerminalPeriod(formatDateAPA(u.date));
   const rawTitle = u.title ? toSentenceCaseAPA(u.title) : null;
   const titleText = rawTitle ? (u.isImage ? `${rawTitle} [Image]` : rawTitle) : null;
+
+  // APA omits the site/publisher name when it's just the author repeated
+  // (e.g. an org's own report on its own site) rather than printing it twice.
+  const siteIsAuthor =
+    u.authorName && u.siteName && u.authorName.trim().toLowerCase() === u.siteName.trim().toLowerCase();
 
   const sentences = [];
   if (author) {
@@ -24,7 +30,7 @@ export function format(u) {
   } else {
     sentences.push(dateSentence);
   }
-  if (u.siteName) sentences.push(ensureTerminalPeriod(u.siteName));
+  if (u.siteName && !siteIsAuthor) sentences.push(ensureTerminalPeriod(u.siteName));
 
   let plain = sentences.filter(Boolean).join(" ");
   let html = sentences.filter(Boolean).map(escapeHtml).join(" ");
@@ -35,11 +41,11 @@ export function format(u) {
   }
 
   const sortKey = (
-    author
-      ? author.split(",")[0]
-      : rawTitle
-      ? stripLeadingArticle(rawTitle)
-      : u.siteName || u.url || ""
+    u.authorLastName || (u.authorName && lastNameFromFullName(u.authorName)) || (
+      rawTitle
+        ? stripLeadingArticle(rawTitle)
+        : u.siteName || u.url || ""
+    )
   ).toLowerCase();
 
   return {

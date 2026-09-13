@@ -22,20 +22,24 @@ function unify(source) {
     return {
       isImage: true,
       authorName: f.creator || null,
+      authorLastName: null, // worker doesn't derive this for creators; style modules fall back to parsing authorName
       title: f.imageTitle || f.title || null,
       siteName: f.siteName || null,
       publisher: f.publisher || null,
       date: f.datePublished || null,
+      dateAccessed: f.dateAccessed || null,
       url: f.imageUrl || f.url || null,
     };
   }
   return {
     isImage: false,
     authorName: f.author || null,
+    authorLastName: f.authorLastName || null, // extracted server-side when available — more reliable than re-parsing the formatted name
     title: f.title || null,
     siteName: f.siteName || null,
     publisher: f.publisher || null,
     date: f.datePublished || null,
+    dateAccessed: f.dateAccessed || null,
     url: f.url || null,
   };
 }

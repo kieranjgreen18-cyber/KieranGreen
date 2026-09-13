@@ -16,8 +16,24 @@ const FULL_MONTHS = [
 const MLA_LOWERCASE_WORDS = new Set([
   "a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet",
   "as", "at", "by", "in", "into", "of", "off", "on", "onto", "out",
-  "over", "per", "to", "up", "via", "with", "from",
+  "over", "per", "to", "up", "via", "with", "from", "vs", "vs.", "versus",
 ]);
+
+/**
+ * True if a word has an uppercase letter anywhere after its first character —
+ * "iPhone", "eBay", "macOS", "YouTube". Treated everywhere below as a signal
+ * that the source's casing was intentional and should be left completely
+ * alone, rather than blindly re-capitalized. This is what was producing
+ * "eBay" -> "EBay" and "iPhone" -> "IPhone" before: charAt(0).toUpperCase()
+ * ran unconditionally on every word.
+ */
+function hasInteriorCapital(word) {
+  return /[A-Z]/.test(word.slice(1));
+}
+
+function isAcronym(word) {
+  return /^[A-Z0-9]{2,}$/.test(word);
+}
 
 /** Best-effort parse of a date string into { year, month, day } (month 1-12). */
 export function parseDateParts(input) {
@@ -109,6 +125,15 @@ export function formatNameAPA(fullName) {
   return `${last}, ${initials}`;
 }
 
+/** "Jane Q. Smith" -> "Smith" (used for sorting when authorLastName isn't already known).
+ *  Operates on the *first* author if the string names more than one, since
+ *  bibliographies sort by the first-listed author's surname. */
+export function lastNameFromFullName(fullName) {
+  if (!fullName) return null;
+  const [first] = splitAuthors(fullName);
+  return first ? splitNameParts(first).last || null : null;
+}
+
 export function formatAuthorListMLA(nameString) {
   const authors = splitAuthors(nameString);
   if (!authors.length) return null;
@@ -142,7 +167,12 @@ export function formatAuthorListChicago(nameString) {
   return `${formatNameLastFirst(authors[0])} et al.`;
 }
 
-/** Title Case for MLA: capitalize principal words, lowercase minor ones (except first/last/after colon). */
+/**
+ * Title Case for MLA: capitalize principal words, lowercase minor ones
+ * (except first/last/after colon) — but never touch a word that already has
+ * its own internal capitalization (brand names, acronyms), since that's
+ * reliably intentional and reconstructing it is how you get "eBay" -> "EBay".
+ */
 export function toTitleCaseMLA(title) {
   if (!title) return title;
   const words = title.trim().split(/\s+/);
@@ -150,27 +180,44 @@ export function toTitleCaseMLA(title) {
     .map((word, i) => {
       const isBoundary = i === 0 || i === words.length - 1 || words[i - 1].endsWith(":");
       const bare = word.replace(/[.,!?;:]+$/, "");
+      if (hasInteriorCapital(bare) || isAcronym(bare)) return word; // e.g. iPhone, eBay, NASA — leave alone
       if (!isBoundary && MLA_LOWERCASE_WORDS.has(bare.toLowerCase())) {
         return word.toLowerCase();
       }
-      if (/^[A-Z0-9]{2,}$/.test(bare)) return word; // keep acronyms as-is
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
     .join(" ");
 }
 
-/** Sentence case for APA: only first word, first word after a colon, and existing acronyms stay capitalized. */
+/**
+ * Sentence case for APA: force a capital on the first word of the title (and
+ * of any subtitle after a colon), lowercase the closed set of minor words
+ * MLA also lowercases, and otherwise leave a word's casing exactly as
+ * extracted rather than guessing.
+ *
+ * That last part is a deliberate, documented tradeoff: correctly telling a
+ * proper noun ("France", "the Renaissance") apart from an ordinary
+ * capitalized word requires either a proper-noun dictionary or an NLP pass,
+ * which this tool doesn't have. Forcing every non-first word to lowercase
+ * (the previous behavior) silently destroyed real proper nouns and brand
+ * names, which is a worse failure than occasionally leaving an ordinary word
+ * capitalized when strict APA style would lowercase it. If you want fully
+ * correct sentence case, use the per-field edit panel — this only saves you
+ * the parts that are unambiguous.
+ */
 export function toSentenceCaseAPA(title) {
   if (!title) return title;
   const parts = title.split(":");
-  const rendered = parts.map((part, partIndex) => {
+  const rendered = parts.map((part) => {
     const words = part.trim().split(/\s+/);
     return words
       .map((word, i) => {
         const bare = word.replace(/[.,!?;]+$/, "");
-        if (/^[A-Z0-9]{2,}$/.test(bare)) return word; // acronym, leave alone
-        if (i === 0) return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-        return word.toLowerCase();
+        if (hasInteriorCapital(bare)) return word; // e.g. iPhone, eBay — leave alone
+        if (isAcronym(bare)) return word; // acronym, leave alone
+        if (i === 0) return word.charAt(0).toUpperCase() + word.slice(1);
+        if (MLA_LOWERCASE_WORDS.has(bare.toLowerCase())) return word.toLowerCase();
+        return word; // an ordinary content word — preserve rather than guess proper-noun status
       })
       .join(" ");
   });
