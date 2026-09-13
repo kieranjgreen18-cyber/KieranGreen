@@ -1,0 +1,17 @@
+name = "citation-tool-api"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Set this to the exact origin your site is served from once you know it, e.g.
+# "https://yourname.github.io" or "https://citations.yourdomain.com".
+# Using "*" is fine for local testing but should be tightened before going live.
+[vars]
+ALLOWED_ORIGIN = "*"
+
+# Optional: override the model used for AI-assisted metadata recovery.
+# ANTHROPIC_MODEL = "claude-sonnet-5"
+
+# After deploying, add the secret with:
+#   wrangler secret put ANTHROPIC_API_KEY
+# If you skip this, the AI-assisted fallback simply stays disabled — everything
+# else works normally.
