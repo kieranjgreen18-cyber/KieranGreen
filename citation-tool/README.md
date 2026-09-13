@@ -139,18 +139,61 @@ editable per-field panel for anything unusual (corporate authors, translated
 works, six-author papers, etc.) rather than trying to silently guess its way
 through every case. A few specific calls worth knowing about:
 
-- **APA title italics**: the tool doesn't italicize webpage titles (matching
-  APA's own examples for pages that are part of a larger site). If you're
-  citing something that should stand alone as its own work, you may want to
-  italicize manually after pasting.
-- **Author name splitting** assumes "and"/"&" separates multiple authors, and
-  otherwise treats a name as a single person — so "Smith, John" (already
-  inverted) won't be misread as two people, but also won't automatically
-  detect a comma-separated author *list* without "and".
+- **Author names are a single string, not structured data.** `"Jane Smith and
+  John Doe"` splits correctly on "and"/"&"; `"Smith, John, and Jane Doe"`
+  (comma-separated list without "and") doesn't. The durable fix is storing
+  authors as `[{given, family}]` from the point they're extracted, rather
+  than a formatted string every style module re-parses — that's a data-model
+  change worth doing before adding more style rules on top of the current
+  string-based approach, not a quick patch.
+- **APA sentence-case title casing preserves ordinary capitalized words**
+  (e.g. "France" in a title stays capitalized) rather than lowercasing them,
+  because telling a proper noun apart from an ordinary capitalized word needs
+  either a proper-noun dictionary or an NLP pass this tool doesn't have. The
+  previous approach — force-lowercase everything but the first word — is
+  worse: it also mangles brand names and acronyms embedded in titles (this
+  was a real bug: `eBay` became `EBay`, `iPhone` became `IPhone`). Interior-
+  capitalized words (`iPhone`, `eBay`, `macOS`) and all-caps acronyms are
+  always left untouched in both MLA title case and APA sentence case now.
+- **Chicago site/publication names aren't italicized.** CMOS actually treats
+  this contextually — a periodical name (*New York Times*) gets italics, a
+  plain organization/website name (Google) doesn't — and telling those apart
+  reliably needs a curated list of known publications, not a heuristic. The
+  tool defaults to roman text, which is correct for the common "generic
+  site/blog" case and wrong for "dragged from a major newspaper," which
+  you'll need to italicize by hand.
 - **AI-assisted fields** are only ever a suggestion: they're never written
   into a citation until you explicitly accept them, and they're always
   labeled as AI-suggested afterward via the field's provenance tag so you can
-  find and double-check them later.
+  find and double-check them later. The AI lookup now uses Claude's tool-use
+  for structured output (the model calls a schema-typed `record_citation_field`
+  tool rather than free text getting regex-parsed), and the prompt explicitly
+  marks the page's own metadata as untrusted data, not instructions.
+
+## Security notes
+
+- **SSRF**: the metadata endpoint fetches arbitrary user-supplied URLs by
+  design, so it blocks literal-IP requests to loopback/private/link-local
+  addresses and the cloud metadata endpoint, follows redirects manually
+  (validating every hop, not just the first URL), and caps response size and
+  redirect count. This isn't exhaustive DNS-rebinding protection — it's a
+  reasonable floor, not a substitute for treating this as a semi-trusted proxy.
+- **CORS fails closed.** `ALLOWED_ORIGIN` is required — an unset value gets
+  every request refused rather than silently behaving like `"*"`. It accepts
+  a comma-separated list if you need more than one origin live at once.
+- **Rate limiting isn't implemented in the Worker itself.** An in-memory
+  counter in a Cloudflare Worker is mostly theater — isolates are ephemeral
+  and don't reliably share state — so rather than ship something that looks
+  like protection but isn't, add a [Cloudflare Rate Limiting
+  rule](https://developers.cloudflare.com/waf/rate-limiting-rules/) on the
+  Worker's route from the dashboard; it needs no code and is actually
+  enforced. This matters most for `/api/ai-suggest`, since each call spends
+  API credits.
+- **Race conditions**: clicking Retry twice, or retrying while an AI lookup
+  for the same field is still in flight, used to let a slower, older request
+  overwrite a newer one's result. Both now use a per-operation token so only
+  the most recently started request for a given source/field is allowed to
+  write its result into state.
 
 ## Privacy note for the AI-assisted fallback
 
