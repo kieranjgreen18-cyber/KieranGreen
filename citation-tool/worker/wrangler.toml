@@ -2,9 +2,11 @@ name = "citation-tool-api"
 main = "worker.js"
 compatibility_date = "2024-11-01"
 
-# Set this to the exact origin your site is served from once you know it, e.g.
-# "https://yourname.github.io" or "https://citations.yourdomain.com".
-# Using "*" is fine for local testing but should be tightened before going live.
+# Required. The Worker refuses every request until this is set — there's no
+# implicit "*" fallback in the code. Accepts a single origin, a comma-separated
+# list (handy for having both a *.github.io URL and a custom domain live at
+# once), or the literal string "*" if you explicitly want to allow any site
+# (fine for local testing, not recommended once this is live).
 [vars]
 ALLOWED_ORIGIN = "*"
 
@@ -15,3 +17,9 @@ ALLOWED_ORIGIN = "*"
 #   wrangler secret put ANTHROPIC_API_KEY
 # If you skip this, the AI-assisted fallback simply stays disabled — everything
 # else works normally.
+
+# Rate limiting: this Worker doesn't implement its own (an in-memory counter
+# in a Worker is unreliable — isolates are per-request and don't share state
+# reliably). Instead, add a Cloudflare Rate Limiting rule on this route from
+# the dashboard (Security > WAF > Rate limiting rules) — it needs no code and
+# is actually enforced globally, unlike a hand-rolled in-Worker counter.
