@@ -46,14 +46,21 @@ function extractImageUrlFromHtml(html) {
 
 /**
  * Reads whatever the browser actually exposed on a drop event and turns it
- * into one or more citation candidates. Different browsers/sources expose
- * different DataTransfer types, so this checks several in priority order
- * rather than assuming one shape:
- *   1. Real files (image dragged from the user's file system)
- *   2. text/uri-list (tabs, links — can contain more than one URL)
+ * into one or more citation candidates. Different sources expose different
+ * DataTransfer types, so this checks several in priority order rather than
+ * assuming one shape:
+ *   1. Real files (an image dragged in from the user's file system)
+ *   2. text/uri-list (links dragged off a page — can contain more than one URL)
  *   3. text/x-moz-url (Firefox's "URL\nTitle" format)
  *   4. text/html (used to spot an <img src> when an image element itself was dragged)
  *   5. text/plain, as a last resort, if it happens to be a bare URL
+ *
+ * This is deliberately generic rather than built around any one browser
+ * chrome element: it reads whatever native drag data is present, which
+ * covers links and images reliably. Dragging an actual browser tab strip
+ * item is not something a webpage can rely on across browsers, so this
+ * doesn't attempt to special-case it — a dragged link or a copied tab URL
+ * both arrive the same way, through text/uri-list.
  */
 export async function extractDragCandidates(dataTransfer) {
   if (dataTransfer.files && dataTransfer.files.length) {
@@ -146,8 +153,7 @@ export async function extractDragCandidates(dataTransfer) {
       url: null,
       pageUrl: null,
       titleHint: null,
-      missingInfoNote:
-        "This browser or item didn't expose a URL, image, or file through drag-and-drop. Use the manual link field below instead.",
+      missingInfoNote: "That didn't expose a link, image, or file. Try the paste field below instead.",
     },
   ];
 }

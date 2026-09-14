@@ -1,6 +1,7 @@
 import { makeId } from "./utils.js";
+import { parseAuthors } from "./citations/helpers.js";
 
-const STORAGE_KEY = "citation-tool:v1";
+const STORAGE_KEY = "citer:v2";
 
 const DEFAULT_STATE = {
   style: "mla",
@@ -10,15 +11,23 @@ const DEFAULT_STATE = {
 /**
  * Source shape:
  * {
- *   id, type: 'webpage'|'image',
+ *   id, type: 'webpage'|'image'|'ai',
  *   status: 'detecting'|'fetching'|'analyzing'|'generating'|'complete'|'error',
  *   errorMessage,
  *   dedupeKey,
  *   rawInput: { url, pageUrl, fileName, fileDataUrl },
- *   fields: { title, author, authorLastName, siteName, publisher, datePublished,
- *             dateModified, description, url, favicon, imageUrl, imageTitle, creator },
+ *   fields: {
+ *     // webpage
+ *     title, authors: [{given,family,literal}], authorsRaw, siteName, publisher,
+ *     datePublished, dateModified, description, url, favicon,
+ *     // image (in addition to the above, aimed at the image rather than a page)
+ *     imageUrl, imageTitle,
+ *     // ai
+ *     aiProvider, aiModel, aiConversationTitle, aiPrompt, responseExcerpt,
+ *   },
  *   fieldSource: { <fieldName>: 'extracted'|'ai'|'user'|'missing' },
  *   aiSuggestions: { <fieldName>: { value, evidenceUrl, confidence, note, status } },
+ *   resolution: { method, status, note } | null,  // how the backend resolved this source
  *   citation: { html, plaintext, sortKey, isIncomplete } | null,
  * }
  */
@@ -57,6 +66,7 @@ export function addSource(partial) {
     fieldSource: {},
     aiSuggestions: {},
     citation: null,
+    resolution: null,
     addedAt: Date.now(),
     ...partial,
   };
@@ -94,11 +104,6 @@ export function removeSource(id) {
   notify();
 }
 
-export function reorderAll(sortedSources) {
-  state = { ...state, sources: sortedSources };
-  notify();
-}
-
 export function clearAll() {
   state = { ...state, sources: [] };
   notify();
@@ -108,16 +113,44 @@ export function findByDedupeKey(dedupeKey) {
   return state.sources.find((s) => s.dedupeKey === dedupeKey);
 }
 
+/**
+ * Counts for the review-queue summary strip. "Ready" means a citation
+ * rendered and nothing about it is flagged incomplete. "Needs review" is
+ * deliberately concrete — complete-but-missing-a-field, or sitting on an
+ * unreviewed AI suggestion — rather than a decorative confidence score.
+ */
+export function summarize(sources) {
+  let ready = 0;
+  let review = 0;
+  let failed = 0;
+  let processing = 0;
+  for (const s of sources) {
+    if (s.status === "error") {
+      failed++;
+    } else if (s.status !== "complete") {
+      processing++;
+    } else if ((s.citation && s.citation.isIncomplete) || hasPendingAiSuggestion(s)) {
+      review++;
+    } else {
+      ready++;
+    }
+  }
+  return { ready, review, failed, processing, total: sources.length };
+}
+
+function hasPendingAiSuggestion(source) {
+  return Object.values(source.aiSuggestions || {}).some((s) => s && s.status === "pending");
+}
+
 function persist() {
   try {
     // Only persist underlying metadata, never the transient "processing" UI
     // states — a reload should never look like it's still in flight. Also
     // strips rawInput.file/fileDataUrl: a File object isn't serializable at
-    // all, and a base64 image data URL can easily blow a browser's ~5-10MB
-    // localStorage quota on its own, which would silently fail (see catch
-    // below) and make it look like the whole session didn't save. Local-file
-    // thumbnails are a per-session nicety, not something worth losing the
-    // rest of the list over.
+    // all, and a base64 image data URL can easily blow localStorage's quota
+    // on its own. Local-file image bytes live in IndexedDB (see db.js),
+    // keyed by source id, and get reattached after load — this is metadata
+    // only.
     const safeSources = state.sources.map((s) => ({
       ...s,
       status: s.status === "complete" || s.status === "error" ? s.status : "error",
@@ -125,7 +158,11 @@ function persist() {
         s.status === "complete" || s.status === "error"
           ? s.errorMessage
           : "Processing was interrupted. Retry to continue.",
-      rawInput: { ...s.rawInput, file: null, fileDataUrl: null },
+      // liveImageUrl is a blob:/data: URL scoped to this browser session —
+      // persisting it would leave a dead reference after reload, since
+      // object URLs don't survive a page load. It gets regenerated from
+      // IndexedDB (for local files) on the next startup instead.
+      rawInput: { ...s.rawInput, file: null, fileDataUrl: null, liveImageUrl: null },
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ style: state.style, sources: safeSources }));
   } catch {
@@ -136,7 +173,7 @@ function persist() {
 }
 
 const VALID_STATUSES = new Set(["detecting", "fetching", "analyzing", "generating", "complete", "error"]);
-const VALID_TYPES = new Set(["webpage", "image"]);
+const VALID_TYPES = new Set(["webpage", "image", "ai"]);
 
 /** Fills in any missing sub-objects on a persisted source with safe defaults
  *  and normalizes anything that doesn't look like it came from this app, so
@@ -158,17 +195,34 @@ function sanitizeSource(raw) {
     fieldSource: raw.fieldSource && typeof raw.fieldSource === "object" ? raw.fieldSource : {},
     aiSuggestions: raw.aiSuggestions && typeof raw.aiSuggestions === "object" ? raw.aiSuggestions : {},
     citation: raw.citation && typeof raw.citation === "object" ? raw.citation : null,
+    resolution: raw.resolution && typeof raw.resolution === "object" ? raw.resolution : null,
     addedAt: typeof raw.addedAt === "number" ? raw.addedAt : Date.now(),
   };
 }
 
+/** One-time migration from the old (`citation-tool:v1`) schema, where author
+ *  was a single string field. Reads the old key if the new one is empty, so
+ *  a returning user's session isn't silently dropped by the storage-key bump
+ *  that came with switching authors over to structured records. */
+function migrateLegacySources(sources) {
+  return sources.map((s) => {
+    if (s.fields && typeof s.fields.author === "string" && !s.fields.authors) {
+      const authors = parseAuthors(s.fields.author);
+      const { author, ...restFields } = s.fields;
+      return { ...s, fields: { ...restFields, authors, authorsRaw: author } };
+    }
+    return s;
+  });
+}
+
 function load() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("citation-tool:v1");
     if (!raw) return { ...DEFAULT_STATE };
     const parsed = JSON.parse(raw);
     const style = ["mla", "apa", "chicago"].includes(parsed.style) ? parsed.style : DEFAULT_STATE.style;
-    const sources = Array.isArray(parsed.sources) ? parsed.sources.map(sanitizeSource).filter(Boolean) : [];
+    let sources = Array.isArray(parsed.sources) ? parsed.sources.map(sanitizeSource).filter(Boolean) : [];
+    sources = migrateLegacySources(sources);
     return { style, sources };
   } catch {
     return { ...DEFAULT_STATE };

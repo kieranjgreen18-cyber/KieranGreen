@@ -2,8 +2,9 @@ import { API_BASE } from "./config.js";
 
 /**
  * Asks the Worker to fetch and parse a source's metadata.
- * @param {string} url - the URL to cite (page URL, or direct image URL).
- * @param {'webpage'|'image'} type
+ * @param {string} url - the URL to cite (page URL, direct image URL, or a
+ *   shared AI-conversation URL).
+ * @param {'webpage'|'image'|'ai'} type
  * @param {string|null} pageUrl - for images, the page the image was found on, if known.
  */
 export async function fetchMetadata(url, type, pageUrl) {
