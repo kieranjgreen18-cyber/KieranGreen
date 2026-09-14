@@ -49,6 +49,20 @@
 }
 
 :root {
+  /* Functional UI chrome — buttons, controls, status text, metadata labels.
+     Precise and technical, matching DIN's original signage/instrument-panel
+     character. */
   --font-body: "DIN", Arial, Helvetica, sans-serif;
   --font-label: "DIN Condensed", "DIN", Arial, Helvetica, sans-serif;
+
+  /* Citation CONTENT — the wordmark, the dropzone headline, and every
+     rendered citation/bibliography entry. This is deliberately NOT DIN:
+     the app's chrome should feel like an instrument, but the bibliography
+     it produces should read like a bibliography. No extra font file is
+     loaded for this — it's a considered system-serif stack (the same
+     family of faces used in a lot of print/editorial work), so the
+     self-contained-deployment story doesn't change; there's just a second
+     typeface already sitting on most systems that earns its place instead
+     of defaulting to the UI sans everywhere. */
+  --font-editorial: Iowan Old Style, "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
 }

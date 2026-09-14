@@ -1,35 +1,40 @@
 /*
-  Design direction — "reference desk instrument"
-  DIN is a signage/technical grotesque, so the app leans into precision and
-  measurement rather than a warm editorial or SaaS-dashboard look: a cool
-  paper background, one saturated "index" blue used only for interactive and
-  verified states, and small condensed-style meta labels that read like
-  annotations on a technical drawing rather than marketing chrome.
+  Design direction — "the scholarly index"
+  Citer's job is to turn scattered research into something you'd trust
+  enough to submit, so the palette borrows from the physical objects that
+  already carry that trust: library card catalogs, ledger paper, archival
+  ink. One deep "verified" green (not the generic SaaS/AI blue) stands in
+  for confirmed information; everything else stays close to ink-on-paper.
+  DIN carries the instrument-panel chrome (buttons, labels, status); a
+  serif carries anything that IS citation content, so the two typefaces
+  mark a real distinction — "the app talking to you" vs. "the bibliography
+  itself" — rather than being decoration.
 */
 
 :root {
   /* --- Color --- */
-  --paper: #f5f6f3;
-  --paper-raised: #ffffff;
-  --ink: #14181d;
-  --ink-soft: #4b535c;
-  --line: #d8dbd6;
-  --line-strong: #b7bcb6;
+  --paper: #efeee5;
+  --paper-raised: #fbfaf5;
+  --ink: #1b1a15;
+  --ink-soft: #5c584a;
+  --line: #dcd8c8;
+  --line-strong: #b7b19b;
 
-  --index-blue: #1f4fd8;
-  --index-blue-dim: #e7edfc;
-  --index-blue-ink: #0f2f8a;
+  /* the one saturated color in the system — "confirmed/trustworthy" */
+  --accent: #275c47;
+  --accent-dim: #dfe8e0;
+  --accent-ink: #163a2c;
 
-  --status-verified: #2f7d52;
-  --status-verified-bg: #e6f2ea;
-  --status-ai: #a9720a;
-  --status-ai-bg: #faf0dd;
-  --status-user: #3a5cc9;
-  --status-user-bg: #eaeefb;
-  --status-missing: #8a8f88;
-  --status-missing-bg: #eceeea;
-  --status-error: #b23a2e;
-  --status-error-bg: #fbe9e6;
+  --status-verified: #275c47;
+  --status-verified-bg: #e1ebe3;
+  --status-ai: #9a6420;
+  --status-ai-bg: #f5ecd8;
+  --status-user: #3a4f82;
+  --status-user-bg: #e6eaf3;
+  --status-missing: #8a8570;
+  --status-missing-bg: #eae7d9;
+  --status-error: #a13c2c;
+  --status-error-bg: #f5e5df;
 
   /* --- Spacing scale (4px base) --- */
   --sp-1: 4px;
@@ -41,19 +46,20 @@
   --sp-7: 48px;
   --sp-8: 64px;
 
-  /* --- Radius --- */
-  --radius-sm: 3px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
+  /* --- Radius — deliberately small throughout; this is a precision
+     instrument, not a rounded consumer app --- */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
 
   /* --- Type scale --- */
   --fs-label: 11px;
   --fs-small: 13px;
   --fs-body: 15px;
   --fs-md: 17px;
-  --fs-lg: 21px;
-  --fs-xl: 28px;
-  --fs-xxl: 38px;
+  --fs-lg: 22px;
+  --fs-xl: 30px;
+  --fs-xxl: 40px;
 
   --lh-tight: 1.2;
   --lh-normal: 1.5;
@@ -64,35 +70,35 @@
   --dur-fast: 120ms;
   --dur-med: 220ms;
 
-  --shadow-card: 0 1px 2px rgba(20, 24, 29, 0.06), 0 1px 1px rgba(20, 24, 29, 0.04);
-  --shadow-raised: 0 6px 20px rgba(20, 24, 29, 0.12);
+  --shadow-card: 0 1px 2px rgba(27, 26, 21, 0.07), 0 1px 1px rgba(27, 26, 21, 0.04);
+  --shadow-raised: 0 8px 24px rgba(27, 26, 21, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #16181a;
-    --paper-raised: #1e2124;
-    --ink: #eef0ee;
-    --ink-soft: #a7aeb4;
-    --line: #33373a;
-    --line-strong: #464b4f;
+    --paper: #171713;
+    --paper-raised: #201f1a;
+    --ink: #eeece2;
+    --ink-soft: #a8a394;
+    --line: #34332a;
+    --line-strong: #4a4839;
 
-    --index-blue: #6f96ff;
-    --index-blue-dim: #1b2540;
-    --index-blue-ink: #cddaff;
+    --accent: #6fb193;
+    --accent-dim: #1c2b24;
+    --accent-ink: #cfe8db;
 
-    --status-verified: #58c98a;
-    --status-verified-bg: #17301f;
-    --status-ai: #e0ad4f;
+    --status-verified: #6fb193;
+    --status-verified-bg: #1a2c22;
+    --status-ai: #d9a75a;
     --status-ai-bg: #332708;
-    --status-user: #8fa6ff;
-    --status-user-bg: #1c2440;
-    --status-missing: #7d8580;
-    --status-missing-bg: #24272a;
-    --status-error: #e2685a;
-    --status-error-bg: #3a1d19;
+    --status-user: #92a6e0;
+    --status-user-bg: #1e2338;
+    --status-missing: #837e6c;
+    --status-missing-bg: #26241d;
+    --status-error: #dd7d68;
+    --status-error-bg: #3a201a;
 
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-raised: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-raised: 0 10px 30px rgba(0, 0, 0, 0.55);
   }
 }
