@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Citer — cite multiple sources at once</title>
-<meta name="description" content="Drag in tabs, links, or images and get MLA, APA, or Chicago citations, automatically." />
+<title>Citer — cite a whole research session at once</title>
+<meta name="description" content="Drop or paste a batch of links, images, or AI conversations and get MLA, APA, or Chicago citations, automatically." />
 <link rel="stylesheet" href="css/tokens.css" />
 <link rel="stylesheet" href="css/fonts.css" />
 <link rel="stylesheet" href="css/main.css" />
@@ -23,17 +23,10 @@
 
   <main class="workspace">
 
-    <section class="dropzone" id="dropzone" aria-label="Drop a tab, link, or image to cite it">
+    <section class="dropzone" id="dropzone" aria-label="Drop a link, image, or file to cite it">
       <div class="dropzone__inner">
-        <div class="dropzone__ring" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v11" />
-            <path d="M7 10l5 5 5-5" />
-            <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
-          </svg>
-        </div>
-        <p class="dropzone__title">Drag a tab, link, or image here</p>
-        <p class="dropzone__hint">Pull it in from another window — a browser tab, a link, an image, or a file. Processing starts the moment it lands.</p>
+        <p class="dropzone__title">Drop or paste your sources</p>
+        <p class="dropzone__hint">Links, images, or a whole batch of URLs pasted at once — anywhere on this page, no need to click in first. Processing starts the moment they land.</p>
       </div>
     </section>
 
@@ -41,22 +34,24 @@
       <div class="segmented" id="type-toggle" role="tablist" aria-label="What you're citing">
         <button class="segmented__opt is-active" data-type="webpage" role="tab" aria-selected="true">Webpage</button>
         <button class="segmented__opt" data-type="image" role="tab" aria-selected="false">Image</button>
+        <button class="segmented__opt" data-type="ai" role="tab" aria-selected="false">AI</button>
       </div>
       <form class="manual-input" id="manual-form">
-        <label for="manual-url" class="visually-hidden">Paste a link to add it manually</label>
-        <input type="url" id="manual-url" name="url" placeholder="Or paste a link…" autocomplete="off" />
+        <label for="manual-url" class="visually-hidden">Paste a link, or add an AI source by hand</label>
+        <input type="text" id="manual-url" name="url" placeholder="Paste a link…" autocomplete="off" />
         <button type="submit" class="btn btn--primary">Add</button>
       </form>
-      <span class="spacer"></span>
-      <button class="btn btn--quiet btn--danger" id="clear-all">Clear all</button>
     </div>
+    <p class="toolbar__hint" id="manual-hint">Paste a link, or drop / bulk-paste several at once.</p>
+
+    <div class="summary-bar" id="summary-bar" hidden></div>
 
     <div id="duplicate-banners"></div>
 
     <div class="content-grid">
       <div class="citation-list" id="citation-list">
         <div class="empty-state" id="empty-state">
-          No sources yet. Drag something in above, or paste a link.
+          No sources yet. Drop a link or image above, or paste a batch of URLs anywhere on the page.
         </div>
       </div>
 
@@ -71,6 +66,7 @@
         <div class="bibliography-panel__body" id="bibliography-output"></div>
         <div class="bibliography-panel__footer">
           <button class="btn btn--primary" id="copy-all">Copy bibliography</button>
+          <button class="btn btn--quiet btn--danger" id="clear-all">Clear all</button>
         </div>
       </aside>
     </div>
