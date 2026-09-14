@@ -1,4 +1,4 @@
-name = "citation-tool-api"
+name = "citer-api"
 main = "worker.js"
 compatibility_date = "2024-11-01"
 
@@ -8,18 +8,29 @@ compatibility_date = "2024-11-01"
 # once), or the literal string "*" if you explicitly want to allow any site
 # (fine for local testing, not recommended once this is live).
 [vars]
-ALLOWED_ORIGIN = "https://kieran-green.com"
+ALLOWED_ORIGIN = "*"
 
-# Optional: override the model used for AI-assisted metadata recovery.
-# ANTHROPIC_MODEL = "claude-sonnet-5"
+# "anthropic" (default) or "gemini". Gemini's Flash-Lite tier is free at a
+# demo's traffic level (see README's "AI costs" section for the honest
+# tradeoff); Anthropic's Haiku model is the deliberate default on that side
+# too — a few cents at most for occasional use, not a cost to worry about.
+# AI_PROVIDER = "anthropic"
 
-# After deploying, add the secret with:
+# Optional: override the model used for AI-assisted research.
+# ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+# GEMINI_MODEL = "gemini-2.5-flash-lite"
+
+# After deploying, add whichever secret matches AI_PROVIDER:
 #   wrangler secret put ANTHROPIC_API_KEY
-# If you skip this, the AI-assisted fallback simply stays disabled — everything
-# else works normally.
+#   wrangler secret put GEMINI_API_KEY
+# If neither is set, the AI-assisted research feature simply stays disabled —
+# everything else (bulk paste, drag-and-drop, the identifier resolvers for
+# DOI/arXiv/PubMed/Wikipedia/YouTube, direct metadata extraction, citation
+# formatting, export) needs no AI and no key at all.
 
 # Rate limiting: this Worker doesn't implement its own (an in-memory counter
 # in a Worker is unreliable — isolates are per-request and don't share state
 # reliably). Instead, add a Cloudflare Rate Limiting rule on this route from
 # the dashboard (Security > WAF > Rate limiting rules) — it needs no code and
-# is actually enforced globally, unlike a hand-rolled in-Worker counter.
+# is actually enforced globally, unlike a hand-rolled in-Worker counter. At a
+# demo's traffic level this is optional, not urgent.

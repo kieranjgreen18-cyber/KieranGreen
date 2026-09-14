@@ -1,30 +1,81 @@
 /**
- * Citation Tool — Cloudflare Worker backend
+ * Citer — Cloudflare Worker backend
  * ------------------------------------------
  * Endpoints:
- *   GET  /api/metadata?url=<encoded>&type=webpage|image&pageUrl=<encoded optional>
+ *   GET  /api/metadata?url=<encoded>&type=webpage|image|ai&pageUrl=<encoded optional>
  *   POST /api/ai-suggest        { url, sourceType, style, knownFields, missingField }
  *   GET  /api/health
  *
+ * /api/metadata is a source-resolution pipeline, not just a scraper — a URL
+ * that a normal browser renders fine can still be unreachable to a Worker
+ * (bot protection, JS-rendered SPA shells, auth walls, timeouts), so this
+ * tries progressively more specific strategies rather than treating "the
+ * direct fetch failed" as "no citation is possible":
+ *
+ *   1. Known identifier → an authoritative free API (cheapest, most exact)
+ *      DOI → Crossref · arXiv ID → arXiv · PMID → PubMed/NCBI ·
+ *      Wikipedia URL → Wikimedia REST · YouTube URL → oEmbed
+ *      (see resolvers.js — all keyless, no cost, no rate-limit risk at
+ *      Citer's scale)
+ *   2. Direct metadata extraction — JSON-LD / OpenGraph / HTML <head>
+ *      (the original scrape-based path, still the workhorse for ordinary
+ *      webpages that don't match a known identifier)
+ *   3. AI-assisted resolution, *with search* — only ever triggered by the
+ *      person clicking "Research with AI" on one specific missing field
+ *      (/api/ai-suggest), never automatically. This single step covers
+ *      what a separate "search resolution" stage would otherwise do: the
+ *      model's own search tool finds corroborating sources and the model
+ *      reasons over them in one call, rather than standing up a second
+ *      search API to feed a second AI call for the same job.
+ *
+ * Every /api/metadata response carries a `resolution: { method, status,
+ * note }` alongside `fields`, so a page that was fetched but was clearly a
+ * JS-rendered shell (status "js_rendered"), or one a scrape genuinely
+ * couldn't reach (status "blocked"/"failed"), reads differently from one
+ * that resolved cleanly — instead of everything short of "ok:true" being
+ * collapsed into a generic error.
+ *
+ * type=ai (a *shared AI-conversation URL* — a ChatGPT/Claude/Gemini/Copilot
+ * share link) goes through the same direct-extraction path as an ordinary
+ * webpage, since those pages are almost always JS-rendered SPAs too — only
+ * whatever's in the initial HTML <head> (OpenGraph/title tags) is ever
+ * recoverable server-side. This is a different thing from the frontend's
+ * "AI-assisted research" feature above; don't confuse the two.
+ *
  * Secrets (set with `wrangler secret put ...`):
- *   ANTHROPIC_API_KEY   — optional. If absent, /api/ai-suggest returns ai_not_configured
- *                          and the frontend simply hides AI suggestions.
+ *   ANTHROPIC_API_KEY   — used when AI_PROVIDER="anthropic" (the default).
+ *   GEMINI_API_KEY       — used when AI_PROVIDER="gemini". Google's Gemini
+ *                          API has a genuinely free tier (Flash/Flash-Lite,
+ *                          via Google AI Studio) that costs nothing at a
+ *                          demo's traffic level — the tradeoff is Google's
+ *                          free-tier terms permit using submitted content
+ *                          to improve their products, unlike the paid tier
+ *                          or Anthropic's API. See README for the tradeoff
+ *                          written out plainly.
+ *   If neither secret is set, /api/ai-suggest returns ai_not_configured and
+ *   the frontend simply hides AI suggestions — the rest of the app, including
+ *   the identifier resolvers and direct scraping, needs no AI at all.
  *
  * Vars (set in wrangler.toml [vars] or dashboard):
  *   ALLOWED_ORIGIN      — the exact origin your GitHub Pages / custom domain is served
  *                          from, e.g. "https://citations.example.com". Use "*" only
  *                          while developing locally.
+ *   AI_PROVIDER          — "anthropic" (default) or "gemini".
  *
  * Nothing here reads or writes a database — every request is stateless. The Worker's
  * only job is to do the things a browser can't do safely or reliably itself: fetch
- * third-party pages without being blocked by CORS, and call the Anthropic API without
+ * third-party pages without being blocked by CORS, and call an AI API without
  * putting a secret key in client-side code.
  */
+
+import { buildAuthors, joinAuthorsRaw } from "./authors.js";
+import { resolveByIdentifier } from "./resolvers.js";
 
 const JSON_HEADERS = { "content-type": "application/json;charset=UTF-8" };
 const MAX_RESPONSE_BYTES = 3 * 1024 * 1024; // 3MB is generously more than any page's <head> + JSON-LD needs
 const MAX_REDIRECTS = 5;
 const FETCH_TIMEOUT_MS = 9000;
+
 
 /**
  * ALLOWED_ORIGIN can be a single origin or a comma-separated list (useful
@@ -75,7 +126,9 @@ export default {
       } else if (url.pathname === "/api/ai-suggest" && request.method === "POST") {
         response = await handleAiSuggest(request, env);
       } else if (url.pathname === "/api/health") {
-        response = json({ ok: true, aiConfigured: Boolean(env.ANTHROPIC_API_KEY) });
+        const provider = (env.AI_PROVIDER || "anthropic").toLowerCase();
+        const aiConfigured = provider === "gemini" ? Boolean(env.GEMINI_API_KEY) : Boolean(env.ANTHROPIC_API_KEY);
+        response = json({ ok: true, aiConfigured, aiProvider: provider });
       } else {
         response = json({ ok: false, error: "not_found" }, 404);
       }
@@ -132,6 +185,39 @@ async function handleMetadata(url, env) {
     return json({ ok: false, error: "invalid_url" }, 400);
   }
 
+  // --- Tier 1: a known identifier, resolved through its own free,
+  // authoritative API rather than scraped. For images this checks the
+  // referring page (a DOI/arXiv/Wikipedia page an image was dragged off
+  // of), not the raw CDN image URL, since that's where the identifier
+  // actually lives. ---
+  const identifierCandidate = sourceType === "image" ? pageUrlParam || target : target;
+  const identifierResult = await resolveByIdentifier(identifierCandidate, sourceType === "image" ? pageUrlParam : null);
+  if (identifierResult) {
+    const fields = { ...identifierResult.fields };
+    if (sourceType === "image") {
+      // The identifier describes the page the image lives on, not the image
+      // file itself — keep the actual dragged/pasted image URL as the
+      // citation URL, and fold the resolved page metadata in around it.
+      fields.imageTitle = identifierResult.fields.title;
+      delete fields.title;
+      fields.imageUrl = target;
+      fields.url = target;
+    }
+    return json({
+      ok: true,
+      type: sourceType,
+      url: target,
+      resolvedUrl: identifierResult.fields.url,
+      fields,
+      resolution: {
+        method: identifierResult.resolutionMethod,
+        status: "resolved",
+        note: identifierResult.resolutionNote,
+      },
+    });
+  }
+
+  // --- Tier 2: direct metadata extraction (JSON-LD / OpenGraph / <head>) ---
   // For images, prefer scraping the *page the image lives on* when we have it —
   // that's where the creator/title/date usually actually live. The raw image
   // URL is kept as the citation's image URL regardless.
@@ -147,14 +233,14 @@ async function handleMetadata(url, env) {
   const fetched = await safeFetch(scrapeUrl.toString());
 
   if (!fetched.ok) {
-    // If scraping a referring page failed for an image, still return the raw
-    // image URL so the frontend can fall back to manual/AI-assisted fields.
+    const status = classifyFetchFailure(fetched.error, fetched.httpStatus);
     return json({
       ok: false,
       error: fetched.error,
       message: fetched.message,
       type: sourceType,
       url: target,
+      resolution: { method: "direct", status, note: RESOLUTION_NOTES[status] },
     }, fetched.status || 502);
   }
 
@@ -168,7 +254,11 @@ async function handleMetadata(url, env) {
         imageUrl: target,
         siteName: hostnameLabel(targetUrl.hostname),
       },
-      note: "The URL pointed directly at an image file, so no page metadata was available.",
+      resolution: {
+        method: "direct",
+        status: "partially_resolved",
+        note: "The URL pointed directly at an image file, so no page metadata was available.",
+      },
     });
   }
 
@@ -179,10 +269,14 @@ async function handleMetadata(url, env) {
       message: `Server returned ${fetched.contentType}, which isn't a webpage or image.`,
       type: sourceType,
       url: target,
+      resolution: { method: "direct", status: "failed", note: "That link isn't a webpage or an image." },
     }, 415);
   }
 
   const fields = normalizeFields(fetched.data, new URL(fetched.finalUrl), sourceType, target);
+  const jsRendered = looksJsRendered(fetched.data, fields);
+  const hasEnoughToCite = Boolean(fields.title && (fields.authors.length || fields.datePublished || fields.siteName));
+  const status = jsRendered ? "js_rendered" : hasEnoughToCite ? "resolved" : "partially_resolved";
 
   return json({
     ok: true,
@@ -190,11 +284,29 @@ async function handleMetadata(url, env) {
     url: target,
     resolvedUrl: fetched.finalUrl,
     fields,
+    resolution: { method: "direct", status, note: RESOLUTION_NOTES[status] },
     raw: {
       jsonLdCount: fetched.data.jsonLd.length,
       hasOpenGraph: Object.keys(fetched.data.metaByProperty).length > 0,
     },
   });
+}
+
+const RESOLUTION_NOTES = {
+  resolved: "Metadata found directly on the page.",
+  partially_resolved: "Page reached, but some citation fields weren't exposed — fill the rest in manually, or try Research with AI.",
+  js_rendered: "This page renders its content with JavaScript, so the server only saw an empty shell — try Research with AI, or fill fields in manually.",
+  blocked: "The site declined automated access.",
+  failed: "Couldn't reliably resolve this source.",
+};
+
+/** Turns a raw fetch-failure code (plus HTTP status, when there was one)
+ *  into one of the resolution-status buckets the frontend explains
+ *  differently — "the site said no" reads very differently from "the
+ *  request timed out," and both are more honest than a flat "Error." */
+function classifyFetchFailure(errorCode, httpStatus) {
+  if (errorCode === "fetch_failed" && [401, 403, 429, 451].includes(httpStatus)) return "blocked";
+  return "failed";
 }
 
 /* --------------------------------------------------------------------- *
@@ -316,7 +428,7 @@ async function safeFetch(targetUrl) {
     const contentType = (res.headers.get("content-type") || "").toLowerCase();
 
     if (!res.ok) {
-      return { ok: false, error: "fetch_failed", message: `Source responded with ${res.status}`, status: 502 };
+      return { ok: false, error: "fetch_failed", message: `Source responded with ${res.status}`, status: 502, httpStatus: res.status };
     }
     if (contentType.startsWith("image/")) {
       return { ok: true, isImage: true, contentType, finalUrl };
@@ -436,50 +548,6 @@ function jsonLdTypeMatches(node, types) {
   return list.some((x) => types.includes(String(x)));
 }
 
-function extractAuthorName(authorField) {
-  if (!authorField) return null;
-  if (typeof authorField === "string") return authorField.trim() || null;
-  if (Array.isArray(authorField)) {
-    const names = authorField.map(extractAuthorName).filter(Boolean);
-    // Joined with "and" (not a comma) so this round-trips correctly through
-    // the frontend's author-list splitting, which only recognizes "and"/"&"
-    // as a separator between people — a comma there would otherwise be
-    // misread as "Last, First" for a single person.
-    return names.length ? names.join(" and ") : null;
-  }
-  if (typeof authorField === "object") {
-    return authorField.name || null;
-  }
-  return null;
-}
-
-/** "Jane Q. Smith" -> "Smith" — operates on the first author when the string names more than one. */
-function lastNameFromFullName(fullName) {
-  if (!fullName) return null;
-  const [firstAuthor] = splitAuthorsForLastName(fullName);
-  const cleaned = firstAuthor.trim();
-  if (cleaned.includes(",")) {
-    // Already "Last, First"
-    return cleaned.split(",")[0].trim();
-  }
-  const parts = cleaned.split(/\s+/).filter(Boolean);
-  if (!parts.length) return null;
-  // Keep common suffixes attached to the previous token rather than treated as the surname.
-  const suffixes = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv"]);
-  let lastIdx = parts.length - 1;
-  while (lastIdx > 0 && suffixes.has(parts[lastIdx].toLowerCase())) lastIdx--;
-  return parts[lastIdx];
-}
-
-/** Mirrors the frontend's splitAuthors: only "and"/"&" separate distinct people. */
-function splitAuthorsForLastName(nameString) {
-  const trimmed = nameString.trim();
-  if (/\s(and|&)\s/i.test(trimmed)) {
-    return trimmed.split(/\s*(?:,?\s+and\s+|\s*&\s*)/i).map((s) => s.trim()).filter(Boolean);
-  }
-  return [trimmed];
-}
-
 /** ImageObject values show up as a bare string, a {url|contentUrl|thumbnailUrl}
  *  object, or an array of either — never coerce one of those objects straight
  *  into a string (that's how you get a literal "[object Object]" in a field). */
@@ -559,7 +627,9 @@ function normalizeFields(data, resolvedUrl, sourceType, originalUrl) {
   const primaryNode = sourceType === "image" ? imageNode || articleNode : articleNode || imageNode;
 
   const authorRaw = primaryNode && primaryNode.author;
-  const authorName = extractAuthorName(authorRaw) || firstNonEmpty(meta["author"], og["article:author"]);
+  const authorMetaString = firstNonEmpty(meta["author"], og["article:author"]);
+  const authors = buildAuthors(authorRaw, authorMetaString);
+  const authorsRaw = joinAuthorsRaw(authors);
 
   const publisherName = firstNonEmpty(
     primaryNode && primaryNode.publisher && primaryNode.publisher.name,
@@ -612,8 +682,8 @@ function normalizeFields(data, resolvedUrl, sourceType, originalUrl) {
 
   const fields = {
     title,
-    author: authorName,
-    authorLastName: lastNameFromFullName(authorName),
+    authors,
+    authorsRaw,
     siteName,
     publisher: publisherName,
     datePublished,
@@ -626,26 +696,44 @@ function normalizeFields(data, resolvedUrl, sourceType, originalUrl) {
   if (sourceType === "image") {
     fields.imageUrl = originalUrl;
     fields.imageTitle = title;
-    fields.creator = authorName;
     if (image) fields.pageHeroImage = new URL(image, resolvedUrl).toString();
   }
 
   return fields;
 }
 
+/**
+ * A page can be fetched successfully (200 OK, real HTML) and still be
+ * useless for citation purposes — most commonly a JS-rendered single-page
+ * app whose initial HTML is just an empty root <div> with everything filled
+ * in client-side later, which a Worker never sees. Rather than reporting
+ * that as "resolved" with a citation quietly built from nothing, this flags
+ * it so the frontend can say so honestly and point at Research with AI /
+ * manual entry instead of implying the scrape actually worked.
+ */
+function looksJsRendered(data, fields) {
+  const hasRealTitle = Boolean(fields.title && fields.title.length > 2);
+  const hasAnyStructuredSignal = data.jsonLd.length > 0 || Object.keys(data.metaByProperty).length > 0;
+  return !hasRealTitle && !hasAnyStructuredSignal;
+}
+
+
+
 /* --------------------------------------------------------------------- *
  *  /api/ai-suggest
  * --------------------------------------------------------------------- */
 
 const ALLOWED_MISSING_FIELDS = new Set([
-  "author", "title", "siteName", "publisher", "datePublished",
-  "creator", "imageTitle", "imageUrl", "url",
+  "authors", "title", "siteName", "publisher", "datePublished",
+  "imageTitle", "imageUrl", "url",
 ]);
 const MAX_FIELD_VALUE_LEN = 300;
 const MAX_URL_LEN = 2000;
 
 async function handleAiSuggest(request, env) {
-  if (!env.ANTHROPIC_API_KEY) {
+  const provider = (env.AI_PROVIDER || "anthropic").toLowerCase();
+  const hasKey = provider === "gemini" ? Boolean(env.GEMINI_API_KEY) : Boolean(env.ANTHROPIC_API_KEY);
+  if (!hasKey) {
     return json({ ok: false, reason: "ai_not_configured" }, 501);
   }
 
@@ -682,7 +770,7 @@ async function handleAiSuggest(request, env) {
 
   const knownSummary = safeKnownFields.map(([k, v]) => `${k}: ${v}`).join("\n") || "(none)";
   const safeStyle = ["mla", "apa", "chicago"].includes(style) ? style : "academic";
-  const safeSourceType = sourceType === "image" ? "image" : "webpage";
+  const safeSourceType = sourceType === "image" ? "image" : sourceType === "ai" ? "AI conversation" : "webpage";
 
   // Everything inside <source_metadata> below originates from a third-party
   // webpage's own metadata, which is not trustworthy — a page could embed
@@ -705,13 +793,39 @@ The single missing field to research is: "${missingField}".
 
 Use web search to find reliable, verifiable evidence for this field. Prefer the
 source's own byline, masthead, "about" page, or official metadata over third-party
-mentions. If you cannot find reliable evidence, say so — do not guess.
+mentions. If you cannot find reliable evidence, say so — do not guess.`;
 
-Once you're done researching, call the record_citation_field tool exactly once
-with your conclusion. Do not fabricate a value if you found nothing reliable —
-set found to false instead.`;
+  let result;
+  try {
+    result = provider === "gemini" ? await callGemini(prompt, env) : await callAnthropic(prompt, env);
+  } catch (err) {
+    return json({ ok: false, error: "ai_request_failed", message: String((err && err.message) || err).slice(0, 300) }, 502);
+  }
 
-  const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+  if (!result) {
+    return json({ ok: false, error: "unparseable_ai_response" }, 502);
+  }
+
+  if (!result.found || !result.value) {
+    return json({ ok: true, found: false, note: result.note || "No reliable source found." });
+  }
+
+  return json({
+    ok: true,
+    found: true,
+    field: missingField,
+    value: String(result.value).slice(0, MAX_FIELD_VALUE_LEN),
+    evidenceUrl: result.evidenceUrl || null,
+    confidence: ["high", "medium", "low"].includes(result.confidence) ? result.confidence : "low",
+    note: result.note ? String(result.note).slice(0, 300) : "",
+  });
+}
+
+/** Anthropic path (default). Claude calls a schema-typed tool exactly once,
+ *  so the result is already a validated object in the common case — no
+ *  free-text parsing needed. */
+async function callAnthropic(prompt, env) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -719,10 +833,13 @@ set found to false instead.`;
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      // Override with an ANTHROPIC_MODEL var/secret if Anthropic has since
-      // shipped a newer model you'd rather use — check docs.claude.com for
-      // the current lineup and model id.
-      model: env.ANTHROPIC_MODEL || "claude-sonnet-5",
+      // Haiku is the deliberate default: this is a short, bounded
+      // research-and-report task, not open-ended reasoning, and Haiku 4.5
+      // handles it well for a fraction of Sonnet/Opus's per-token cost —
+      // relevant since this call also carries Anthropic's web-search-tool
+      // fee ($10 per 1,000 searches) on top of tokens. Override with
+      // ANTHROPIC_MODEL if you want a stronger model here.
+      model: env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
       max_tokens: 1200,
       tools: [
         { type: "web_search_20250305", name: "web_search" },
@@ -742,46 +859,78 @@ set found to false instead.`;
           },
         },
       ],
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        {
+          role: "user",
+          content: `${prompt}\n\nOnce you're done researching, call the record_citation_field tool exactly once with your conclusion. Do not fabricate a value if you found nothing reliable — set found to false instead.`,
+        },
+      ],
     }),
   });
 
-  if (!anthropicRes.ok) {
-    const text = await anthropicRes.text();
-    return json({ ok: false, error: "ai_request_failed", message: text.slice(0, 300) }, 502);
+  if (!res.ok) {
+    throw new Error(`Anthropic API responded ${res.status}: ${(await res.text()).slice(0, 200)}`);
   }
 
-  const data = await anthropicRes.json();
+  const data = await res.json();
   const content = data.content || [];
-
-  // Preferred path: the model called our tool, so its arguments are already a
-  // schema-validated object — no parsing of free-form text required.
   const toolCall = content.find((b) => b.type === "tool_use" && b.name === "record_citation_field");
-  let parsed = toolCall ? toolCall.input : null;
+  if (toolCall) return toolCall.input;
 
   // Fallback for the rare case the model answered in plain text instead of
-  // calling the tool (defense in depth, not the primary path anymore).
-  if (!parsed) {
-    const combined = content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
-    try {
-      const jsonMatch = combined.match(/\{[\s\S]*\}/);
-      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : combined);
-    } catch {
-      return json({ ok: false, error: "unparseable_ai_response" }, 502);
+  // calling the tool (defense in depth, not the primary path).
+  const combined = content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+  return extractJsonObject(combined);
+}
+
+/** Gemini path — the free-tier-eligible option (Google AI Studio's
+ *  Flash-Lite tier costs nothing at a demo's traffic level; see the header
+ *  comment for the tradeoff). Gemini's Google Search grounding tool and its
+ *  structured-output mode (responseSchema) can't reliably be requested
+ *  together in one call, so this asks for a single JSON object in the
+ *  grounded text response and parses it out — the same defense-in-depth
+ *  text-parsing this file already needed as an Anthropic fallback, just
+ *  promoted to the primary path here. */
+async function callGemini(prompt, env) {
+  const model = env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `${prompt}\n\nRespond with ONLY a single JSON object — no markdown fences, no other text — matching exactly this shape:\n{"found": boolean, "value": string or null, "evidenceUrl": string or null, "confidence": "high" | "medium" | "low", "note": string}\nDo not fabricate a value if you found nothing reliable — set found to false instead.`,
+              },
+            ],
+          },
+        ],
+        tools: [{ google_search: {} }],
+      }),
     }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Gemini API responded ${res.status}: ${(await res.text()).slice(0, 200)}`);
   }
 
-  if (!parsed || !parsed.found || !parsed.value) {
-    return json({ ok: true, found: false, note: (parsed && parsed.note) || "No reliable source found." });
-  }
+  const data = await res.json();
+  const candidate = data.candidates && data.candidates[0];
+  const parts = (candidate && candidate.content && candidate.content.parts) || [];
+  const combined = parts.map((p) => p.text || "").join("\n").trim();
+  return extractJsonObject(combined);
+}
 
-  return json({
-    ok: true,
-    found: true,
-    field: missingField,
-    value: String(parsed.value).slice(0, MAX_FIELD_VALUE_LEN),
-    evidenceUrl: parsed.evidenceUrl || null,
-    confidence: ["high", "medium", "low"].includes(parsed.confidence) ? parsed.confidence : "low",
-    note: parsed.note ? String(parsed.note).slice(0, 300) : "",
-  });
+function extractJsonObject(text) {
+  try {
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    return JSON.parse(match ? match[0] : cleaned);
+  } catch {
+    return null;
+  }
 }
