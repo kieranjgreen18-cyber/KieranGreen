@@ -19,13 +19,13 @@ const MLA_LOWERCASE_WORDS = new Set([
   "over", "per", "to", "up", "via", "with", "from", "vs", "vs.", "versus",
 ]);
 
+const NAME_SUFFIXES = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv"]);
+
 /**
  * True if a word has an uppercase letter anywhere after its first character —
  * "iPhone", "eBay", "macOS", "YouTube". Treated everywhere below as a signal
  * that the source's casing was intentional and should be left completely
- * alone, rather than blindly re-capitalized. This is what was producing
- * "eBay" -> "EBay" and "iPhone" -> "IPhone" before: charAt(0).toUpperCase()
- * ran unconditionally on every word.
+ * alone, rather than blindly re-capitalized.
  */
 function hasInteriorCapital(word) {
   return /[A-Z]/.test(word.slice(1));
@@ -81,18 +81,6 @@ export function yearOf(input) {
   return d ? d.year : null;
 }
 
-/** Splits "Jane Q. Smith and John Doe" style strings without breaking "Last, First". */
-export function splitAuthors(nameString) {
-  if (!nameString) return [];
-  const trimmed = nameString.trim();
-  if (/\s(and|&)\s/i.test(trimmed)) {
-    return trimmed.split(/\s*(?:,?\s+and\s+|\s*&\s*)/i).map((s) => s.trim()).filter(Boolean);
-  }
-  return [trimmed];
-}
-
-const NAME_SUFFIXES = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv"]);
-
 function splitNameParts(fullName) {
   if (fullName.includes(",")) {
     const [last, rest] = fullName.split(",").map((s) => s.trim());
@@ -107,64 +95,106 @@ function splitNameParts(fullName) {
   return { last, first };
 }
 
-/** "Jane Q. Smith" -> "Smith, Jane Q." (MLA / Chicago style). */
-export function formatNameLastFirst(fullName) {
-  const { last, first } = splitNameParts(fullName);
-  return first ? `${last}, ${first}` : last;
+/**
+ * Splits a raw typed/extracted author string into one or more individual
+ * name strings.
+ *
+ * Three separators are recognized, tried in this order:
+ *   1. ";" — an explicit, unambiguous "one author per segment" separator.
+ *      This is the one to reach for with 3+ authors, or with any author
+ *      whose own name contains "and" or a comma.
+ *   2. " and " / " & " — the common two-author case ("Jane Smith and John Doe").
+ *   3. Nothing found — treated as a single author.
+ *
+ * A bare comma-separated list ("Smith, John, and Jane Doe") is deliberately
+ * NOT auto-split on commas: a single "Last, First" name already uses a comma,
+ * so there is no reliable way to tell "one person, comma-formatted" from
+ * "two people, comma-separated" without guessing. Rather than guess wrong
+ * (and silently produce a bad citation), this asks for the unambiguous ";"
+ * form instead — the field's placeholder text says so.
+ */
+export function splitAuthorNames(raw) {
+  if (!raw) return [];
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  if (trimmed.includes(";")) {
+    return trimmed.split(";").map((s) => s.trim()).filter(Boolean);
+  }
+  if (/\s(and|&)\s/i.test(trimmed)) {
+    return trimmed.split(/\s*(?:,?\s+and\s+|\s*&\s*)/i).map((s) => s.trim()).filter(Boolean);
+  }
+  return [trimmed];
 }
 
-/** "Jane Quinn Smith" -> "Smith, J. Q." (APA style). */
-export function formatNameAPA(fullName) {
-  const { last, first } = splitNameParts(fullName);
-  if (!first) return last;
-  const initials = first
+/**
+ * Parses a raw author string into the app's canonical structured shape:
+ * an array of { given, family, literal }. `literal` is set for names that
+ * don't look like a person (a single word, or a name with 3+ words and no
+ * comma — often a corporate/organization author) so styles can print it
+ * without inverting it "Last, First"-style.
+ *
+ * This is the single point where a typed/extracted string becomes structured
+ * data — style modules consume the array directly and never re-parse a
+ * string themselves.
+ */
+export function parseAuthors(raw) {
+  return splitAuthorNames(raw).map((name) => {
+    const { last, first } = splitNameParts(name);
+    return { family: last, given: first, literal: name };
+  });
+}
+
+/** The inverse of parseAuthors: turns a structured author list back into a
+ *  single editable string. Uses ";" between authors so it round-trips
+ *  exactly through parseAuthors without relying on "and"-splitting. */
+export function formatAuthorsForEditing(authors) {
+  if (!authors || !authors.length) return "";
+  return authors.map((a) => a.literal || [a.given, a.family].filter(Boolean).join(" ")).join("; ");
+}
+
+function nameLastFirst(author) {
+  if (!author.given) return author.family;
+  return `${author.family}, ${author.given}`;
+}
+
+function nameAPA(author) {
+  if (!author.given) return author.family;
+  const initials = author.given
     .split(/\s+/)
     .filter(Boolean)
     .map((part) => `${part.charAt(0).toUpperCase()}.`)
     .join(" ");
-  return `${last}, ${initials}`;
+  return `${author.family}, ${initials}`;
 }
 
-/** "Jane Q. Smith" -> "Smith" (used for sorting when authorLastName isn't already known).
- *  Operates on the *first* author if the string names more than one, since
- *  bibliographies sort by the first-listed author's surname. */
-export function lastNameFromFullName(fullName) {
-  if (!fullName) return null;
-  const [first] = splitAuthors(fullName);
-  return first ? splitNameParts(first).last || null : null;
+export function formatAuthorListMLA(authors) {
+  if (!authors || !authors.length) return null;
+  if (authors.length === 1) return nameLastFirst(authors[0]);
+  if (authors.length === 2) return `${nameLastFirst(authors[0])}, and ${authors[1].literal || nameLastFirst(authors[1])}`;
+  return `${nameLastFirst(authors[0])}, et al.`;
 }
 
-export function formatAuthorListMLA(nameString) {
-  const authors = splitAuthors(nameString);
-  if (!authors.length) return null;
-  if (authors.length === 1) return formatNameLastFirst(authors[0]);
-  if (authors.length === 2) return `${formatNameLastFirst(authors[0])}, and ${authors[1]}`;
-  return `${formatNameLastFirst(authors[0])}, et al.`;
-}
-
-export function formatAuthorListAPA(nameString) {
-  const authors = splitAuthors(nameString);
-  if (!authors.length) return null;
-  if (authors.length === 1) return formatNameAPA(authors[0]);
+export function formatAuthorListAPA(authors) {
+  if (!authors || !authors.length) return null;
+  if (authors.length === 1) return nameAPA(authors[0]);
   if (authors.length <= 20) {
-    const formatted = authors.map(formatNameAPA);
+    const formatted = authors.map(nameAPA);
     const last = formatted.pop();
     return `${formatted.join(", ")}, & ${last}`;
   }
-  const firstNineteen = authors.slice(0, 19).map(formatNameAPA);
-  return `${firstNineteen.join(", ")}, . . . ${formatNameAPA(authors[authors.length - 1])}`;
+  const firstNineteen = authors.slice(0, 19).map(nameAPA);
+  return `${firstNineteen.join(", ")}, . . . ${nameAPA(authors[authors.length - 1])}`;
 }
 
-export function formatAuthorListChicago(nameString) {
-  const authors = splitAuthors(nameString);
-  if (!authors.length) return null;
-  if (authors.length === 1) return formatNameLastFirst(authors[0]);
+export function formatAuthorListChicago(authors) {
+  if (!authors || !authors.length) return null;
+  if (authors.length === 1) return nameLastFirst(authors[0]);
   if (authors.length <= 3) {
-    const formatted = authors.map((a, i) => (i === 0 ? formatNameLastFirst(a) : a));
+    const formatted = authors.map((a, i) => (i === 0 ? nameLastFirst(a) : a.literal || nameLastFirst(a)));
     const last = formatted.pop();
     return `${formatted.join(", ")}, and ${last}`;
   }
-  return `${formatNameLastFirst(authors[0])} et al.`;
+  return `${nameLastFirst(authors[0])} et al.`;
 }
 
 /**
@@ -180,7 +210,7 @@ export function toTitleCaseMLA(title) {
     .map((word, i) => {
       const isBoundary = i === 0 || i === words.length - 1 || words[i - 1].endsWith(":");
       const bare = word.replace(/[.,!?;:]+$/, "");
-      if (hasInteriorCapital(bare) || isAcronym(bare)) return word; // e.g. iPhone, eBay, NASA — leave alone
+      if (hasInteriorCapital(bare) || isAcronym(bare)) return word;
       if (!isBoundary && MLA_LOWERCASE_WORDS.has(bare.toLowerCase())) {
         return word.toLowerCase();
       }
@@ -190,20 +220,11 @@ export function toTitleCaseMLA(title) {
 }
 
 /**
- * Sentence case for APA: force a capital on the first word of the title (and
- * of any subtitle after a colon), lowercase the closed set of minor words
- * MLA also lowercases, and otherwise leave a word's casing exactly as
- * extracted rather than guessing.
- *
- * That last part is a deliberate, documented tradeoff: correctly telling a
- * proper noun ("France", "the Renaissance") apart from an ordinary
- * capitalized word requires either a proper-noun dictionary or an NLP pass,
- * which this tool doesn't have. Forcing every non-first word to lowercase
- * (the previous behavior) silently destroyed real proper nouns and brand
- * names, which is a worse failure than occasionally leaving an ordinary word
- * capitalized when strict APA style would lowercase it. If you want fully
- * correct sentence case, use the per-field edit panel — this only saves you
- * the parts that are unambiguous.
+ * Sentence case for APA. See README for the documented tradeoff: this can't
+ * reliably tell a proper noun from an ordinary capitalized word without a
+ * proper-noun dictionary or an NLP pass, so it forces the first word (and
+ * first word after a colon) to a capital, lowercases the closed set of minor
+ * words, and otherwise leaves a word's casing exactly as extracted.
  */
 export function toSentenceCaseAPA(title) {
   if (!title) return title;
@@ -213,11 +234,11 @@ export function toSentenceCaseAPA(title) {
     return words
       .map((word, i) => {
         const bare = word.replace(/[.,!?;]+$/, "");
-        if (hasInteriorCapital(bare)) return word; // e.g. iPhone, eBay — leave alone
-        if (isAcronym(bare)) return word; // acronym, leave alone
+        if (hasInteriorCapital(bare)) return word;
+        if (isAcronym(bare)) return word;
         if (i === 0) return word.charAt(0).toUpperCase() + word.slice(1);
         if (MLA_LOWERCASE_WORDS.has(bare.toLowerCase())) return word.toLowerCase();
-        return word; // an ordinary content word — preserve rather than guess proper-noun status
+        return word;
       })
       .join(" ");
   });

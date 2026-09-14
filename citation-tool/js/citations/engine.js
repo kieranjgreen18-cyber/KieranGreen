@@ -13,16 +13,32 @@ export const STYLE_LABELS = {
 /**
  * Converts a source's type + fields into a style-agnostic shape so the
  * individual style modules don't need to know whether they're citing a
- * webpage or an image. This is the only place "author vs. creator" and
- * "url vs. imageUrl" get reconciled.
+ * webpage, an image, or an AI conversation. This is the only place
+ * "author vs. creator" and "url vs. imageUrl" get reconciled, and the only
+ * place a raw fields object becomes the structured `authors` array the style
+ * modules render from.
  */
 function unify(source) {
   const f = source.fields || {};
+
+  if (source.type === "ai") {
+    return {
+      isAI: true,
+      isImage: false,
+      aiProvider: f.aiProvider || null,
+      aiModel: f.aiModel || null,
+      aiConversationTitle: f.aiConversationTitle || null,
+      aiPrompt: f.aiPrompt || null,
+      date: f.datePublished || null,
+      url: f.url || null,
+      authors: [],
+    };
+  }
+
   if (source.type === "image") {
     return {
       isImage: true,
-      authorName: f.creator || null,
-      authorLastName: null, // worker doesn't derive this for creators; style modules fall back to parsing authorName
+      authors: f.authors || [],
       title: f.imageTitle || f.title || null,
       siteName: f.siteName || null,
       publisher: f.publisher || null,
@@ -31,10 +47,10 @@ function unify(source) {
       url: f.imageUrl || f.url || null,
     };
   }
+
   return {
     isImage: false,
-    authorName: f.author || null,
-    authorLastName: f.authorLastName || null, // extracted server-side when available — more reliable than re-parsing the formatted name
+    authors: f.authors || [],
     title: f.title || null,
     siteName: f.siteName || null,
     publisher: f.publisher || null,
@@ -54,7 +70,7 @@ export function generateCitation(source, style) {
     return {
       html: null,
       plaintext: null,
-      sortKey: (unified.title || unified.url || "").toLowerCase(),
+      sortKey: (unified.title || unified.aiModel || unified.url || "").toLowerCase(),
       isIncomplete: true,
       error: String(err && err.message || err),
     };
