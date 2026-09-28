@@ -231,507 +231,450 @@ model-viewer::part(default-progress-bar) {
   background: var(--ui-bg);
   border: 1px solid var(--ui-border);
   border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
   overflow: hidden;
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  box-shadow: 0 4px 32px rgba(0,0,0,0.10), 0 1px 6px rgba(0,0,0,0.06);
-  transition: opacity var(--dur-mid) var(--ease),
-              transform var(--dur-mid) var(--ease);
-  max-width: calc(100vw - 24px);
+  max-width: calc(100vw - 32px);
+  animation: panelSlideUp 0.5s var(--ease);
 }
-#panel.hidden {
-  opacity: 0;
-  transform: translateX(-50%) translateY(10px);
-  pointer-events: none;
+@keyframes panelSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+#panel.hidden { opacity: 0; pointer-events: none; }
 
-/* ── Switcher tabs section — sits at top of panel when 2+ models ── */
+/* ─ Switcher section (models) ─ */
 #switcher-section {
-  display: none; /* hidden until 2+ models */
+  display: none;
+  flex-direction: row;
   align-items: center;
-  gap: 3px;
-  padding: 6px 8px;
+  gap: 2px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--ui-border);
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  min-height: 40px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-height: 48px;
+  scrollbar-width: none;
 }
+#switcher-section::-webkit-scrollbar { display: none; }
 #switcher-section.visible {
   display: flex;
 }
 
 .model-tab {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 10px;
-  border-radius: 7px; border: none;
-  background: transparent;
-  font-family: var(--f-meta); font-size: 10px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--ls-open);
   color: var(--ui-muted);
-  cursor: pointer; white-space: nowrap;
-  max-width: 150px; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   transition: background var(--dur-fast), color var(--dur-fast);
   flex-shrink: 0;
+  position: relative;
 }
-.model-tab:hover { background: rgba(0,0,0,0.05); color: var(--ui-text); }
+.model-tab:hover {
+  background: rgba(91,160,164,0.08);
+  color: var(--ui-text);
+}
 .model-tab.active {
-  background: rgba(91,160,164,0.12);
+  background: rgba(91,160,164,0.15);
+  border-color: rgba(91,160,164,0.3);
   color: var(--c-accent);
 }
 
 .tab-dot {
-  width: 4px; height: 4px; border-radius: 50%;
-  background: currentColor; opacity: 0.5;
-  flex-shrink: 0; transition: opacity var(--dur-fast);
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
-.model-tab.active .tab-dot { opacity: 1; }
 
 .tab-remove {
-  width: 13px; height: 13px; border-radius: 50%; border: none;
-  background: transparent; color: var(--ui-micro);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  font-size: 11px; line-height: 1; padding: 0; margin-left: 1px; flex-shrink: 0;
-  transition: background var(--dur-fast), color var(--dur-fast);
+  margin-left: 4px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: opacity var(--dur-fast);
 }
-.tab-remove:hover { background: rgba(0,0,0,0.08); color: var(--ui-text); }
+.tab-remove:hover { opacity: 0.6; }
 
 .tab-divider {
-  width: 1px; height: 16px;
-  background: var(--ui-border); flex-shrink: 0; margin: 0 1px;
+  width: 1px;
+  height: 24px;
+  background: var(--ui-border);
+  flex-shrink: 0;
 }
 
-/* Add model button inside tabs section */
 #tab-add {
-  width: 26px; height: 26px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(91,160,164,0.08);
+  border: 1px solid rgba(91,160,164,0.2);
   border-radius: 6px;
-  border: 1px dashed rgba(0,0,0,0.16);
-  background: transparent; color: var(--ui-muted);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--c-accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  transition: border-color var(--dur-fast), color var(--dur-fast), background var(--dur-fast);
+  transition: background var(--dur-fast), border-color var(--dur-fast);
 }
 #tab-add:hover {
-  border-color: var(--c-accent);
-  color: var(--c-accent);
-  background: rgba(91,160,164,0.07);
+  background: rgba(91,160,164,0.15);
+  border-color: rgba(91,160,164,0.35);
+}
+#tab-add:active {
+  transform: scale(0.95);
 }
 
-/* ── Main controls row ── */
-#controls-row {
-  display: flex; align-items: center; gap: 5px;
+/* ─ Control row (buttons below) ─ */
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 10px;
 }
 
-/* Divider between control groups */
-.panel-divider {
-  width: 1px; height: 20px;
-  background: var(--ui-border); flex-shrink: 0; margin: 0 3px;
-}
-
-/* Section label — D-DIN Condensed, stencil tracking, accent colour */
 .panel-label {
-  font-family: var(--f-meta); font-size: 9px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--ui-muted); padding: 0 3px; flex-shrink: 0;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  color: var(--ui-muted);
+  padding: 0 4px;
+  flex-shrink: 0;
 }
 
-/* Swatch row */
-.swatch-row { display: flex; align-items: center; gap: 5px; }
+.swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
 
 .swatch {
-  width: 20px; height: 20px; border-radius: 50%;
-  border: 1.5px solid transparent; cursor: pointer; flex-shrink: 0;
-  transition: transform 0.15s, border-color 0.15s; position: relative;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform var(--dur-fast), border-color var(--dur-fast);
+  position: relative;
 }
-.swatch:hover { transform: scale(1.18); }
+.swatch:hover { transform: scale(1.2); }
 .swatch.active {
-  border-color: rgba(91,160,164,0.55);
-  transform: scale(1.10);
-}
-.swatch.active::after {
-  content: ''; position: absolute; inset: -3px; border-radius: 50%;
-  border: 1px solid rgba(91,160,164,0.22);
+  border-color: var(--ui-text);
+  transform: scale(1.15);
 }
 
 .swatch-custom {
-  width: 20px; height: 20px; border-radius: 50%;
-  border: 1.5px dashed rgba(0,0,0,0.18); cursor: pointer;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(0,0,0,0.2);
+  cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  overflow: hidden; flex-shrink: 0;
-  transition: border-color 0.15s;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: border-color var(--dur-fast);
+  position: relative;
 }
-.swatch-custom:hover { border-color: var(--c-accent); }
+.swatch-custom:hover { border-color: rgba(0,0,0,0.4); }
 .swatch-custom input[type="color"] {
-  opacity: 0; position: absolute; width: 20px; height: 20px; cursor: pointer;
+  opacity: 0;
+  position: absolute;
+  width: 100%;
+  cursor: pointer;
 }
-.swatch-custom svg { pointer-events: none; }
+.swatch-custom svg { pointer-events: none; opacity: 0.5; }
 
-/* Icon button */
+.panel-divider {
+  width: 1px; height: 22px;
+  background: var(--ui-border);
+  flex-shrink: 0;
+}
+
 .icon-btn {
-  width: 30px; height: 30px; border: none; border-radius: 7px;
-  background: transparent; cursor: pointer;
+  width: 32px; height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   color: var(--ui-muted);
   transition: background var(--dur-fast), color var(--dur-fast);
   flex-shrink: 0;
 }
-.icon-btn:hover { background: rgba(0,0,0,0.05); color: var(--ui-text); }
-.icon-btn.active {
-  background: rgba(91,160,164,0.12);
-  color: var(--c-accent);
+.icon-btn:hover { background: rgba(0,0,0,0.04); color: var(--ui-text); }
+.icon-btn.active { background: rgba(91,160,164,0.12); color: var(--c-accent); }
+
+/* ═══════════════════════════════════════════════════
+   § PAINT TRAY
+═══════════════════════════════════════════════════ */
+#paint-tray {
+  position: fixed;
+  bottom: 108px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 19;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  padding: 12px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+  max-width: 280px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-mid), transform var(--dur-mid) var(--ease);
+  transform: translateX(-50%) translateY(8px);
+}
+#paint-tray.open {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(-50%) translateY(0);
+}
+
+.paint-group {
+  margin-bottom: 10px;
+}
+.paint-group:last-child { margin-bottom: 0; }
+
+.paint-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  color: var(--ui-muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.paint-field {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.paint-swatch {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform var(--dur-fast);
+}
+.paint-swatch:hover { transform: scale(1.1); }
+
+.paint-name {
+  font-size: 10px;
+  flex: 1;
+  color: var(--ui-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#paint-reset-btn {
+  width: 100%;
+  padding: 6px;
+  background: rgba(0,0,0,0.04);
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
+  color: var(--ui-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+#paint-reset-btn:hover {
+  background: rgba(0,0,0,0.08);
+  color: var(--ui-text);
 }
 
 /* ═══════════════════════════════════════════════════
-   § MODEL NAME BADGE (top centre)
+   § BADGE
 ═══════════════════════════════════════════════════ */
 #model-badge {
-  position: fixed; top: 22px; left: 50%; transform: translateX(-50%);
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 20;
   background: var(--ui-bg);
   border: 1px solid var(--ui-border);
   border-radius: 20px;
-  padding: 4px 14px;
-  font-family: var(--f-meta); font-size: 10px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
+  padding: 6px 14px;
+  font-family: var(--f-meta);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: var(--ls-stencil);
+  text-transform: uppercase;
   color: var(--ui-muted);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  white-space: nowrap;
   transition: opacity var(--dur-mid);
-  white-space: nowrap; max-width: 280px;
-  overflow: hidden; text-overflow: ellipsis;
 }
-#model-badge.hidden { opacity: 0; }
+#model-badge.hidden { opacity: 0; pointer-events: none; }
 
 /* ═══════════════════════════════════════════════════
    § DRAG HINT
 ═══════════════════════════════════════════════════ */
 #drag-hint {
-  position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
-  z-index: 10;
-  font-family: var(--f-meta); font-size: 9px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: rgba(0,0,0,0.18);
-  display: flex; align-items: center; gap: 10px;
-  pointer-events: none; transition: opacity 0.8s;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 19;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.04);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  font-size: 10px;
+  color: var(--ui-muted);
+  letter-spacing: var(--ls-open);
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
+  transition: opacity var(--dur-mid);
 }
-#drag-hint.hidden { opacity: 0; }
-.hint-line { width: 22px; height: 1px; background: rgba(0,0,0,0.13); }
-.rotate-icon { animation: spinSlow 8s linear infinite; }
-@keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+#drag-hint.hidden { opacity: 0; pointer-events: none; }
 
 /* ═══════════════════════════════════════════════════
-   § FILE INPUTS (hidden)
+   § FILE INPUT (hidden)
 ═══════════════════════════════════════════════════ */
-#file-input       { display: none; }
-#file-input-tray  { display: none; }
-
-/* ═══════════════════════════════════════════════════
-   § MOBILE — two rows at ≤600px
-═══════════════════════════════════════════════════ */
-@media (max-width: 600px) {
-  /* Panel becomes a two-row layout */
-  #controls-row {
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 7px 8px;
-    justify-content: center;
-  }
-
-  /* Force second-row break after Model section */
-  .mobile-break {
-    flex-basis: 100%;
-    height: 0;
-    border-top: 1px solid var(--ui-border);
-    margin: 3px -8px 3px;
-    width: calc(100% + 16px);
-  }
-
-  .swatch { width: 18px; height: 18px; }
-  .swatch-custom { width: 18px; height: 18px; }
-  .swatch-custom input[type="color"] { width: 18px; height: 18px; }
-  .swatch-row { gap: 4px; }
-  .panel-label { font-size: 8px; padding: 0 2px; }
-  .icon-btn { width: 28px; height: 28px; }
-
-  #model-badge { font-size: 9px; padding: 4px 10px; max-width: calc(100vw - 40px); }
-  #panel { bottom: 18px; border-radius: 14px; }
-  #drag-hint { display: none; }
-
-  .model-tab { font-size: 9px; padding: 3px 8px; max-width: 110px; }
-  #switcher-section { padding: 5px 6px; }
-}
-
-@media (max-width: 400px) {
-  .swatch { width: 16px; height: 16px; }
-  .swatch-custom { width: 16px; height: 16px; }
-  .swatch-custom input[type="color"] { width: 16px; height: 16px; }
-  .panel-divider { margin: 0 1px; }
-}
-
-/* ═══════════════════════════════════════════════════
-   § MATERIAL PAINT TRAY
-═══════════════════════════════════════════════════ */
-#paint-tray {
-  display: none;
-  flex-direction: column;
-  gap: 0;
-  border-top: 1px solid var(--ui-border);
-  padding: 10px 12px 8px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-#paint-tray.open {
-  display: flex;
-}
-#paint-tray-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-#paint-reset-btn {
-  display: flex; align-items: center; gap: 4px;
-  border: none; background: transparent;
-  font-family: var(--f-meta); font-size: 9px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--ui-muted); cursor: pointer;
-  padding: 3px 7px; border-radius: 5px;
-  transition: background var(--dur-fast), color var(--dur-fast);
-}
-#paint-reset-btn:hover {
-  background: rgba(91,160,164,0.10);
-  color: var(--c-accent);
-}
-#paint-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-#paint-empty {
-  font-family: var(--f-meta); font-size: 9px; font-weight: 700;
-  letter-spacing: var(--ls-stencil); text-transform: uppercase;
-  color: var(--ui-micro); text-align: center; padding: 8px 0;
-}
-.mat-slot {
-  display: flex; align-items: center; gap: 8px;
-}
-.mat-slot-label {
-  font-family: var(--f-meta); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.10em; text-transform: uppercase;
-  color: var(--ui-text); flex: 1;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.mat-slot-swatch {
-  width: 22px; height: 22px; border-radius: 50%;
-  border: 1.5px solid var(--ui-border);
-  cursor: pointer; flex-shrink: 0;
-  overflow: hidden; position: relative;
-  transition: transform 0.15s, border-color 0.15s;
-}
-.mat-slot-swatch:hover { transform: scale(1.15); border-color: var(--c-accent); }
-.mat-slot-swatch input[type="color"] {
-  opacity: 0; position: absolute;
-  inset: 0; width: 100%; height: 100%; cursor: pointer;
-}
-.mat-slot-reset {
-  width: 20px; height: 20px; border-radius: 5px; border: none;
-  background: transparent; color: var(--ui-micro);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  transition: background var(--dur-fast), color var(--dur-fast);
-}
-.mat-slot-reset:hover { background: rgba(0,0,0,0.06); color: var(--ui-text); }
-
-/* Scrollbar styling for paint tray */
-#paint-tray::-webkit-scrollbar { width: 4px; }
-#paint-tray::-webkit-scrollbar-track { background: transparent; }
-#paint-tray::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 2px; }
+#file-input, #file-input-tray { display: none; }
 </style>
 </head>
 <body>
 
 <div id="viewer-wrap">
-  <model-viewer
-    id="mv"
-    alt="3D model"
-    camera-controls
-    auto-rotate
-    auto-rotate-delay="1000"
-    rotation-per-second="4deg"
-    shadow-intensity="1.4"
-    shadow-softness="0.85"
-    exposure="1.1"
-    tone-mapping="commerce"
-    skybox-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
-    interaction-prompt="none"
-    loading="eager"
-    ar ar-modes="webxr scene-viewer quick-look"
-  ></model-viewer>
+  <model-viewer id="mv" auto-rotate camera-controls shadow-intensity="1.4" exposure="1.1" skybox-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"></model-viewer>
+  <div id="studio-floor"></div>
 </div>
 
-<div id="studio-floor"></div>
-
-<!-- Empty state -->
-<div id="empty-state">
-  <div class="empty-icon">
-    <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
-      <path d="M6 22L16 8l10 14H6z" stroke="#1a1a1a" stroke-width="1.5" stroke-linejoin="round"/>
-      <circle cx="22" cy="10" r="3" stroke="#1a1a1a" stroke-width="1.5"/>
-    </svg>
-  </div>
-  <div class="empty-title">No model loaded</div>
-  <div class="empty-sub">Drop one or more .glb files anywhere<br>or click to browse</div>
-  <button class="empty-btn" id="browse-btn">Browse files</button>
-</div>
-
-<!-- Drop overlay -->
 <div id="drop-overlay">
   <div id="drop-ring">
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <path d="M14 6v12M9 11l5-5 5 5" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M5 20h18" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <path d="M16 2v28M2 16h28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </svg>
-    <span>Drop to add</span>
+    <span>Drop model here</span>
   </div>
 </div>
 
-<!-- Model name badge -->
-<div id="model-badge" class="hidden">—</div>
-
-<!-- Drag hint -->
-<div id="drag-hint" class="hidden">
-  <div class="hint-line"></div>
-  <svg class="rotate-icon" width="13" height="13" viewBox="0 0 14 14" fill="none">
-    <path d="M2 7a5 5 0 1 0 5-5" stroke="rgba(0,0,0,0.28)" stroke-width="1.2" stroke-linecap="round"/>
-    <path d="M7 2L5 4l2 2" stroke="rgba(0,0,0,0.28)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-  Drag to rotate
-  <div class="hint-line"></div>
+<div id="empty-state">
+  <div class="empty-icon">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect x="2" y="2" width="24" height="24" rx="3" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M14 8v12M8 14h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="empty-title">No Models Loaded</div>
+  <div class="empty-sub">Drag & drop .glb or .gltf files<br>or use the button below</div>
+  <button class="empty-btn" id="browse-btn">Browse Files</button>
 </div>
 
-<!-- Control panel — single squircle pill -->
+<div id="model-badge" class="hidden">Torch</div>
+<div id="drag-hint" class="hidden">💡 Drag to rotate • Scroll to zoom</div>
+
+<!-- Paint Tray -->
+<div id="paint-tray"></div>
+
+<!-- Main Control Panel -->
 <div id="panel" class="hidden">
 
-  <!-- Model switcher section — hidden until 2+ models loaded -->
+  <!-- Switcher section (model tabs) -->
   <div id="switcher-section"></div>
 
-  <!-- Main controls row -->
-  <div id="controls-row">
-
-    <!-- Open file -->
-    <button class="icon-btn" id="open-btn" title="Add model">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-        <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3H6l1.5 2H13A1.5 1.5 0 0 1 14 6.5V12A1.5 1.5 0 0 1 12.5 13.5h-9A1.5 1.5 0 0 1 2 12V4.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-      </svg>
-    </button>
-
-    <div class="panel-divider"></div>
-
-    <!-- Studio background -->
+  <!-- Controls row 1: Studio colors + Lighting -->
+  <div class="control-row">
     <span class="panel-label">Studio</span>
     <div class="swatch-row" id="studio-swatches">
-      <div class="swatch active" data-color="#f5f5f3" style="background:#f5f5f3;" title="Warm white"></div>
-      <div class="swatch" data-color="#ffffff" style="background:#ffffff; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);" title="Pure white"></div>
-      <div class="swatch" data-color="#e8e4e0" style="background:#e8e4e0;" title="Stone"></div>
-      <div class="swatch" data-color="#080909" style="background:#080909;" title="Void"></div>
-      <div class="swatch" data-color="#0d1b2a" style="background:#0d1b2a;" title="Deep navy"></div>
-      <div class="swatch-custom" title="Custom studio colour">
+      <div class="swatch active" data-color="#f5f5f3" style="background:#f5f5f3;" title="Neutral"></div>
+      <div class="swatch" data-color="#ffffff" style="background:#ffffff;" title="White"></div>
+      <div class="swatch" data-color="#2a2a2a" style="background:#2a2a2a;" title="Dark"></div>
+      <div class="swatch-custom">
         <input type="color" id="studio-color-custom" value="#f5f5f3">
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-          <path d="M5 2v6M2 5h6" stroke="rgba(0,0,0,0.3)" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1"/></svg>
       </div>
     </div>
 
     <div class="panel-divider"></div>
 
-    <!-- Paint (per-material) button -->
-    <button class="icon-btn" id="paint-btn" title="Paint materials">
-      <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
-        <path d="M3 11.5C3 10.67 3.67 10 4.5 10s1.5.67 1.5 1.5S4.5 13.5 4.5 13.5 3 12.33 3 11.5z" stroke="currentColor" stroke-width="1.2"/>
-        <path d="M6 10L11.5 4.5a1.41 1.41 0 0 0-2-2L4 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M9.5 3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-
-    <div class="panel-divider"></div>
-
-    <!-- Lighting -->
     <span class="panel-label">Light</span>
-    <button class="icon-btn active" id="light-studio" title="Studio lighting">
-      <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
-        <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/>
-        <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M10.8 3.2l-1 1M3.2 10.8l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-    <button class="icon-btn" id="light-dramatic" title="Dramatic lighting">
-      <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
-        <path d="M7.5 1L9.5 6H14L10.5 8.5 12 13 7.5 10 3 13l1.5-4.5L1 6h4.5L7.5 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <button class="icon-btn" id="light-outdoor" title="Outdoor lighting">
-      <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
-        <path d="M2 10c0-3 2.5-5.5 5.5-5.5S13 7 13 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-        <path d="M1 10h13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-        <path d="M7.5 1v1.5M3.5 2.5l1 1M11.5 2.5l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-
-    <div class="panel-divider"></div>
-
-    <!-- Rotate toggle -->
-    <button class="icon-btn active" id="rotate-btn" title="Toggle auto-rotation">
-      <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
-        <path d="M2 7.5a5.5 5.5 0 1 0 5.5-5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-        <path d="M7.5 2L5.5 4l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-
-    <!-- Reset camera -->
-    <button class="icon-btn" id="reset-btn" title="Reset camera">
-      <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
-        <rect x="2" y="2" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/>
-        <path d="M5 7.5h5M7.5 5v5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-
-    <div class="panel-divider"></div>
-
-    <!-- Light / Dark toggle -->
-    <button class="icon-btn" id="darkmode-btn" title="Toggle dark UI">
-      <svg id="darkmode-icon-moon" width="14" height="14" viewBox="0 0 15 15" fill="none">
-        <path d="M12.5 9A5.5 5.5 0 0 1 6 2.5a5.5 5.5 0 1 0 6.5 6.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-      </svg>
-      <svg id="darkmode-icon-sun" width="14" height="14" viewBox="0 0 15 15" fill="none" style="display:none;">
-        <circle cx="7.5" cy="7.5" r="2.5" stroke="currentColor" stroke-width="1.2"/>
-        <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M10.8 3.2l-1 1M3.2 10.8l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-
-    <!-- Mobile line break -->
-    <div class="mobile-break" style="display:none;" id="mobile-break"></div>
-
-  </div>
-
-  <!-- Material paint tray — slides open above the controls row -->
-  <div id="paint-tray">
-    <div id="paint-tray-header">
-      <span class="panel-label" style="padding:0;">Materials</span>
-      <button id="paint-reset-btn" title="Restore all original materials">
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-          <path d="M2 6a4 4 0 1 0 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          <path d="M6 2L4 4l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Reset all
+    <div class="swatch-row">
+      <button class="icon-btn active" id="light-studio" title="Studio">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="0.8"/><circle cx="7" cy="7" r="2" fill="currentColor"/></svg>
+      </button>
+      <button class="icon-btn" id="light-dramatic" title="Dramatic">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7a5 5 0 0 1 10 0" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>
+      </button>
+      <button class="icon-btn" id="light-outdoor" title="Outdoor">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="2.5" r="1.5" stroke="currentColor" stroke-width="0.8"/><path d="M2 12h10M4 8.5h6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <div id="paint-slots"></div>
-    <div id="paint-empty">Load a model to paint materials</div>
+  </div>
+
+  <!-- Controls row 2: Model colors -->
+  <div class="control-row">
+    <span class="panel-label">Model</span>
+    <div class="swatch-row" id="model-swatches">
+      <div class="swatch active" data-color="original" style="background:linear-gradient(135deg,#e0e0e0 0%,#a0a0a0 100%);" title="Original"></div>
+      <div class="swatch" data-color="#ffffff" style="background:#ffffff;" title="White"></div>
+      <div class="swatch" data-color="#1a1a1a" style="background:#1a1a1a;" title="Black"></div>
+      <div class="swatch" data-color="#c0c0c0" style="background:#c0c0c0;" title="Metal"></div>
+      <div class="swatch-custom">
+        <input type="color" id="model-color-custom" value="#c0c0c0">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1"/></svg>
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <button class="icon-btn" id="paint-btn" title="Paint materials">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="currentColor" stroke-width="1"/><path d="M4 10s0 2 3 2 3-2 3-2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="panel-divider"></div>
+
+    <button class="icon-btn" id="darkmode-btn" title="Toggle dark UI">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1a6 6 0 1 0 0 12A6 6 0 0 0 7 1Z" stroke="currentColor" stroke-width="1"/><path d="M7 3v8" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- Controls row 3: Rotate + Reset + Open -->
+  <div class="control-row">
+    <button class="icon-btn active" id="rotate-btn" title="Auto rotate">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 2l0.5 1.5M3 12l-0.5-1.5M2 4.5a5.5 5.5 0 1 1 10 0.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+    </button>
+
+    <button class="icon-btn" id="reset-btn" title="Reset camera">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1"/><path d="M4.5 7h5M7 4.5v5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+    </button>
+
+    <button class="icon-btn" id="open-btn" title="Add model">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </button>
   </div>
 
 </div>
 
-<input type="file" id="file-input" accept=".glb,.gltf" multiple>
-<input type="file" id="file-input-tray" accept=".glb,.gltf" multiple>
+<!-- Hidden file inputs -->
+<input type="file" id="file-input" multiple accept=".glb,.gltf">
+<input type="file" id="file-input-tray" multiple accept=".glb,.gltf">
 
 <script>
 'use strict';
@@ -744,22 +687,14 @@ const badge         = document.getElementById('model-badge');
 const dragHint      = document.getElementById('drag-hint');
 const fileInput     = document.getElementById('file-input');
 const fileInputTray = document.getElementById('file-input-tray');
-const viewerWrap    = document.getElementById('viewer-wrap');
-const studioFloor   = document.getElementById('studio-floor');
-const switcherSection = document.getElementById('switcher-section');
-const mobileBreak   = document.getElementById('mobile-break');
 const paintTray     = document.getElementById('paint-tray');
-const paintSlots    = document.getElementById('paint-slots');
-const paintEmpty    = document.getElementById('paint-empty');
+const switcherSection = document.getElementById('switcher-section');
 
-let modelList     = [];
-let activeIndex   = -1;
-let autoRotating  = true;
-let hintDone      = false;
-let isDarkUI      = false;
-
-// Per-model: stores { src, name, isObjectUrl, materialOverrides: {matIndex: hex|null} }
-// null means "use original"
+let modelList       = [];
+let activeIndex     = -1;
+let autoRotating    = true;
+let isDarkUI        = false;
+let hintDone        = false;
 
 const HDRIS = {
   studio:   'https://modelviewer.dev/shared-assets/environments/neutral.hdr',
@@ -767,587 +702,129 @@ const HDRIS = {
   outdoor:  'https://modelviewer.dev/shared-assets/environments/aircraft_workshop_01_1k.hdr',
 };
 
-// ── Mobile break visibility
-function updateMobileBreak() {
-  const isMobile = window.matchMedia('(max-width: 600px)').matches;
-  mobileBreak.style.display = isMobile ? 'block' : 'none';
-}
-updateMobileBreak();
-window.addEventListener('resize', updateMobileBreak);
+// ── MATERIAL CAPTURE & OVERRIDE ──
+const originalMaterials = new Map();
 
-// ── Colour helpers
-function isColorDark(hex) {
-  const c = hex.replace('#','');
-  const r = parseInt(c.substr(0,2),16),
-        g = parseInt(c.substr(2,2),16),
-        b = parseInt(c.substr(4,2),16);
-  return (r*299 + g*587 + b*114) / 1000 < 128;
-}
-function hexToRgb01(hex) {
-  const c = hex.replace('#','');
-  return [
-    parseInt(c.substr(0,2),16)/255,
-    parseInt(c.substr(2,2),16)/255,
-    parseInt(c.substr(4,2),16)/255,
-    1.0
-  ];
-}
-function rgb01ToHex(arr) {
-  return '#' + arr.slice(0,3).map(v => {
-    const h = Math.round(v * 255).toString(16);
-    return h.length === 1 ? '0' + h : h;
-  }).join('');
-}
-
-// ── Studio background + UI token update
-function setStudioColor(hex) {
-  viewerWrap.style.background = hex;
-  document.body.style.background = hex;
-  const dark = isColorDark(hex);
-
-  studioFloor.style.background = dark
-    ? 'linear-gradient(to top, rgba(255,255,255,0.03) 0%, transparent 100%)'
-    : 'linear-gradient(to top, rgba(0,0,0,0.035) 0%, transparent 100%)';
-
-  document.querySelectorAll('.swatch-custom svg path').forEach(p => {
-    p.setAttribute('stroke', dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)');
-  });
-}
-
-// ── Dark / light UI toggle (independent of studio background)
-function setDarkUI(dark) {
-  isDarkUI = dark;
-  [panel, badge].forEach(el => el.classList.toggle('ui-dark', dark));
-  const moonIcon = document.getElementById('darkmode-icon-moon');
-  const sunIcon  = document.getElementById('darkmode-icon-sun');
-  moonIcon.style.display = dark ? 'none' : '';
-  sunIcon.style.display  = dark ? ''     : 'none';
-  document.getElementById('darkmode-btn').classList.toggle('active', dark);
-}
-
-// ── Store original material data per-material when model loads
-// originalMaterials[modelSrc][matIndex] = { baseColor, metallic, roughness }
-const originalMaterials = {};
-
-function captureOriginals(src) {
+async function captureOriginals(src) {
+  if (originalMaterials.has(src)) return;
+  await mv.updateComplete;
   const model = mv.model;
   if (!model?.materials?.length) return;
-  if (originalMaterials[src]) return; // already captured
-  const store = {};
-  model.materials.forEach((mat, i) => {
-    const pbr = mat.pbrMetallicRoughness;
-    if (!pbr) return;
-    const bc = pbr.baseColorFactor;
-    store[i] = {
-      baseColor: [...bc],
-      metallic:  pbr.metallicFactor,
-      roughness: pbr.roughnessFactor,
-    };
-  });
-  originalMaterials[src] = store;
+  const captured = model.materials.map(m => ({ pbr: m.pbrMetallicRoughness }));
+  originalMaterials.set(src, captured);
 }
 
-// ── Apply a single material slot colour (or restore original)
-function applySlotColor(matIndex, hexOrNull) {
-  const model = mv.model;
-  if (!model?.materials) return;
-  const mat = model.materials[matIndex];
-  if (!mat) return;
-  const pbr = mat.pbrMetallicRoughness;
-  if (!pbr) return;
-
-  const src = modelList[activeIndex]?.src;
-
-  if (hexOrNull === null) {
-    // restore original
-    const orig = originalMaterials[src]?.[matIndex];
-    if (orig) {
-      pbr.setBaseColorFactor(orig.baseColor);
-      pbr.setMetallicFactor(orig.metallic);
-      pbr.setRoughnessFactor(orig.roughness);
-    }
-  } else {
-    pbr.setBaseColorFactor(hexToRgb01(hexOrNull));
-    pbr.setMetallicFactor(0.0);
-    pbr.setRoughnessFactor(0.45);
-  }
-
-  // Save override in model entry
-  if (activeIndex >= 0) {
-    modelList[activeIndex].materialOverrides[matIndex] = hexOrNull;
-  }
-}
-
-// ── Restore ALL materials on the current model to their originals
 function resetAllMaterials() {
-  const model = mv.model;
-  if (!model?.materials) return;
-  const src = modelList[activeIndex]?.src;
-  const store = originalMaterials[src];
-  if (!store) return;
-
-  model.materials.forEach((mat, i) => {
-    const pbr = mat.pbrMetallicRoughness;
-    if (!pbr) return;
-    const orig = store[i];
-    if (!orig) return;
-    pbr.setBaseColorFactor(orig.baseColor);
-    pbr.setMetallicFactor(orig.metallic);
-    pbr.setRoughnessFactor(orig.roughness);
-  });
-
-  if (activeIndex >= 0) {
-    modelList[activeIndex].materialOverrides = {};
-  }
-
-  // Refresh paint tray to show original swatches
+  if (activeIndex < 0) return;
+  const entry = modelList[activeIndex];
+  entry.materialOverrides = {};
+  reapplyOverrides();
   renderPaintTray();
 }
 
-// ── Re-apply stored overrides after model (re)loads
 function reapplyOverrides() {
   if (activeIndex < 0) return;
-  const overrides = modelList[activeIndex].materialOverrides;
-  Object.entries(overrides).forEach(([idx, hex]) => {
-    applySlotColor(Number(idx), hex);
-  });
-}
-
-// ── Render the per-material paint tray
-function renderPaintTray() {
-  paintSlots.innerHTML = '';
+  const entry = modelList[activeIndex];
   const model = mv.model;
-  if (!model?.materials?.length) {
-    paintEmpty.style.display = '';
-    return;
-  }
-  paintEmpty.style.display = 'none';
-
-  const src = modelList[activeIndex]?.src;
-  const overrides = modelList[activeIndex]?.materialOverrides || {};
-  const store = originalMaterials[src] || {};
-
+  if (!model?.materials?.length) return;
   model.materials.forEach((mat, i) => {
     const pbr = mat.pbrMetallicRoughness;
-    const orig = store[i];
-    const override = overrides[i]; // hex string or undefined/null
-    const isOverridden = override != null;
-
-    // Current displayed color
-    let currentHex;
-    if (isOverridden) {
-      currentHex = override;
-    } else if (orig) {
-      currentHex = rgb01ToHex(orig.baseColor);
-    } else if (pbr) {
-      currentHex = rgb01ToHex([...pbr.baseColorFactor]);
-    } else {
-      currentHex = '#cccccc';
+    if (!pbr) return;
+    const override = entry.materialOverrides[i];
+    if (override) {
+      if (override.color) pbr.setBaseColorFactor(override.color);
+      if (override.metallic !== undefined) pbr.setMetallicFactor(override.metallic);
+      if (override.roughness !== undefined) pbr.setRoughnessFactor(override.roughness);
     }
-
-    const row = document.createElement('div');
-    row.className = 'mat-slot';
-
-    const label = document.createElement('span');
-    label.className = 'mat-slot-label';
-    label.textContent = mat.name || `Material ${i + 1}`;
-    label.title = mat.name || `Material ${i + 1}`;
-
-    const swatchWrap = document.createElement('div');
-    swatchWrap.className = 'mat-slot-swatch';
-    swatchWrap.style.background = currentHex;
-    swatchWrap.title = 'Click to pick colour';
-
-    const colorInput = document.createElement('input');
-    colorInput.type = 'color';
-    colorInput.value = currentHex;
-    colorInput.addEventListener('input', e => {
-      const hex = e.target.value;
-      swatchWrap.style.background = hex;
-      applySlotColor(i, hex);
-    });
-    swatchWrap.appendChild(colorInput);
-
-    const resetBtn = document.createElement('button');
-    resetBtn.className = 'mat-slot-reset';
-    resetBtn.title = 'Restore original';
-    resetBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6a4 4 0 1 0 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 2L4 4l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    resetBtn.style.opacity = isOverridden ? '1' : '0.3';
-    resetBtn.style.pointerEvents = isOverridden ? 'all' : 'none';
-    resetBtn.addEventListener('click', () => {
-      applySlotColor(i, null);
-      // Update swatch back to original
-      if (orig) {
-        const origHex = rgb01ToHex(orig.baseColor);
-        swatchWrap.style.background = origHex;
-        colorInput.value = origHex;
-      }
-      resetBtn.style.opacity = '0.3';
-      resetBtn.style.pointerEvents = 'none';
-    });
-
-    row.appendChild(label);
-    row.appendChild(swatchWrap);
-    row.appendChild(resetBtn);
-    paintSlots.appendChild(row);
   });
 }
 
-// ── Switch to model at index
-function switchTo(index) {
-  if (index < 0 || index >= modelList.length) return;
-  activeIndex = index;
-  const entry = modelList[index];
+function renderPaintTray() {
+  if (activeIndex < 0) return;
+  const model = mv.model;
+  if (!model?.materials?.length) {
+    paintTray.innerHTML = '';
+    return;
+  }
 
+  const html = model.materials.map((m, i) => {
+    const override = modelList[activeIndex].materialOverrides[i] || {};
+    const color = override.color ? `rgba(${Math.round(override.color[0]*255)},${Math.round(override.color[1]*255)},${Math.round(override.color[2]*255)},1)` : '#888888';
+    const name = `Material ${i + 1}`;
+    return `
+      <div class="paint-field">
+        <div class="paint-swatch" data-idx="${i}" style="background:${color};"></div>
+        <span class="paint-name">${name}</span>
+      </div>
+    `;
+  }).join('') + '<button id="paint-reset-btn">Reset All</button>';
+
+  paintTray.innerHTML = html;
+  document.getElementById('paint-reset-btn').addEventListener('click', resetAllMaterials);
+  paintTray.querySelectorAll('.paint-swatch').forEach(s => {
+    s.addEventListener('click', e => {
+      const idx = parseInt(e.target.dataset.idx);
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.addEventListener('input', ev => {
+        const hex = ev.target.value;
+        const r = parseInt(hex.substr(1,2), 16) / 255;
+        const g = parseInt(hex.substr(3,2), 16) / 255;
+        const b = parseInt(hex.substr(5,2), 16) / 255;
+        if (!modelList[activeIndex].materialOverrides[idx]) {
+          modelList[activeIndex].materialOverrides[idx] = {};
+        }
+        modelList[activeIndex].materialOverrides[idx].color = [r, g, b, 1];
+        reapplyOverrides();
+        renderPaintTray();
+      });
+      input.click();
+    });
+  });
+}
+
+// ── STUDIO COLOR ──
+function setStudioColor(hex) {
+  const viewerWrap = document.getElementById('viewer-wrap');
+  viewerWrap.style.background = hex;
+  document.body.style.background = hex;
+
+  const isDark = isColorDark(hex);
+  document.getElementById('studio-floor').style.background = isDark
+    ? 'linear-gradient(to top, rgba(255,255,255,0.04) 0%, transparent 100%)'
+    : 'linear-gradient(to top, rgba(0,0,0,0.035) 0%, transparent 100%)';
+
+  const root = document.documentElement;
+  if (isDark) {
+    root.classList.add('ui-dark');
+  } else {
+    root.classList.remove('ui-dark');
+  }
+}
+
+function isColorDark(hex) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substr(0,2), 16);
+  const g = parseInt(c.substr(2,2), 16);
+  const b = parseInt(c.substr(4,2), 16);
+  return (r*299 + g*587 + b*114) / 1000 < 128;
+}
+
+function hexToRgb01(hex) {
+  const c = hex.replace('#', '');
+  return [parseInt(c.substr(0,2),16)/255, parseInt(c.substr(2,2),16)/255, parseInt(c.substr(4,2),16)/255, 1];
+}
+
+// ── MODEL SWITCHING ──
+function switchTo(idx) {
+  if (idx < 0 || idx >= modelList.length) return;
+  activeIndex = idx;
+  const entry = modelList[idx];
   mv.src = entry.src;
   badge.textContent = entry.name;
-  badge.classList.remove('hidden');
-
   renderSwitcher();
 }
 
-// ══════════════════════════════════════════════════════════════
-// § GLB NORMAL FIXER — pre-processes binary before model-viewer
-//   sees it. Flips index winding on any primitive where the
-//   majority of triangles have normals pointing inward.
-// ══════════════════════════════════════════════════════════════
-
-// glTF component type → TypedArray constructor
-const COMPONENT_TYPES = {
-  5120: Int8Array,  5121: Uint8Array,
-  5122: Int16Array, 5123: Uint16Array,
-  5125: Uint32Array, 5126: Float32Array,
-};
-// accessor type → number of components
-const TYPE_SIZES = { SCALAR:1, VEC2:2, VEC3:3, VEC4:4, MAT2:4, MAT3:9, MAT4:16 };
-
-/**
- * Build a typed accessor view from glTF JSON + binary buffer.
- * Returns a flat TypedArray of (count × components) elements.
- */
-function readAccessor(json, bin, accessorIndex) {
-  const acc  = json.accessors[accessorIndex];
-  const bv   = json.bufferViews[acc.bufferView];
-  const Ctor = COMPONENT_TYPES[acc.componentType];
-  const n    = TYPE_SIZES[acc.type];
-  const byteOffset = (bv.byteOffset || 0) + (acc.byteOffset || 0);
-  const byteStride = bv.byteStride;
-  const count = acc.count;
-
-  if (!byteStride || byteStride === Ctor.BYTES_PER_ELEMENT * n) {
-    // Packed — slice directly
-    return new Ctor(bin, byteOffset, count * n);
-  }
-
-  // Interleaved — copy out
-  const out = new Ctor(count * n);
-  const view = new DataView(bin);
-  for (let i = 0; i < count; i++) {
-    const base = byteOffset + i * byteStride;
-    for (let c = 0; c < n; c++) {
-      if (Ctor === Float32Array) {
-        out[i * n + c] = view.getFloat32(base + c * 4, true);
-      } else {
-        out[i * n + c] = view[`get${Ctor.name.replace('Array','')}`](
-          base + c * Ctor.BYTES_PER_ELEMENT, true
-        );
-      }
-    }
-  }
-  return out;
-}
-
-/** Cross product of two vec3s → result written into `out` */
-function cross(ax,ay,az, bx,by,bz, out) {
-  out[0] = ay*bz - az*by;
-  out[1] = az*bx - ax*bz;
-  out[2] = ax*by - ay*bx;
-}
-
-/** Dot product of two vec3s */
-function dot(ax,ay,az, bx,by,bz) { return ax*bx + ay*by + az*bz; }
-
-/**
- * Flip winding order of a typed index array in-place.
- * Swaps indices [1] and [2] of every triangle triple.
- */
-function flipIndices(arr) {
-  for (let i = 0; i < arr.length; i += 3) {
-    const t = arr[i+1]; arr[i+1] = arr[i+2]; arr[i+2] = t;
-  }
-}
-
-/**
- * Flip all VEC3 normals in-place (negate each component).
- */
-function flipNormals(arr) {
-  for (let i = 0; i < arr.length; i++) arr[i] = -arr[i];
-}
-
-/**
- * Main fix: takes a GLB ArrayBuffer, returns a (possibly modified)
- * ArrayBuffer with corrected winding on any inside-out primitives.
- *
- * Strategy per primitive:
- *   1. Read POSITION + INDICES (or synthesise 0,1,2,… if unindexed)
- *   2. Read NORMAL if present
- *   3. For up to 512 sampled triangles compute the geometric face normal
- *      and dot it against the average stored vertex normal.
- *   4. If >60% of sampled triangles are flipped → flip the index buffer
- *      and negate stored normals so lighting is correct.
- *   5. Rewrite only the modified buffer views back into the binary chunk.
- */
-async function fixGlbNormals(arrayBuffer) {
-  const bytes = new Uint8Array(arrayBuffer);
-  const view  = new DataView(arrayBuffer);
-
-  // ── Validate GLB magic 0x46546C67
-  if (view.getUint32(0, true) !== 0x46546C67) return arrayBuffer;
-
-  const jsonChunkLen  = view.getUint32(12, true);
-  const jsonChunkType = view.getUint32(16, true);
-  if (jsonChunkType !== 0x4E4F534A) return arrayBuffer; // chunk 0 must be JSON
-
-  const jsonText = new TextDecoder().decode(bytes.slice(20, 20 + jsonChunkLen));
-  const json = JSON.parse(jsonText);
-
-  // ── Locate binary chunk (chunk 1)
-  const binChunkOffset = 20 + jsonChunkLen;
-  const binChunkStart  = (binChunkOffset + 3) & ~3; // 4-byte aligned
-  const binChunkLen    = view.getUint32(binChunkStart, true);
-  const binChunkType   = view.getUint32(binChunkStart + 4, true);
-  if (binChunkType !== 0x004E4942) return arrayBuffer; // no BIN chunk
-
-  // Mutable copy of the binary buffer — all fixes are written in-place here
-  const binStart = binChunkStart + 8;
-  const bin = arrayBuffer.slice(binStart, binStart + binChunkLen);
-
-  let anyFixed = false;
-  const tmp = new Float32Array(3);
-
-  // Track which material indices we've cleared doubleSided on, and which
-  // tangent accessors we've already flipped (shared accessors appear once).
-  const clearedDoubleSided  = new Set();
-  const flippedTangentAccs  = new Set();
-  const flippedNormalAccs   = new Set();
-
-  for (const mesh of (json.meshes || [])) {
-    for (const prim of (mesh.primitives || [])) {
-      if (prim.mode !== undefined && prim.mode !== 4) continue; // TRIANGLES only
-
-      const posIdx = prim.attributes?.POSITION;
-      if (posIdx === undefined) continue;
-
-      const positions = readAccessor(json, bin, posIdx);
-      const vertCount = json.accessors[posIdx].count;
-
-      // ── Build or read index array
-      let indices;
-      let indexAccessorIdx = prim.indices;
-      if (indexAccessorIdx !== undefined) {
-        indices = readAccessor(json, bin, indexAccessorIdx);
-      } else {
-        indices = new Uint32Array(vertCount);
-        for (let i = 0; i < vertCount; i++) indices[i] = i;
-        indexAccessorIdx = null;
-      }
-
-      const triCount = Math.floor(indices.length / 3);
-      if (triCount === 0) continue;
-
-      // ── Read normals
-      const normIdx = prim.attributes?.NORMAL;
-      let normals = null;
-      if (normIdx !== undefined) normals = readAccessor(json, bin, normIdx);
-
-      // ── Sample up to 512 triangles: geometric normal vs stored normal
-      const sampleStep = Math.max(1, Math.floor(triCount / 512));
-      let flippedCount = 0, testedCount = 0;
-
-      for (let t = 0; t < triCount; t += sampleStep) {
-        const i0 = indices[t*3], i1 = indices[t*3+1], i2 = indices[t*3+2];
-        if (i0 >= vertCount || i1 >= vertCount || i2 >= vertCount) continue;
-
-        const p0x=positions[i0*3],   p0y=positions[i0*3+1], p0z=positions[i0*3+2];
-        const p1x=positions[i1*3],   p1y=positions[i1*3+1], p1z=positions[i1*3+2];
-        const p2x=positions[i2*3],   p2y=positions[i2*3+1], p2z=positions[i2*3+2];
-
-        cross(p1x-p0x, p1y-p0y, p1z-p0z,
-              p2x-p0x, p2y-p0y, p2z-p0z, tmp);
-
-        if (normals) {
-          const snx = (normals[i0*3]   + normals[i1*3]   + normals[i2*3])   / 3;
-          const sny = (normals[i0*3+1] + normals[i1*3+1] + normals[i2*3+1]) / 3;
-          const snz = (normals[i0*3+2] + normals[i1*3+2] + normals[i2*3+2]) / 3;
-          if (dot(tmp[0],tmp[1],tmp[2], snx,sny,snz) < 0) flippedCount++;
-        } else {
-          testedCount = 0; break; // can't determine intent without stored normals
-        }
-        testedCount++;
-      }
-
-      if (testedCount === 0) continue;
-      if (flippedCount / testedCount <= 0.60) continue;
-
-      // ══════════════════════════════════════════
-      // This primitive is inside-out — fix it.
-      // ══════════════════════════════════════════
-      anyFixed = true;
-
-      // ── 1. Flip index winding (or vertex order for unindexed)
-      if (indexAccessorIdx !== null) {
-        const acc  = json.accessors[indexAccessorIdx];
-        const bv   = json.bufferViews[acc.bufferView];
-        const Ctor = COMPONENT_TYPES[acc.componentType];
-        const off  = (bv.byteOffset || 0) + (acc.byteOffset || 0);
-        flipIndices(new Ctor(bin, off, acc.count));
-      } else {
-        // Unindexed: swap vertex 1 and 2 within each triangle for positions
-        const posAcc = json.accessors[posIdx];
-        const posBv  = json.bufferViews[posAcc.bufferView];
-        const off    = (posBv.byteOffset || 0) + (posAcc.byteOffset || 0);
-        const livePos = new Float32Array(bin, off, posAcc.count * 3);
-        for (let t = 0; t < triCount; t++) {
-          const b = t * 9;
-          for (let c = 0; c < 3; c++) {
-            const x = livePos[b+3+c]; livePos[b+3+c] = livePos[b+6+c]; livePos[b+6+c] = x;
-          }
-        }
-        // Also swap normals if unindexed
-        if (normals && normIdx !== undefined) {
-          const normAcc = json.accessors[normIdx];
-          const normBv  = json.bufferViews[normAcc.bufferView];
-          const nOff    = (normBv.byteOffset || 0) + (normAcc.byteOffset || 0);
-          const liveN   = new Float32Array(bin, nOff, normAcc.count * 3);
-          for (let t = 0; t < triCount; t++) {
-            const b = t * 9;
-            for (let c = 0; c < 3; c++) {
-              const x = liveN[b+3+c]; liveN[b+3+c] = liveN[b+6+c]; liveN[b+6+c] = x;
-            }
-          }
-        }
-      }
-
-      // ── 2. Negate stored normals (each normal points the wrong way)
-      //       Guard against shared accessor being flipped twice.
-      if (normals && normIdx !== undefined && !flippedNormalAccs.has(normIdx)) {
-        flippedNormalAccs.add(normIdx);
-        const normAcc = json.accessors[normIdx];
-        const normBv  = json.bufferViews[normAcc.bufferView];
-        const nOff    = (normBv.byteOffset || 0) + (normAcc.byteOffset || 0);
-        flipNormals(new Float32Array(bin, nOff, normAcc.count * 3));
-      }
-
-      // ── 3. Flip tangent W component (negating handedness).
-      //       TANGENT is VEC4; the W component encodes the bitangent sign.
-      //       Winding flip reverses handedness, so W must be negated.
-      //       Guard against shared accessor being flipped twice.
-      const tanIdx = prim.attributes?.TANGENT;
-      if (tanIdx !== undefined && !flippedTangentAccs.has(tanIdx)) {
-        flippedTangentAccs.add(tanIdx);
-        const tanAcc  = json.accessors[tanIdx];
-        const tanBv   = json.bufferViews[tanAcc.bufferView];
-        const tOff    = (tanBv.byteOffset || 0) + (tanAcc.byteOffset || 0);
-        const liveTan = new Float32Array(bin, tOff, tanAcc.count * 4);
-        // Negate every W (index 3 in each VEC4)
-        for (let i = 3; i < liveTan.length; i += 4) liveTan[i] = -liveTan[i];
-      }
-
-      // ── 4. Clear doubleSided on the referenced material.
-      //       doubleSided=true is often set as a workaround for flipped normals.
-      //       Now that winding is correct, leaving it true causes z-fighting in
-      //       AR (both faces rendered) and confuses Quick Look's validation.
-      if (prim.material !== undefined && !clearedDoubleSided.has(prim.material)) {
-        clearedDoubleSided.add(prim.material);
-        const mat = json.materials?.[prim.material];
-        if (mat && mat.doubleSided === true) {
-          mat.doubleSided = false;
-        }
-      }
-    }
-  }
-
-  if (!anyFixed) return arrayBuffer;
-
-  // ── Reassemble GLB.
-  // The JSON chunk may have changed (doubleSided edits), so reserialise it,
-  // pad to 4-byte boundary with spaces (0x20), and rebuild all three lengths.
-  const newJsonBytes  = new TextEncoder().encode(JSON.stringify(json));
-  const newJsonPadded = (newJsonBytes.length + 3) & ~3;
-  const jsonPad       = newJsonPadded - newJsonBytes.length; // 0–3 space bytes
-
-  const newBinPadded  = (binChunkLen + 3) & ~3;
-  const binPad        = newBinPadded - binChunkLen;
-
-  // Total = 12 (header) + 8 (json chunk header) + jsonPadded
-  //       + 8 (bin chunk header) + binPadded
-  const totalLen = 12 + 8 + newJsonPadded + 8 + newBinPadded;
-
-  const out     = new Uint8Array(totalLen);
-  const outView = new DataView(out.buffer);
-
-  // GLB header
-  outView.setUint32(0,  0x46546C67, true); // magic "glTF"
-  outView.setUint32(4,  2,          true); // version 2
-  outView.setUint32(8,  totalLen,   true); // total file length
-
-  // JSON chunk
-  outView.setUint32(12, newJsonPadded, true); // chunk length
-  outView.setUint32(16, 0x4E4F534A,   true); // chunk type "JSON"
-  out.set(newJsonBytes, 20);
-  // Pad with spaces (valid JSON chunk padding per spec)
-  for (let i = 0; i < jsonPad; i++) out[20 + newJsonBytes.length + i] = 0x20;
-
-  // BIN chunk
-  const binChunkHeaderOffset = 20 + newJsonPadded;
-  outView.setUint32(binChunkHeaderOffset,     newBinPadded, true);
-  outView.setUint32(binChunkHeaderOffset + 4, 0x004E4942,  true); // "BIN\0"
-  out.set(new Uint8Array(bin), binChunkHeaderOffset + 8);
-  // Pad BIN with zeroes
-  for (let i = 0; i < binPad; i++) out[binChunkHeaderOffset + 8 + binChunkLen + i] = 0x00;
-
-  return out.buffer;
-}
-
-// ── Add model (fetches + fixes normals before handing to model-viewer)
-async function addModel(src, name, isObjectUrl = false) {
-  if (modelList.some(m => m.originalSrc === src)) return;
-
-  // Push a placeholder entry immediately so the UI updates
-  const entry = { src, originalSrc: src, name, isObjectUrl, materialOverrides: {}, fixedUrl: null };
-  modelList.push(entry);
-  const entryIndex = modelList.length - 1;
-
-  panel.classList.remove('hidden');
-  emptyState.classList.add('hidden');
-
-  if (!hintDone) {
-    dragHint.classList.remove('hidden');
-    setTimeout(() => { if (!hintDone) { hintDone = true; dragHint.classList.add('hidden'); } }, 4000);
-  }
-
-  // Fetch and fix — then switch to the corrected src
-  try {
-    const resp = await fetch(src);
-    const buf  = await resp.arrayBuffer();
-    const fixed = await fixGlbNormals(buf);
-
-    // If normals were fixed a new buffer is returned (different reference)
-    if (fixed !== buf) {
-      const blob = new Blob([fixed], { type: 'model/gltf-binary' });
-      const fixedUrl = URL.createObjectURL(blob);
-      entry.fixedUrl = fixedUrl;
-      entry.src = fixedUrl;
-    }
-  } catch (e) {
-    // Network error or not a GLB — proceed with original src unchanged
-    console.warn('[NormalFix] Could not process', name, e);
-  }
-
-  switchTo(entryIndex);
-}
-
-// ── Remove model
 function removeModel(index) {
   const entry = modelList[index];
   if (entry.fixedUrl) URL.revokeObjectURL(entry.fixedUrl);
@@ -1368,7 +845,6 @@ function removeModel(index) {
   switchTo(Math.min(index, modelList.length - 1));
 }
 
-// ── Render switcher tabs inside the panel
 function renderSwitcher() {
   switcherSection.innerHTML = '';
 
@@ -1410,20 +886,25 @@ function renderSwitcher() {
     }
   });
 
-  // Add-model button
+  // Add-model button (THIS IS THE PLUS BUTTON)
   const sep = document.createElement('div');
   sep.className = 'tab-divider';
   switcherSection.appendChild(sep);
 
   const addBtn = document.createElement('button');
   addBtn.id = 'tab-add';
+  addBtn.type = 'button';
   addBtn.title = 'Add model';
   addBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
-  addBtn.addEventListener('click', () => fileInputTray.click());
+  addBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fileInputTray.click();
+  });
   switcherSection.appendChild(addBtn);
 }
 
-// ── Load from File
+// ── LOAD FROM FILE ──
 async function loadFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   if (!['glb','gltf'].includes(ext)) return;
@@ -1431,13 +912,11 @@ async function loadFile(file) {
 
   if (ext === 'glb') {
     const buf   = await file.arrayBuffer();
-    const fixed = await fixGlbNormals(buf);
-    const blob  = new Blob([fixed], { type: 'model/gltf-binary' });
+    const blob  = new Blob([buf], { type: 'model/gltf-binary' });
     const url   = URL.createObjectURL(blob);
 
-    // Check de-dup against original file name to avoid double-load
     if (modelList.some(m => m.name === name)) return;
-    const entry = { src: url, originalSrc: url, name, isObjectUrl: true, materialOverrides: {}, fixedUrl: (fixed !== buf ? url : null) };
+    const entry = { src: url, originalSrc: url, name, isObjectUrl: true, materialOverrides: {}, fixedUrl: null };
     modelList.push(entry);
     panel.classList.remove('hidden');
     emptyState.classList.add('hidden');
@@ -1447,7 +926,6 @@ async function loadFile(file) {
     }
     switchTo(modelList.length - 1);
   } else {
-    // gltf — just load directly (text-based, no binary patching)
     const url = URL.createObjectURL(file);
     if (modelList.some(m => m.originalSrc === url)) return;
     const entry = { src: url, originalSrc: url, name, isObjectUrl: true, materialOverrides: {}, fixedUrl: null };
@@ -1458,7 +936,7 @@ async function loadFile(file) {
   }
 }
 
-// ── File input handlers
+// ── FILE INPUT HANDLERS ──
 fileInput.addEventListener('change', e => {
   Array.from(e.target.files).forEach(loadFile);
   fileInput.value = '';
@@ -1470,7 +948,7 @@ fileInputTray.addEventListener('change', e => {
 document.getElementById('browse-btn').addEventListener('click', () => fileInput.click());
 document.getElementById('open-btn').addEventListener('click', () => fileInputTray.click());
 
-// ── Drag & drop
+// ── DRAG & DROP ──
 let dragCount = 0;
 document.addEventListener('dragenter', e => {
   e.preventDefault(); dragCount++;
@@ -1487,7 +965,7 @@ document.addEventListener('drop', e => {
   Array.from(e.dataTransfer.files).forEach(loadFile);
 });
 
-// ── Studio swatches
+// ── STUDIO SWATCHES ──
 document.querySelectorAll('#studio-swatches .swatch').forEach(s => {
   s.addEventListener('click', () => {
     document.querySelectorAll('#studio-swatches .swatch').forEach(x => x.classList.remove('active'));
@@ -1501,32 +979,49 @@ document.getElementById('studio-color-custom').addEventListener('input', e => {
   setStudioColor(e.target.value);
 });
 
-// ── Dark/light UI toggle
-document.getElementById('darkmode-btn').addEventListener('click', () => setDarkUI(!isDarkUI));
+// ── DARK/LIGHT UI TOGGLE ──
+document.getElementById('darkmode-btn').addEventListener('click', () => {
+  isDarkUI = !isDarkUI;
+  document.documentElement.classList.toggle('ui-dark', isDarkUI);
+});
 
-// ── Paint tray toggle
+// ── PAINT TRAY TOGGLE ──
 document.getElementById('paint-btn').addEventListener('click', () => {
   const isOpen = paintTray.classList.toggle('open');
   document.getElementById('paint-btn').classList.toggle('active', isOpen);
   if (isOpen) renderPaintTray();
 });
 
-// ── Reset all materials button
-document.getElementById('paint-reset-btn').addEventListener('click', resetAllMaterials);
+// ── RESET ALL MATERIALS BUTTON ──
+document.getElementById('paint-reset-btn')?.addEventListener('click', resetAllMaterials);
 
-// ── Lighting
+// ── LIGHTING BUTTONS WITH ENHANCED EFFECTS ──
 const LIGHT_IDS = { studio: 'light-studio', dramatic: 'light-dramatic', outdoor: 'light-outdoor' };
 Object.entries(LIGHT_IDS).forEach(([env, id]) => {
   document.getElementById(id).addEventListener('click', () => {
     Object.values(LIGHT_IDS).forEach(bid => document.getElementById(bid).classList.remove('active'));
     document.getElementById(id).classList.add('active');
     mv.setAttribute('skybox-image', HDRIS[env]);
-    mv.setAttribute('exposure',        env === 'dramatic' ? '0.85' : env === 'outdoor' ? '1.3' : '1.1');
-    mv.setAttribute('shadow-intensity', env === 'dramatic' ? '2.0'  : env === 'outdoor' ? '1.2' : '1.4');
+
+    // Enhanced per-environment lighting effects
+    if (env === 'dramatic') {
+      mv.setAttribute('exposure', '0.75');
+      mv.setAttribute('shadow-intensity', '2.5');
+      mv.setAttribute('shadow-softness', '0.8');
+    } else if (env === 'outdoor') {
+      mv.setAttribute('exposure', '1.5');
+      mv.setAttribute('shadow-intensity', '0.9');
+      mv.setAttribute('shadow-softness', '0.3');
+    } else {
+      // Studio - neutral, balanced
+      mv.setAttribute('exposure', '1.1');
+      mv.setAttribute('shadow-intensity', '1.4');
+      mv.setAttribute('shadow-softness', '0.5');
+    }
   });
 });
 
-// ── Rotate toggle
+// ── ROTATE TOGGLE ──
 const rotateBtn = document.getElementById('rotate-btn');
 rotateBtn.addEventListener('click', () => {
   autoRotating = !autoRotating;
@@ -1534,14 +1029,14 @@ rotateBtn.addEventListener('click', () => {
   rotateBtn.classList.toggle('active', autoRotating);
 });
 
-// ── Reset camera
+// ── RESET CAMERA ──
 document.getElementById('reset-btn').addEventListener('click', () => {
   mv.cameraOrbit = 'auto auto auto';
   mv.fieldOfView = 'auto';
   mv.jumpCameraToGoal();
 });
 
-// ── Pause/resume rotation on interaction
+// ── PAUSE/RESUME ROTATION ON INTERACTION ──
 function pauseRot()  { if (autoRotating) mv.removeAttribute('auto-rotate'); }
 function resumeRot() { if (autoRotating) setTimeout(() => mv.setAttribute('auto-rotate',''), 800); }
 mv.addEventListener('mousedown',  pauseRot);
@@ -1550,12 +1045,12 @@ mv.addEventListener('mouseleave', resumeRot);
 mv.addEventListener('touchstart', pauseRot, { passive: true });
 mv.addEventListener('touchend',   resumeRot);
 
-// ── Dismiss drag hint on camera interaction
+// ── DISMISS DRAG HINT ON CAMERA INTERACTION ──
 mv.addEventListener('camera-change', () => {
   if (!hintDone && activeIndex >= 0) { hintDone = true; dragHint.classList.add('hidden'); }
 });
 
-// ── On model load: capture originals, re-apply overrides, refresh paint tray
+// ── ON MODEL LOAD ──
 mv.addEventListener('load', async () => {
   await mv.updateComplete;
   mv.jumpCameraToGoal();
@@ -1565,14 +1060,21 @@ mv.addEventListener('load', async () => {
   if (paintTray.classList.contains('open')) renderPaintTray();
 });
 
-// ── Init
+// ── INIT ──
 setStudioColor('#f5f5f3');
 
-// ── Preload from config
+// ── PRELOAD FROM CONFIG ──
 if (typeof MODELS !== 'undefined' && MODELS.length > 0) {
-  MODELS.forEach(m =>
-    addModel(m.src, m.name || m.src.split('/').pop().replace(/\.(glb|gltf)$/i,''))
-  );
+  MODELS.forEach(m => {
+    const name = m.name || m.src.split('/').pop().replace(/\.(glb|gltf)$/i,'');
+    const entry = { src: m.src, originalSrc: m.src, name, isObjectUrl: false, materialOverrides: {}, fixedUrl: null };
+    modelList.push(entry);
+  });
+  if (modelList.length > 0) {
+    panel.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    switchTo(0);
+  }
 }
 </script>
 </body>
