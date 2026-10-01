@@ -1,68 +1,41 @@
 /*
-  Self-hosted DIN. Drop your licensed WOFF2 files into /assets/fonts using
-  these exact names, or edit the src paths below to match your files.
-  Nothing here loads from an external font service.
+  Typography — four faces, each with a distinct job, mirroring the Figma
+  design direction.
 
-  If a weight/style file isn't available, that @font-face block simply won't
-  match and the browser falls back to the next family in the stack — it will
-  not synthesize a fake weight.
+    Special Elite  display only — the one big editorial headline. A
+                   typewriter face; it carries the "research desk"
+                   identity in a single gesture so nothing else has to.
+    Fraunces       italic, for titles and anything that IS citation
+                   content — source titles, the Bibliography heading.
+    Outfit         body/UI sans. Quiet on purpose.
+    DM Mono        the small uppercase wide-tracked labels — status,
+                   field names, counts. Reads like an annotation.
+
+  NOTE ON LOADING: these come from Google Fonts, matching the prototype.
+  That is one external request, and the only thing in this app that loads
+  from a third party. If you'd rather keep the app fully self-contained
+  (the original brief called for that), download these four families as
+  WOFF2 into assets/fonts/ and swap the @import below for @font-face
+  blocks like the DIN ones that used to live here — nothing else needs to
+  change, because everything references the variables.
+
+  The supplied DIN files are no longer used by default: this design's
+  identity comes from the typewriter/editorial pairing, and DIN on top
+  would be a fifth voice competing with the four above. To put it back as
+  the label face, point --font-mono at it.
 */
 
-@font-face {
-  font-family: "DIN";
-  src: url("../assets/fonts/DIN-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "DIN";
-  src: url("../assets/fonts/DIN-Medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "DIN";
-  src: url("../assets/fonts/DIN-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "DIN Condensed";
-  src: url("../assets/fonts/DIN-Condensed-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "DIN Condensed";
-  src: url("../assets/fonts/DIN-Condensed-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,600&family=Outfit:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Special+Elite&display=swap');
 
 :root {
-  /* Functional UI chrome — buttons, controls, status text, metadata labels.
-     Precise and technical, matching DIN's original signage/instrument-panel
-     character. */
-  --font-body: "DIN", Arial, Helvetica, sans-serif;
-  --font-label: "DIN Condensed", "DIN", Arial, Helvetica, sans-serif;
+  --font-display: 'Special Elite', 'Fraunces', Georgia, serif;
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Citation CONTENT — the wordmark, the dropzone headline, and every
-     rendered citation/bibliography entry. This is deliberately NOT DIN:
-     the app's chrome should feel like an instrument, but the bibliography
-     it produces should read like a bibliography. No extra font file is
-     loaded for this — it's a considered system-serif stack (the same
-     family of faces used in a lot of print/editorial work), so the
-     self-contained-deployment story doesn't change; there's just a second
-     typeface already sitting on most systems that earns its place instead
-     of defaulting to the UI sans everywhere. */
-  --font-editorial: Iowan Old Style, "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  /* Aliases so existing markup/JS referencing the old names keeps working
+     rather than silently falling back to a browser default. */
+  --font-body: var(--font-sans);
+  --font-label: var(--font-mono);
+  --font-editorial: var(--font-serif);
 }

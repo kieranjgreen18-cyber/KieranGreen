@@ -1,42 +1,50 @@
 /*
-  Design direction — "the scholarly index"
-  Citer's job is to turn scattered research into something you'd trust
-  enough to submit, so the palette borrows from the physical objects that
-  already carry that trust: library card catalogs, ledger paper, archival
-  ink. One deep "verified" green (not the generic SaaS/AI blue) stands in
-  for confirmed information; everything else stays close to ink-on-paper.
-  DIN carries the instrument-panel chrome (buttons, labels, status); a
-  serif carries anything that IS citation content, so the two typefaces
-  mark a real distinction — "the app talking to you" vs. "the bibliography
-  itself" — rather than being decoration.
+  Design direction — "the research desk"
+  Ported from the Figma prototype: warm cream paper, inverted espresso
+  header, copper rule. The palette is a single warm family rather than a
+  neutral grey UI with an accent dropped on top, which is what gives it
+  the printed-matter feel. Copper is the only saturated color and is
+  reserved for interactive + confirmed states, so it always means
+  something.
+
+  Status colors are tuned to sit inside that warm family — a generic
+  "success green" would read as a foreign element pasted onto the page.
 */
 
 :root {
-  /* --- Color --- */
-  --paper: #efeee5;
-  --paper-raised: #fbfaf5;
-  --ink: #1b1a15;
-  --ink-soft: #5c584a;
-  --line: #dcd8c8;
-  --line-strong: #b7b19b;
+  /* --- Core surfaces --- */
+  --paper: #f2ebe0;
+  --paper-raised: #ede6d8;
+  --paper-sunken: #e7dfcf;
+  --ink: #1c1208;
+  --ink-soft: #8a7562;
+  --line: #c8b89a;
+  --line-soft: #ddd4c0;
 
-  /* the one saturated color in the system — "confirmed/trustworthy" */
-  --accent: #275c47;
-  --accent-dim: #dfe8e0;
-  --accent-ink: #163a2c;
+  /* --- Copper accent --- */
+  --accent: #7c3d14;
+  --accent-bright: #a55a28;
+  --accent-dim: #f7ede0;
+  --accent-fg: #fef3e8;
 
-  --status-verified: #275c47;
-  --status-verified-bg: #e1ebe3;
+  /* Inverted header / primary button surface */
+  --espresso: #1c1208;
+  --espresso-fg: #f2ebe0;
+  --espresso-muted: #6b5c4a;
+
+  /* --- Status — all warm-family --- */
+  --status-verified: #5c6b3a;
+  --status-verified-bg: #e8e6d2;
   --status-ai: #9a6420;
-  --status-ai-bg: #f5ecd8;
-  --status-user: #3a4f82;
-  --status-user-bg: #e6eaf3;
-  --status-missing: #8a8570;
-  --status-missing-bg: #eae7d9;
+  --status-ai-bg: #f5e8d4;
+  --status-user: #5a5540;
+  --status-user-bg: #e9e4d4;
+  --status-missing: #a3937c;
+  --status-missing-bg: #e5dcc9;
   --status-error: #a13c2c;
-  --status-error-bg: #f5e5df;
+  --status-error-bg: #f3dfd7;
 
-  /* --- Spacing scale (4px base) --- */
+  /* --- Spacing (4px base) --- */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -46,59 +54,63 @@
   --sp-7: 48px;
   --sp-8: 64px;
 
-  /* --- Radius — deliberately small throughout; this is a precision
-     instrument, not a rounded consumer app --- */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
+  /* --- Radius — essentially none. Printed matter has no rounded corners,
+     and the hairline-rule layout reads wrong with them. --- */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
 
   /* --- Type scale --- */
-  --fs-label: 11px;
-  --fs-small: 13px;
-  --fs-body: 15px;
-  --fs-md: 17px;
-  --fs-lg: 22px;
-  --fs-xl: 30px;
-  --fs-xxl: 40px;
+  --fs-micro: 8.5px;   /* densest mono labels (tags) */
+  --fs-label: 9.5px;   /* standard mono label */
+  --fs-meta: 11px;     /* mono metadata */
+  --fs-small: 12px;
+  --fs-body: 14px;
+  --fs-cite: 12.5px;   /* rendered citation text */
+  --fs-md: 18px;
+  --fs-lg: 28px;
+  --fs-xl: 40px;
 
-  --lh-tight: 1.2;
-  --lh-normal: 1.5;
-  --lh-loose: 1.7;
+  --track-label: 0.2em;
+  --track-wide: 0.24em;
+
+  --lh-tight: 1.15;
+  --lh-normal: 1.55;
+  --lh-loose: 1.75;
 
   /* --- Motion --- */
   --ease-standard: cubic-bezier(0.2, 0.6, 0.2, 1);
-  --dur-fast: 120ms;
-  --dur-med: 220ms;
-
-  --shadow-card: 0 1px 2px rgba(27, 26, 21, 0.07), 0 1px 1px rgba(27, 26, 21, 0.04);
-  --shadow-raised: 0 8px 24px rgba(27, 26, 21, 0.14);
+  --dur-fast: 140ms;
+  --dur-med: 240ms;
+  --dur-slow: 700ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #171713;
-    --paper-raised: #201f1a;
-    --ink: #eeece2;
-    --ink-soft: #a8a394;
-    --line: #34332a;
-    --line-strong: #4a4839;
-
-    --accent: #6fb193;
-    --accent-dim: #1c2b24;
-    --accent-ink: #cfe8db;
-
-    --status-verified: #6fb193;
-    --status-verified-bg: #1a2c22;
-    --status-ai: #d9a75a;
-    --status-ai-bg: #332708;
-    --status-user: #92a6e0;
-    --status-user-bg: #1e2338;
-    --status-missing: #837e6c;
-    --status-missing-bg: #26241d;
-    --status-error: #dd7d68;
-    --status-error-bg: #3a201a;
-
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-raised: 0 10px 30px rgba(0, 0, 0, 0.55);
-  }
+/*
+  The paper texture: fractal-noise grain plus a few very low-opacity warm
+  washes. Fixed attachment so it reads as the surface the app sits on
+  rather than something that scrolls with the content. This is the one
+  piece of pure decoration in the design and it's what stops a flat cream
+  background from looking like an unstyled page.
+*/
+body {
+  background-color: var(--paper);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 18% 24%, rgba(160, 110, 55, 0.09) 0%, transparent 42%),
+    radial-gradient(ellipse at 78% 9%, rgba(200, 165, 100, 0.07) 0%, transparent 32%),
+    radial-gradient(ellipse at 90% 55%, rgba(140, 100, 45, 0.08) 0%, transparent 38%),
+    radial-gradient(ellipse at 35% 72%, rgba(180, 140, 80, 0.06) 0%, transparent 44%);
+  background-attachment: fixed;
+  background-size: 300px 300px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
+
+::selection { background: var(--accent-bright); color: var(--accent-fg); }
+
+/*
+  No dark-mode block. The previous design had one; this one deliberately
+  doesn't, because the identity here IS the warm paper — an inverted
+  version isn't the same product with different colors, it's a different
+  design that would need its own pass. Forcing one now would produce the
+  generic dark UI the brief explicitly warned against. The header is
+  already the dark element the eye needs for contrast.
+*/
