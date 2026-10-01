@@ -3,75 +3,104 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Citer — cite a whole research session at once</title>
+<title>Citer — from sources to bibliography</title>
 <meta name="description" content="Drop or paste a batch of links, images, or AI conversations and get MLA, APA, or Chicago citations, automatically." />
 <link rel="stylesheet" href="css/tokens.css" />
 <link rel="stylesheet" href="css/fonts.css" />
 <link rel="stylesheet" href="css/main.css" />
 </head>
-<body>
-<div class="app">
+<body data-state="empty">
 
-  <header class="topbar">
+<header class="topbar">
+  <div class="topbar__inner">
     <div class="topbar__mark">Citer</div>
     <div class="segmented" id="style-select" role="tablist" aria-label="Citation style">
       <button class="segmented__opt is-active" data-style="mla" role="tab" aria-selected="true">MLA</button>
       <button class="segmented__opt" data-style="apa" role="tab" aria-selected="false">APA</button>
-      <button class="segmented__opt" data-style="chicago" role="tab" aria-selected="false">Chicago (N-B)</button>
+      <button class="segmented__opt" data-style="chicago" role="tab" aria-selected="false">Chicago</button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <main class="workspace">
+<div class="app">
 
-    <section class="dropzone" id="dropzone" aria-label="Drop a link, image, or file to cite it">
-      <div class="dropzone__inner">
-        <p class="dropzone__title">Drop or paste your sources</p>
-        <p class="dropzone__hint">Links, images, or a whole batch of URLs pasted at once — anywhere on this page, no need to click in first. Processing starts the moment they land.</p>
+  <!-- Empty state: editorial spread. Hidden once sources exist. -->
+  <section class="hero">
+    <div class="hero__display">
+      <p class="hero__eyebrow">Bulk citation workspace</p>
+      <h1 class="hero__title">From sources<br />to bibliography.</h1>
+      <p class="hero__lede">Drop any mix of links, images, or AI conversations at once. Citer resolves each one independently, shows you what it found and what it couldn't, and builds your bibliography as it goes.</p>
+    </div>
+
+    <div class="hero__aside">
+      <section class="dropzone" id="dropzone" aria-label="Drop a link, image, or file to cite it">
+        <div class="dropzone__inner">
+          <p class="dropzone__title">Drop or paste your sources</p>
+          <p class="dropzone__hint">Links, images, or a batch of URLs pasted anywhere on the page — no need to click in first.</p>
+        </div>
+      </section>
+
+      <div class="toolbar">
+        <div class="segmented" id="type-toggle" role="tablist" aria-label="What you're citing">
+          <button class="segmented__opt is-active" data-type="webpage" role="tab" aria-selected="true">Webpage</button>
+          <button class="segmented__opt" data-type="image" role="tab" aria-selected="false">Image</button>
+          <button class="segmented__opt" data-type="ai" role="tab" aria-selected="false">AI</button>
+        </div>
       </div>
-    </section>
 
-    <div class="toolbar">
-      <div class="segmented" id="type-toggle" role="tablist" aria-label="What you're citing">
+      <form class="manual-input" id="manual-form">
+        <label for="manual-url" class="visually-hidden">Paste a link, or add an AI source by hand</label>
+        <input type="text" id="manual-url" name="url" placeholder="paste a URL or several…" autocomplete="off" />
+        <button type="submit" class="btn btn--primary">Add</button>
+      </form>
+      <p class="toolbar__hint" id="manual-hint">Paste a link, or drop / bulk-paste several at once.</p>
+    </div>
+  </section>
+
+  <!-- Active state: one compact band carrying count, type, input, clear. -->
+  <div class="addbar" id="addbar">
+    <p class="addbar__count" id="addbar-count">0 sources</p>
+    <div class="addbar__controls">
+      <div class="segmented" id="type-toggle-active" role="tablist" aria-label="What you're citing">
         <button class="segmented__opt is-active" data-type="webpage" role="tab" aria-selected="true">Webpage</button>
         <button class="segmented__opt" data-type="image" role="tab" aria-selected="false">Image</button>
         <button class="segmented__opt" data-type="ai" role="tab" aria-selected="false">AI</button>
       </div>
-      <form class="manual-input" id="manual-form">
-        <label for="manual-url" class="visually-hidden">Paste a link, or add an AI source by hand</label>
-        <input type="text" id="manual-url" name="url" placeholder="Paste a link…" autocomplete="off" />
+      <form class="manual-input" id="manual-form-active">
+        <label for="manual-url-active" class="visually-hidden">Paste a link</label>
+        <input type="text" id="manual-url-active" name="url" placeholder="paste a link…" autocomplete="off" />
         <button type="submit" class="btn btn--primary">Add</button>
       </form>
+      <button class="btn btn--quiet btn--danger" id="clear-all">Clear</button>
     </div>
-    <p class="toolbar__hint" id="manual-hint">Paste a link, or drop / bulk-paste several at once.</p>
+  </div>
 
-    <div class="summary-bar" id="summary-bar" hidden></div>
+  <div class="summary-bar" id="summary-bar" hidden></div>
 
-    <div id="duplicate-banners"></div>
+  <div id="duplicate-banners"></div>
 
-    <div class="content-grid">
-      <div class="citation-list" id="citation-list">
-        <div class="empty-state" id="empty-state">
-          No sources yet. Drop a link or image above, or paste a batch of URLs anywhere on the page.
+  <div class="content-grid" id="content-grid">
+    <div class="citation-list" id="citation-list">
+      <div class="empty-state" id="empty-state">
+        Citations will collect here as sources finish processing.
+      </div>
+    </div>
+
+    <aside class="bibliography-panel">
+      <div class="bibliography-panel__header">
+        <h2>Bibliography</h2>
+        <div class="segmented" id="view-toggle" role="tablist" aria-label="Bibliography view">
+          <button class="segmented__opt is-active" data-view="formatted" role="tab" aria-selected="true">Formatted</button>
+          <button class="segmented__opt" data-view="plain" role="tab" aria-selected="false">Plain text</button>
         </div>
       </div>
+      <div class="bibliography-panel__body" id="bibliography-output"></div>
+      <div class="bibliography-panel__footer">
+        <button class="btn btn--primary" id="copy-all">Copy bibliography</button>
+      </div>
+    </aside>
+  </div>
 
-      <aside class="bibliography-panel">
-        <div class="bibliography-panel__header">
-          <h2>Bibliography</h2>
-          <div class="segmented" id="view-toggle" role="tablist" aria-label="Bibliography view">
-            <button class="segmented__opt is-active" data-view="formatted" role="tab" aria-selected="true">Formatted</button>
-            <button class="segmented__opt" data-view="plain" role="tab" aria-selected="false">Plain text</button>
-          </div>
-        </div>
-        <div class="bibliography-panel__body" id="bibliography-output"></div>
-        <div class="bibliography-panel__footer">
-          <button class="btn btn--primary" id="copy-all">Copy bibliography</button>
-          <button class="btn btn--quiet btn--danger" id="clear-all">Clear all</button>
-        </div>
-      </aside>
-    </div>
-
-  </main>
 </div>
 
 <script type="module" src="js/main.js"></script>

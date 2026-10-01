@@ -43,34 +43,67 @@ instead — the frontend never holds a secret.
 ## The source-resolution pipeline
 
 A URL that renders fine in your own browser can still be unreachable to a
-server — bot protection, a JavaScript-only page shell, an auth wall, a
-timeout. Rather than treating "the direct fetch failed" as "no citation is
-possible," `/api/metadata` tries progressively more specific strategies:
+server. Two failure modes dominate, and they need different answers:
+
+- **The site refuses datacenter IPs.** Major news sites (NYT among them)
+  serve a normal browser fine but return 403 to a Cloudflare Worker.
+- **The page is a JavaScript shell.** Olympics.com and most modern SPAs
+  return near-empty HTML and render client-side, so there's nothing to
+  extract no matter who fetches it.
+
+Neither is solved by a better scraper, and this project deliberately does
+**not** spoof user-agents, rotate IPs, or try to defeat bot protection —
+that's fragile, hostile, and unnecessary. The answer is more legitimate
+doors to the same bibliographic data:
 
 1. **Known identifier → its own authoritative free API.** A DOI resolves
-   through Crossref, an arXiv ID through arXiv's own API, a PMID through
+   through Crossref, an arXiv ID through arXiv, a PMID through
    PubMed/NCBI, a Wikipedia URL through Wikimedia's REST API, a YouTube
-   link through its oEmbed endpoint. All five are free and keyless at any
-   volume this app will see — no API key, no bill, no rate-limit risk.
-2. **Direct metadata extraction** — JSON-LD, OpenGraph, and plain HTML
-   `<head>` tags, for ordinary webpages that don't match a known
-   identifier. This is the original scrape-based path and still the
-   workhorse for most sources.
-3. **AI-assisted research, with search** — but only when *you* click
-   "Research with AI" on one specific missing field. It's never automatic.
-   This one step covers what a separate search API would otherwise do too:
-   the model's own search tool finds corroborating sources and reasons
-   over them in a single call, so there's no second search integration to
-   pay for or maintain alongside it.
+   link through oEmbed. All keyless and free.
+2. **Direct metadata extraction** — JSON-LD, OpenGraph, HTML `<head>`.
+   Fastest path, and still the workhorse for ordinary pages.
+3. **Citoid** — Wikimedia's free public citation service, which wraps the
+   [Zotero translator library](https://github.com/zotero/translators):
+   hundreds of community-maintained, per-site extraction rules covering
+   exactly the news and institutional sites that block or JS-render. This
+   is the same translator infrastructure behind ZoteroBib and much of the
+   citation-tool ecosystem, and it's the tier that fixes the NYT/Olympics
+   class of failure — Citoid fetches from Wikimedia's infrastructure with
+   a proper translator for the site, so it succeeds where a direct fetch
+   can't. It also reports whether a real site translator ran or it fell
+   back to generic metadata, which the UI passes along.
+4. **Internet Archive** — a page that blocks us now was usually crawled
+   back when it didn't, and the archived HTML still carries the original
+   JSON-LD/OG tags. Uses the free Availability API. The citation always
+   points at the **original** URL; the archive is only how the metadata
+   was learned, and the snapshot date is never mistaken for a publication
+   date.
+5. **AI-assisted research, with search** — only when *you* click "Research
+   with AI" on one specific missing field. Never automatic.
 
-Every `/api/metadata` response carries a `resolution: { method, status,
-note }` alongside the extracted fields, so the frontend can say something
-concrete — "Resolved via Crossref (DOI)," "This page renders its content
-with JavaScript, so the server only saw an empty shell," "The site declined
-automated access" — instead of collapsing everything short of total success
-into a generic error. A source card only shows this note when it's either
-an identifier resolution (worth the credit) or something's actually worth
-flagging; an ordinary page that scraped cleanly doesn't get a badge.
+Tiers 3 and 4 only run when the tier before them came up short, so a
+well-behaved page still resolves in one round trip, and Citoid (a free
+community service) is used politely rather than on every request.
+
+Every `/api/metadata` response carries `resolution: { method, status, note }`,
+so the UI can say something concrete — "Resolved through Wikimedia's Citoid
+service using a site-specific Zotero translator," "Recovered from the
+Internet Archive's snapshot of 2024-01-16 — check the publication date in
+particular," "The site declined automated access" — instead of a generic
+error. Crucially, **a source-access failure is not a citation failure**:
+even when every tier comes up short, the app returns what it does know
+(URL, inferred site name) so you're editing a partial citation rather than
+starting from nothing.
+
+### What Citer can't do that MyBib can
+
+MyBib's browser extension notes that it "may, from time to time, utilize
+unused bandwidth to crowdsource the collection of citation data," anonymously,
+while your browser is idle — i.e. it routes fetches through real users'
+browsers on residential IPs. That's why it reaches some sites a server-side
+tool can't. Citer is a website, not an extension, and has no equivalent, by
+design. The tiers above close most of that gap through legitimate channels
+instead.
 
 ## AI features — and what they actually cost
 
@@ -109,6 +142,50 @@ If you set neither `ANTHROPIC_API_KEY` nor `GEMINI_API_KEY`, that feature
 just stays off. Everything else — bulk paste, drag-and-drop, all five
 identifier resolvers, direct scraping, citation formatting and export —
 needs no AI and no key at all.
+
+## Updating an existing install
+
+If you already have Citer deployed, you do **not** need to redo any setup.
+Unzip the new version somewhere, then from inside it run:
+
+```bash
+./scripts/update-citer.sh /path/to/your-portfolio-repo
+git -C /path/to/your-portfolio-repo add citation
+git -C /path/to/your-portfolio-repo commit -m "Update Citer"
+git -C /path/to/your-portfolio-repo push
+```
+
+That's the whole update. The script deliberately preserves the files that
+are yours rather than mine:
+
+| Preserved | Why |
+|---|---|
+| `js/config.js` | your Worker URL and AI toggle |
+| `assets/fonts/*.woff2` | your licensed font files |
+| `CNAME` | your custom domain, if it lives in this folder |
+
+Everything else is replaced wholesale, so files that were renamed or
+removed between versions don't linger and quietly get served. Add
+`--dry-run` to see what would change first, or `--subdir X` if the app
+lives somewhere other than `citation/`.
+
+Your Cloudflare secrets (`ANTHROPIC_API_KEY` / `GEMINI_API_KEY`) live in
+Cloudflare, not in this repo, so they survive updates untouched — you
+never re-enter them.
+
+### Deploying the Worker on push (optional)
+
+`.github/workflows/deploy-worker.yml` redeploys the Worker automatically
+whenever `worker/` changes. It needs two repository secrets —
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` — set once under
+Settings → Secrets and variables → Actions. The file has the exact steps
+in its header comment. `wrangler deploy` leaves your existing Worker
+secrets alone, so this never disturbs your API keys.
+
+If you'd rather keep deploying the Worker by hand, `cd worker && wrangler
+deploy` still works and you can delete that workflow file.
+
+### One-time setup (first install only)
 
 ## 1. Deploy the backend (Cloudflare Worker)
 
@@ -153,12 +230,17 @@ with the frontend — just use whichever one you put in `js/config.js`
 
 ## 2. Point the frontend at your Worker
 
-Edit `js/config.js`:
+Edit the settings block at the top of `js/config.js`:
 
 ```js
-export const API_BASE = "https://citer-api.yourname.workers.dev";
+const PRODUCTION_API = "https://citer-api.yourname.workers.dev";
 // or: "https://api.yourdomain.com"
 ```
+
+You only ever do this once — the update script preserves this file. It
+also auto-detects localhost, so `wrangler dev` works without editing the
+URL back and forth, and you can temporarily repoint a deployed page with
+`localStorage.setItem("citer:api-base", "http://localhost:8787")`.
 
 ## 3. Add your DIN font files (optional)
 
@@ -244,10 +326,18 @@ any other link) still works exactly like any other link.
   doesn't have. Interior-capitalized words (`iPhone`, `eBay`, `macOS`) and
   all-caps acronyms are always left untouched in both MLA title case and
   APA sentence case.
-- **Chicago site/publication names aren't italicized.** CMOS treats this
+- **Corporate authors are detected heuristically.** An author containing
+  an organizational word ("Organization", "Institute", "Press", "News"…),
+  or four-plus words, or an internal "of/for/the", is printed verbatim
+  rather than inverted to "Last, First" — because "World Health
+  Organization" is structurally identical to "Jane Quinn Smith". The
+  heuristic is good but not perfect; the author field is editable.
+- **APA and Chicago site/publication names aren't italicized.** CMOS treats this
   contextually — a periodical name gets italics, a plain organization/
   website name doesn't — and telling those apart reliably needs a curated
-  list of known publications. The tool defaults to roman text.
+  list of known publications, not a heuristic. Both default to roman text,
+  which is right for the common "generic site/blog" case and wrong for a
+  major newspaper, which you'll want to italicize by hand.
 - **AI-source citation formats follow current MLA/APA/Chicago guidance as
   published**, but that guidance is still evolving across all three
   styles — the app says so in the edit panel for AI sources and exposes
