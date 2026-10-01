@@ -42,17 +42,44 @@ function splitAuthorString(raw) {
   return [trimmed];
 }
 
+// Mirrors looksCorporate() in js/citations/helpers.js — keep the two in
+// sync. All three style guides print an organizational author verbatim
+// ("World Health Organization.") and never invert it to "Organization,
+// World Health", which is what a naive surname split produces.
+const ORG_WORDS = new RegExp(
+  "\\b(organization|organisation|institute|institution|university|college|school|academy|" +
+  "department|association|society|foundation|cent(?:er|re)|council|committee|bureau|agency|" +
+  "ministry|commission|corporation|company|incorporated|inc|ltd|llc|llp|plc|gmbh|group|press|" +
+  "publishers?|news|times|post|journal|network|services?|administration|office|board|union|" +
+  "federation|league|alliance|trust|museum|library|authority|programme|program|fund|bank|" +
+  "project|initiative|coalition|partnership|team|staff|editors?|government|nations|" +
+  "laboratory|labs?|clinic|hospital|health|research)\\b",
+  "i"
+);
+
+function looksCorporate(name) {
+  const trimmed = name.trim();
+  if (trimmed.includes(",")) return false;
+  if (ORG_WORDS.test(trimmed)) return true;
+  if (trimmed.split(/\s+/).filter(Boolean).length >= 4) return true;
+  if (/\s(of|for|the|and|on|in)\s/.test(trimmed)) return true;
+  return false;
+}
+
 /** Builds the app's canonical structured author list — an array of
- *  { family, given, literal } — from whatever a scraped page exposed.
- *  JSON-LD's own author field (when present) is trusted as already-discrete
- *  people rather than joined into a string and re-split; a plain meta-tag
- *  string falls back to splitAuthorString. */
+ *  { family, given, literal, isCorporate } — from whatever a scraped page
+ *  exposed. JSON-LD's own author field (when present) is trusted as
+ *  already-discrete people rather than joined into a string and re-split;
+ *  a plain meta-tag string falls back to splitAuthorString. */
 export function buildAuthors(jsonLdAuthorField, metaAuthorString) {
   const names = extractAuthorNames(jsonLdAuthorField);
   const raw = names.length ? names : splitAuthorString(metaAuthorString);
   return raw.filter(Boolean).map((name) => {
+    if (looksCorporate(name)) {
+      return { family: name.trim(), given: "", literal: name.trim(), isCorporate: true };
+    }
     const { last, first } = splitNameParts(name);
-    return { family: last, given: first, literal: name };
+    return { family: last, given: first, literal: name, isCorporate: false };
   });
 }
 

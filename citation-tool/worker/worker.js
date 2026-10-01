@@ -18,15 +18,34 @@
  *      (see resolvers.js — all keyless, no cost, no rate-limit risk at
  *      Citer's scale)
  *   2. Direct metadata extraction — JSON-LD / OpenGraph / HTML <head>
- *      (the original scrape-based path, still the workhorse for ordinary
- *      webpages that don't match a known identifier)
- *   3. AI-assisted resolution, *with search* — only ever triggered by the
+ *      (still the workhorse for ordinary webpages, and the fastest path)
+ *   3. Citoid — Wikimedia's free public citation service, which wraps the
+ *      Zotero translator library: hundreds of community-maintained,
+ *      per-site extraction rules. This is the tier that fixes the big
+ *      real-world failure mode — sites like major news outlets that serve
+ *      a normal browser fine but 403 a datacenter IP, and SPAs that render
+ *      everything client-side. Citoid fetches from Wikimedia's own
+ *      infrastructure with a proper translator for the site, so it
+ *      routinely succeeds where our direct fetch cannot. See citoid.js.
+ *   4. Internet Archive — a page that blocks us now was usually crawled
+ *      back when it didn't, and the archived HTML still carries the
+ *      original JSON-LD/OG tags. The citation always points at the
+ *      ORIGINAL url; the archive is only how the metadata was learned.
+ *      See archive.js.
+ *   5. AI-assisted resolution, *with search* — only ever triggered by the
  *      person clicking "Research with AI" on one specific missing field
  *      (/api/ai-suggest), never automatically. This single step covers
  *      what a separate "search resolution" stage would otherwise do: the
  *      model's own search tool finds corroborating sources and the model
  *      reasons over them in one call, rather than standing up a second
  *      search API to feed a second AI call for the same job.
+ *
+ * Tiers 3 and 4 only run when the tier before them came up short, so an
+ * ordinary well-behaved page still resolves in a single round trip. What
+ * this pipeline explicitly does NOT do is spoof user-agents, rotate IPs,
+ * or otherwise try to defeat bot protection — those are fragile, hostile,
+ * and unnecessary once you have legitimate alternate doors to the same
+ * bibliographic data.
  *
  * Every /api/metadata response carries a `resolution: { method, status,
  * note }` alongside `fields`, so a page that was fetched but was clearly a
@@ -70,6 +89,8 @@
 
 import { buildAuthors, joinAuthorsRaw } from "./authors.js";
 import { resolveByIdentifier } from "./resolvers.js";
+import { resolveViaCitoid } from "./citoid.js";
+import { findArchivedSnapshot } from "./archive.js";
 
 const JSON_HEADERS = { "content-type": "application/json;charset=UTF-8" };
 const MAX_RESPONSE_BYTES = 3 * 1024 * 1024; // 3MB is generously more than any page's <head> + JSON-LD needs
@@ -232,19 +253,10 @@ async function handleMetadata(url, env) {
 
   const fetched = await safeFetch(scrapeUrl.toString());
 
-  if (!fetched.ok) {
-    const status = classifyFetchFailure(fetched.error, fetched.httpStatus);
-    return json({
-      ok: false,
-      error: fetched.error,
-      message: fetched.message,
-      type: sourceType,
-      url: target,
-      resolution: { method: "direct", status, note: RESOLUTION_NOTES[status] },
-    }, fetched.status || 502);
-  }
-
-  if (fetched.isImage) {
+  // A direct image URL has no page metadata by definition; Citoid and the
+  // archive can't help with that either, so return early rather than
+  // spending two more round trips to learn nothing.
+  if (fetched.ok && fetched.isImage) {
     return json({
       ok: true,
       type: "image",
@@ -262,7 +274,7 @@ async function handleMetadata(url, env) {
     });
   }
 
-  if (fetched.isOther) {
+  if (fetched.ok && fetched.isOther) {
     return json({
       ok: false,
       error: "unsupported_content_type",
@@ -273,31 +285,184 @@ async function handleMetadata(url, env) {
     }, 415);
   }
 
-  const fields = normalizeFields(fetched.data, new URL(fetched.finalUrl), sourceType, target);
-  const jsRendered = looksJsRendered(fetched.data, fields);
-  const hasEnoughToCite = Boolean(fields.title && (fields.authors.length || fields.datePublished || fields.siteName));
-  const status = jsRendered ? "js_rendered" : hasEnoughToCite ? "resolved" : "partially_resolved";
+  // Evaluate what direct extraction actually got us. Three outcomes matter:
+  // it worked; it technically succeeded but the page was a JS shell or too
+  // sparse to cite; or the fetch was refused outright. Only the first ends
+  // the pipeline here.
+  let directFields = null;
+  let directStatus = null;
+  let directFailure = null;
 
+  if (fetched.ok) {
+    directFields = normalizeFields(fetched.data, new URL(fetched.finalUrl), sourceType, target);
+    const jsRendered = looksJsRendered(fetched.data, directFields);
+    directStatus = jsRendered ? "js_rendered" : citationReady(directFields, sourceType) ? "resolved" : "partially_resolved";
+
+    if (directStatus === "resolved") {
+      return json({
+        ok: true,
+        type: sourceType,
+        url: target,
+        resolvedUrl: fetched.finalUrl,
+        fields: directFields,
+        resolution: { method: "direct", status: "resolved", note: RESOLUTION_NOTES.resolved },
+        raw: {
+          jsonLdCount: fetched.data.jsonLd.length,
+          hasOpenGraph: Object.keys(fetched.data.metaByProperty).length > 0,
+        },
+      });
+    }
+  } else {
+    directFailure = {
+      error: fetched.error,
+      message: fetched.message,
+      status: classifyFetchFailure(fetched.error, fetched.httpStatus),
+      httpStatus: fetched.status || 502,
+    };
+  }
+
+  // --- Tier 3: Citoid (Wikimedia + Zotero translators) ---
+  // This is the tier that rescues the "works in my browser, 403s from a
+  // Worker" sites (major news outlets especially) and the JS-rendered ones.
+  // It only runs once direct extraction has already fallen short, both to
+  // keep the common case fast and to be a polite consumer of a free
+  // community service.
+  const citoidTarget = sourceType === "image" && pageUrlParam ? pageUrlParam : target;
+  const citoidResult = await resolveViaCitoid(citoidTarget, sourceType);
+
+  if (citoidResult && citationReady(citoidResult.fields, sourceType)) {
+    const merged = mergeFields(directFields, citoidResult.fields);
+    if (sourceType === "image") merged.imageUrl = target;
+    return json({
+      ok: true,
+      type: sourceType,
+      url: target,
+      resolvedUrl: citoidResult.fields.url || target,
+      fields: merged,
+      resolution: { method: "citoid", status: "resolved_via_citoid", note: citoidResult.resolutionNote },
+    });
+  }
+
+  // --- Tier 4: the Internet Archive ---
+  // A page that blocks us now was very likely crawled when it didn't, and
+  // the archived HTML usually still carries the original JSON-LD/OG tags.
+  // The citation still points at the ORIGINAL url — the archive is how we
+  // learned the metadata, not the thing being cited.
+  const snapshot = await findArchivedSnapshot(citoidTarget);
+  if (snapshot) {
+    const archived = await safeFetch(snapshot.snapshotUrl);
+    if (archived.ok && !archived.isImage && !archived.isOther) {
+      const archivedFields = normalizeFields(archived.data, new URL(citoidTarget), sourceType, target);
+      if (citationReady(archivedFields, sourceType)) {
+        // Never let the archive's own rewritten URL leak into the citation.
+        archivedFields.url = sourceType === "image" ? target : canonicalOrOriginal(archivedFields.url, citoidTarget);
+        if (sourceType === "image") archivedFields.imageUrl = target;
+        const merged = mergeFields(directFields, archivedFields);
+        return json({
+          ok: true,
+          type: sourceType,
+          url: target,
+          resolvedUrl: citoidTarget,
+          fields: merged,
+          resolution: {
+            method: "archive",
+            status: "resolved_via_archive",
+            note: `The live page wasn't readable, so this was recovered from the Internet Archive's snapshot${
+              snapshot.snapshotDate ? ` of ${snapshot.snapshotDate}` : ""
+            }. Check the publication date in particular.`,
+          },
+        });
+      }
+    }
+  }
+
+  // --- Everything below: partial or no result. Return whatever we've got
+  // rather than nothing, so the user can fill the gaps or run AI research
+  // instead of starting from scratch. Per the spec, a source-access failure
+  // is NOT automatically a citation failure. ---
+  const partialFields = mergeFields(directFields, citoidResult ? citoidResult.fields : null);
+
+  if (partialFields && Object.keys(partialFields).length) {
+    return json({
+      ok: true,
+      type: sourceType,
+      url: target,
+      resolvedUrl: fetched.ok ? fetched.finalUrl : target,
+      fields: partialFields,
+      resolution: {
+        method: citoidResult ? "citoid" : "direct",
+        status: directStatus === "js_rendered" ? "js_rendered" : "partially_resolved",
+        note:
+          directStatus === "js_rendered"
+            ? RESOLUTION_NOTES.js_rendered
+            : RESOLUTION_NOTES.partially_resolved,
+      },
+    });
+  }
+
+  // Nothing anywhere. Still return the site name we can infer from the
+  // hostname — a citation with a known publisher and a URL beats an empty one.
+  const failureStatus = directFailure ? directFailure.status : "failed";
   return json({
     ok: true,
     type: sourceType,
     url: target,
-    resolvedUrl: fetched.finalUrl,
-    fields,
-    resolution: { method: "direct", status, note: RESOLUTION_NOTES[status] },
-    raw: {
-      jsonLdCount: fetched.data.jsonLd.length,
-      hasOpenGraph: Object.keys(fetched.data.metaByProperty).length > 0,
+    resolvedUrl: target,
+    fields: {
+      [sourceType === "image" ? "imageUrl" : "url"]: target,
+      siteName: hostnameLabel(targetUrl.hostname),
+    },
+    resolution: {
+      method: "none",
+      status: failureStatus,
+      note: RESOLUTION_NOTES[failureStatus],
     },
   });
 }
 
+/** Do we have enough to render a citation a person would actually submit?
+ *  A title plus at least one of author/date/publication. Deliberately not
+ *  "we got a 200" — a page can answer fine and still tell us nothing. */
+function citationReady(fields, sourceType) {
+  if (!fields) return false;
+  const title = sourceType === "image" ? fields.imageTitle || fields.title : fields.title;
+  if (!title) return false;
+  return Boolean((fields.authors && fields.authors.length) || fields.datePublished || fields.siteName);
+}
+
+/** Later tiers win on any field they actually resolved, but never erase
+ *  something an earlier tier found and they didn't. */
+function mergeFields(base, incoming) {
+  if (!base) return incoming ? { ...incoming } : null;
+  if (!incoming) return { ...base };
+  const out = { ...base };
+  for (const [key, value] of Object.entries(incoming)) {
+    const isEmpty = value == null || value === "" || (Array.isArray(value) && !value.length);
+    if (!isEmpty) out[key] = value;
+  }
+  return out;
+}
+
+/** Guards against an archive.org URL ending up as the cited URL. */
+function canonicalOrOriginal(candidate, originalUrl) {
+  if (!candidate) return originalUrl;
+  try {
+    const host = new URL(candidate).hostname;
+    if (host.endsWith("archive.org")) return originalUrl;
+    return candidate;
+  } catch {
+    return originalUrl;
+  }
+}
+
 const RESOLUTION_NOTES = {
   resolved: "Metadata found directly on the page.",
-  partially_resolved: "Page reached, but some citation fields weren't exposed — fill the rest in manually, or try Research with AI.",
-  js_rendered: "This page renders its content with JavaScript, so the server only saw an empty shell — try Research with AI, or fill fields in manually.",
-  blocked: "The site declined automated access.",
-  failed: "Couldn't reliably resolve this source.",
+  resolved_via_citoid: "Resolved through Wikimedia's Citoid service.",
+  resolved_via_archive: "Recovered from an Internet Archive snapshot.",
+  partially_resolved: "Some citation fields couldn't be found — fill the rest in manually, or try Research with AI.",
+  js_rendered: "This page renders its content with JavaScript and no fallback source had it either — try Research with AI, or fill fields in manually.",
+  blocked: "The site declined automated access, and no archived or third-party copy of its metadata was available — try Research with AI, or fill fields in manually.",
+  failed: "Couldn't reliably resolve this source automatically — fill the fields in manually, or try Research with AI.",
 };
 
 /** Turns a raw fetch-failure code (plus HTTP status, when there was one)
