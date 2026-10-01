@@ -1,0 +1,46 @@
+# Deploys the Cloudflare Worker whenever worker/ changes on main.
+#
+# ONE-TIME SETUP:
+#   1. Cloudflare dashboard -> My Profile -> API Tokens -> Create Token
+#      -> use the "Edit Cloudflare Workers" template.
+#   2. In your GitHub repo: Settings -> Secrets and variables -> Actions
+#      -> New repository secret, named CLOUDFLARE_API_TOKEN.
+#   3. Add CLOUDFLARE_ACCOUNT_ID the same way (dashboard -> Workers & Pages,
+#      it's in the right-hand sidebar).
+#
+# After that, pushing a change to worker/ redeploys automatically. Your
+# ANTHROPIC_API_KEY / GEMINI_API_KEY secrets already live in Cloudflare and
+# are NOT touched by this — `wrangler deploy` leaves existing secrets alone,
+# so you never re-enter them.
+#
+# This file lives at .github/workflows/ in the REPO ROOT. If Citer sits in a
+# subdirectory of a larger portfolio repo, move this file to the root's
+# .github/workflows/ and adjust the paths below to match.
+
+name: Deploy Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "citation/worker/**"
+      - ".github/workflows/deploy-worker.yml"
+  # Lets you redeploy by hand from the Actions tab without pushing.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Deploy with Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: citation/worker
