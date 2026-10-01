@@ -38,15 +38,28 @@ function isAcronym(word) {
 /** Best-effort parse of a date string into { year, month, day } (month 1-12). */
 export function parseDateParts(input) {
   if (!input) return null;
-  const isoMatch = String(input).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const str = String(input).trim();
+
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
     return { year: Number(isoMatch[1]), month: Number(isoMatch[2]), day: Number(isoMatch[3]) };
   }
-  const parsed = new Date(input);
+
+  // Year-only and year-month must be caught BEFORE new Date(), which
+  // helpfully invents the missing pieces: new Date("2022") is 1 Jan 2022,
+  // so a source that only published a year was being cited with a precise
+  // day it never claimed. Fabricating precision is worse than omitting it.
+  const yearMonth = str.match(/^(\d{4})-(\d{2})$/);
+  if (yearMonth) return { year: Number(yearMonth[1]), month: Number(yearMonth[2]), day: null };
+
+  if (/^\d{4}$/.test(str)) return { year: Number(str), month: null, day: null };
+
+  const parsed = new Date(str);
   if (!isNaN(parsed.getTime())) {
     return { year: parsed.getUTCFullYear(), month: parsed.getUTCMonth() + 1, day: parsed.getUTCDate() };
   }
-  const yearOnly = String(input).match(/(\d{4})/);
+
+  const yearOnly = str.match(/(\d{4})/);
   if (yearOnly) return { year: Number(yearOnly[1]), month: null, day: null };
   return null;
 }
@@ -74,11 +87,6 @@ export function formatDateAPA(input) {
   if (d.day && d.month) return `(${d.year}, ${FULL_MONTHS[d.month - 1]} ${d.day})`;
   if (d.month) return `(${d.year}, ${FULL_MONTHS[d.month - 1]})`;
   return `(${d.year})`;
-}
-
-export function yearOf(input) {
-  const d = parseDateParts(input);
-  return d ? d.year : null;
 }
 
 function splitNameParts(fullName) {
@@ -127,11 +135,44 @@ export function splitAuthorNames(raw) {
 }
 
 /**
+ * Words that mark a name as an organization rather than a person. All three
+ * style guides print a corporate author as-is ("World Health Organization.")
+ * and never invert it to "Organization, World Health" — which is exactly
+ * what a naive Last/First split produces, since "World Health Organization"
+ * looks structurally identical to "Jane Quinn Smith".
+ */
+const ORG_WORDS = new RegExp(
+  "\\b(organization|organisation|institute|institution|university|college|school|academy|" +
+  "department|association|society|foundation|cent(?:er|re)|council|committee|bureau|agency|" +
+  "ministry|commission|corporation|company|incorporated|inc|ltd|llc|llp|plc|gmbh|group|press|" +
+  "publishers?|news|times|post|journal|network|services?|administration|office|board|union|" +
+  "federation|league|alliance|trust|museum|library|authority|programme|program|fund|bank|" +
+  "project|initiative|coalition|partnership|team|staff|editors?|government|nations|" +
+  "laboratory|labs?|clinic|hospital|health|research)\\b",
+  "i"
+);
+
+/** True when a name should be printed verbatim rather than inverted. */
+function looksCorporate(name) {
+  const trimmed = name.trim();
+  // An explicit "Last, First" comma is a strong signal of a personal name.
+  if (trimmed.includes(",")) return false;
+  if (ORG_WORDS.test(trimmed)) return true;
+  // Four or more words with no comma is far more often an organization than
+  // a person ("Centers for Disease Control and Prevention"); three-word
+  // personal names ("Jane Quinn Smith") stay safely below this line.
+  if (trimmed.split(/\s+/).filter(Boolean).length >= 4) return true;
+  // Contains a lowercase function word ("Friends of the Earth").
+  if (/\s(of|for|the|and|on|in)\s/.test(trimmed)) return true;
+  return false;
+}
+
+/**
  * Parses a raw author string into the app's canonical structured shape:
- * an array of { given, family, literal }. `literal` is set for names that
- * don't look like a person (a single word, or a name with 3+ words and no
- * comma — often a corporate/organization author) so styles can print it
- * without inverting it "Last, First"-style.
+ * an array of { given, family, literal, isCorporate }. A corporate author
+ * keeps its whole name in `family` with an empty `given`, so every style
+ * module renders it verbatim — sorting still works, because sorting only
+ * ever reads `family`.
  *
  * This is the single point where a typed/extracted string becomes structured
  * data — style modules consume the array directly and never re-parse a
@@ -139,8 +180,11 @@ export function splitAuthorNames(raw) {
  */
 export function parseAuthors(raw) {
   return splitAuthorNames(raw).map((name) => {
+    if (looksCorporate(name)) {
+      return { family: name.trim(), given: "", literal: name.trim(), isCorporate: true };
+    }
     const { last, first } = splitNameParts(name);
-    return { family: last, given: first, literal: name };
+    return { family: last, given: first, literal: name, isCorporate: false };
   });
 }
 
@@ -186,15 +230,25 @@ export function formatAuthorListAPA(authors) {
   return `${firstNineteen.join(", ")}, . . . ${nameAPA(authors[authors.length - 1])}`;
 }
 
+/**
+ * Chicago BIBLIOGRAPHY form (CMOS 17, 14.76) — not the note form, which is
+ * what the "first author + et al. at 4 or more" rule everyone remembers
+ * actually applies to. A bibliography entry lists every author up to ten;
+ * only at eleven or more does it list the first seven followed by et al.
+ * Only the first author is inverted to "Last, First".
+ */
 export function formatAuthorListChicago(authors) {
   if (!authors || !authors.length) return null;
   if (authors.length === 1) return nameLastFirst(authors[0]);
-  if (authors.length <= 3) {
-    const formatted = authors.map((a, i) => (i === 0 ? nameLastFirst(a) : a.literal || nameLastFirst(a)));
-    const last = formatted.pop();
-    return `${formatted.join(", ")}, and ${last}`;
+
+  if (authors.length > 10) {
+    const firstSeven = authors.slice(0, 7).map((a, i) => (i === 0 ? nameLastFirst(a) : a.literal || nameLastFirst(a)));
+    return `${firstSeven.join(", ")}, et al.`;
   }
-  return `${nameLastFirst(authors[0])} et al.`;
+
+  const formatted = authors.map((a, i) => (i === 0 ? nameLastFirst(a) : a.literal || nameLastFirst(a)));
+  const last = formatted.pop();
+  return `${formatted.join(", ")}, and ${last}`;
 }
 
 /**

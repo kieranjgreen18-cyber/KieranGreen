@@ -31,8 +31,7 @@ function formatAI(u) {
   if (date) sentences.push({ html: ensureTerminalPeriod(escapeHtml(date)), plain: ensureTerminalPeriod(date) });
 
   if (u.url) {
-    const bare = u.url.replace(/^https?:\/\//, "");
-    sentences.push({ html: ensureTerminalPeriod(escapeHtml(bare)), plain: ensureTerminalPeriod(bare) });
+    sentences.push({ html: ensureTerminalPeriod(escapeHtml(u.url)), plain: ensureTerminalPeriod(u.url) });
   }
 
   const html = sentences.map((s) => s.html).join(" ").trim();
@@ -82,9 +81,10 @@ export function format(u) {
     });
   }
 
+  // Unlike MLA 9 (which drops the protocol), CMOS prints the full URL as-is,
+  // including https://. This was previously stripping it the MLA way.
   if (u.url) {
-    const bare = u.url.replace(/^https?:\/\//, "");
-    sentences.push({ html: ensureTerminalPeriod(escapeHtml(bare)), plain: ensureTerminalPeriod(bare) });
+    sentences.push({ html: ensureTerminalPeriod(escapeHtml(u.url)), plain: ensureTerminalPeriod(u.url) });
   }
 
   const html = sentences.map((s) => s.html).join(" ").trim();
