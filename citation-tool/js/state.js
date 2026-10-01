@@ -32,6 +32,17 @@ const DEFAULT_STATE = {
  * }
  */
 
+// NOTE: these must be declared ABOVE `let state = load()` below.
+// sanitizeSource() reads them, and load() is *called* during module
+// initialization — a `const` declared further down the file is still in
+// its temporal dead zone at that moment, so referencing it throws a
+// ReferenceError. That error was previously caught by load()'s catch and
+// silently turned into "no saved state", which meant persistence appeared
+// to work (writes succeeded) while every reload quietly discarded the
+// entire source list.
+const VALID_STATUSES = new Set(["detecting", "fetching", "analyzing", "generating", "complete", "error"]);
+const VALID_TYPES = new Set(["webpage", "image", "ai"]);
+
 let state = load();
 const listeners = new Set();
 
@@ -172,9 +183,6 @@ function persist() {
   }
 }
 
-const VALID_STATUSES = new Set(["detecting", "fetching", "analyzing", "generating", "complete", "error"]);
-const VALID_TYPES = new Set(["webpage", "image", "ai"]);
-
 /** Fills in any missing sub-objects on a persisted source with safe defaults
  *  and normalizes anything that doesn't look like it came from this app, so
  *  an old-schema or hand-edited localStorage entry can't crash the renderer,
@@ -224,7 +232,11 @@ function load() {
     let sources = Array.isArray(parsed.sources) ? parsed.sources.map(sanitizeSource).filter(Boolean) : [];
     sources = migrateLegacySources(sources);
     return { style, sources };
-  } catch {
+  } catch (err) {
+    // Corrupt/hand-edited storage is a legitimate reason to start fresh,
+    // but a genuine bug in this function looks identical from here — so
+    // say something rather than silently losing the user's work.
+    console.warn("Citer: couldn't restore saved sources, starting fresh.", err);
     return { ...DEFAULT_STATE };
   }
 }

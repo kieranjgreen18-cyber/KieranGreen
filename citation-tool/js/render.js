@@ -124,9 +124,17 @@ function renderError(source) {
 function renderResolutionNote(source) {
   const r = source.resolution;
   if (!r || !r.note) return "";
-  const isIdentifier = r.method && r.method.startsWith("identifier:");
+  // Worth showing: anything that came from somewhere other than a plain
+  // direct scrape (the identifier APIs, Citoid, the archive), because the
+  // user should know the metadata took an indirect route — plus anything
+  // still unresolved. A page that simply scraped cleanly gets no badge;
+  // that's the unremarkable default and a note on every card is just noise.
+  const notable = r.method && (r.method.startsWith("identifier:") || r.method === "citoid" || r.method === "archive");
   const isFlagged = ["partially_resolved", "js_rendered", "blocked", "failed"].includes(r.status);
-  if (!isIdentifier && !isFlagged) return "";
+  if (!notable && !isFlagged) return "";
+  // An errored row already shows this text in its error block; printing it
+  // again directly underneath just reads as a stutter.
+  if (source.status === "error" && source.errorMessage && r.note.trim() === source.errorMessage.trim()) return "";
   return `<div class="cite-card__resolution${isFlagged ? " cite-card__resolution--flag" : ""}">${escapeHtml(r.note)}</div>`;
 }
 
@@ -209,7 +217,7 @@ function renderCard(source, { aiAvailable, expanded }) {
     <div class="cite-card__body">
       <header class="cite-card__head">
         <span class="cite-card__type-tag">${TYPE_LABEL[source.type] || "Webpage"}</span>
-        ${iconSrc ? `<img class="cite-card__icon" src="${escapeAttr(iconSrc)}" alt="" loading="lazy" />` : `<div class="cite-card__icon cite-card__icon--placeholder"></div>`}
+        ${iconSrc ? `<img class="cite-card__icon" src="${escapeAttr(iconSrc)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cite-card__icon cite-card__icon--placeholder'}))" />` : `<div class="cite-card__icon cite-card__icon--placeholder"></div>`}
         <div class="cite-card__id">
           <div class="cite-card__title" title="${escapeAttr(title)}">${escapeHtml(truncate(title, 70))}</div>
           <div class="cite-card__domain">${escapeHtml(domain)}${flaggedReview ? ` <span class="cite-card__review-chip">Needs review</span>` : ""}</div>

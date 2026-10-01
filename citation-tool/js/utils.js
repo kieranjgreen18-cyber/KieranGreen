@@ -87,18 +87,3 @@ export function extractUrlsFromText(text) {
   // De-duplicate while preserving first-seen order.
   return [...new Set(cleaned)];
 }
-
-/** True if pasted text looks like a bulk list of links rather than prose or
- *  a single sentence someone meant to type into a normal text field. Used to
- *  decide whether a paste anywhere on the page should be intercepted. */
-export function looksLikeBulkUrlPaste(text) {
-  const urls = extractUrlsFromText(text);
-  if (urls.length >= 2) return true;
-  if (urls.length === 1) {
-    // A single URL that IS essentially the whole pasted string (plus maybe
-    // whitespace) is a normal single-link paste — let it go wherever the
-    // person pasted it rather than hijacking it.
-    return text.trim().length > urls[0].length + 8;
-  }
-  return false;
-}

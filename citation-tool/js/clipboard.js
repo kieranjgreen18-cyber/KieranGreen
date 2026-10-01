@@ -7,14 +7,20 @@
 // which is what line-height: 2 with zero margin gives you here. (An earlier
 // version used line-height: 1.6 plus a 1em bottom margin, which was neither
 // real double-spacing nor the no-extra-gap convention — fixed.)
-const HANGING_INDENT_STYLE = "margin:0;padding-left:0.5in;text-indent:-0.5in;line-height:2;";
+const HANGING_INDENT_STYLE =
+  "margin:0;padding-left:0.5in;text-indent:-0.5in;line-height:2;font-family:'Times New Roman',Times,serif;font-size:12pt;";
 
 export function buildBibliographyHtml(completedSources) {
   const items = completedSources
     .filter((s) => s.citation && s.citation.html)
     .map((s) => `<p style="${HANGING_INDENT_STYLE}">${s.citation.html}</p>`)
     .join("\n");
-  return `<div style="font-family:Georgia,serif;font-size:12pt;">${items}</div>`;
+  // Times New Roman 12pt is what MLA, APA and Chicago all effectively expect
+  // for a submitted paper, and it's what Word/Google Docs will honor on
+  // paste. The inline font-family is repeated on each <p> as well as the
+  // wrapper, because Google Docs drops the container's font when pasting a
+  // block and falls back to the document default otherwise.
+  return `<div style="font-family:'Times New Roman',Times,serif;font-size:12pt;">${items}</div>`;
 }
 
 export function buildBibliographyPlaintext(completedSources) {
@@ -48,6 +54,14 @@ export async function copyRichAndPlain(html, plain) {
   return legacyCopy(plain);
 }
 
+// document.execCommand("copy") is formally deprecated, and is kept here
+// deliberately rather than removed: it is only ever reached after BOTH
+// navigator.clipboard.write and .writeText have already failed or are
+// unavailable. That still happens in real conditions — notably on
+// non-secure origins (plain http://, which the async Clipboard API refuses
+// outright) and in a few older mobile browsers. Every current browser
+// continues to support it, and the alternative in those cases isn't a
+// better API, it's the copy button silently doing nothing.
 function legacyCopy(text) {
   const textarea = document.createElement("textarea");
   textarea.value = text;

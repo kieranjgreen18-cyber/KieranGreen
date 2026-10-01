@@ -9,6 +9,7 @@ import * as render from "./render.js";
 import { copyRichAndPlain, buildBibliographyHtml, buildBibliographyPlaintext } from "./clipboard.js";
 import { normalizeUrlForDedupe, isValidHttpUrl, looksLikeImageUrl, debounce, makeId } from "./utils.js";
 import * as db from "./db.js";
+import { API_BASE_UNCONFIGURED } from "./config.js";
 
 /* --------------------------------------------------------------------- *
  *  DOM references
@@ -16,9 +17,24 @@ import * as db from "./db.js";
 
 const dropzoneEl = document.getElementById("dropzone");
 const styleSelectEl = document.getElementById("style-select");
-const typeToggleEl = document.getElementById("type-toggle");
-const manualFormEl = document.getElementById("manual-form");
-const manualUrlEl = document.getElementById("manual-url");
+// The source-type toggle and manual-URL form each exist twice: once in
+// the empty-state hero and once in the compact active-state add bar. Only
+// one is visible at a time (CSS switches on body[data-state]), but both
+// are wired so state stays in sync whichever one the person used.
+const typeToggleEls = [
+  document.getElementById("type-toggle"),
+  document.getElementById("type-toggle-active"),
+].filter(Boolean);
+const manualFormEls = [
+  document.getElementById("manual-form"),
+  document.getElementById("manual-form-active"),
+].filter(Boolean);
+const manualUrlEls = [
+  document.getElementById("manual-url"),
+  document.getElementById("manual-url-active"),
+].filter(Boolean);
+const addbarEl = document.getElementById("addbar");
+const addbarCountEl = document.getElementById("addbar-count");
 const manualHintEl = document.getElementById("manual-hint");
 const clearAllEl = document.getElementById("clear-all");
 const duplicateBannersEl = document.getElementById("duplicate-banners");
@@ -77,6 +93,16 @@ function isCurrentOp(key, token) {
 
 function fullRender() {
   const state = store.getState();
+
+  // Drives the empty-hero -> active-workspace transition entirely in CSS,
+  // so the two states are one continuous page rather than two screens.
+  document.body.dataset.state = state.sources.length ? "active" : "empty";
+  // Skip while a flash message is showing there — dataset.original is set
+  // for exactly that window, and re-rendering mid-flash would wipe it.
+  if (addbarCountEl && addbarCountEl.dataset.original === undefined) {
+    addbarCountEl.textContent = `${state.sources.length} source${state.sources.length === 1 ? "" : "s"}`;
+  }
+
   render.renderSegmented(styleSelectEl, state.style, "style");
   render.renderSummaryBar(state, summaryBarEl);
   render.renderList(state, citationListEl, { aiAvailable, expandedIds });
@@ -294,15 +320,34 @@ function handleCandidate(candidate) {
 }
 
 let dropzoneMessageTimer = null;
+/**
+ * Transient feedback ("Added 12 sources from paste"). Has to write to
+ * whichever surface is currently visible: the hero's hint line in the
+ * empty state, or the add bar's count in the active state — the hero is
+ * display:none once sources exist, so writing only there would silently
+ * swallow the message exactly when bulk paste matters most.
+ */
 function flashDropzoneMessage(message) {
   if (!message) return;
-  const hint = dropzoneEl.querySelector(".dropzone__hint");
-  const original = hint.dataset.original || hint.textContent;
-  hint.dataset.original = original;
-  hint.textContent = message;
+  const isActive = document.body.dataset.state === "active";
+  const target = isActive ? addbarCountEl : dropzoneEl.querySelector(".dropzone__hint");
+  if (!target) return;
+
+  const original = target.dataset.original || target.textContent;
+  target.dataset.original = original;
+  target.textContent = message;
   clearTimeout(dropzoneMessageTimer);
   dropzoneMessageTimer = setTimeout(() => {
-    hint.textContent = original;
+    // Re-read live state rather than restoring the captured text: the
+    // source count has usually changed by now, and fullRender owns that
+    // string in the active state.
+    delete target.dataset.original;
+    if (isActive) {
+      const n = store.getState().sources.length;
+      target.textContent = `${n} source${n === 1 ? "" : "s"}`;
+    } else {
+      target.textContent = original;
+    }
   }, 4200);
 }
 
@@ -500,6 +545,15 @@ attachDropZone(dropzoneEl, {
   onDrop: (candidates) => candidates.forEach(handleCandidate),
 });
 
+// Once sources exist the hero dropzone is hidden, so the compact add bar
+// takes over as the drop target — dragging a link in should never stop
+// working just because the layout switched to its dense state.
+if (addbarEl) {
+  attachDropZone(addbarEl, {
+    onDrop: (candidates) => candidates.forEach(handleCandidate),
+  });
+}
+
 styleSelectEl.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-style]");
   if (!btn) return;
@@ -507,18 +561,27 @@ styleSelectEl.addEventListener("click", (e) => {
   regenerateAllCitations();
 });
 
-typeToggleEl.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-type]");
-  if (!btn) return;
-  manualType = btn.dataset.type;
-  render.renderSegmented(typeToggleEl, manualType, "type");
-  manualUrlEl.placeholder = manualType === "ai" ? "Paste a shared conversation link…" : "Paste a link…";
+function setManualType(next) {
+  manualType = next;
+  typeToggleEls.forEach((el) => render.renderSegmented(el, manualType, "type"));
+  manualUrlEls.forEach((el) => {
+    el.placeholder = manualType === "ai" ? "paste a shared conversation link…" : "paste a link…";
+  });
   if (manualHintEl) manualHintEl.textContent = MANUAL_HINTS[manualType] || "";
+}
+
+typeToggleEls.forEach((toggle) => {
+  toggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-type]");
+    if (!btn) return;
+    setManualType(btn.dataset.type);
+  });
 });
 
-manualFormEl.addEventListener("submit", (e) => {
+manualFormEls.forEach((form) => form.addEventListener("submit", (e) => {
   e.preventDefault();
-  const url = manualUrlEl.value.trim();
+  const input = form.querySelector("input");
+  const url = input.value.trim();
 
   if (!url) {
     // Empty submit is only meaningful for AI sources: it starts a blank,
@@ -532,18 +595,18 @@ manualFormEl.addEventListener("submit", (e) => {
       expandedIds.add(source.id);
       fullRender();
     } else {
-      manualUrlEl.focus();
+      input.focus();
     }
     return;
   }
 
   if (!isValidHttpUrl(url)) {
-    manualUrlEl.focus();
+    input.focus();
     return;
   }
   handleCandidate({ type: manualType, url, pageUrl: null, titleHint: null, missingInfoNote: null });
-  manualFormEl.reset();
-});
+  form.reset();
+}));
 
 clearAllEl.addEventListener("click", () => {
   if (!store.getState().sources.length) return;
@@ -648,6 +711,11 @@ citationListEl.addEventListener("click", (e) => {
  * --------------------------------------------------------------------- */
 
 fullRender();
+
+// One clear message beats every source failing with an opaque CORS error.
+if (API_BASE_UNCONFIGURED) {
+  flashDropzoneMessage("Set your Worker URL in js/config.js before adding sources.");
+}
 
 checkAiAvailability().then((available) => {
   aiAvailable = available;
